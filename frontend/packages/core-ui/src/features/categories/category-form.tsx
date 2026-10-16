@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
+import { SectionStack } from '../../components/ui/section-stack';
 import { lookupState, type LookupState } from '../../lib/api-errors';
 import { usePermission } from '../../hooks/use-permission';
 
@@ -74,19 +75,26 @@ export function categoryPayload(v: CategoryFormValues, mayManageMappings: boolea
       : {}),
   };
 }
+
+export interface CategoryFormProps {
+  defaultValues?: Partial<CategoryFormValues>;
+  excludeId?: number;
+  onSubmit: (v: CategoryFormValues, f: UseFormReturn<CategoryFormValues>) => void;
+  onCancel?: () => void;
+  isSubmitting?: boolean;
+  formError?: string | null;
+  mode?: 'create' | 'edit';
+}
+
 export function CategoryForm({
   defaultValues,
   excludeId,
   onSubmit,
+  onCancel,
   isSubmitting,
   formError,
-}: {
-  defaultValues?: Partial<CategoryFormValues>;
-  excludeId?: number;
-  onSubmit: (v: CategoryFormValues, f: UseFormReturn<CategoryFormValues>) => void;
-  isSubmitting?: boolean;
-  formError?: string | null;
-}) {
+  mode = 'edit',
+}: CategoryFormProps) {
   const mayManageMappings = usePermission('accounting.account-mapping.manage');
   const form = useForm<CategoryFormValues>({
     resolver: zodResolver(schema),
@@ -155,76 +163,84 @@ export function CategoryForm({
             {formError}
           </div>
         )}
-        <DetailSection title="General">
-          <FormField
-            control={form.control}
-            name="code"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Code</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          {select('parent_id', 'Parent category', categories, lookupState(categoriesResult, 'categories'))}
-          <FormField
-            control={form.control}
-            name="default_valuation_method"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Default valuation method</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
+        <SectionStack>
+          <DetailSection title="General">
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Code</FormLabel>
                   <FormControl>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
+                    <Input className="h-10" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    <SelectItem value={NONE}>Inherit from parent</SelectItem>
-                    {Object.values(ValuationMethod).map((v) => (
-                      <SelectItem key={v} value={v}>
-                        {v}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </DetailSection>
-        {mayManageMappings && (
-          <DetailSection
-            title="GL account defaults"
-            description="Blank values inherit from the nearest category ancestor."
-          >
-            {select('income_account_id', 'Income account', accounts, lookupState(accountsResult, 'accounts'))}
-            {select('expense_account_id', 'Expense account', accounts, lookupState(accountsResult, 'accounts'))}
-            {select('inventory_account_id', 'Inventory account', accounts, lookupState(accountsResult, 'accounts'))}
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input className="h-10" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {select('parent_id', 'Parent category', categories, lookupState(categoriesResult, 'categories'))}
+            <FormField
+              control={form.control}
+              name="default_valuation_method"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Default valuation method</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className="h-10" aria-label="Default valuation method">
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value={NONE}>Inherit from parent</SelectItem>
+                      {Object.values(ValuationMethod).map((v) => (
+                        <SelectItem key={v} value={v}>
+                          {v}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </DetailSection>
-        )}
-        <div className="flex justify-end">
+          {mayManageMappings && (
+            <DetailSection
+              title="GL account defaults"
+              description="Blank values inherit from the nearest category ancestor."
+            >
+              {select('income_account_id', 'Income account', accounts, lookupState(accountsResult, 'accounts'))}
+              {select('expense_account_id', 'Expense account', accounts, lookupState(accountsResult, 'accounts'))}
+              {select('inventory_account_id', 'Inventory account', accounts, lookupState(accountsResult, 'accounts'))}
+            </DetailSection>
+          )}
+        </SectionStack>
+        <div className="flex items-center justify-end gap-2 pt-2">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </Button>
+          )}
           <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving…' : 'Save category'}
+            {isSubmitting ? 'Saving…' : mode === 'create' ? 'Create category' : 'Save category'}
           </Button>
         </div>
       </form>
     </Form>
   );
 }
+

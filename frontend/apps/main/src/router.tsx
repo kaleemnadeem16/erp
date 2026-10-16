@@ -136,6 +136,9 @@ const supplierReturnEditAsSheet = presentation.supplierReturnEdit === "sheet";
 const stockScrapCreateAsSheet = presentation.stockScrapCreate === "sheet";
 const stockScrapDetailAsSheet = presentation.stockScrapDetail === "sheet";
 const stockScrapEditAsSheet = presentation.stockScrapEdit === "sheet";
+const categoryCreateAsSheet = presentation.categoryCreate === "sheet";
+const categoryDetailAsSheet = presentation.categoryDetail === "sheet";
+const categoryEditAsSheet = presentation.categoryEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -324,40 +327,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <CategoriesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/categories/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <CategoryCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/categories/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <CategoryDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/categories/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <CategoryEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {categoryCreateAsSheet && (
+            <Route
+              path="new"
+              element={<CategoryCreateScreen presentation="sheet" />}
+            />
+          )}
+          {categoryDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<CategoryDetailScreen presentation="sheet" />}
+            />
+          )}
+          {categoryEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<CategoryEditScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!categoryCreateAsSheet && (
+          <Route
+            path="/categories/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CategoryCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!categoryDetailAsSheet && (
+          <Route
+            path="/categories/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CategoryDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!categoryEditAsSheet && (
+          <Route
+            path="/categories/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CategoryEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/item-suppliers"
           element={

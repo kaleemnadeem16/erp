@@ -39,6 +39,9 @@ export const presentation: {
   packConversionCreate: Presentation;
   packConversionDetail: Presentation;
   packConversionEdit: Presentation;
+  categoryCreate: Presentation;
+  categoryDetail: Presentation;
+  categoryEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -72,6 +75,9 @@ export const presentation: {
   packConversionCreate: "sheet",
   packConversionDetail: "sheet",
   packConversionEdit: "sheet",
+  categoryCreate: "sheet",
+  categoryDetail: "sheet",
+  categoryEdit: "sheet",
 };
 
 /**

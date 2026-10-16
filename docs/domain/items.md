@@ -217,6 +217,21 @@ Create/edit expose the optional stock quantity increment; detail and Quick Print
 value or “Unrestricted”. This is divisibility metadata, not a supplier order multiple, and does
 not add PO enforcement. See [the incremental plan](../phases/item-purchasing-improvements.md).
 
+### Category screen delivery (2026-10-16)
+
+The Categories workflow provides hierarchical item grouping, inheritance of default valuation methods,
+and optional GL account mapping defaults. Delivered under the ERP Blue design standard and screen delivery
+contract (`apps/main/src/presentation.ts` defaults to `sheet` with fallback `page` routes).
+
+| Contract element | UI destination | Availability | Acceptance scenario / omission |
+|---|---|---|---|
+| List categories | `CategoriesListScreen` (`/categories`) | Authenticated read (`inventory.category.manage` for actions) | Filter by parent, debounced code/name search, active chips, Quick Print, column preferences |
+| Create category | `CategoryCreateScreen` (`/categories/new`, sheet by default) | `inventory.category.manage` | Code, name, parent combobox (cycles prevented), default valuation, GL defaults (`accounting.account-mapping.manage`) |
+| View category | `CategoryDetailScreen` (`/categories/:id`, sheet by default) | Authenticated read | Identity, parent and child category navigation links, GL defaults, Quick Print, delete dialog |
+| Edit category | `CategoryEditScreen` (`/categories/:id/edit`, sheet by default) | `inventory.category.manage` | Edit code, name, parent (descendants excluded to prevent cycle), valuation, GL defaults |
+| Delete category | Delete dialog on detail screen | `inventory.category.manage` | In-place confirmation; 409 conflict message reported when items or child categories reference the row |
+| Bulk actions | List table | Not applicable | No bulk endpoint exists; category hierarchy changes require deliberate individual inspection |
+
 ## Landmines
 
 **Codes and case sensitivity.** Postgres is case-sensitive, so `PIG-001` and `pig-001` are
