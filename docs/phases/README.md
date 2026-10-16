@@ -137,7 +137,7 @@ delta touching it needs a Sales/COGS correction line — see
 
 ### Phase 5 — Job execution
 
-[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146/coverage0147/materials0148 accepted; bounded contracts specified, no Job implementation. Q52/Q53 closed. [Purchasing/external-work assessment](phase-5-purchasing-external-research.md) has a [refined E1–E8 resolution](phase-5-purchasing-external-resolution.md) awaiting owner review under Q54; no new ADR or implementation authority. [Resolution evidence](phase-5-coverage-material-resolution.md) and [deferred zero-assertion research](phase-5-zero-cost-assertion.md) retained.
+[Research plan](phase-5-job-execution.md): lifecycle0145/labour0146/coverage0147/materials0148 accepted; bounded contracts specified, no Job implementation. Q52/Q53 closed. [External-cost contract](../domain/job-external-cost-attribution.md) accepted0149/Q54 closed, specified not implemented. [Unified costing research](phase-5-unified-costing-research.md) awaits owner review under Q55; no costing ADR or code authority. [Resolution evidence](phase-5-coverage-material-resolution.md) and [deferred zero-assertion research](phase-5-zero-cost-assertion.md) retained.
 Jobs, work orders, material issue, timesheets, unified job cost entries, estimate-vs-actual
 variance reporting. This is where the system starts paying for itself.
 

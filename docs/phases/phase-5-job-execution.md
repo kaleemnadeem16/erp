@@ -2,10 +2,10 @@
 
 # Phase 5 — Job execution
 
-- **Status:** research in progress; lifecycle0145, labour0146, coverage0147 and materials0148 ACCEPTED / bounded contracts SPECIFIED; no Job implementation or verification.
-- **Authority:** D1–D6 approval2026-10-15 and L1–L6/Q52/Q53 approval2026-10-16; architecture documentation and Purchasing/external-work research only, no implementation.
+- **Status:** research in progress; lifecycle0145, labour0146, coverage0147, materials0148 and external0149 ACCEPTED / bounded contracts SPECIFIED; no Job implementation or verification.
+- **Authority:** D1–D6 approval2026-10-15 and L1–L6/Q52/Q53/Q54 approval2026-10-16; architecture documentation and unified costing research only, no implementation.
 - **Depends on:** accepted R7/R9 and actual supported CA/HA/owning adapters for delivery; existing shared foundations.
-- **Blocked by:** delivery adapters and separate code authority; Q23/Q24/Q16 affect their own paths. Q51/Q52/Q53 are closed.
+- **Blocked by:** delivery adapters and separate code authority; Q23/Q24/Q16 affect their own paths. Q51/Q52/Q53/Q54 are closed.
 
 ## Goal and scope
 
@@ -37,8 +37,8 @@ UI remains each implementation slice's responsibility.
 |1| Lifecycle/Job receiver | ACCEPTED0145; [bounded contract](../domain/job-execution-lifecycle.md) SPECIFIED, no adapter |
 |2| Flexible labour evidence/usage/progress/recognition | ACCEPTED0146/Q51 closed; [bounded contract](../domain/job-labour-recognition.md) SPECIFIED; [coverage contract](../domain/job-cost-coverage.md) ACCEPTED0147/Q52 closed |
 |3| Materials/custody/reservations/consumption/corrections | ACCEPTED0148/Q53 closed; [bounded contract](../domain/job-material-attribution.md) specified; Q24/Q23 retained |
-|4| Purchasing/equipment/subcontract attribution | [Refined E1–E8](phase-5-purchasing-external-resolution.md) PROPOSED/Q54 for owner review; no new ADR/implementation authority |
-|5| Unified costing/source reconciliation | Queued; recognition/source identities,0040 correction linkage |
+|4| Purchasing/equipment/subcontract attribution | ACCEPTED0149/Q54 closed; [bounded contract](../domain/job-external-cost-attribution.md) specified, not implemented |
+|5| Unified costing/source reconciliation | [Research U1–U5](phase-5-unified-costing-research.md) PROPOSED/Q55 for owner review |
 |6| Detailed closeout/documents/broader execution | Queued beyond accepted lifecycle;0137 and owning impacts |
 
 Research can use accepted R7 contracts independently. Real release needs authoritative CA,
@@ -65,7 +65,9 @@ and R7/R9 owning adapters remain delivery dependencies, not waived by architectu
 - [x] Resolve Q51 business direction as0146; specify bounded labour recognition/correction scenarios.
 - [x] Resolve Q52/Q53 in0147/0148, specify bounded contracts and amend roadmap; defer zero assertions.
 - [x] Prepare [Purchasing/external-work assessment](phase-5-purchasing-external-research.md) for owner review.
-- [ ] Obtain owner direction for Purchasing/external-work research before detailed contracts.
+- [x] Record approved E1–E8/Q54 in0149 and bounded external/Purchasing attribution contract.
+- [x] Prepare unified costing/variance research for owner review.
+- [ ] Obtain owner direction on U1–U5/Q55 before detailed costing contracts.
 - [ ] Research remaining streams in order, without simultaneous detailed design.
 - [ ] Obtain separate implementation authorisation, named owners and actual adapter readiness.
 - [ ] Deliver/verify one actual service workflow: tenant/scope guards, source lineage, exact retries,

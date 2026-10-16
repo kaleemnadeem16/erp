@@ -2,6 +2,9 @@
 
 # Phase 5 — refined Purchasing and external-work resolution
 
+**Historical research/proposal:** reconciled with owner approval2026-10-16 in accepted0149 and [bounded external contract](../domain/job-external-cost-attribution.md). Questions below preserve the prior review stage; Q54 is closed. No implementation delivered.
+
+
 **2026-10-16 · PROPOSED / Q54 AWAITING_OWNER.** Business direction supports refinement only.
 No new ADR, domain contract acceptance, application implementation, grant or migration authorised.
 

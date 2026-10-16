@@ -24,6 +24,11 @@ SPECIFIED contract. Jobs/receiver remain unimplemented and unverified.
 No deployed Job schema was found to migrate. Future imports must establish truthful source/baseline
 lineage; no invented consent. No accepted ADR is superseded; historical assumptions yield to R7/0145.
 
+Current source contracts are0146–0149; [external attribution](job-external-cost-attribution.md) is
+accepted/specified. A physical universal ledger and detailed variance/forecast protocol remain
+[proposed unified-costing research](../phases/phase-5-unified-costing-research.md), not approved by
+the historical table/query below. Do not infer all source amounts can simply be summed.
+
 ## Original historical sketch
 
 Execution and, more importantly, **estimated versus actual**. Variance reporting is the reason

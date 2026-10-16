@@ -822,3 +822,14 @@ hire charging, subcontract remainder/dispute and later Finance source reconcilia
 goods-receipt/short-close/cancel boundaries by source inspection; no new capability implied. EX01–18
 specified as proposed business scenarios, not executed tests. No ADR accepted, code/grants/migrations
 changed or integration begun. Concurrent Currency/Sales/Purchasing documentation WIP preserved.
+
+## 2026-10-16 — Accept external-cost attribution and submit unified costing research
+
+Owner E1–E8 approval recorded in0149; bounded external-cost/Purchasing contract specified and Q54
+closed with research/questions preserved. Accountable no-document declarations, Purchasing-owned
+acceptance, pre-invoice supported recognition and conserved shared allocations accepted; no duplicate
+direct-expense system or fictitious service receipt. Mandatory owning/correction/closeout gates retained.
+Unified costing U1–U5/Q55 proposed: source-owned contributions, original/current baselines, separate
+commitment/exposure/actual/correction, coverage certainty, comparable variance and bounded forecasts.
+Research-only next bundle; no costing ADR accepted. Documentation only, no application changes,
+grants, migrations, runtime tests or push. Concurrent agents' work preserved.

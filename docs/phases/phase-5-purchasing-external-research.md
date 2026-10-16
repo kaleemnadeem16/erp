@@ -2,6 +2,9 @@
 
 # Phase 5 — Job-linked Purchasing and external work assessment
 
+**Historical research/proposal:** reconciled with owner approval2026-10-16 in accepted0149 and [bounded external contract](../domain/job-external-cost-attribution.md). Questions below preserve the prior review stage; Q54 is closed. No implementation delivered.
+
+
 **2026-10-16 · RESEARCH PROPOSAL for owner review, not an accepted contract or implementation.**
 Question: how should Job-linked purchasing, external labour/equipment and subcontract work preserve
 commitments, accepted performance and one effective actual cost through partial delivery and later Finance?

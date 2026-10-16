@@ -37,17 +37,21 @@ Q1, Q2 and Q3 were resolved on 2026-08-10 — see
 Q51 (Origin: PLANNING RESEARCH) resolved2026-10-16 by owner's approval of revised L1–L6 and cost-completeness clarification, recorded in [0146](decisions/0146-recognise-flexible-labour-evidence-without-fabricating-usage.md).
 Original question and owner refinement are preserved in Git history and [research](phases/phase-5-labour-resource-research.md); current [bounded contract](domain/job-labour-recognition.md) is SPECIFIED, no implementation/verification. Exact declaration protocol is Q52, not a reopened Q51.
 
-### Q54 — Purchasing and external-work evidence, acceptance and attribution
+### Q55 — Unified Job costing and estimate-versus-actual reconciliation
 Origin: PLANNING RESEARCH
 Decision status: AWAITING_OWNER
-Delivery status: BLOCKED_AFFECTED_OPERATION; existing Purchasing unchanged
-Module/slice: Phase5 E1–E8; implementation owner unassigned
-Owner supports lightweight direct external expense, evidenced pre-invoice performance and investigation
-of reusable Purchasing-owned acceptance; final architectural acceptance requires refined review.
-[E1–E8 resolution](phases/phase-5-purchasing-external-resolution.md) proposes shared0146 attribution,
-source-specific authority, partial/shared allocations, hire/subcontract evidence and linked later-source
-reconciliation. Decide accountable no-PO declaration eligibility, acceptance ownership and first scope.
-Preserve0145–0148/R7/R9, current receipt boundaries and mandatory integration gates. No ADR/code/grants.
+Delivery status: BLOCKED_AFFECTED_OPERATION; accepted source contracts unchanged
+Module/slice: Phase5 U1–U5; implementation owner unassigned
+[Research/options/scenarios](phases/phase-5-unified-costing-research.md) propose source-owned evidence
+with shared attribution, comparable original/current-plan reporting, independent completeness,
+dated/current-restated views and optional bounded ETC. Owner choices concern reporting/forecast scope,
+not reopening accepted commercial allocations or source authority. No new costing ADR/code/grants.
+
+<a id="q54--purchasing-and-external-work-evidence-acceptance-and-attribution"></a>
+Q54 resolved2026-10-16 by [0149](decisions/0149-attribute-external-job-costs-through-owning-sources-and-reconciliation.md).
+Owner approved E1–E8 with explicit declaration/evidence, supplier acceptance and first-scope refinements.
+[Contract](domain/job-external-cost-attribution.md) specified, not implemented. Original questions,
+alternatives and evidence remain in [research](phases/phase-5-purchasing-external-resolution.md) and Git.
 
 <a id="q52--simple-labour-cost-coverage-declaration"></a>
 Q52 resolved 2026-10-16 by [0147](decisions/0147-bound-job-cost-coverage-to-scope-evidence-and-source-version.md).

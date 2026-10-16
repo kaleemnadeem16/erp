@@ -133,6 +133,8 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 ## Phase 5 accepted bounded contracts
 
+- [External Job cost and Purchasing attribution](job-external-cost-attribution.md) —0149/Q54; specified, not implemented.
+
 - [Job cost coverage](job-cost-coverage.md) — 0147/Q52; specified, not implemented.
 - [Job material attribution](job-material-attribution.md) — 0148/Q53; specified, not implemented.
 
