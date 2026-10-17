@@ -12,14 +12,36 @@ export type StatCardTone = 'default' | 'success' | 'warning' | 'danger' | 'info'
  *
  * `tone` reaches for the --status-* tokens (see index.css), never a raw
  * Tailwind color — same "one-place edit" stand-in as --nav-active ahead of
- * Phase 4 company theming. Applied as a left accent bar plus matching value
- * text, not a background fill: several of these usually sit side by side, and
- * a filled tile per card reads as noisier than a shared neutral surface with
- * one colored edge each. `zeroIsNeutral` is for tones that only mean
- * something once the count is nonzero (a shortage, a QA hold) — 0 stays
- * neutral instead of announcing "no problem" in the same loud color a real
- * one would use.
+ * Phase 4 company theming. Applied as a subtle tinted background surface plus
+ * matching value text, with clean borders all around. `zeroIsNeutral` is for
+ * tones that only mean something once the count is nonzero (a shortage, a QA
+ * hold) — 0 stays neutral card surface instead of announcing "no problem" in
+ * the same color an active alert would use.
  */
+const TONE_BASE_BG: Record<StatCardTone, string> = {
+  default: 'bg-card',
+  success: 'bg-status-success-soft/25',
+  warning: 'bg-status-warning-soft/25',
+  danger: 'bg-status-danger-soft/25',
+  info: 'bg-status-info-soft/25',
+};
+
+const TONE_ACTIVE_BG: Record<StatCardTone, string> = {
+  default: 'bg-accent/70 shadow-xs font-medium',
+  success: 'bg-status-success-soft/60 shadow-xs font-medium',
+  warning: 'bg-status-warning-soft/60 shadow-xs font-medium',
+  danger: 'bg-status-danger-soft/60 shadow-xs font-medium',
+  info: 'bg-status-info-soft/60 shadow-xs font-medium',
+};
+
+const TONE_HOVER_BG: Record<StatCardTone, string> = {
+  default: 'hover:bg-muted/50 hover:shadow-xs',
+  success: 'hover:bg-status-success-soft/45 hover:shadow-xs',
+  warning: 'hover:bg-status-warning-soft/45 hover:shadow-xs',
+  danger: 'hover:bg-status-danger-soft/45 hover:shadow-xs',
+  info: 'hover:bg-status-info-soft/45 hover:shadow-xs',
+};
+
 export function StatCard({
   label,
   value,
@@ -61,13 +83,10 @@ export function StatCard({
           : undefined
       }
       className={cn(
-        'min-w-0 flex-1 rounded-lg border border-border border-l-4 p-3 transition-all',
-        effectiveTone === 'success' && 'border-l-status-success',
-        effectiveTone === 'warning' && 'border-l-status-warning',
-        effectiveTone === 'danger' && 'border-l-status-danger',
-        effectiveTone === 'info' && 'border-l-status-info',
-        onClick && 'cursor-pointer hover:bg-muted/40 hover:shadow-xs select-none',
-        active && 'ring-2 ring-primary ring-offset-1 bg-accent/40 font-medium',
+        'min-w-0 flex-1 rounded-lg border border-border p-3 transition-all outline-none focus:outline-none focus-visible:ring-1 focus-visible:ring-ring/40',
+        active ? TONE_ACTIVE_BG[effectiveTone] : TONE_BASE_BG[effectiveTone],
+        onClick && !active && TONE_HOVER_BG[effectiveTone],
+        onClick && 'cursor-pointer select-none',
         className
       )}
     >
