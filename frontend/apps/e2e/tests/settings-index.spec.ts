@@ -69,10 +69,12 @@ test('a person without the duties sees only what they may open, and is not offer
   for (const hidden of ['members', 'roles', 'organisation', 'approvals', 'material-variance']) {
     await expect(viewer.getByTestId(`settings-link-${hidden}`)).toHaveCount(0);
   }
-  // A bookmarked URL for a page they may not open is still refused by the route itself, not just hidden here.
-  await viewer.goto('/settings/members');
-  await expect(viewer.getByTestId('settings-link-members')).toHaveCount(0);
-  await expect(viewer.getByRole('heading', { name: 'Members', exact: true })).toHaveCount(0);
+  // A bookmarked URL for a page they may not open is refused by the route itself, not just hidden from the list — including pages whose rule sits
+  // after the index in the table (Printing).
+  for (const path of ['/settings/members', '/settings/printing']) {
+    await viewer.goto(path);
+    await expect(viewer.getByRole('heading', { name: 'You don’t have access' }), `${path} must be refused`).toBeVisible();
+  }
   await viewer.context().close();
 });
 

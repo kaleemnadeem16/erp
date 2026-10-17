@@ -208,7 +208,6 @@ const rules: readonly Rule[] = [
     path: "/settings/custom-fields",
     allOf: ["administration.custom-field.manage"],
   },
-  { path: "/settings" },
   { path: "/settings/numbers" },
   { path: "/settings/account" },
   { path: "/settings/appearance" },
@@ -277,6 +276,9 @@ export function canAccessScreen(
   ) {
     return permissions.has("estimating.application-rate.manage");
   }
+  // The Settings index is open to everyone, but only the index itself: as a rule it would prefix-match every /settings/* page that has no rule of
+  // its own (or that comes after it) and open them all. Each page it links to is still judged by its own rule below.
+  if (pathname === "/settings") return true;
   const rule = rules.find((candidate) => matches(pathname, candidate.path));
   if (!rule) return false;
   return (
