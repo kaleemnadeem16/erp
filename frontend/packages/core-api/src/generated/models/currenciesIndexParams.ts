@@ -14,8 +14,9 @@ export type CurrenciesIndexParams = {
   sort?: CurrenciesIndexSort;
   include?: string;
   /**
+   * The ISO 4217 reference list (ADR 0143) is ~180 rows and every currency picker needs all of it: a page of 100 hid PKR and USD.
    * @minimum 1
-   * @maximum 100
+   * @maximum 250
    */
   per_page?: number;
   /**
