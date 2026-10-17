@@ -15,4 +15,5 @@ scale — rounding here is the norm, not the exception, for that one. */
   item_count: number;
   shortage_item_count: number;
   qa_held_item_count: number;
+  on_order_item_count: number;
 }

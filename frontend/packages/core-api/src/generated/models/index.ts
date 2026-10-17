@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 159 schemas that export a runtime value use `export *`.
+ * only the 167 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -788,10 +788,19 @@ export type * from "./inventoryOverviewIndex200MetaLinksItem";
 export type * from "./inventoryOverviewIndex200MetaLinksItemUrl";
 export type * from "./inventoryOverviewIndex200MetaPath";
 export type * from "./inventoryOverviewIndex200MetaTo";
+export * from "./inventoryOverviewIndexFilterStockStatus";
+export * from "./inventoryOverviewIndexFilterTracking";
+export * from "./inventoryOverviewIndexFilterType";
+export * from "./inventoryOverviewIndexFilterValuationMethod";
 export type * from "./inventoryOverviewIndexParams";
 export * from "./inventoryOverviewIndexSort";
 export type * from "./inventoryOverviewResource";
+export type * from "./inventoryOverviewResourceDescription";
 export type * from "./inventoryOverviewSummary200";
+export * from "./inventoryOverviewSummaryFilterStockStatus";
+export * from "./inventoryOverviewSummaryFilterTracking";
+export * from "./inventoryOverviewSummaryFilterType";
+export * from "./inventoryOverviewSummaryFilterValuationMethod";
 export type * from "./inventoryOverviewSummaryParams";
 export type * from "./inventoryOverviewSummaryResource";
 export * from "./inventoryOverviewSummarySort";

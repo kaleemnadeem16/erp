@@ -21,6 +21,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * @property int $item_count
  * @property int $shortage_item_count
  * @property int $qa_held_item_count
+ * @property int $on_order_item_count
  */
 class InventoryOverviewSummaryResource extends JsonResource
 {
@@ -37,6 +38,7 @@ class InventoryOverviewSummaryResource extends JsonResource
             'item_count' => (int) $this->item_count,
             'shortage_item_count' => (int) $this->shortage_item_count,
             'qa_held_item_count' => (int) $this->qa_held_item_count,
+            'on_order_item_count' => (int) ($this->on_order_item_count ?? 0),
         ];
     }
 }

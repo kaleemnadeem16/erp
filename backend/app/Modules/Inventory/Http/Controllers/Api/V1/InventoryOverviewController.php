@@ -57,7 +57,8 @@ class InventoryOverviewController extends Controller
             'COALESCE(SUM(available_value), 0) as available_value, '.
             'COUNT(*) as item_count, '.
             'COUNT(*) FILTER (WHERE shortage_qty > 0) as shortage_item_count, '.
-            'COUNT(*) FILTER (WHERE qa_held_qty > 0) as qa_held_item_count'
+            'COUNT(*) FILTER (WHERE qa_held_qty > 0) as qa_held_item_count, '.
+            'COUNT(*) FILTER (WHERE on_order_qty > 0) as on_order_item_count'
         )->first();
 
         return new InventoryOverviewSummaryResource($row);
@@ -73,6 +74,28 @@ class InventoryOverviewController extends Controller
             $search = $request->string('filter.search')->toString();
             $query->where(fn ($q) => $q->where('items.code', 'ilike', "%{$search}%")
                 ->orWhere('items.name', 'ilike', "%{$search}%"));
+        }
+        if ($request->filled('filter.type')) {
+            $query->where('items.type', $request->string('filter.type')->toString());
+        }
+        if ($request->filled('filter.valuation_method')) {
+            $query->where('items.valuation_method', $request->string('filter.valuation_method')->toString());
+        }
+        if ($request->filled('filter.tracking')) {
+            $query->where('items.tracking', $request->string('filter.tracking')->toString());
+        }
+        if ($request->filled('filter.stock_status')) {
+            $status = $request->string('filter.stock_status')->toString();
+            $onHandQtyExpr = "CASE WHEN items.valuation_method = 'AVCO' THEN COALESCE(on_hand_avco.qty, 0) ELSE COALESCE(on_hand_layers.qty, 0) END";
+            match ($status) {
+                'shortage' => $query->where('shortage.qty', '>', 0),
+                'qa_held' => $query->where('qa_held.qty', '>', 0),
+                'on_order' => $query->where('on_order.qty', '>', 0),
+                'in_stock' => $query->whereRaw("{$onHandQtyExpr} > 0"),
+                'out_of_stock' => $query->whereRaw("{$onHandQtyExpr} <= 0"),
+                'available' => $query->whereRaw("GREATEST({$onHandQtyExpr} - COALESCE(qa_held.qty, 0), 0) > 0"),
+                default => null,
+            };
         }
     }
 }

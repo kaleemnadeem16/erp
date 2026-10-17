@@ -122,6 +122,7 @@ class InventoryOverviewApiTest extends TestCase
         $response->assertJsonPath('data.item_count', 1);
         $response->assertJsonPath('data.shortage_item_count', 1);
         $response->assertJsonPath('data.qa_held_item_count', 1);
+        $response->assertJsonPath('data.on_order_item_count', 1);
     }
 
     public function test_summary_rounds_available_value_when_the_ratio_does_not_terminate(): void
@@ -264,6 +265,49 @@ class InventoryOverviewApiTest extends TestCase
         $this->actingAs(PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']))
             ->getJson('/api/v1/inventory-overview?sort=on_hand_qty')
             ->assertUnprocessable()->assertJsonValidationErrors('sort');
+    }
+
+    public function test_index_filters_by_stock_status_type_valuation_and_tracking(): void
+    {
+        $item = $this->seedFullScenario();
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']);
+
+        // Matches our seeded item:
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[stock_status]=shortage')
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[stock_status]=qa_held')
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[stock_status]=on_order')
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[stock_status]=in_stock')
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[type]=RAW')
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[valuation_method]=AVCO')
+            ->assertOk()->assertJsonCount(1, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[tracking]=NONE')
+            ->assertOk()->assertJsonCount(1, 'data');
+
+        // Mismatched filters return 0 items:
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[stock_status]=out_of_stock')
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[type]=FINISHED')
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[valuation_method]=FIFO')
+            ->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[tracking]=SERIAL')
+            ->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    public function test_index_rejects_invalid_filter_keys_and_values(): void
+    {
+        $user = PermissionedActor::grant(User::factory()->create(), ['inventory.availability.view']);
+
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[unknown]=1')
+            ->assertUnprocessable()->assertJsonValidationErrors('filter');
+
+        $this->actingAs($user)->getJson('/api/v1/inventory-overview?filter[stock_status]=invalid')
+            ->assertUnprocessable()->assertJsonValidationErrors('filter.stock_status');
     }
 
     public function test_another_companys_item_is_not_visible(): void

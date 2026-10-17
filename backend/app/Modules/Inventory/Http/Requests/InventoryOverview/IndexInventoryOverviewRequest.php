@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Inventory\Http\Requests\InventoryOverview;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
+use App\Modules\Inventory\Support\ItemTracking;
+use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Inventory\Support\StockVisibility;
+use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class IndexInventoryOverviewRequest extends FormRequest
 {
@@ -25,9 +29,13 @@ class IndexInventoryOverviewRequest extends FormRequest
     public function rules(): array
     {
         return array_merge([
-            'filter' => ['sometimes', 'array:category_id,search'],
+            'filter' => ['sometimes', 'array:category_id,search,stock_status,type,valuation_method,tracking'],
             'filter.category_id' => ['sometimes', 'integer', 'min:1'],
             'filter.search' => ['sometimes', 'string', 'max:255'],
+            'filter.stock_status' => ['sometimes', 'string', Rule::in(['shortage', 'qa_held', 'on_order', 'in_stock', 'out_of_stock', 'available'])],
+            'filter.type' => ['sometimes', 'string', Rule::in(array_map(fn (ItemType $case): string => $case->value, ItemType::cases()))],
+            'filter.valuation_method' => ['sometimes', 'string', Rule::in(array_map(fn (ValuationMethod $case): string => $case->value, ValuationMethod::cases()))],
+            'filter.tracking' => ['sometimes', 'string', Rule::in(array_map(fn (ItemTracking $case): string => $case->value, ItemTracking::cases()))],
         ], $this->listQueryRules(['code', 'name'], ['category']));
     }
 }

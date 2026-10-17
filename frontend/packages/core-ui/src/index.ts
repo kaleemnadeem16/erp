@@ -255,6 +255,8 @@ export { PurchasingSettingsScreen } from "./features/settings/purchasing-setting
 export { InventorySettingsScreen } from "./features/settings/inventory-settings-screen";
 
 export { InventoryOverviewScreen } from "./features/inventory-overview/inventory-overview-screen";
+export { InventoryOverviewDetailSheet } from "./features/inventory-overview/inventory-overview-detail-sheet";
+export { InventoryOverviewBulkBar } from "./features/inventory-overview/inventory-overview-bulk-actions";
 export { createAppQueryClient } from "./lib/query-client";
 
 export { GoodsReceiptEditScreen } from "./features/goods-receipts/goods-receipt-edit-screen";

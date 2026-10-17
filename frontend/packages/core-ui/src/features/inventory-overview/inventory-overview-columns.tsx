@@ -1,6 +1,7 @@
 import type { InventoryOverviewResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 
 /** `uoms` is looked up client-side, same pattern as purchaseOrderColumns' supplier/currency maps. */
@@ -10,6 +11,7 @@ export function inventoryOverviewColumns(uoms: ReadonlyMap<number, string>): Dat
     key: 'code',
     header: 'Code',
     value: (row) => row.code,
+    cell: (row) => <RecordLink>{row.code}</RecordLink>,
     sortable: true,
     filterable: true,
     cardRole: 'subtitle',
@@ -32,6 +34,13 @@ export function inventoryOverviewColumns(uoms: ReadonlyMap<number, string>): Dat
     header: 'Type',
     value: (row) => row.type,
     cell: (row) => <span className="capitalize">{row.type.toLowerCase().replace('_', ' ')}</span>,
+    screenVisible: false,
+  },
+  {
+    key: 'tracking',
+    header: 'Tracking',
+    value: (row) => (row as { tracking?: string }).tracking ?? 'NONE',
+    cell: (row) => <span className="capitalize">{((row as { tracking?: string }).tracking ?? 'NONE').toLowerCase()}</span>,
     screenVisible: false,
   },
   {

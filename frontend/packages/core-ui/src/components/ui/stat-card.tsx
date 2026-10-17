@@ -27,6 +27,9 @@ export function StatCard({
   tone = 'default',
   zeroIsNeutral,
   isLoading,
+  onClick,
+  active,
+  className,
 }: {
   label: string;
   value: ReactNode;
@@ -35,18 +38,37 @@ export function StatCard({
   /** Renders as `default` when `value` is exactly 0/'0'/'—' — see the tone doc above. */
   zeroIsNeutral?: boolean;
   isLoading?: boolean;
+  onClick?: () => void;
+  active?: boolean;
+  className?: string;
 }) {
   const isZero = value === 0 || value === '0' || value === '—';
   const effectiveTone: StatCardTone = zeroIsNeutral && isZero ? 'default' : tone;
 
   return (
     <div
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onClick={onClick}
+      onKeyDown={
+        onClick
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
       className={cn(
-        'min-w-0 flex-1 rounded-lg border border-border border-l-4 p-3',
+        'min-w-0 flex-1 rounded-lg border border-border border-l-4 p-3 transition-all',
         effectiveTone === 'success' && 'border-l-status-success',
         effectiveTone === 'warning' && 'border-l-status-warning',
         effectiveTone === 'danger' && 'border-l-status-danger',
-        effectiveTone === 'info' && 'border-l-status-info'
+        effectiveTone === 'info' && 'border-l-status-info',
+        onClick && 'cursor-pointer hover:bg-muted/40 hover:shadow-xs select-none',
+        active && 'ring-2 ring-primary ring-offset-1 bg-accent/40 font-medium',
+        className
       )}
     >
       <div className="text-xs text-muted-foreground">{label}</div>

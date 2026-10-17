@@ -7,6 +7,8 @@
 import type { ItemType } from "./itemType";
 import type { CategoryResource } from "./categoryResource";
 import type { ValuationMethod } from "./valuationMethod";
+import type { ItemTracking } from "./itemTracking";
+import type { InventoryOverviewResourceDescription } from "./inventoryOverviewResourceDescription";
 
 export interface InventoryOverviewResource {
   item_id: number;
@@ -16,6 +18,8 @@ export interface InventoryOverviewResource {
   stock_uom_id: number;
   category?: CategoryResource;
   valuation_method: ValuationMethod;
+  tracking: ItemTracking;
+  description: InventoryOverviewResourceDescription;
   on_hand_qty: string;
   available_qty: string;
   qa_held_qty: string;

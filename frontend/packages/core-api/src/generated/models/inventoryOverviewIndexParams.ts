@@ -4,6 +4,10 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { InventoryOverviewIndexFilterStockStatus } from "./inventoryOverviewIndexFilterStockStatus";
+import type { InventoryOverviewIndexFilterType } from "./inventoryOverviewIndexFilterType";
+import type { InventoryOverviewIndexFilterValuationMethod } from "./inventoryOverviewIndexFilterValuationMethod";
+import type { InventoryOverviewIndexFilterTracking } from "./inventoryOverviewIndexFilterTracking";
 import type { InventoryOverviewIndexSort } from "./inventoryOverviewIndexSort";
 
 export type InventoryOverviewIndexParams = {
@@ -15,6 +19,10 @@ export type InventoryOverviewIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  "filter[stock_status]"?: InventoryOverviewIndexFilterStockStatus;
+  "filter[type]"?: InventoryOverviewIndexFilterType;
+  "filter[valuation_method]"?: InventoryOverviewIndexFilterValuationMethod;
+  "filter[tracking]"?: InventoryOverviewIndexFilterTracking;
   sort?: InventoryOverviewIndexSort;
   include?: string;
   /**

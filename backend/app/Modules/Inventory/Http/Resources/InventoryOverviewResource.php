@@ -44,6 +44,8 @@ class InventoryOverviewResource extends JsonResource
             'stock_uom_id' => $item->stock_uom_id,
             'category' => $this->whenLoaded('category', fn () => new CategoryResource($item->category)),
             'valuation_method' => $item->valuation_method,
+            'tracking' => $item->tracking,
+            'description' => $item->description,
             'on_hand_qty' => (string) BigDecimal::of((string) $item->getAttribute('on_hand_qty'))->toScale(4),
             'available_qty' => (string) BigDecimal::of((string) $item->getAttribute('available_qty'))->toScale(4),
             'qa_held_qty' => (string) BigDecimal::of((string) $item->getAttribute('qa_held_qty'))->toScale(4),
