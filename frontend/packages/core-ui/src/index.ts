@@ -65,6 +65,8 @@ export {
 } from "./stores/appearance-store";
 export { AppearanceSettingsScreen } from "./features/settings/appearance-settings-screen";
 export { AcceptInvitationScreen } from "./features/auth/accept-invitation-screen";
+export { SettingsIndexScreen } from "./features/settings/settings-index-screen";
+export { NumbersAndRoundingScreen } from "./features/settings/numbers-and-rounding-screen";
 export { PrintingSettingsScreen } from "./features/settings/printing-settings-screen";
 export { AccountSettingsScreen } from "./features/settings/account-settings-screen";
 export { MembersSettingsScreen } from "./features/access-administration/members-settings-screen";

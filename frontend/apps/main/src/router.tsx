@@ -81,6 +81,8 @@ import {
   PurchaseOrderEditScreen,
   InventorySettingsScreen,
   AccountSettingsScreen,
+  SettingsIndexScreen,
+  NumbersAndRoundingScreen,
   AppearanceSettingsScreen,
   PrintingSettingsScreen,
   ProtectedRoute,
@@ -870,6 +872,26 @@ export function AppRouter() {
             }
           />
         )}
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <SettingsIndexScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/numbers"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <NumbersAndRoundingScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/settings/account"
           element={

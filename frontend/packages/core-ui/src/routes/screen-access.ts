@@ -208,6 +208,8 @@ const rules: readonly Rule[] = [
     path: "/settings/custom-fields",
     allOf: ["administration.custom-field.manage"],
   },
+  { path: "/settings" },
+  { path: "/settings/numbers" },
   { path: "/settings/account" },
   { path: "/settings/appearance" },
   { path: "/settings/printing", allOf: legacySetup },

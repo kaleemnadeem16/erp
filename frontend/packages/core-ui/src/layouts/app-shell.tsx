@@ -182,6 +182,8 @@ const navGroups: NavGroup[] = [
 const settingsNavGroup: NavGroup = {
   label: "Settings",
   items: [
+    { to: "/settings", label: "All settings", icon: Settings },
+    { to: "/settings/numbers", label: "Numbers and rounding", icon: Percent },
     {
       to: "/settings/custom-fields",
       label: "Custom Fields",
@@ -263,6 +265,7 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
   {
     label: "Company",
     items: [
+      { to: "/settings", label: "All settings", icon: Settings },
       {
         to: "/settings/custom-fields",
         label: "Custom Fields",
@@ -286,6 +289,7 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
         label: "Document Numbering",
         icon: Hash,
       },
+      { to: "/settings/numbers", label: "Numbers and rounding", icon: Percent },
       {
         to: "/settings/material-variance",
         label: "Material Variance",

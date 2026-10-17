@@ -151,6 +151,26 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **Known remaining.** List filters `filter[total_min/max]` still use `Number`; `package-stock/quantity.ts` truncates beyond four places for previews only; line-level server refusals arrive without a line index, so they show as a form banner; some percentage/rate inputs outside the listed screens are not yet on `DecimalInput`; a fifth place on a goods-receipt quantity is caught by the request rule (generic field error) before the quantity contract's reason code.
 
+### PX7 delivery record — Central Settings (2026-10-17)
+
+| Piece | What was built |
+|---|---|
+| Index | `/settings` (`SettingsIndexScreen`): every Settings page grouped by business area (Company; Purchasing and inventory; Estimating; Numbers, money and rounding; Approvals and access; You). Cards say *Company policy*, *Personal* or *Read-only*. Only pages the person may open are listed — the route's own screen-access rule plus the same extra duty the top-bar menu applies; a bookmarked URL is still refused by the route. The top-bar menu gains *All settings* and *Numbers and rounding*. The list lives in one file, `features/settings/settings-catalogue.ts`, and only links to module-owned screens |
+| Numbers and rounding | `/settings/numbers` (`NumbersAndRoundingScreen`), read-only: the fixed limits are rendered from `DECIMAL_SPECS` (so the page cannot disagree with what the inputs enforce), the always-true rules (nothing silently rounded, exact conversions, positive rates, decimal strings on the wire), and who owns each adjustable rule: item increments (Items), over-receipt tolerance (Purchasing settings), currency decimal places (global ISO reference data, no editor), Sales unit-price precision and rounding (versioned Sales policy, **not yet configurable from the app**), display (presentation only) |
+| Not done, on purpose | No new settings table, API or permission. No Sales financial-policy control and no grant of `sales.financial.configure` (staged duty, Phase 4 owner). No currency editor. Company display defaults were not stored: nothing consumes them yet, so a control would have been a setting with no effect |
+| Tests | `settings-index.spec.ts` (6): grouping and links, the top-bar route in, the fixed limits shown equal 4/4/6/9/9 and 15/15/13/10/10 whole digits, no editable control on the reference page, a Sales viewer sees only permitted entries and is refused `/settings/members`, phone width without sideways scroll and axe (no serious/critical) in light and dark on both pages |
+
+### Known precision issues after PX4 (2026-10-17) — tracked, not reopened
+
+| # | Issue | Class | Evidence | Disposition |
+|---|---|---|---|---|
+| 1 | List filters `filter[total_min/max]` (Purchase Orders, Goods Receipts) and `filter[moq_min/max]` (Item Suppliers) pass the typed text through `Number()` | Correctness risk, **low**: a filter, never a stored value; only magnitudes beyond ~15 significant digits could shift | The OpenAPI contract types these parameters as `number` (`purchaseOrdersIndexParams.ts`, `itemSuppliersIndexParams.ts`), so a string-safe filter needs the backend rule and the generated client changed together | Deferred to a contract change (backend + codegen) |
+| 2 | `package-stock/quantity.ts` `toUnits` truncates beyond four places | UX / deferred coverage | Its callers feed it server quantities (already four places) or integer counts; `use-package-draw-plan.ts` checks `isExactQuantity` before use. No submitted value is derived from a truncated one | Deferred; remove the truncation when the file is next touched |
+| 3 | A Purchase Order line refusal (`ordered_qty`, `QUANTITY_NOT_REPRESENTABLE`) shows as a form-level banner, not under the line | UX | The server keys the error without the line index | Deferred to a Purchasing backend change that keys errors by line |
+| 4 | A goods-receipt quantity with a fifth place gets the generic field error, not `QUANTITY_NOT_REPRESENTABLE` | UX | The request's `decimal:0,4` rule fires before the quantity contract | Deferred; harmonise the request rule with the contract message |
+| 5 | Other rate/percentage inputs not on `DecimalInput`: overhead-policy rate, resource rate, assembly `margin_pct` (already exact-string with a 6/4-place pattern, no `Number` on the value), Purchasing over-receipt tolerance (no client-side check; the server validates) | Deferred coverage / UX (no loss of precision) | The three pattern-validated fields submit the typed string unchanged | Deferred; migrate with their owning screens |
+| — | `type="number"` inputs elsewhere | Not precision-sensitive | Identifiers, days, priority | None |
+
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.
