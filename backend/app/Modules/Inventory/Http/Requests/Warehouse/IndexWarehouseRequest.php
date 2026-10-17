@@ -19,6 +19,18 @@ class IndexWarehouseRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return array_merge(['filter' => ['sometimes', 'array:active,search'], 'filter.active' => ['sometimes', 'boolean'], 'filter.search' => ['sometimes', 'string', 'max:255']], $this->listQueryRules(['code', 'name', 'created_at'], ['locations']));
+        return array_merge(
+            [
+                'filter' => ['sometimes', 'array:active,is_default,has_locations,search'],
+                'filter.active' => ['sometimes', 'boolean'],
+                'filter.is_default' => ['sometimes', 'boolean'],
+                'filter.has_locations' => ['sometimes', 'boolean'],
+                'filter.search' => ['sometimes', 'string', 'max:255'],
+            ],
+            $this->listQueryRules(
+                ['code', 'name', 'is_default', 'active', 'created_at', 'updated_at'],
+                ['locations']
+            )
+        );
     }
 }

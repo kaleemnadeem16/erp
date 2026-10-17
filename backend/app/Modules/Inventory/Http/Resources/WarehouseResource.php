@@ -13,8 +13,20 @@ class WarehouseResource extends JsonResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
-    {/** @var Warehouse $warehouse */ $warehouse = $this->resource;
+    {
+        /** @var Warehouse $warehouse */
+        $warehouse = $this->resource;
 
-        return ['id' => $warehouse->id, 'code' => $warehouse->code, 'name' => $warehouse->name, 'is_default' => $warehouse->is_default, 'active' => $warehouse->active, 'locations' => $this->whenLoaded('locations', fn () => LocationResource::collection($warehouse->locations)), 'created_at' => $warehouse->created_at?->toIso8601String(), 'updated_at' => $warehouse->updated_at?->toIso8601String()];
+        return [
+            'id' => $warehouse->id,
+            'code' => $warehouse->code,
+            'name' => $warehouse->name,
+            'is_default' => $warehouse->is_default,
+            'active' => $warehouse->active,
+            'locations' => $this->whenLoaded('locations', fn () => LocationResource::collection($warehouse->locations)),
+            'locations_count' => $warehouse->locations_count ?? ($warehouse->relationLoaded('locations') ? $warehouse->locations->count() : null),
+            'created_at' => $warehouse->created_at?->toIso8601String(),
+            'updated_at' => $warehouse->updated_at?->toIso8601String(),
+        ];
     }
 }

@@ -27,18 +27,37 @@ class WarehouseController extends Controller
 
     private const INCLUDABLE = ['locations' => 'locations'];
 
-    private const SORTABLE = ['code' => 'code', 'name' => 'name', 'created_at' => 'created_at'];
+    private const SORTABLE = [
+        'code' => 'code',
+        'name' => 'name',
+        'is_default' => 'is_default',
+        'active' => 'active',
+        'created_at' => 'created_at',
+        'updated_at' => 'updated_at',
+    ];
 
     public function index(IndexWarehouseRequest $request): AnonymousResourceCollection
     {
-        $query = Warehouse::query();
+        $query = Warehouse::query()->withCount('locations');
         $this->applyIncludes($query, $request, self::INCLUDABLE);
         if ($request->filled('filter.active')) {
             $query->where('active', $request->boolean('filter.active'));
-        }if ($request->filled('filter.search')) {
+        }
+        if ($request->filled('filter.is_default')) {
+            $query->where('is_default', $request->boolean('filter.is_default'));
+        }
+        if ($request->filled('filter.has_locations')) {
+            if ($request->boolean('filter.has_locations')) {
+                $query->has('locations');
+            } else {
+                $query->doesntHave('locations');
+            }
+        }
+        if ($request->filled('filter.search')) {
             $search = $request->string('filter.search')->toString();
             $query->where(fn (Builder $q) => $q->where('name', 'ilike', "%{$search}%")->orWhere('code', 'ilike', "%{$search}%"));
-        }$this->applySort($query, $request, self::SORTABLE, 'name');
+        }
+        $this->applySort($query, $request, self::SORTABLE, 'name');
 
         return WarehouseResource::collection($query->paginate($request->integer('per_page', 25)));
     }
@@ -50,6 +69,8 @@ class WarehouseController extends Controller
 
     public function show(ShowWarehouseRequest $request, Warehouse $warehouse): WarehouseResource
     {
+        $warehouse->loadCount('locations');
+
         return new WarehouseResource($warehouse->load($this->requestedIncludes($request, self::INCLUDABLE)));
     }
 

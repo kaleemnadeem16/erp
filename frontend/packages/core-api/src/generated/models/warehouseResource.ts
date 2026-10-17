@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { LocationResource } from "./locationResource";
+import type { WarehouseResourceLocationsCount } from "./warehouseResourceLocationsCount";
 import type { WarehouseResourceCreatedAt } from "./warehouseResourceCreatedAt";
 import type { WarehouseResourceUpdatedAt } from "./warehouseResourceUpdatedAt";
 
@@ -15,6 +16,7 @@ export interface WarehouseResource {
   is_default: boolean;
   active: boolean;
   locations?: LocationResource[];
+  locations_count: WarehouseResourceLocationsCount;
   created_at: WarehouseResourceCreatedAt;
   updated_at: WarehouseResourceUpdatedAt;
 }

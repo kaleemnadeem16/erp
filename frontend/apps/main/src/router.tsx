@@ -141,6 +141,9 @@ const stockScrapEditAsSheet = presentation.stockScrapEdit === "sheet";
 const categoryCreateAsSheet = presentation.categoryCreate === "sheet";
 const categoryDetailAsSheet = presentation.categoryDetail === "sheet";
 const categoryEditAsSheet = presentation.categoryEdit === "sheet";
+const warehouseCreateAsSheet = presentation.warehouseCreate === "sheet";
+const warehouseDetailAsSheet = presentation.warehouseDetail === "sheet";
+const warehouseEditAsSheet = presentation.warehouseEdit === "sheet";
 
 export function AppRouter() {
   return (
@@ -289,40 +292,66 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <WarehousesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/warehouses/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <WarehouseCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/warehouses/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <WarehouseDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/warehouses/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <WarehouseEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {warehouseCreateAsSheet && (
+            <Route
+              path="new"
+              element={<WarehouseCreateScreen presentation="sheet" />}
+            />
+          )}
+          {warehouseDetailAsSheet && (
+            <Route
+              path=":id"
+              element={<WarehouseDetailScreen presentation="sheet" />}
+            />
+          )}
+          {warehouseEditAsSheet && (
+            <Route
+              path=":id/edit"
+              element={<WarehouseEditScreen presentation="sheet" />}
+            />
+          )}
+        </Route>
+        {!warehouseCreateAsSheet && (
+          <Route
+            path="/warehouses/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <WarehouseCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!warehouseDetailAsSheet && (
+          <Route
+            path="/warehouses/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <WarehouseDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!warehouseEditAsSheet && (
+          <Route
+            path="/warehouses/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <WarehouseEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/categories"
           element={

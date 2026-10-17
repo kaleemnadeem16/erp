@@ -2595,6 +2595,7 @@ export type * from "./warehouseLocationRolesStore201";
 export type * from "./warehouseLocationRolesUpdate200";
 export type * from "./warehouseResource";
 export type * from "./warehouseResourceCreatedAt";
+export type * from "./warehouseResourceLocationsCount";
 export type * from "./warehouseResourceUpdatedAt";
 export type * from "./warehousesDestroy403";
 export type * from "./warehousesIndex200";

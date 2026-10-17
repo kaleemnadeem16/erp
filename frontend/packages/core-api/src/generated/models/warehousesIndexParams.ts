@@ -8,6 +8,8 @@ import type { WarehousesIndexSort } from "./warehousesIndexSort";
 
 export type WarehousesIndexParams = {
   "filter[active]"?: boolean;
+  "filter[is_default]"?: boolean;
+  "filter[has_locations]"?: boolean;
   /**
    * @maxLength 255
    */

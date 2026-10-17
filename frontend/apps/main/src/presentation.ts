@@ -42,6 +42,9 @@ export const presentation: {
   categoryCreate: Presentation;
   categoryDetail: Presentation;
   categoryEdit: Presentation;
+  warehouseCreate: Presentation;
+  warehouseDetail: Presentation;
+  warehouseEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -78,6 +81,9 @@ export const presentation: {
   categoryCreate: "sheet",
   categoryDetail: "sheet",
   categoryEdit: "sheet",
+  warehouseCreate: "sheet",
+  warehouseDetail: "sheet",
+  warehouseEdit: "sheet",
 };
 
 /**

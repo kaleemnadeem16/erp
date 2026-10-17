@@ -12,8 +12,14 @@ export type WarehousesIndexSort =
 export const WarehousesIndexSort = {
   code: "code",
   name: "name",
+  is_default: "is_default",
+  active: "active",
   created_at: "created_at",
+  updated_at: "updated_at",
   "-code": "-code",
   "-name": "-name",
+  "-is_default": "-is_default",
+  "-active": "-active",
   "-created_at": "-created_at",
+  "-updated_at": "-updated_at",
 } as const;

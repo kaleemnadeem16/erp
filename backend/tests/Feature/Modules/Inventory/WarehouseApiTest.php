@@ -123,4 +123,41 @@ class WarehouseApiTest extends TestCase
         $this->expectException(RuntimeException::class);
         Location::create(['warehouse_id' => $otherWarehouse->id, 'code' => 'main', 'name' => 'Main']);
     }
+
+    public function test_index_can_filter_by_is_default_and_has_locations(): void
+    {
+        $defaultWh = Warehouse::create(['code' => 'wh-def', 'name' => 'Default Hub', 'is_default' => true, 'active' => true]);
+        $defaultWh->locations()->create(['code' => 'loc-1', 'name' => 'Bay 1']);
+
+        $secondaryWh = Warehouse::create(['code' => 'wh-sec', 'name' => 'Secondary Hub', 'is_default' => false, 'active' => true]);
+        // secondaryWh has no locations
+
+        $manager = $this->manager();
+
+        // Filter default only
+        $resDefault = $this->actingAs($manager)->getJson('/api/v1/warehouses?filter[is_default]=true')->assertOk();
+        $this->assertSame([$defaultWh->id], collect($resDefault->json('data'))->pluck('id')->all());
+        $this->assertSame(1, $resDefault->json('data.0.locations_count'));
+
+        // Filter non-default
+        $resNonDefault = $this->getJson('/api/v1/warehouses?filter[is_default]=false')->assertOk();
+        $this->assertContains($secondaryWh->id, collect($resNonDefault->json('data'))->pluck('id')->all());
+        $this->assertNotContains($defaultWh->id, collect($resNonDefault->json('data'))->pluck('id')->all());
+
+        // Filter with locations
+        $resWithLoc = $this->getJson('/api/v1/warehouses?filter[has_locations]=true')->assertOk();
+        $this->assertContains($defaultWh->id, collect($resWithLoc->json('data'))->pluck('id')->all());
+        $this->assertNotContains($secondaryWh->id, collect($resWithLoc->json('data'))->pluck('id')->all());
+
+        // Filter without locations
+        $resNoLoc = $this->getJson('/api/v1/warehouses?filter[has_locations]=false')->assertOk();
+        $this->assertContains($secondaryWh->id, collect($resNoLoc->json('data'))->pluck('id')->all());
+        $this->assertNotContains($defaultWh->id, collect($resNoLoc->json('data'))->pluck('id')->all());
+    }
+
+    public function test_index_rejects_invalid_filters_and_sorts(): void
+    {
+        $this->actingAs($this->manager())->getJson('/api/v1/warehouses?filter[unknown]=val')->assertUnprocessable();
+        $this->getJson('/api/v1/warehouses?sort=unsupported_col')->assertUnprocessable();
+    }
 }
