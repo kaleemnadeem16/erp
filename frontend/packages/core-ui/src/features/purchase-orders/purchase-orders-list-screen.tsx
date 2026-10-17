@@ -202,7 +202,7 @@ export function PurchaseOrdersListScreen() {
     [items],
   );
 
-  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
+  const currenciesQuery = useCurrenciesIndex({ per_page: 250, sort: "code" });
   const currencies = useMemo(
     () =>
       currenciesQuery.data?.status === 200

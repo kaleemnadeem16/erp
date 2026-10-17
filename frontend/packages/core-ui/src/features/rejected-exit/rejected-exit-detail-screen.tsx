@@ -329,7 +329,7 @@ function asDraftLine(line: ExitLineRecord): DraftLine {
 
 /** Information only: nothing is booked against the supplier until finance exists (ADR 0097). */
 function ExpectedCredit({ document }: { document: { expected_credit_amount?: string | null; expected_credit_currency_id?: number | null; expected_credit_reference?: string | null } }) {
-  const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: !!document.expected_credit_currency_id } });
+  const currencies = useCurrenciesIndex({ per_page: 250, sort: 'code' }, { query: { enabled: !!document.expected_credit_currency_id } });
   const rows = currencies.data?.status === 200 ? currencies.data.data.data : [];
   const code = rows.find((row) => row.id === document.expected_credit_currency_id)?.code;
   if (!document.expected_credit_amount && !document.expected_credit_reference) return null;

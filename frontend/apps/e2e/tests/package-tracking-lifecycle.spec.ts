@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { findByCode } from './package-stock-support';
 
 /**
  * Acceptance test for grouped package tracking (docs/phases/package-balance-ui.md): one browser-driven lifecycle on a fresh item.
@@ -34,7 +35,7 @@ test('quantity only → grouped tracking → receive observed packages → issue
   // --- Starting data (API) ---
   const list = async (path: string) => (await api(page, 'GET', `${path}${path.includes('?') ? '&' : '?'}per_page=100`)).data as any[];
   const litre = (await list('/uoms')).find((uom) => uom.code === 'l');
-  const currency = (await list('/currencies')).find((c) => c.code === 'PKR');
+  const currency = await findByCode<any>(page, '/currencies', 'PKR');
   const supplier = (await list('/supplier-accounts'))[0];
   const warehouse = (await list('/warehouses')).find((w) => w.code === 'demo-main');
   const location = (await list(`/locations?filter[warehouse_id]=${warehouse.id}`)).find((l) => l.code === 'stock');

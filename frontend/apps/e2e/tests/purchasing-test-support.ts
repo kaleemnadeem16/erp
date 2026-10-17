@@ -4,12 +4,9 @@ import { api, findByCode } from "./package-stock-support";
 /** Create the print test's own draft instead of relying on a long-lived local database ID. */
 export async function createPrintOrder(page: Page): Promise<number> {
   await page.goto("/");
-  const currencies = (await api(page, "GET", "/currencies?per_page=100")).data;
   const item = await findByCode<any>(page, "/items", "demo-pig-blue");
   const supplier = await findByCode<any>(page, "/supplier-accounts", "sup-punjab");
-  const currency = currencies.find(
-    (row: { code: string }) => row.code === "PKR",
-  );
+  const currency = await findByCode<any>(page, "/currencies", "PKR");
   expect(item && supplier && currency).toBeTruthy();
   const date = new Date().toISOString().slice(0, 10);
   const order = (

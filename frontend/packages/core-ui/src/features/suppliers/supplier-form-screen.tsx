@@ -398,7 +398,7 @@ function SupplierEditor({
       ? selectedAccountQuery.data.data.data
       : undefined;
 
-  const currencies = useCurrenciesIndex({ per_page: 100, sort: "code" });
+  const currencies = useCurrenciesIndex({ per_page: 250, sort: "code" });
 
   const createParty = usePartiesStore();
   const createSupplier = useSupplierAccountsStore();

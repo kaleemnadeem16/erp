@@ -87,7 +87,7 @@ export function ExitListScreen({ kind }: { kind: ExitKind }) {
     [suppliers],
   );
 
-  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: kind === 'SUPPLIER_RETURN' } });
+  const currenciesQuery = useCurrenciesIndex({ per_page: 250, sort: 'code' }, { query: { enabled: kind === 'SUPPLIER_RETURN' } });
   const currencyLabels = useMemo(() => {
     const currencies = currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
     return new Map(currencies.map((c) => [c.id, c.code]));

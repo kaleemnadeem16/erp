@@ -140,7 +140,7 @@ export function ExitFormScreen({ kind, presentation }: { kind: ExitKind; present
     );
   }, [lines, previews]);
 
-  const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' }, { query: { enabled: kind === 'SUPPLIER_RETURN' && optionsOpen } });
+  const currencies = useCurrenciesIndex({ per_page: 250, sort: 'code' }, { query: { enabled: kind === 'SUPPLIER_RETURN' && optionsOpen } });
   const currencyRows = currencies.data?.status === 200 ? currencies.data.data.data : [];
 
   // The document is one supplier / one warehouse (ADR 0097). The server refuses a mix on save; saying so as soon as it is visible saves a round trip.

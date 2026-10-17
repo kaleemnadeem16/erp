@@ -60,7 +60,7 @@ export function OpportunityDetailScreen({ presentation = 'sheet' }: { presentati
   const { contact, readable: contactsReadable } = usePartyContact(opportunity?.party_id, opportunity?.party_contact_id);
   const owners = useSalesOwnersIndex(undefined, { query: { enabled: mayAssign } });
   const { contentRef: printRef, print } = useQuickPrint({ documentTitle: 'Opportunity' });
-  const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
+  const currencies = useCurrenciesIndex({ per_page: 250, sort: 'code' });
   const currencyRows = currencies.data?.status === 200 ? currencies.data.data.data : [];
   const [mode, setMode] = useState<Mode>(null);
   const [error, setError] = useState<string | null>(null);

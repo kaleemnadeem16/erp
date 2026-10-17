@@ -63,7 +63,7 @@ export function ItemPurchasingPanel({
     { query: { enabled: canReadSupplier } },
   );
   const units = useUomsIndex({ per_page: 100 });
-  const currencies = useCurrenciesIndex({ per_page: 100 });
+  const currencies = useCurrenciesIndex({ per_page: 250 });
   const addPackage = useItemPackagingsStore();
   const editPackage = useItemPackagingsUpdate();
   const addOffer = useSupplierOffersStore();

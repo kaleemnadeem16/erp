@@ -35,7 +35,7 @@ export function CompanySettingsScreen() {
   const changesQuery = useCompanyChangesIndex({ per_page: 10 }, { query: { retry: false } });
   const changes = changesQuery.data?.status === 200 ? changesQuery.data.data.data : [];
   const changesForbidden = isApiError(changesQuery.error) && changesQuery.error.status === 403;
-  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: 'code' });
+  const currenciesQuery = useCurrenciesIndex({ per_page: 250, sort: 'code' });
   const currencies = currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
   const update = useCompanyUpdate();
 

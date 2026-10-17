@@ -75,7 +75,7 @@ export function SupplierDetailScreen({
   );
   const sites = sitesQuery.data?.status === 200 ? sitesQuery.data.data.data : [];
 
-  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
+  const currenciesQuery = useCurrenciesIndex({ per_page: 250, sort: "code" });
   const currencies = currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
   const currencyMap = useMemo(
     () => new Map(currencies.map((c) => [c.id, `${c.code} — ${c.name}`])),

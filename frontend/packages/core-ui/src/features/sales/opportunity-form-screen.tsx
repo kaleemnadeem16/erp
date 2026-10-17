@@ -40,7 +40,7 @@ export function OpportunityFormScreen({ presentation = 'sheet' }: { presentation
   const mayManage = usePermission(SALES.opportunity);
   const mayConfigure = usePermission(SALES.stage);
   const { stages, active, query: stagesQuery } = useSalesStages();
-  const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
+  const currencies = useCurrenciesIndex({ per_page: 250, sort: 'code' });
   const currencyRows = currencies.data?.status === 200 ? currencies.data.data.data : [];
   const store = useOpportunitiesStore();
   const update = useOpportunitiesUpdate();

@@ -351,7 +351,7 @@ export function GoodsReceiptDetailScreen({
     ],
     uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [],
   );
-  const currenciesQuery = useCurrenciesIndex({ per_page: 100, sort: "code" });
+  const currenciesQuery = useCurrenciesIndex({ per_page: 250, sort: "code" });
   const currencies =
     currenciesQuery.data?.status === 200 ? currenciesQuery.data.data.data : [];
   const post = useGoodsReceiptsPost();

@@ -49,7 +49,7 @@ export async function createStockedItem(page: Page, prefix: string): Promise<Pac
   await page.goto('/');
   const stamp = Date.now().toString(36);
   const litre = (await list(page, '/uoms')).find((uom) => uom.code === 'l');
-  const currency = (await list(page, '/currencies')).find((c) => c.code === 'PKR');
+  const currency = await findByCode<any>(page, '/currencies', 'PKR');
   const supplier = (await list(page, '/supplier-accounts'))[0];
   const warehouses = await list(page, '/warehouses');
   const warehouse = warehouses.find((w) => w.code === 'demo-main');

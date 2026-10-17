@@ -28,4 +28,15 @@ class CurrencyApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.name', 'Pakistan Rupee');
         $this->getJson('/api/v1/currencies?sort=unknown')->assertUnprocessable();
     }
+
+    public function test_the_whole_reference_list_fits_one_page_for_pickers(): void
+    {
+        foreach (range(0, 179) as $i) {
+            Currency::create(['code' => chr(65 + intdiv($i, 26) % 26).chr(65 + $i % 26).'X', 'name' => "Currency {$i}", 'symbol' => 'x']);
+        }
+        $this->actingAs(User::factory()->create());
+
+        $this->getJson('/api/v1/currencies?per_page=250')->assertOk()->assertJsonCount(180, 'data');
+        $this->getJson('/api/v1/currencies?per_page=251')->assertUnprocessable();
+    }
 }

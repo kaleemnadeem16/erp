@@ -67,7 +67,7 @@ export function OpportunitiesListScreen() {
   const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter('search', value));
   const { stages, active: activeStages, query: stagesQuery } = useSalesStages();
   const owners = useSalesOwnersIndex();
-  const currencies = useCurrenciesIndex({ per_page: 100, sort: 'code' });
+  const currencies = useCurrenciesIndex({ per_page: 250, sort: 'code' });
   const currencyCode = useMemo(() => new Map((currencies.data?.status === 200 ? currencies.data.data.data : []).map((currency) => [currency.id, currency.code])), [currencies.data]);
   const outcome = query.filters.outcome ?? 'OPEN';
   const { view, setView } = useListViewPreference('opportunities-list');
