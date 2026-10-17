@@ -6,7 +6,7 @@
 [0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md),
 [0143](../decisions/0143-maintain-currency-minor-units-as-governed-reference-data.md),
 [0144](../decisions/0144-version-sales-unit-price-precision-within-four-place-storage.md), 2026-10-15).
-**IMPLEMENTED today** is stated per row. **No part of the PROPOSED behaviour is delivered**; slices are in
+**IMPLEMENTED** is stated per row; the delivery and close-out records (PX0–PX7, 2026-10-15 to 2026-10-17) are in
 [precision-implementation-slices.md](../phases/precision-implementation-slices.md).
 
 ## Five precisions, never one setting

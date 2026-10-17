@@ -121,7 +121,7 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **Demo data.** Not changed: the Purchasing, Packaged-purchasing and Pack-conversion seeders already use exact conversions, and their seeder tests (including idempotent reruns) pass.
 
-**Remaining:** PX4 (frontend decimal foundation), PX5 (currency reference data, including positivity of exchange rates), PX6/PX7 as scheduled; RecordReceiptPackageEvidence/quality-disposition paths were not changed.
+**Remaining (as of PX3, superseded):** see the PX4, PX5, PX7 and close-out records below; RecordReceiptPackageEvidence/quality-disposition paths were not changed by PX3.
 
 ## PX5 delivery record — Currency reference data and exchange-rate validation (2026-10-16)
 
@@ -170,6 +170,21 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 | 4 | A goods-receipt quantity with a fifth place gets the generic field error, not `QUANTITY_NOT_REPRESENTABLE` | UX | The request's `decimal:0,4` rule fires before the quantity contract | Deferred; harmonise the request rule with the contract message |
 | 5 | Other rate/percentage inputs not on `DecimalInput`: overhead-policy rate, resource rate, assembly `margin_pct` (already exact-string with a 6/4-place pattern, no `Number` on the value), Purchasing over-receipt tolerance (no client-side check; the server validates) | Deferred coverage / UX (no loss of precision) | The three pattern-validated fields submit the typed string unchanged | Deferred; migrate with their owning screens |
 | — | `type="number"` inputs elsewhere | Not precision-sensitive | Identifiers, days, priority | None |
+
+### Close-out record (2026-10-17)
+
+| Slice | Owner | Evidence |
+|---|---|---|
+| PX0 shared quantity contract | Decimal agent | `App\Support\Quantity\*`, its unit tests, CI green |
+| PX1 Sales quantity contracts | Phase 4 agent (`def0c48`) | `PricingQuantity` applies the shared contract per source: stock ledger four places plus the Item's own increment, Assembly technical six, governed manual scope four; refusal with the shared stable codes, never rounding; `CurrencyQuantum::unit()` exact. Reviewed against ADR 0142: consistent, no discrepancy |
+| PX2 Inventory | Decimal agent | Delivery record above; targeted suites and CI |
+| PX3 Purchasing | Decimal agent | Delivery record above; the production audit (PX3a) still needs the owner's go-ahead and a named operator |
+| PX4 Frontend foundation | Decimal agent | Record above; 20 unit specs, journey spec, full e2e 277/277 locally, CI |
+| PX5 Currency reference data | Decimal agent | Dev rehearsal 2026-10-17: migrations all applied, `erp:sync-currencies --apply` inserted 162 (165 total, 0 conflicts), a rerun reports nothing to insert; `CurrencyRatesDemoSeeder` gave 13 rates, none non-positive, up to nine places. The 178-currency list exposed a page-size bug (PKR beyond the first 100) fixed in `e31ba27`/`0a393c4` |
+| PX6 Sales rounding and unit-price policy | Phase 4 agent (`13bd40d`) | `RoundingPolicy`: entry precision two to four (default four), refuses a finer price with `UNIT_PRICE_PRECISION_EXCEEDED`, never rounds; storage fixed at four; settlement follows the currency; versioned and company-scoped, activated versions immutable (trigger), no overlap (exclusion constraint), drafts revalidated and marked, never rewritten; the duty `sales.financial.configure` is STAGED, with no route, UI or grant. Reviewed against ADR 0144: consistent. No frontend consumer exists yet, which is why Numbers and rounding says it cannot be changed from the app |
+| PX7 Central Settings | Decimal agent | Record above. Regression found and fixed: the open `/settings` rule prefix-matched `/settings/printing` (`53b9113`); fixed by exact matching in `bdaabd0`; CI green on `bdaabd0` including `buyer-screen-access` and `settings-index` (a restricted person is refused Printing and Members) |
+
+**Open, outside precision.** The shared test PostgreSQL service has recovered from three backend-process crashes (`all server processes terminated; reinitializing`) with no out-of-memory kill; the cause is not found. No full backend suite was claimed green where it interrupted a run; CI's runs on the final head were complete. The post-PX4 follow-ups in the table above have owners: filters (Purchasing, Item Suppliers with the API contract), line-keyed errors and goods-receipt wording (Purchasing), the percentage/rate inputs (Estimating and Purchasing settings), preview truncation (Inventory package stock).
 
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
