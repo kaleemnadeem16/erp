@@ -60,21 +60,7 @@ trap finish EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM HUP
 
-# --no-recreate: `up` must never rebuild a running container (a changed compose file would wipe other agents' databases).
-erp_dc --profile test-db up -d --wait --no-recreate postgres-test >/dev/null
-
-USE=$(erp_tmpfs_use)
-if [ "$USE" -ge 90 ]; then
-  erp_note "refused: the test server's RAM disk is ${USE}% full. Free space with docker/backend/test-db.sh drop <database> (see 'list')."; exit 70
-elif [ "$USE" -ge 75 ]; then
-  erp_note "warning: the test server's RAM disk is ${USE}% full (docker/backend/test-db.sh list shows who uses it)."
-fi
-
-VENDOR_VOLUME=$(erp_vendor_volume)
-
-# Create only this database (a no-op when it exists).
-erp_psql -c "SELECT 1 FROM pg_database WHERE datname = '$DB'" | grep -q 1 \
-  || erp_psql -c "CREATE DATABASE \"$DB\" OWNER erp" >/dev/null
+erp_ensure_db "$DB" || exit $?
 
 stop_remote | grep -q stopped && erp_note "stopped a stale test process left on $DB by a killed run."
 

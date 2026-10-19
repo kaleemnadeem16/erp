@@ -154,7 +154,7 @@ erp_check_vendor() {
   _rc=$?
   if [ "$_rc" -eq 1 ]; then
     erp_note "refused: this checkout's composer.lock does not match the shared vendor, so tests would run against the wrong dependencies:"
-    sed 's/^/  /' "$ERP_LOCK_DIR/vendor-check.$$" >&2
+    grep -v '^ Container' "$ERP_LOCK_DIR/vendor-check.$$" | sed 's/^/  /' >&2
     erp_note "Give this workspace its own: docker/dev/worktree.sh vendor $(erp_workspace_or_main)"
   fi
   rm -f "$ERP_LOCK_DIR/vendor-check.$$"
@@ -164,3 +164,17 @@ erp_workspace_or_main() { _w=$(erp_workspace); printf '%s' "${_w:-main}"; }
 erp_psql() { erp_dc exec -T postgres-test psql -U erp -d postgres -v ON_ERROR_STOP=1 -tA "$@"; }
 
 erp_tmpfs_use() { erp_dc exec -T postgres-test df -P /var/lib/postgresql/data | awk 'NR==2 {gsub("%","",$5); print $5}'; }
+
+# Make sure the throwaway server is up (never recreated), has room, and has database $1 (created if missing; nothing else touched).
+erp_ensure_db() {
+  # --no-recreate: `up` must never rebuild a running container (a changed compose file would wipe other agents' databases).
+  erp_dc --profile test-db up -d --wait --no-recreate postgres-test >/dev/null
+  _use=$(erp_tmpfs_use)
+  if [ "$_use" -ge 90 ]; then
+    erp_note "refused: the test server's RAM disk is ${_use}% full. Free space with docker/backend/test-db.sh drop <database> (see 'list')."; return 70
+  elif [ "$_use" -ge 75 ]; then
+    erp_note "warning: the test server's RAM disk is ${_use}% full (docker/backend/test-db.sh list shows who uses it)."
+  fi
+  erp_psql -c "SELECT 1 FROM pg_database WHERE datname = '$1'" | grep -q 1 \
+    || erp_psql -c "CREATE DATABASE \"$1\" OWNER erp" >/dev/null
+}
