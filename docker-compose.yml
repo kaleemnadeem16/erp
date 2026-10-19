@@ -41,6 +41,9 @@ services:
       dockerfile: docker/backend/Dockerfile
       target: dev
     command: php artisan queue:work redis --sleep=3 --tries=3 --max-time=3600
+    # --max-time makes the worker exit cleanly after an hour (it is meant to be restarted, so it picks up new code);
+    # without a restart policy the dev queue silently stopped an hour after every `up`.
+    restart: unless-stopped
     volumes:
       - ./backend:/var/www/html
       - backend_vendor:/var/www/html/vendor
