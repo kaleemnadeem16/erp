@@ -115,7 +115,7 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **Distinction recorded (no new rule introduced).** Entry increments (Item, unit, package) are enforced on order quantities and definitions; the converted stock quantity must be representable at the ledger on every path; physical postings, counts and receipts are **not** forced onto the Item increment, because a count or a delivery legitimately records what is there. The package increment agreed on a PO line still binds its receipts. No accepted contract asks for more.
 
-**Ambiguity to confirm (not decided by code).** An Item with an increment of 1 receiving 2.5 against an order is accepted at receipt (physical fact) even though it could not have been ordered. Recommendation: keep it, and treat a non-multiple receipt as a QA/operational matter, not a posting refusal.
+**Decision (owner, 2026-10-17): confirmed.** Ordering increments and physical receipts are distinct. A receipt of 2.5 units against an Item increment of 1 is permitted if the quantity is exactly representable at the ledger and every receipt, packaging and stock rule is satisfied; a non-multiple receipt is a QA/operational matter, not a posting refusal. (Previously recorded here as an ambiguity to confirm.)
 
 **Frontend hand-off (not done; another agent owns shared UI).** `purchase-orders/purchase-order-form.tsx` (line 93, `ordered_qty: decimal("Quantity", true)`) and `purchase-order-line-fields.tsx` / `purchase-line-package-fields.tsx`: show the server message for `ordered_qty` refusals (`QUANTITY_NOT_REPRESENTABLE`, `QUANTITY_INCREMENT_VIOLATED`, `FACTOR_*`); `goods-receipts/goods-receipt-form.tsx` and `goods-receipts-list-screen.tsx`: the same for `received_qty`. No API shape changed (the pinned increment is not exposed), so the generated client is unchanged.
 
@@ -178,7 +178,7 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 | PX0 shared quantity contract | Decimal agent | `App\Support\Quantity\*`, its unit tests, CI green |
 | PX1 Sales quantity contracts | Phase 4 agent (`def0c48`) | `PricingQuantity` applies the shared contract per source: stock ledger four places plus the Item's own increment, Assembly technical six, governed manual scope four; refusal with the shared stable codes, never rounding; `CurrencyQuantum::unit()` exact. Reviewed against ADR 0142: consistent, no discrepancy |
 | PX2 Inventory | Decimal agent | Delivery record above; targeted suites and CI |
-| PX3 Purchasing | Decimal agent | Delivery record above; the production audit (PX3a) still needs the owner's go-ahead and a named operator |
+| PX3 Purchasing | Decimal agent | Delivery record above; PX3a production audit: not required for development/demo data (owner, 2026-10-17) |
 | PX4 Frontend foundation | Decimal agent | Record above; 20 unit specs, journey spec, full e2e 277/277 locally, CI |
 | PX5 Currency reference data | Decimal agent | Dev rehearsal 2026-10-17: migrations all applied, `erp:sync-currencies --apply` inserted 162 (165 total, 0 conflicts), a rerun reports nothing to insert; `CurrencyRatesDemoSeeder` gave 13 rates, none non-positive, up to nine places. The 178-currency list exposed a page-size bug (PKR beyond the first 100) fixed in `e31ba27`/`0a393c4` |
 | PX6 Sales rounding and unit-price policy | Phase 4 agent (`13bd40d`) | `RoundingPolicy`: entry precision two to four (default four), refuses a finer price with `UNIT_PRICE_PRECISION_EXCEEDED`, never rounds; storage fixed at four; settlement follows the currency; versioned and company-scoped, activated versions immutable (trigger), no overlap (exclusion constraint), drafts revalidated and marked, never rewritten; the duty `sales.financial.configure` is STAGED, with no route, UI or grant. Reviewed against ADR 0144: consistent. No frontend consumer exists yet, which is why Numbers and rounding says it cannot be changed from the app |
@@ -188,13 +188,26 @@ The exchange-rate master accepts zero and negative rates (`ManageExchangeRate`, 
 
 **Release and production deployment (2026-10-17).** `main` was fast-forwarded to `5f89c75` (65 commits; CI green on `develop` and on `main`, including both architecture image builds). `deploy/deploy.sh` (byte-identical to the repository copy) ran on mainvm after a fresh verified backup (`erp-20261017T102105Z.dump`, 1,921 objects, checksum OK). Production data was checked first with count-only queries: 0 rows violated the new constraints. Migrations applied: `2026_10_15_100000`, `2026_10_16_090000`, `2026_10_16_100000`, `2026_10_16_110000`, `2026_10_16_120000`; 0 pending. `erp:sync-currencies` ran dry-run first (162 to insert, 0 conflicts), then `--apply` (162 inserted, 165 total; PKR/USD/AED keep 2 places; a rerun inserts nothing). `demo:seed` was not run (ADR 0129), so production has no demo exchange rates. Verified after deploy: all six ERP containers healthy with 0 restarts, public SPA and API health checks, read-only API calls as the administrator (warehouses, inventory overview, currencies, items, purchase orders, goods receipts, packagings all 200), the shipped frontend contains the exact-match `/settings` rule, `sales.financial.configure` has 0 permission rows and 0 grants, Prometheus targets up, no error lines or 5xx in Loki. Not done on production, deliberately: no authenticated browser journey (it would write business data and no production password was used); the Item → PO → GR → Inventory journey and the Printing/Members denial were verified by the same commit's CI end-to-end suite.
 
-**Decimal precision PX0–PX7: formally closed (2026-10-17).** PX3a (the production data audit) is recorded as a deferred production-readiness item; the count-only constraint check above covers only what this release's migrations needed.
+**Decimal precision PX0–PX7: formally closed (2026-10-17).** PX3a (the production data audit) is recorded as not required for the current development/demo-data scenario (owner decision, 2026-10-17); general compatibility checks still apply before any future migration of genuine customer data; the count-only constraint check above covers only what this release's migrations needed.
+
+### Owner confirmation and ownership (2026-10-17)
+
+Documentation-only; no code, grant or migration changed, nothing reopened.
+
+| Matter | Disposition |
+|---|---|
+| PX0–PX7 | Formally closed on the implementation, verification and deployment records above |
+| PX3a | Not required for development/demo data. The plan stays as the template for compatibility checks before any migration of genuine customer data |
+| Ordering vs receiving | Confirmed: a receipt of 2.5 against an Item increment of 1 is permitted when exactly representable and all receipt, packaging and stock rules hold |
+| Five frontend follow-ups (table above) | Preserved with module owners: filters (Purchasing; Item Suppliers with the API contract), line-keyed errors and goods-receipt wording (Purchasing), percentage/rate inputs (Estimating and Purchasing settings), preview truncation (Inventory package stock) |
+| Sales financial-policy configuration UI and `sales.financial.configure` activation | **Phase 4**, not the closed precision project |
+| PostgreSQL test-service instability (three backend-process crashes, cause not found) | Separate unresolved infrastructure issue; not a precision matter |
 
 ## Genuinely unresolved technical decisions
 1. Where the shared quantity contract lives (proposed `app/Support/Quantity`).
 2. A read-only precision catalogue endpoint versus additive scale fields on existing resources.
 3. Order-line pinning: a new column on `purchase_order_lines` versus the existing snapshot JSON, and the truthful baseline for lines already issued.
-4. Storage of the legacy completion evidence (only if PX3a justifies it).
+4. Storage of the legacy completion evidence (only if a future genuine-data compatibility check justifies it; PX3a is not required for demo data).
 5. Where company display defaults are stored (Company field registry preferred).
 6. The currency command name, output and audit sink.
 7. Whether FR4's precision/settlement part may ship before FR3 (tax), since it does not need tax.

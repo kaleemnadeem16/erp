@@ -3,6 +3,7 @@
 # Production precision compatibility audit — plan
 
 **2026-10-15 · APPROVED TO PREPARE and coordinate (owner); NOT EXECUTED against production.**
+**2026-10-17 · Owner decision: not required for the current development/demo-data scenario (PX3a closed as not required).** The plan is kept as the template for the general compatibility checks that must run before any future migration of genuine customer data.
 No production write, migration, demo seeding, enforcement change or data correction is authorised. This plan is
 the prerequisite for enforcing [0142](../decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md) in Purchasing.
 

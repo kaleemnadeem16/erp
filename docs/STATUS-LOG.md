@@ -875,3 +875,7 @@ R6/R7/Job adapters absent. Readiness proposes J1/J2, SP0–SP6 dependency/owner/
 scope/security/lock/correction and verification expectations and concurrent Git/worktree coordination.
 Earliest proposal is disabled-foundation design review, not code authority. No runtime verification,
 application code/grants/migrations/push; other agents' dirty/generated/migration/test work preserved.
+
+## 2026-10-17 — Precision PX0–PX7 formally closed; status corrected
+
+Owner-confirmed close-out (documentation only). Delivered in `d42c3ce` (PX0), `def0c48` (PX1), `617fe3a` (PX2), `8e42065` (PX3), `7b92778` (PX4), `35fd4d9` (PX5), `13bd40d` (PX6), `53b9113`/`bdaabd0` (PX7); released with `34dde8d`/`8dfd3d1`. PX3a is not required for development/demo data (general compatibility checks still apply before any migration of genuine customer data). A receipt of 2.5 against an Item increment of 1 is permitted when exactly representable and all receipt, packaging and stock rules hold. The five minor frontend follow-ups stay with their module owners; the Sales financial-policy UI and `sales.financial.configure` activation stay with Phase 4; PostgreSQL test-service instability remains a separate infrastructure issue. Corrected the stale "none implemented" lines in STATUS.md and the phase index. No application code, grant or migration changed.
