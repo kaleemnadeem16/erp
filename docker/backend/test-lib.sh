@@ -8,11 +8,15 @@
 #   6 = this run's private database   7 = shared stack (shared while testing, exclusive while restarting)
 #   8 = the browser suite             9 = the full backend suite
 
-ERP_ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+ERP_CALLER_PWD=$(pwd -P)
+ERP_ROOT=$(cd "$(dirname "$0")/../.." && pwd -P)
 cd "$ERP_ROOT"   # compose files are found from here; also lets a child be a plain `docker ...` command (see run() in the wrapper)
 ERP_LOCK_DIR="${ERP_TEST_LOCK_DIR:-/tmp/erp-test-locks}"
 mkdir -p "$ERP_LOCK_DIR/runs"
 ERP_LOCK_WAIT="${ERP_TEST_LOCK_WAIT:-1500}"   # seconds a run waits for a lock; 0 = fail at once (exit 75)
+
+# A worktree records who works in it (docker/dev/worktree.sh add writes .erp-agent), so ERP_AGENT need not be typed each time.
+[ -z "${ERP_AGENT:-}" ] && [ -f "$ERP_ROOT/.erp-agent" ] && ERP_AGENT=$(head -n 1 "$ERP_ROOT/.erp-agent")
 
 erp_note() { printf '%s\n' "$*" >&2; }
 
@@ -29,7 +33,7 @@ erp_workspace() {
 # Stable, documented database name: erp_testing_<agent>_<workspace>; erp_testing_main when neither is known.
 erp_db_name() {
   if [ -n "${TEST_DB_NAME:-}" ]; then printf '%s' "$TEST_DB_NAME"; return; fi
-  name=$(printf '%s_%s' "$(erp_agent)" "$(erp_workspace)" | sed 's/^_//; s/_$//')
+  name=$(printf '%s_%s' "$(erp_agent)" "$(erp_workspace)" | sed 's/^_//; s/_$//' | cut -c1-40)
   printf 'erp_testing_%s' "${name:-main}"
 }
 
@@ -116,7 +120,47 @@ erp_is_full() {
 }
 
 # Compose helpers (always from the repository root; stdin closed so nothing blocks on a terminal).
-erp_dc() { docker compose "$@"; }
+# Always the shared project `erp` (a worktree's .env sets another COMPOSE_PROJECT_NAME on purpose, see docker/dev/worktree.sh),
+# but with THIS checkout's compose file, so relative mounts (./backend) resolve to this checkout.
+erp_dc() { docker compose -p erp "$@"; }
+
+# Refuse to run a checkout's script from inside another checkout: that would test the wrong code.
+erp_check_checkout() {
+  _top=$(git -C "$ERP_CALLER_PWD" rev-parse --show-toplevel 2>/dev/null) || return 0
+  _top=$(cd "$_top" && pwd -P)
+  [ "$_top" = "$ERP_ROOT" ] && return 0
+  erp_note "refused: you are in $_top but this script belongs to $ERP_ROOT, so it would run that checkout's code, not yours."
+  erp_note "Run $_top/${0#"$ERP_ROOT"/} instead."
+  return 1
+}
+
+# One-off container for THIS checkout: its own ./backend mounted at /var/www/html, the shared read-only vendor, the dev image, network
+# and environment, running as you (so files it writes are yours). Nothing stays running afterwards. Extra docker-compose-run options
+# can be passed in $ERP_RUN_OPTS (word-split on purpose), the command and its arguments follow.
+erp_run() {
+  # Shared vendor, read-only, unless this workspace has its own (docker/dev/worktree.sh vendor <name>).
+  # shellcheck disable=SC2086
+  docker compose -p erp run --rm --no-deps -T -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" \
+    -v "$(erp_vendor_volume):/var/www/html/vendor:ro" $ERP_RUN_OPTS --entrypoint env app "$@"
+}
+erp_vendor_volume() {
+  docker volume inspect "erp_vendor_$(erp_workspace_or_main)" >/dev/null 2>&1 && { printf 'erp_vendor_%s' "$(erp_workspace_or_main)"; return; }
+  printf 'erp_backend_vendor'
+}
+
+# Does the vendor this checkout would run against match its composer.lock? (see vendor-check.php)
+erp_check_vendor() {
+  ERP_RUN_OPTS="-v $ERP_ROOT/docker/backend/vendor-check.php:/tmp/vendor-check.php:ro" erp_run php /tmp/vendor-check.php >/dev/null 2>"$ERP_LOCK_DIR/vendor-check.$$" && { rm -f "$ERP_LOCK_DIR/vendor-check.$$"; return 0; }
+  _rc=$?
+  if [ "$_rc" -eq 1 ]; then
+    erp_note "refused: this checkout's composer.lock does not match the shared vendor, so tests would run against the wrong dependencies:"
+    sed 's/^/  /' "$ERP_LOCK_DIR/vendor-check.$$" >&2
+    erp_note "Give this workspace its own: docker/dev/worktree.sh vendor $(erp_workspace_or_main)"
+  fi
+  rm -f "$ERP_LOCK_DIR/vendor-check.$$"
+  return "$_rc"
+}
+erp_workspace_or_main() { _w=$(erp_workspace); printf '%s' "${_w:-main}"; }
 erp_psql() { erp_dc exec -T postgres-test psql -U erp -d postgres -v ON_ERROR_STOP=1 -tA "$@"; }
 
 erp_tmpfs_use() { erp_dc exec -T postgres-test df -P /var/lib/postgresql/data | awk 'NR==2 {gsub("%","",$5); print $5}'; }

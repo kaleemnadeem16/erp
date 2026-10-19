@@ -10,6 +10,16 @@
 set -e
 . "$(dirname "$0")/../backend/test-lib.sh"
 DB=dev-stack
+erp_check_checkout || exit 64
+# The dev stack (Vite :5176, nginx :8090) serves the MAIN checkout. Specs run from a worktree would drive main's code and leave that
+# worktree's UI untested while looking green. Unit specs (no stack) are fine anywhere; for the rest, integrate first, or accept it knowingly.
+if [ "$(git -C "$ERP_ROOT" rev-parse --git-dir)" != "$(git -C "$ERP_ROOT" rev-parse --git-common-dir)" ] \
+   && [ -z "$ERP_E2E_ALLOW_SHARED_STACK" ] && ! case " $* " in *" --project=unit "*|*" --project unit "*) true ;; *) false ;; esac; then
+  erp_note "refused: this is a worktree ($ERP_ROOT) but the shared dev stack serves the main checkout, so these specs would test main's code."
+  erp_note "Run browser specs from the main checkout after your branch is integrated into develop (docs/architecture/multi-agent-workspaces.md),"
+  erp_note "or set ERP_E2E_ALLOW_SHARED_STACK=1 if the specs do not depend on code you changed."
+  exit 66
+fi
 case " $* " in
   *" --project=unit "*|*" --project unit "*) cd "$ERP_ROOT/frontend/apps/e2e" && exec npx playwright test "$@" ;;
 esac

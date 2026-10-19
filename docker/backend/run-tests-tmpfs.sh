@@ -14,7 +14,10 @@
 #   - Locks are flock(1) locks: the kernel frees them when a run dies, however it dies. An interrupted run also stops its test
 #     process inside the container, and a stale one left by a killed wrapper is stopped before the next run on that database.
 #   - Tests hold a shared lock on the Docker stack; docker/dev/stack-exclusive.sh needs it exclusively (no restart mid-test).
-# Environment: ERP_AGENT, TEST_DB_NAME, ERP_TEST_LOCK_WAIT (seconds to wait for a lock, default 1500; 0 = fail at once),
+#   - It runs YOUR checkout's code: each run is a throwaway container with this checkout's ./backend mounted (see
+#     docs/architecture/multi-agent-workspaces.md), and it refuses to run from inside a different checkout or against a vendor that
+#     does not match this checkout's composer.lock.
+# Environment: ERP_AGENT (or the .erp-agent file a worktree has), TEST_DB_NAME, ERP_TEST_LOCK_WAIT (seconds to wait for a lock, default 1500; 0 = fail at once),
 # ERP_TEST_LOCK_DIR. `--parallel` is refused: the suite's committed-data and forked-process tests have not been proven under it.
 set -e
 . "$(dirname "$0")/test-lib.sh"
@@ -23,12 +26,14 @@ for a in "$@"; do
   case "$a" in --parallel*|--processes*) erp_note "refused: parallel Pest is not supported here (committed-data and pcntl_fork tests are unproven under it)."; exit 64 ;; esac
 done
 
+erp_check_checkout || exit 64
 DB=$(erp_db_name)
 erp_validate_db "$DB" || exit 64
+erp_check_vendor || exit 65
 FULL=0; erp_is_full "$@" && FULL=1
 WHAT="backend tests on $DB ($([ $FULL = 1 ] && echo 'FULL suite' || echo focused))"
 START=$(erp_now)
-PIDFILE="/tmp/erp-test-run-$DB.pid"
+RUNNER="erp-run-$DB"   # the throwaway container of this database's run; a fixed name lets a stale one be found and removed
 STARTED=0
 
 # Order is fixed (stack, database, full suite) so runs can never wait on each other in a circle.
@@ -38,13 +43,15 @@ erp_lock "db-$DB" 6 -x "$WHAT (another run is using database $DB; set ERP_AGENT=
 erp_register_run "$WHAT"
 erp_journal start "full=$FULL args=$*"
 
-stop_remote() { # stop the test process inside the container, if a pid file says one is still alive
-  erp_dc exec -T app sh -c "f='$PIDFILE'; [ -f \$f ] || exit 0; p=\$(cat \$f); if kill -0 \$p 2>/dev/null && grep -q artisan /proc/\$p/cmdline 2>/dev/null; then kill -TERM \$p; sleep 2; kill -KILL \$p 2>/dev/null; echo stopped; fi; rm -f \$f" 2>/dev/null || true
+stop_remote() { # remove this database's runner container if one is still around (kills the test process with it)
+  [ -n "$(docker ps -aq -f "name=^$RUNNER\$")" ] || return 1
+  docker rm -f "$RUNNER" >/dev/null 2>&1 || true
+  echo stopped
 }
 finish() {
   rc=$?
   [ -n "$CHILD" ] && kill "$CHILD" 2>/dev/null || true
-  [ "$STARTED" = 1 ] && [ "$rc" -ge 128 ] && stop_remote
+  [ "$STARTED" = 1 ] && [ "$rc" -ge 128 ] && { stop_remote >/dev/null || true; }
   erp_journal end "rc=$rc elapsed=$(( $(erp_now) - START ))s"
   erp_unregister_run
   exit "$rc"
@@ -63,6 +70,8 @@ elif [ "$USE" -ge 75 ]; then
   erp_note "warning: the test server's RAM disk is ${USE}% full (docker/backend/test-db.sh list shows who uses it)."
 fi
 
+VENDOR_VOLUME=$(erp_vendor_volume)
+
 # Create only this database (a no-op when it exists).
 erp_psql -c "SELECT 1 FROM pg_database WHERE datname = '$DB'" | grep -q 1 \
   || erp_psql -c "CREATE DATABASE \"$DB\" OWNER erp" >/dev/null
@@ -72,9 +81,9 @@ stop_remote | grep -q stopped && erp_note "stopped a stale test process left on 
 run() {
   # A plain background command (not a shell function): the shell forks and execs docker at once, so no leftover subshell can keep
   # a lock descriptor open after the wrapper is killed. The explicit closes cover the exec'd docker client itself.
-  docker compose exec -T \
+  docker compose -p erp run --rm --no-deps -T --name "$RUNNER" -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" \
     -e TEST_DB_HOST=postgres-test -e TEST_DB_PORT=5432 -e "TEST_DB_DATABASE=$DB" -e "TEST_APPLICATION_NAME=erp-test:${ERP_AGENT:-unset}:$DB" \
-    app sh -c 'echo $$ > "$1"; shift; exec "$@"' sh "$PIDFILE" "$@" 6>&- 7>&- 8>&- 9>&- &
+    -v "$VENDOR_VOLUME:/var/www/html/vendor:ro" --entrypoint env app "$@" 6>&- 7>&- 8>&- 9>&- &
   CHILD=$!
   STARTED=1
   wait "$CHILD"
