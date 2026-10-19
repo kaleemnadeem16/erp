@@ -318,7 +318,7 @@ docker/backend/pg-crash-report.sh                                        # any u
 
 - **Database name.** `erp_testing_<ERP_AGENT>_<workspace>` — `ERP_AGENT` is your short name (`claude`, `codex`, `gemini`; set it in your
   shell once), and the workspace part is empty for this checkout and the directory name for a future worktree (`erp-foo` → `foo`).
-  With no `ERP_AGENT` you get `erp_testing_main`. `TEST_DB_NAME=erp_testing_<you>` overrides the whole name. Names must be
+  A worktree records its agent in `.erp-agent`, so `ERP_AGENT` need not be set there. With no agent known you get `erp_testing_main`. Each run is a throwaway container that mounts the checkout the script belongs to, so a worktree tests its own code ([multi-agent-workspaces.md](multi-agent-workspaces.md)). `TEST_DB_NAME=erp_testing_<you>` overrides the whole name. Names must be
   `erp_testing_` plus lowercase letters, digits and underscores; the shared `erp_testing`, `erp`, `postgres` and anything else is refused.
 - **No silent fallback.** `tests/bootstrap.php` stops (exit 78) any PHPUnit/Pest run that is not on a private database, unless
   `CI` is set (the pipeline's own Postgres) or a human sets `ERP_ALLOW_SHARED_TEST_DB=1`. A plain
@@ -380,6 +380,9 @@ What was established:
 - **Not reproduced:** the three `pcntl_fork` concurrency tests (`AvcoPoolConcurrencyTest`, `GoodsReceiptConcurrencyTest`,
   `QualityDispositionPostingTest`) ran alone and nine at a time on private databases without any server exit. They are not the cause on
   this evidence, and they are not cleared for all conditions either.
+- **Measured 2026-10-19, host memory pressure:** the Windows host had 1.8 GB free of 15.5 GB, paged at 4,734 pages/s, and held about 2.5 GB of the WSL VM in the
+  pagefile (`vmmemWSL` 5.3 GB resident vs 7.8 GB private). Docker start-up slowed from 0.7 s to 7–13 s with the WSL side idle. This explains the intermittent slow
+  runs and is a plausible reason for VM stalls, but nothing ties it to a specific backend exit yet: no exit happened during the measurement.
 - **Open:** the historical events carry none of the backend-side lines a SIGQUIT now produces (`terminating connection because of
   unexpected SIGQUIT signal`, `Failed process was running`), and some happened with nothing running. The sender is unknown. What to
   check by hand, since Docker Desktop's settings are not readable from WSL: Resource Saver / idle pause, Windows sleep and wake, WSL

@@ -11,9 +11,9 @@ elsewhere" without having identified the failing job, test and cause.
 
 ## What to run for what you changed
 
-| You changed… | Run (from the repo root; backend commands via `docker compose exec app`) |
+| You changed… | Run (from the repo root of YOUR checkout; backend commands via `docker/backend/run.sh <command>` — in a worktree `docker compose exec app` would act on the main checkout, see [multi-agent-workspaces.md](multi-agent-workspaces.md)) |
 |---|---|
-| Any PHP | `vendor/bin/pint --test <your paths>` · `vendor/bin/phpstan analyse --memory-limit=1G` (whole project: it reads types across files) · the suites for the code you touched, then the whole suite before a milestone — always through the wrapper, `ERP_AGENT=<you> docker/backend/run-tests-tmpfs.sh [--filter=…]` (a private database per agent; a whole-suite run waits for the one full-suite lock; a plain `php artisan test` is refused — [environments.md](environments.md#test-database-on-tmpfs)) |
+| Any PHP | `docker/backend/run.sh vendor/bin/pint --test <your paths>` · `docker/backend/run.sh vendor/bin/phpstan analyse --memory-limit=1G` (whole project: it reads types across files) · the suites for the code you touched, then the whole suite before a milestone — always through the wrapper, `ERP_AGENT=<you> docker/backend/run-tests-tmpfs.sh [--filter=…]` (a private database per agent; a whole-suite run waits for the one full-suite lock; a plain `php artisan test` is refused — [environments.md](environments.md#test-database-on-tmpfs)) |
 | A migration | All of the above, plus **fresh → rollback → re-apply on an isolated database** (below), Pint over the migration, and a look at what a *fresh* database does with the demo seed (the e2e job's setup) |
 | A route, write, read, permission, stock writer or scope behaviour | The **ratchets** (below) — run `WriteRouteGuardTest`, `OpenReadRoutesTest`, `RecordScopeCoverageTest`, `StockWriterMatrixTest`, `PermissionCheckRegistrationTest`, `ControllerActionBoundaryTest` *before* committing; register the new thing with a reason |
 | A Resource, Form Request, route or anything the OpenAPI document describes | **Regenerate** the spec and client and commit the result (below); then re-run the frontend typechecks |
@@ -52,7 +52,7 @@ Adding a **route, a write, a read, a permission, a stock writer, or scope behavi
 ### Generated files (OpenAPI → client)
 
 - **When:** any change to a Resource, Form Request, route, enum or validation rule that Scramble reads.
-- **How:** `php artisan scramble:export --path=storage/api-docs/openapi.json` in the `app` container, then `npm run codegen` in `frontend/`. The spec itself is gitignored; the client in `frontend/packages/core-api/src/generated/` **is committed**, including the
+- **How:** `docker/backend/codegen.sh` (exports the spec from a container that mounts your checkout and uses your private test database, then runs `npm run codegen` with your checkout's `node_modules`; `--check` fails if the result differs from what is committed). The two manual steps it replaces were `php artisan scramble:export --path=storage/api-docs/openapi.json` in the `app` container and `npm run codegen` in `frontend/`; do not use them in a worktree. The spec itself is gitignored; the client in `frontend/packages/core-api/src/generated/` **is committed**, including the
   `models/index.ts` barrel and `src/index.ts` exports for any new module.
 - **Detect drift:** after regenerating, `git status -- frontend/packages/core-api` and `git diff` — every changed generated file must be explained by your change.
 - **Shared checkout:** codegen cleans the whole generated folder. Before running it, `git status`: if another agent has uncommitted generated files, **do not** regenerate over them and do not commit theirs. Either wait for their commit, or regenerate and then
@@ -92,6 +92,8 @@ What keeps breaking, and the rule:
 - **CI differs from your machine** in one important way: it runs the **production build** (`vite preview`), a freshly seeded database and no leftovers. A spec that passes against a crowded dev stack can still fail there, and the reverse.
 
 ## Shared checkout: several agents, one tree
+
+**Preferred since 2026-10-19: one worktree per agent** ([multi-agent-workspaces.md](multi-agent-workspaces.md)). The rules below remain for anyone still sharing the main tree, and for the main tree itself, which is the integration workspace.
 
 - **Before editing or generating anything shared:** `git status` and `git log -5`. Another agent's uncommitted files are theirs.
 - **Never** `stash`, `reset`, `checkout --`, restore or format a file you did not write. Do not run Pint, Prettier or codegen over the whole tree when the tree is not clean.

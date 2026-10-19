@@ -124,6 +124,7 @@ only one and that the tree may have changed since you last looked.
 - **Check `git log` and `git status`** for work in progress you might collide with.
 - **Stage explicit paths** (hunks, for a shared file); never stash, reset, restore or reformat another agent's files; commit new files your commit depends on. Details and the generated-file procedure: [pre-push-checks.md](docs/architecture/pre-push-checks.md#shared-checkout-several-agents-one-tree).
 - **Run tests through the wrappers, with `ERP_AGENT=<you>` set** — `docker/backend/run-tests-tmpfs.sh` (private database; whole-suite runs take one shared lock and wait their turn), `docker/frontend/run-e2e.sh` (one browser run at a time). Never restart or recreate the shared stack while others test: use `docker/dev/stack-exclusive.sh`. Details: [environments.md](docs/architecture/environments.md#test-database-on-tmpfs).
+- **Prefer your own worktree** (`docker/dev/worktree.sh add <topic> --agent <you>`; never move an agent that has uncommitted work) — [multi-agent-workspaces.md](docs/architecture/multi-agent-workspaces.md). In it use `docker/backend/run-tests-tmpfs.sh` (tests), `docker/backend/run.sh <cmd>` (Pint, PHPStan, artisan) and `docker/backend/codegen.sh` (API client): they run *your checkout's* code. A bare `docker compose exec app …` acts on the main checkout. Browser specs run only from the main checkout (`docker/frontend/run-e2e.sh`, one at a time). Integrate by merging your branch into `develop` through the main checkout; update yours with `git merge develop`.
 
 ### ADR numbering
 
