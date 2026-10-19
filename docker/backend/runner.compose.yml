@@ -12,6 +12,9 @@ services:
         source: runner_vendor
         target: /var/www/html/vendor
         read_only: true
+    # Pest keeps its result cache inside its package; give it a scratch directory instead of failing on the read-only vendor.
+    tmpfs:
+      - /var/www/html/vendor/pestphp/pest/.temp
 volumes:
   runner_vendor:
     name: ${ERP_VENDOR_VOLUME:-erp_backend_vendor}
