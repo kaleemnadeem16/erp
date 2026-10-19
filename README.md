@@ -33,8 +33,7 @@ reinstall.
 ## Common commands
 
 ```bash
-docker compose exec app php artisan test          # Pest
-docker/backend/run-tests-tmpfs.sh                  # same, on a throwaway RAM-backed Postgres (faster, isolated)
+ERP_AGENT=<you> docker/backend/run-tests-tmpfs.sh   # Pest, on a private database on a throwaway RAM-backed Postgres (see docs/architecture/environments.md)
 docker compose exec app php artisan migrate:fresh --env=testing --seed  # isolated test DB only
 docker compose exec app ./vendor/bin/pint          # format
 docker compose exec app ./vendor/bin/phpstan analyse  # Larastan, level 6+

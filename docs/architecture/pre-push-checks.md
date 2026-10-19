@@ -13,7 +13,7 @@ elsewhere" without having identified the failing job, test and cause.
 
 | You changed… | Run (from the repo root; backend commands via `docker compose exec app`) |
 |---|---|
-| Any PHP | `vendor/bin/pint --test <your paths>` · `vendor/bin/phpstan analyse --memory-limit=1G` (whole project: it reads types across files) · the suites for the code you touched, then the whole suite before a milestone (`docker/backend/run-tests-tmpfs.sh`, with `TEST_DB_NAME=erp_testing_<you>` so two agents never deadlock on one database) |
+| Any PHP | `vendor/bin/pint --test <your paths>` · `vendor/bin/phpstan analyse --memory-limit=1G` (whole project: it reads types across files) · the suites for the code you touched, then the whole suite before a milestone — always through the wrapper, `ERP_AGENT=<you> docker/backend/run-tests-tmpfs.sh [--filter=…]` (a private database per agent; a whole-suite run waits for the one full-suite lock; a plain `php artisan test` is refused — [environments.md](environments.md#test-database-on-tmpfs)) |
 | A migration | All of the above, plus **fresh → rollback → re-apply on an isolated database** (below), Pint over the migration, and a look at what a *fresh* database does with the demo seed (the e2e job's setup) |
 | A route, write, read, permission, stock writer or scope behaviour | The **ratchets** (below) — run `WriteRouteGuardTest`, `OpenReadRoutesTest`, `RecordScopeCoverageTest`, `StockWriterMatrixTest`, `PermissionCheckRegistrationTest`, `ControllerActionBoundaryTest` *before* committing; register the new thing with a reason |
 | A Resource, Form Request, route or anything the OpenAPI document describes | **Regenerate** the spec and client and commit the result (below); then re-run the frontend typechecks |
@@ -76,6 +76,8 @@ Adding a **route, a write, a read, a permission, a stock writer, or scope behavi
     (or coordinate with its owner to deliver their backend change first, with their authorisation). Their next regeneration restores it with their change.
 
 ## Browser (Playwright) tests
+
+**Run them through `ERP_AGENT=<you> docker/frontend/run-e2e.sh <spec> --project=chromium`**: one browser run at a time against the shared dev stack (they share its database, the sign-in throttle, `.auth/` and the ports), and it holds the stack lock so nobody restarts it underneath you. Pure-function specs (`--project=unit`) are exempt. Never `docker compose restart/up --force-recreate` while others test — use `docker/dev/stack-exclusive.sh <command>`.
 
 What keeps breaking, and the rule:
 

@@ -154,13 +154,16 @@ process environment takes precedence over Laravel env files, so the isolation ov
 This makes both of these safe and equivalent with respect to database selection:
 
 ```bash
-docker compose exec app php artisan test
-docker compose exec app php artisan migrate:fresh --env=testing --seed
+ERP_AGENT=<you> docker/backend/run-tests-tmpfs.sh
+docker compose exec app php artisan migrate:fresh --env=testing --seed   # only against a private database
 ```
 
-Never run `migrate:fresh` without the explicit testing environment. The development entrypoint
-also migrates the named `testing` connection directly and fails startup if that migration fails;
-it must not hide a broken test schema behind `|| true`.
+Never run `migrate:fresh` without the explicit testing environment. Since 2026-10-19 the shared
+`erp_testing` is no longer used by local test runs: each agent gets `erp_testing_<agent>` on the
+throwaway `postgres-test` server, a plain PHPUnit run is refused unless `TEST_DB_DATABASE` names a
+private database (or `CI` is set), and the development entrypoint no longer creates or migrates
+`erp_testing` (see [environments.md](environments.md#test-database-on-tmpfs)). CI is unchanged: it
+creates `erp_testing` on its own Postgres service.
 
 ## Migration standards
 

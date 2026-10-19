@@ -73,7 +73,7 @@ The three TypeScript projects (`apps/main`, `packages/core-ui`, `packages/core-a
 
 Which of these to run for which change, and what CI adds, is in [pre-push-checks.md](pre-push-checks.md).
 
-Backend: `docker compose exec app php artisan test` (or `docker/backend/run-tests-tmpfs.sh`), `vendor/bin/pint --test`, `vendor/bin/phpstan analyse --memory-limit=2G`. Frontend: `npx tsc --noEmit` in each project, `npx playwright test`
+Backend: `ERP_AGENT=<you> docker/backend/run-tests-tmpfs.sh` (a plain `php artisan test` is refused outside CI), `vendor/bin/pint --test`, `vendor/bin/phpstan analyse --memory-limit=2G`. Frontend: `npx tsc --noEmit` in each project, `npx playwright test`
 in `frontend/apps/e2e`. Regenerate the client with `php artisan scramble:export --path=storage/api-docs/openapi.json` then `npm run codegen`, and commit only what your change moved.
 
 ## Screen and capability acceptance

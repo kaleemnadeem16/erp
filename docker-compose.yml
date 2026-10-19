@@ -130,20 +130,53 @@ services:
       timeout: 3s
       retries: 5
 
-  # Optional throwaway database for the backend test suite (opt-in: `--profile test-db`, normally started by
-  # docker/backend/run-tests-tmpfs.sh). Its data directory is RAM, and fsync is off: a restart loses everything,
-  # which is fine because the suite builds its own data, and the test path no longer touches the disk or the
-  # dev database. See docs/architecture/environments.md "Test database on tmpfs".
+  # Throwaway database server for the backend test suite (opt-in: `--profile test-db`, started by docker/backend/run-tests-tmpfs.sh,
+  # which gives every agent its own database on it). The data directory is RAM and fsync is off: a stop loses everything, which is
+  # fine because each run rebuilds its schema. See docs/architecture/environments.md "Test database on tmpfs".
+  #
+  # Space budget for the 1280m tmpfs (measured 2026-10-19: a migrated database is ~18 MB, one migration run writes ~13 MB of WAL):
+  #   WAL   <= ~384 MB  max_wal_size is a soft limit, so budget 1.5x of it. It used to be 1 GB inside a 768 MB tmpfs: on 2026-10-02
+  #                     the disk filled, WAL writing hit PANIC "No space left on device" and the server aborted.
+  #   data  ~  60 MB x up to ~8 agent/migration databases = ~480 MB, which leaves ~400 MB of headroom for temp files.
+  # RAM is only used as the files grow; the WSL VM has 7.5 GB shared with the editors and agents. The wrapper refuses to start a
+  # run above 90% full.
+  #
+  # Diagnostics (bounded; no connection logging, no query text beyond what PostgreSQL already logs with an error): every line
+  # carries time, PID, application name (erp-test:<agent>:<database>, set by the wrapper), user@database and the source
+  # file:line of the message, so an unexplained backend exit can be matched to the run that was live (the wrapper also keeps a
+  # run journal in /tmp/erp-test-locks/runs.log).
   postgres-test:
     profiles: ["test-db"]
     image: postgres:16
-    command: ["postgres", "-c", "fsync=off", "-c", "synchronous_commit=off", "-c", "full_page_writes=off", "-c", "max_connections=200"]
+    command:
+      - postgres
+      - -c
+      - fsync=off
+      - -c
+      - synchronous_commit=off
+      - -c
+      - full_page_writes=off
+      - -c
+      - max_connections=200
+      - -c
+      - max_wal_size=256MB
+      - -c
+      - "log_line_prefix=%m [%p] %a %u@%d "
+      - -c
+      - log_error_verbosity=verbose
+      - -c
+      - log_lock_waits=on
     environment:
       POSTGRES_DB: erp_testing
       POSTGRES_USER: erp
       POSTGRES_PASSWORD: secret
     tmpfs:
-      - /var/lib/postgresql/data:size=768m
+      - /var/lib/postgresql/data:size=1280m
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
     networks:
       - erp-dev
     healthcheck:

@@ -115,6 +115,8 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Shown in the server log and pg_stat_activity (set by the test wrapper), so a backend exit can be tied to a run.
+            'application_name' => env('TEST_APPLICATION_NAME'),
         ],
 
         'sqlsrv' => [

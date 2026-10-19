@@ -297,33 +297,93 @@ What the evidence says, and does not say:
   Nothing in the ERP code can cause it: production runs on dedicated VMs ([dbvm](#dbvm--data-tier)) and has not shown it.
 
 Consequences: it does not block Phase 3. A red run that shows `SQLSTATE[08006]`/"recovery mode" or a mass of unrelated failures
-should simply be rerun. Two concurrent test runs against `erp_testing` (two agents) also deadlock each other on schema drops.
+should simply be rerun. Two concurrent test runs against the same database (two agents) also deadlock each other on schema drops — since 2026-10-19 that is prevented, see [Test database on tmpfs](#test-database-on-tmpfs).
 
 **Done (2026-10-01): a throwaway test database on tmpfs** — see below.
 
 ## Test database on tmpfs
 
-A second Postgres service, `postgres-test`, keeps its data directory in RAM (`tmpfs`, 768 MB) with `fsync`, `synchronous_commit`
+A second Postgres service, `postgres-test`, keeps its data directory in RAM (`tmpfs`, 1280 MB) with `fsync`, `synchronous_commit`
 and `full_page_writes` off. It is opt-in (compose profile `test-db`), so a plain `docker compose up` is unchanged. Nothing it
-holds survives a stop, which is fine: the suite builds its own data and the schema is rebuilt on each run.
+holds survives a stop, which is fine: the suite builds its own data and each run rebuilds its schema.
+
+**Every backend test run goes through the wrapper.** It gives each agent a private database, so nobody shares `erp_testing`:
 
 ```
-docker/backend/run-tests-tmpfs.sh                          # whole suite
-docker/backend/run-tests-tmpfs.sh --filter=Estimating      # arguments go to `php artisan test`
-TEST_DB_NAME=erp_testing_b docker/backend/run-tests-tmpfs.sh   # a private database for a second person or agent
+ERP_AGENT=claude docker/backend/run-tests-tmpfs.sh --filter=Estimating   # focused: private database, runs at once
+ERP_AGENT=claude docker/backend/run-tests-tmpfs.sh                       # whole suite: also takes the one full-suite lock
+docker/backend/test-db.sh name | list | drop [name] | reset             # look after your own database
+docker/backend/pg-crash-report.sh                                        # any unexpected server exit, with the runs that were live
 ```
 
-The script starts the service, creates the named database if needed, migrates it, and runs the tests with `TEST_DB_HOST`,
-`TEST_DB_PORT` and `TEST_DB_DATABASE` pointing at it. Those three variables are the only change to `config/database.php`'s
-`testing` connection; unset (CI, and the default `docker compose exec app php artisan test`), behaviour is exactly as before.
+- **Database name.** `erp_testing_<ERP_AGENT>_<workspace>` — `ERP_AGENT` is your short name (`claude`, `codex`, `gemini`; set it in your
+  shell once), and the workspace part is empty for this checkout and the directory name for a future worktree (`erp-foo` → `foo`).
+  With no `ERP_AGENT` you get `erp_testing_main`. `TEST_DB_NAME=erp_testing_<you>` overrides the whole name. Names must be
+  `erp_testing_` plus lowercase letters, digits and underscores; the shared `erp_testing`, `erp`, `postgres` and anything else is refused.
+- **No silent fallback.** `tests/bootstrap.php` stops (exit 78) any PHPUnit/Pest run that is not on a private database, unless
+  `CI` is set (the pipeline's own Postgres) or a human sets `ERP_ALLOW_SHARED_TEST_DB=1`. A plain
+  `docker compose exec app php artisan test` therefore no longer reaches the dev server's `erp_testing`. The dev container's
+  entrypoint no longer creates or migrates that database either.
+- **Isolation.** Create, migrate, reset and drop touch only the selected database. Runs on one database are serialised, so two
+  agents that forgot `ERP_AGENT` wait for each other instead of dropping each other's tables. `--parallel` is refused: the
+  committed-data and `pcntl_fork` tests are not proven under it.
+- **Locks** are `flock(1)` files in `/tmp/erp-test-locks` (override with `ERP_TEST_LOCK_DIR`), visible to every agent on the machine and
+  freed by the kernel the moment a process dies, however it dies — including `kill -9`. A waiting run says what it is waiting for, who holds
+  the lock and for how long, then waits up to `ERP_TEST_LOCK_WAIT` seconds (default 1500; `0` fails at once with exit 75).
 
-- **Why:** the disk is out of the test path (the dev server's slow checkpoints and self-restarts no longer touch a run), the dev
-  database is never involved, and two runs on two database names cannot deadlock on schema drops.
-- **Parity check:** the full suite, 1274 tests, passes against it in about 4 minutes; two runs at once on `erp_testing_a` and
-  `erp_testing_b` both passed.
+| Lock | Who takes it | Effect |
+|---|---|---|
+| database `db-<name>` | every backend run, `test-db.sh drop/reset` | one run per database |
+| `full-suite` | a backend run with no `--filter`/`--group`/path (also `--testsuite`) | one whole suite at a time; focused runs are **not** blocked |
+| `e2e` | `docker/frontend/run-e2e.sh` (browser specs against the shared dev stack) | one browser run at a time; `--project=unit` is exempt |
+| `stack` (shared) | every backend and browser run | `docker/dev/stack-exclusive.sh <cmd>` needs it exclusively, so a restart or recreate refuses (exit 75, listing who is testing) instead of breaking a run |
+
+  An interrupted run (Ctrl-C, a tool timeout, `kill`) also stops its test process inside the container. If the wrapper itself is killed
+  with `-9`, the next run on that database stops the orphan before starting. Migration-destructive tests always have a private database
+  by construction; the migration apply → rollback → re-apply recipe in [pre-push-checks.md](pre-push-checks.md) uses its own `erp_mig_<you>`.
+- **Restarting the stack.** Do not `docker compose restart/up --force-recreate/down` while another agent is testing; run it as
+  `docker/dev/stack-exclusive.sh docker compose restart app`. Recreating `postgres-test` wipes every agent's test database (runs rebuild
+  theirs on the next start).
+
+**Space and settings (measured 2026-10-19).** A migrated database is about 18 MB (26–33 MB after feature tests); one migration run writes
+about 13 MB of WAL. The tmpfs is 1280 MB with `max_wal_size=256MB`: WAL may reach about 1.5× that (a soft limit, ~384 MB) and the
+databases take up to ~60 MB each for up to ~8 agents, which leaves roughly 400 MB of headroom. Before 2026-10-19 `max_wal_size` was
+1 GB inside a 768 MB tmpfs: on 2026-10-02 the filesystem filled, writing WAL hit `PANIC: could not write to file "pg_wal/xlogtemp"`, and the
+server aborted. The wrapper warns at 75 % full and refuses to start above 90 % (`test-db.sh list` / `drop` free space).
+
+**Measured (2026-10-19, one full suite alone on a private database, sampled every 8–10 s).** 2,680 tests passed in 2,296 s. The RAM disk
+peaked at 37 % (WAL 192–224 MB, 48 MB database), available memory stayed at 3.8–4.2 GB, swap at 2 MB, memory pressure 0; the test
+server used 46 % of a core on average (peak 3.6), the app container 54 %. No server exit, no deadlock. About 1,140 s of the 2,296 s came from three
+seeder tests (`RecipeAccessDemoSeederTest`, `RejectedStockExitDemoSeederTest` ×2) that take 7 s each when run alone, on the same or a
+fresh database: they ran during a 16-minute window of host load 6–12, I/O pressure up to 10 % and CPU spikes on the dev Postgres that
+this run did not cause. So a clean full run is about 20 minutes, and contention, not the suite, produced the rest. The 1,274-test /
+4-minute figure from 2026-10-01 no longer describes the suite.
+
+**Diagnostics.** Every server log line carries time, PID, application name (`erp-test:<agent>:<database>`), `user@database` and the
+source file and line; lock waits over a second are logged; connections and query text are not (beyond what PostgreSQL logs with an error).
+The container's log is capped at 5 × 20 MB. The wrappers append start/end lines to `/tmp/erp-test-locks/runs.log` (UTC), and
+`pg-crash-report.sh` lines the two up.
+
 - **Cost:** a few hundred MB of RAM while it runs (`docker compose --profile test-db stop postgres-test` frees it). It cannot
   reveal problems that depend on real disk behaviour; the pipeline still runs on a real Postgres service.
-- **Not changed:** CI, the dev entrypoint's migration of `erp_testing`, and the dev `postgres` service.
+- **Not changed:** CI (it sets `CI` and uses its own Postgres service with the shared `erp_testing`), and the dev `postgres` service.
+
+### Unexplained backend exits (updated 2026-10-19)
+
+The `exited with exit code 2` events above also happen on `postgres-test` (103 of 106 recoveries between 2026-10-02 and 2026-10-17,
+all on RAM-backed storage with `fsync` off, so a stalled disk does not explain them; the dev server shows the same signature: 33 of 50).
+What was established:
+
+- **Confirmed:** only 2026-10-02 had a tmpfs-full cause (42 `No space left on device` errors, one PANIC, signal 6). The rest have none.
+- **Confirmed:** a backend that is sent SIGQUIT produces exactly this signature (`exited with exit code 2`, `terminating any other active
+  server processes`, recovery). So something delivered SIGQUIT to a backend — or an equivalent exit happened.
+- **Not reproduced:** the three `pcntl_fork` concurrency tests (`AvcoPoolConcurrencyTest`, `GoodsReceiptConcurrencyTest`,
+  `QualityDispositionPostingTest`) ran alone and nine at a time on private databases without any server exit. They are not the cause on
+  this evidence, and they are not cleared for all conditions either.
+- **Open:** the historical events carry none of the backend-side lines a SIGQUIT now produces (`terminating connection because of
+  unexpected SIGQUIT signal`, `Failed process was running`), and some happened with nothing running. The sender is unknown. What to
+  check by hand, since Docker Desktop's settings are not readable from WSL: Resource Saver / idle pause, Windows sleep and wake, WSL
+  memory reclaim. When it next happens, `docker/backend/pg-crash-report.sh` names the runs that were live and the backend's own log lines.
 
 ## Related
 

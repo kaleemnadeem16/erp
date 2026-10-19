@@ -25,6 +25,7 @@ History is in [STATUS-LOG.md](STATUS-LOG.md); resume points are in the workstrea
 | Packaged purchasing (named packages, supplier offers, price basis) | Complete | [item-purchasing-improvements.md](phases/item-purchasing-improvements.md) · [ADR 0080](decisions/0080-packaged-purchasing-and-independent-price-basis.md) |
 | Shared approval engine and approvals workspace | Engine complete; workspace first UI draft shipped | [approvals.md](domain/approvals.md) · [ADR 0070](decisions/0070-shared-configurable-approval-engine.md) |
 | Settings, forms and access hardening (company settings, document numbering, PO form, access audit, record scope) | Delivered through a checkpoint; further slices are owner-prioritised | [handoff and open items](phases/settings-and-access-hardening.md) · [audit tracker](architecture/access-security-audit.md) |
+| **Multi-agent test environment, Stage 1** (2026-10-19) | **Delivered**: private test database per agent, full-suite and browser locks, stack-restart guard, safe `postgres-test` sizing and diagnostics. The unexplained Postgres backend exits (exit code 2) are **not** root-caused. Stage 2 (per-agent worktrees) not started | [environments.md](architecture/environments.md#test-database-on-tmpfs) |
 
 ## In progress
 
