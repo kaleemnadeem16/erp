@@ -1,0 +1,18 @@
+# Compose override used ONLY by the throwaway runner containers (docker/backend/test-lib.sh, run-tests-tmpfs.sh, run.sh, codegen.sh):
+#   docker compose -p erp -f docker-compose.yml -f docker/backend/runner.compose.yml run --rm --no-deps app …
+# It mounts the checkout's ./backend and the vendor volume READ-ONLY (a `-v …:ro` on the command line is silently ignored when it
+# targets the same path as the service's own mount). ERP_VENDOR_VOLUME selects the shared volume (default) or a workspace's own.
+services:
+  app:
+    volumes: !override
+      - type: bind
+        source: ./backend
+        target: /var/www/html
+      - type: volume
+        source: runner_vendor
+        target: /var/www/html/vendor
+        read_only: true
+volumes:
+  runner_vendor:
+    name: ${ERP_VENDOR_VOLUME:-erp_backend_vendor}
+    external: true

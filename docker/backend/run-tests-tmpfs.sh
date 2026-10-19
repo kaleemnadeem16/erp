@@ -68,9 +68,10 @@ stop_remote | grep -q stopped && erp_note "stopped a stale test process left on 
 run() {
   # A plain background command (not a shell function): the shell forks and execs docker at once, so no leftover subshell can keep
   # a lock descriptor open after the wrapper is killed. The explicit closes cover the exec'd docker client itself.
-  docker compose -p erp run --rm --no-deps -T --name "$RUNNER" -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" \
+  ERP_VENDOR_VOLUME="$VENDOR_VOLUME" docker compose -p erp -f docker-compose.yml -f docker/backend/runner.compose.yml \
+    run --rm --no-deps -T --name "$RUNNER" -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" \
     -e TEST_DB_HOST=postgres-test -e TEST_DB_PORT=5432 -e "TEST_DB_DATABASE=$DB" -e "TEST_APPLICATION_NAME=erp-test:${ERP_AGENT:-unset}:$DB" \
-    -v "$VENDOR_VOLUME:/var/www/html/vendor:ro" --entrypoint env app "$@" 6>&- 7>&- 8>&- 9>&- &
+    --entrypoint env app "$@" 6>&- 7>&- 8>&- 9>&- &
   CHILD=$!
   STARTED=1
   wait "$CHILD"

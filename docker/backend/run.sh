@@ -14,5 +14,7 @@ set -e
 erp_check_checkout || exit 64
 [ $# -gt 0 ] || { erp_note "usage: docker/backend/run.sh <command...>   (e.g. vendor/bin/pint --test app/Foo.php)"; exit 64; }
 [ -n "$ERP_SKIP_VENDOR_CHECK" ] || erp_check_vendor || exit 65
-exec docker compose -p erp run --rm --no-deps -T -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" \
-  -v "$(erp_vendor_volume):/var/www/html/vendor:ro" --entrypoint env app "$@"
+ERP_VENDOR_VOLUME=$(erp_vendor_volume)
+export ERP_VENDOR_VOLUME
+exec docker compose -p erp -f docker-compose.yml -f docker/backend/runner.compose.yml \
+  run --rm --no-deps -T -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" --entrypoint env app "$@"

@@ -138,10 +138,9 @@ erp_check_checkout() {
 # and environment, running as you (so files it writes are yours). Nothing stays running afterwards. Extra docker-compose-run options
 # can be passed in $ERP_RUN_OPTS (word-split on purpose), the command and its arguments follow.
 erp_run() {
-  # Shared vendor, read-only, unless this workspace has its own (docker/dev/worktree.sh vendor <name>).
   # shellcheck disable=SC2086
-  docker compose -p erp run --rm --no-deps -T -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" \
-    -v "$(erp_vendor_volume):/var/www/html/vendor:ro" $ERP_RUN_OPTS --entrypoint env app "$@"
+  ERP_VENDOR_VOLUME=$(erp_vendor_volume) docker compose -p erp -f docker-compose.yml -f docker/backend/runner.compose.yml \
+    run --rm --no-deps -T -u "$(id -u):$(id -g)" -e HOME=/tmp -e "ERP_CHECKOUT=$ERP_ROOT" $ERP_RUN_OPTS --entrypoint env app "$@"
 }
 erp_vendor_volume() {
   docker volume inspect "erp_vendor_$(erp_workspace_or_main)" >/dev/null 2>&1 && { printf 'erp_vendor_%s' "$(erp_workspace_or_main)"; return; }
