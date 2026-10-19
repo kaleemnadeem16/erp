@@ -4,6 +4,7 @@
 #   docker/dev/worktree.sh add <topic> [--agent claude] [--base develop]   # new worktree ../erp-<topic> on branch <agent>/<topic>
 #   docker/dev/worktree.sh list                                             # every worktree: branch, dirty files, ahead/behind, test database
 #   docker/dev/worktree.sh vendor <topic>                                   # give a worktree its own vendor/ (its composer.lock differs)
+#   docker/dev/worktree.sh deps <topic>                                     # re-sync its frontend node_modules (copy from main, or npm ci if its lock differs)
 #   docker/dev/worktree.sh remove <topic>                                   # only if clean and merged into develop; drops its test database
 #
 # What `add` prepares (details: docs/architecture/multi-agent-workspaces.md):
@@ -21,6 +22,16 @@ PARENT=$(dirname "$MAIN")
 note() { printf '%s\n' "$*" >&2; }
 die() { note "$*"; exit 1; }
 valid() { printf '%s' "$1" | grep -Eq '^[a-z][a-z0-9-]{0,23}$'; }
+# Every node_modules of the main checkout's npm workspace (the root one and the nested ones npm leaves in packages/* and apps/*), as
+# paths relative to frontend/. Copied, not linked: the workspace links inside are relative, so a copy resolves @erp/* to ITS checkout.
+node_module_dirs() { (cd "$MAIN/frontend" && find . -maxdepth 3 -type d -name node_modules -prune -print); }
+copy_node_modules() { # <worktree dir>
+  node_module_dirs | while read -r d; do
+    rm -rf "$1/frontend/$d"
+    mkdir -p "$(dirname "$1/frontend/$d")"
+    cp -a "$MAIN/frontend/$d" "$1/frontend/$d"
+  done
+}
 
 cmd="${1:-}"; shift || true
 case "$cmd" in
@@ -47,8 +58,8 @@ case "$cmd" in
     printf 'COMPOSE_PROJECT_NAME=erp_wt_%s\n' "$(printf '%s' "$topic" | tr -c 'a-z0-9\n' '_')" > "$dir/.env"
     mkdir -p "$dir/backend/vendor" "$dir/backend/bootstrap/cache" "$dir/backend/storage/framework/phpstan" "$dir/backend/storage/api-docs" "$dir/backend/storage/logs"
     if [ -d "$MAIN/frontend/node_modules" ]; then
-      note "copying frontend/node_modules (about $(du -sm "$MAIN/frontend/node_modules" | cut -f1) MB)…"
-      cp -a "$MAIN/frontend/node_modules" "$dir/frontend/node_modules"
+      note "copying the frontend node_modules (root and workspace-nested, about $(node_module_dirs | (cd "$MAIN/frontend" && xargs du -sm) | awk '{s+=$1} END {print s}') MB)…"
+      copy_node_modules "$dir"
     fi
     cat >&2 <<DONE
 
@@ -73,6 +84,18 @@ DONE
       [ -z "$agent" ] && db="(set ERP_AGENT) erp_testing_$(printf '%s' "${ws:-main}" | tr -c 'a-z0-9\n' '_')"
       printf '%-26s %-28s %-6s %-12s %s\n' "$name" "$b" "$dirty" "$ab" "$db"
     done
+    ;;
+  deps)
+    topic="${1:-}"; valid "$topic" || die "usage: deps <topic>"
+    dir="$PARENT/erp-$topic"; [ -d "$dir" ] || die "$dir does not exist"
+    if cmp -s "$MAIN/frontend/package-lock.json" "$dir/frontend/package-lock.json"; then
+      note "package-lock.json matches main: re-copying main's node_modules into $dir/frontend …"
+      copy_node_modules "$dir"
+    else
+      note "package-lock.json differs from main: running npm ci in $dir/frontend for this branch's own dependencies …"
+      (cd "$dir/frontend" && npm ci --no-audit --no-fund)
+    fi
+    note "done."
     ;;
   vendor)
     topic="${1:-}"; valid "$topic" || die "usage: vendor <topic>"
@@ -99,5 +122,5 @@ DONE
     git -C "$MAIN" branch -d "$branch" >&2 || true
     note "removed $dir and branch $branch."
     ;;
-  *) die "usage: worktree.sh add <topic> [--agent <name>] [--base <ref>] | list | vendor <topic> | remove <topic>" ;;
+  *) die "usage: worktree.sh add <topic> [--agent <name>] [--base <ref>] | list | vendor <topic> | deps <topic> | remove <topic>" ;;
 esac
