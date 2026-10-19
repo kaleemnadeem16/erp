@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+
 import { chromium, type FullConfig } from '@playwright/test';
 
 /**
@@ -8,6 +10,8 @@ import { chromium, type FullConfig } from '@playwright/test';
 export default async function globalTeardown(config: FullConfig) {
   const started = Number(process.env.E2E_RUN_STARTED ?? 0);
   if (!started) return;
+  // No saved sign-in means this checkout never ran a browser spec (a fresh worktree, or a unit-only run): nothing was created, nothing to tidy.
+  if (!existsSync('.auth/user.json')) return;
   const baseURL = config.projects[0]?.use.baseURL ?? process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5176';
   const api = process.env.E2E_API_URL ?? 'http://127.0.0.1:8090/api/v1';
   const browser = await chromium.launch();

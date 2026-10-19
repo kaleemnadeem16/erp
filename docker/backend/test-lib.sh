@@ -168,7 +168,8 @@ erp_tmpfs_use() { erp_dc exec -T postgres-test df -P /var/lib/postgresql/data | 
 # Make sure the throwaway server is up (never recreated), has room, and has database $1 (created if missing; nothing else touched).
 erp_ensure_db() {
   # --no-recreate: `up` must never rebuild a running container (a changed compose file would wipe other agents' databases).
-  erp_dc --profile test-db up -d --wait --no-recreate postgres-test >/dev/null
+  erp_dc --profile test-db up -d --wait --no-recreate postgres-test >/dev/null 2>"$ERP_LOCK_DIR/up.$$" || { cat "$ERP_LOCK_DIR/up.$$" >&2; rm -f "$ERP_LOCK_DIR/up.$$"; return 1; }
+  rm -f "$ERP_LOCK_DIR/up.$$"
   _use=$(erp_tmpfs_use)
   if [ "$_use" -ge 90 ]; then
     erp_note "refused: the test server's RAM disk is ${_use}% full. Free space with docker/backend/test-db.sh drop <database> (see 'list')."; return 70

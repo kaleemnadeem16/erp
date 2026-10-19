@@ -69,8 +69,8 @@ DONE
       ab=$(git -C "$p" rev-list --left-right --count "$b...develop" 2>/dev/null | awk '{print $1"/"$2}')
       agent=$( [ -f "$p/.erp-agent" ] && head -n 1 "$p/.erp-agent" || true )
       ws=${name#erp-}; [ "$name" = erp ] && ws=""
-      db=$(printf 'erp_testing_%s_%s' "$agent" "$ws" | sed 's/__*/_/g; s/_$//' | cut -c1-53)
-      [ -z "$agent" ] && db="(set ERP_AGENT) erp_testing_${ws:-main}"
+      db=$(printf 'erp_testing_%s_%s' "$agent" "$ws" | tr -c 'a-z0-9_\n' '_' | sed 's/__*/_/g; s/_$//' | cut -c1-53)
+      [ -z "$agent" ] && db="(set ERP_AGENT) erp_testing_$(printf '%s' "${ws:-main}" | tr -c 'a-z0-9\n' '_')"
       printf '%-26s %-28s %-6s %-12s %s\n' "$name" "$b" "$dirty" "$ab" "$db"
     done
     ;;
@@ -92,7 +92,7 @@ DONE
     [ -z "$(git -C "$dir" status --porcelain)" ] || die "refused: $dir has uncommitted work; nothing was removed"
     git -C "$MAIN" merge-base --is-ancestor "$branch" develop || die "refused: branch $branch has commits that are not in develop; nothing was removed"
     agent=$( [ -f "$dir/.erp-agent" ] && head -n 1 "$dir/.erp-agent" || true )
-    db=$(printf 'erp_testing_%s_%s' "$agent" "$topic" | sed 's/__*/_/g; s/_$//' | cut -c1-53)
+    db=$(printf 'erp_testing_%s_%s' "$agent" "$topic" | tr -c 'a-z0-9_\n' '_' | sed 's/__*/_/g; s/_$//' | cut -c1-53)
     TEST_DB_NAME="$db" "$MAIN/docker/backend/test-db.sh" drop >&2 || note "(test database $db was not dropped)"
     docker volume rm "erp_vendor_$topic" >/dev/null 2>&1 || true
     git -C "$MAIN" worktree remove "$dir"
