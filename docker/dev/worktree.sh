@@ -45,7 +45,7 @@ case "$cmd" in
     cp "$MAIN/backend/.env" "$dir/backend/.env"
     printf '%s\n' "$agent" > "$dir/.erp-agent"
     printf 'COMPOSE_PROJECT_NAME=erp_wt_%s\n' "$(printf '%s' "$topic" | tr -c 'a-z0-9\n' '_')" > "$dir/.env"
-    mkdir -p "$dir/backend/bootstrap/cache" "$dir/backend/storage/framework/phpstan" "$dir/backend/storage/api-docs" "$dir/backend/storage/logs"
+    mkdir -p "$dir/backend/vendor" "$dir/backend/bootstrap/cache" "$dir/backend/storage/framework/phpstan" "$dir/backend/storage/api-docs" "$dir/backend/storage/logs"
     if [ -d "$MAIN/frontend/node_modules" ]; then
       note "copying frontend/node_modules (about $(du -sm "$MAIN/frontend/node_modules" | cut -f1) MB)…"
       cp -a "$MAIN/frontend/node_modules" "$dir/frontend/node_modules"

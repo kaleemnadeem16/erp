@@ -30,6 +30,7 @@ erp_check_checkout || exit 64
 DB=$(erp_db_name)
 erp_validate_db "$DB" || exit 64
 erp_check_vendor || exit 65
+VENDOR_VOLUME=$(erp_vendor_volume)
 FULL=0; erp_is_full "$@" && FULL=1
 WHAT="backend tests on $DB ($([ $FULL = 1 ] && echo 'FULL suite' || echo focused))"
 START=$(erp_now)
