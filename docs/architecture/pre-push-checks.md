@@ -27,6 +27,8 @@ Not blindly: a docs-only or a purely backend change needs no browser run; a UI c
 
 ### Migrations: apply → rollback → re-apply, on an isolated database
 
+**From a worktree (or anywhere): `docker/backend/migrate-cycle.sh`** runs the whole check below on your own `…_mig` database against your checkout's migrations. The manual recipe below uses `docker compose exec app`, which acts on the main checkout, so use it only there.
+
 CI migrates a fresh database, rolls it back and migrates again — the only place any `down()` runs. Locally, never on the development database:
 
 ```

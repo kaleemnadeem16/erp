@@ -109,6 +109,103 @@ shares the VM slows together: Docker, PostgreSQL and every agent's runs. Before 
 `C:\Users\<you>\.wslconfig` (`[wsl2] memory=6GB`) so the VM is not paged; this was not changed here.
 
 
+## Agent cheat sheet (inside your worktree)
+
+Run everything from the root of **your** worktree (`cd ../erp-<topic>`); your agent name comes from `.erp-agent`, your test database is `erp_testing_<agent>_<topic>`.
+
+| To do this | Run | Notes |
+|---|---|---|
+| Focused Laravel tests | `docker/backend/run-tests-tmpfs.sh --filter=Quotation` (or a file: `… tests/Feature/Modules/Sales/QuotationFoundationTest.php`) | Never blocked by another agent's full suite |
+| Ratchet / architecture tests | `docker/backend/run-tests-tmpfs.sh --filter='WriteRouteGuardTest|RecordScopeCoverageTest|StockWriterMatrixTest|PermissionCheckRegistrationTest|ControllerActionBoundaryTest'` | Before committing a route, write, permission or stock writer |
+| Full backend suite | `docker/backend/run-tests-tmpfs.sh` | Takes the one global lock and **waits its turn** (says who holds it). About 20 minutes when the machine is healthy. Before handing off, not while iterating |
+| Pint | `docker/backend/run.sh vendor/bin/pint --test <your paths>` (without `--test` to fix) | Only the paths you changed; never reformat others' files |
+| Larastan | `docker/backend/run.sh vendor/bin/phpstan analyse --memory-limit=1G` | Whole project (it reads types across files) |
+| Migrations: fresh → rollback → re-apply | `docker/backend/migrate-cycle.sh` | Own database `…_mig`. Not the `docker compose exec app` recipe, which acts on the main checkout |
+| Frontend type checks | `cd frontend/packages/core-api && npx tsc --noEmit`, the same in `packages/core-ui` and `apps/main`, then `cd frontend/apps/main && npx vite build` | Uses your worktree's own `node_modules`; output stays in your worktree |
+| Frontend pure-function specs | `docker/frontend/run-e2e.sh --project=unit` | No stack needed; allowed anywhere |
+| API client | `docker/backend/codegen.sh` (`--check` to compare with the commit) | Private database; stage generated files by explicit path, only what traces to your API change |
+| Browser specs | **Not from a worktree** (refused, exit 66). After your branch is merged into `develop`, from the main checkout: `ERP_AGENT=<you> docker/frontend/run-e2e.sh <spec> --project=chromium` | One browser run at a time, against the shared dev stack and dev database. Report it as *"develop@<sha> after integration"*, never as verification of your branch |
+| Commit | `git add <explicit paths> && git commit` | Your branch only; no stash, reset or rebase of shared history |
+| Update from the accepted state | `git merge develop` | A merge, not a rebase |
+| Status of all workspaces | `docker/dev/worktree.sh list` | Dirty files and ahead/behind develop |
+
+Do not use bare `docker compose exec app …` for any of the above in a worktree: it fails with `service "app" is not running` on purpose.
+
+## Onboarding the first two Phase 4 agents
+
+State checked 2026-10-20: the main checkout is on `develop`, clean, nothing staged or uncommitted; the other two worktrees (`erp-auth-retrofit`, `erp-release-sync`) have no unstaged work. Before moving anyone,
+**the agent itself confirms** `git status --short` shows nothing of theirs uncommitted. An agent with uncommitted work stays in the main checkout until it commits that work by explicit path; it is never moved or stashed for it.
+Substitute your real agent names for `<agentA>` and `<agentB>` (lowercase letters, digits, dashes). Open the new folder as the agent's workspace so its session starts inside it.
+
+**Agent A — Sales quotation workflows** (QL0 is on `develop`; next slices per [phase-4-ql0-delivery-and-decisions.md](../phases/phase-4-ql0-delivery-and-decisions.md) and [phase-4-sales-quotations-and-handover.md](../phases/phase-4-sales-quotations-and-handover.md))
+
+```sh
+cd /home/kaleem/projects/erp && git status --short && git log -3 --oneline        # re-read STATUS.md; nothing of yours uncommitted
+docker/dev/worktree.sh add sales-quotes --agent <agentA>                            # ../erp-sales-quotes, branch <agentA>/sales-quotes, database erp_testing_<agentA>_sales_quotes
+cd ../erp-sales-quotes
+docker/backend/run-tests-tmpfs.sh --filter=Quotation                                # sanity check: QL0 tests pass here
+```
+
+**Agent B — Documents (shared Document & Print Framework)** ([document-print-framework-slices.md](../phases/document-print-framework-slices.md), [documents.md](../domain/documents.md))
+*Application code for DF0 needs the owner's separate authorisation; until then the worktree is for reading, design and documentation only.*
+
+```sh
+cd /home/kaleem/projects/erp && git status --short && git log -3 --oneline
+docker/dev/worktree.sh add documents --agent <agentB>                              # ../erp-documents, branch <agentB>/documents, database erp_testing_<agentB>_documents
+cd ../erp-documents
+docker/backend/run-tests-tmpfs.sh --filter=Numbering                               # sanity check on an unrelated, stable area
+```
+
+Where the two meet: Documents' Sales adapter needs real quotation issue contracts (QL3), so A's slices land first; B's DF0/DF1 foundation is independent and delivered disabled. Both touch hotspots, so
+merge `develop` often and expect to resolve: new migrations (check each other's tables), the generated API client (regenerate, never choose a side), and `docs/STATUS.md`/`STATUS-LOG.md`.
+Integration is one branch at a time through the main checkout (steps above); neither agent merges into `develop` itself.
+
+## Host memory on a 16 GB machine
+
+**Measured** (2026-10-19/20, this machine):
+
+| Measurement | Value |
+|---|---|
+| Host RAM / free at idle | 15.5 GB / 2.3 GB free; 20.7 GB committed of a 32.5 GB limit |
+| Largest Windows consumers (working set) | Chrome 2.6 GB (20 processes), ChatGPT 1.1 GB (15), VS Code 1.0 GB (12), Windows services 1.1 GB, Edge WebView 0.25 GB, Docker Desktop 0.35 GB |
+| WSL VM | allowed 7.5 GB (the default, half of host RAM); `vmmemWSL` 3.0 GB resident of 5.1 GB private at idle, 5.3 of 7.8 GB under load |
+| Paging under load (2026-10-19) | 4,734 pages/s average with 1.8 GB free; at idle 22 pages/s |
+| WSL memory during a full backend suite | available never below 3.8 GB of 7.5 GB; swap about 2 MB |
+| Cost of one runner / test Postgres / dev stack | 470 MiB peak / about 480 MiB (its RAM disk counts) / about 0.7 GB for the eight services |
+| In WSL, editors and agents | VS Code server about 0.6 GB, Claude 0.35 GB, Antigravity 0.18 GB, Codex 0.15 GB |
+| Effect observed while paging | Docker start-up 0.7 s → 7–40 s; a trivial test 5 s → 170 s with the WSL side idle |
+
+**Assumptions** (not measured here): that capping WSL lower than 7.5 GB will stop the VM being paged — the measured peak need is about 3.7 GB plus page cache, so **6 GB** should cover the stack, two
+concurrent focused runs and one full suite, but nobody has run that configuration; that adding RAM removes the paging (very likely, since the measured stall coincides with 1.8 GB free, but the speed gain was not measured).
+
+**Recommendation (nothing was changed):**
+
+1. *WSL limit:* try `memory=6GB` in `C:\Users\<you>\.wslconfig` (`[wsl2]`), plus `[experimental] autoMemoryReclaim=gradual`; leave `processors` alone (CPU was never the limit: the test Postgres peaked at 3.6 cores, load stayed under 12 on 16). Re-measure with `Get-Counter "\Memory\Pages/sec"` during a full suite; revert if the suite slows.
+2. *Close during heavy tests (full suite, browser run, codegen, a rebuild):* extra Chrome windows and tabs (largest single item), the ChatGPT desktop app, Edge WebView processes, the Docker Desktop dashboard window, XAMPP control panel and its services, and any second editor window on the same repository. Keep one VS Code window per active worktree; each adds a WSL server of about 0.6 GB.
+3. *Two agents running focused tests at once:* **yes**, measured: pairs and triples of focused runs, and nine concurrent fork tests, ran correctly. Condition (assumption): host free memory stays above about 3 GB; below it, one run alone was already slow.
+4. *Keep serial:* one full backend suite, one browser run, one stack restart or rebuild at a time (enforced by the locks).
+5. *More RAM:* worth it. 32 GB would take the host out of the paging regime this machine was in during verification, which is the only thing measured to cause 10–100× slowdowns of container start-up and tests. It would not speed up CPU-bound work, and it is not a substitute for the locks.
+
+## Tracked infrastructure issues (open)
+
+| # | Issue | State |
+|---|---|---|
+| 1 | PostgreSQL backend exit code 2 (103 on the test server, 33 on the dev server) — cause unknown | A SIGQUIT to one backend reproduces the signature; the fork tests do not; none since the diagnostics were added except a deliberate probe. `pg-crash-report.sh` collects evidence on the next event. See [environments.md](environments.md#unexplained-backend-exits-updated-2026-10-19) |
+| 2 | Browser tests against a feature branch are not isolated | Browser specs run only from the main checkout, after integration; a private per-run stack needs its own design review |
+| 3 | Restarting the shared stack | Use `docker/dev/stack-exclusive.sh <command>`; it refuses while anyone is testing |
+| 4 | Worker restart fix | Config deployed 2026-10-19; the container then restarted itself 17 times in 17 hours (the hourly `--max-time` exit), which is the intended behaviour |
+| 5 | Dev images still carry the Stage 1 entrypoint (it migrates the shared `erp_testing` on every start) | Needs one rebuild; procedure below |
+| 6 | Windows host memory pressure | Recommendations above; no setting changed |
+
+**Rebuilding the dev images (item 5)** — `app`, `worker` and `scheduler` bake `docker/backend/entrypoint.dev.sh` into their images (checked: all three still contain the old text). When nobody is testing, and ideally off-peak:
+
+```sh
+docker/dev/stack-exclusive.sh docker compose up -d --build app worker scheduler
+```
+
+It refuses while any test or browser run holds the stack. It builds three images from one Dockerfile (cached; the first build under host memory pressure can take minutes), recreates only those three containers (nginx, node, both Postgres servers and Redis keep running; the API returns 502 for a few seconds while `app` restarts), and keeps all volumes. Afterwards verify:
+`docker exec erp-app-1 grep -c erp_testing /usr/local/bin/entrypoint.dev.sh` prints `1` (a comment), `docker logs erp-worker-1` shows no "Running migrations on test database", and `curl http://127.0.0.1:8090/up` returns 200. The leftover `erp_testing` database on the dev server is harmless and can stay.
+
 ## Limits and what to check before adding agents
 
 - Three implementation agents plus one planning worktree is the tested size. Memory is the tight resource (7.5 GB shared with editors and the stack); the throwaway test PostgreSQL holds up to about 8 private databases.
