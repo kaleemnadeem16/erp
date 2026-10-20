@@ -72,14 +72,25 @@ drive main's code and look green while testing nothing of the branch. So:
   and seeded personas) is feasible with the pieces above but was **not** built: it adds fragile pieces (CORS/Sanctum origins, the PWA service worker, a multi-minute `demo:seed` per run) and
   needs its own verification. It is the next step if branch-level UI testing becomes a bottleneck.
 
-## Integration workflow
+## Integration workflow and ownership
 
-1. **Develop and test on your branch** in your worktree: focused tests while working; the checks in [pre-push-checks.md](pre-push-checks.md) for what you changed; one full suite before handing off (it waits its turn).
-2. **Commit only your own work, explicit paths** ([AGENTS.md](../../AGENTS.md#working-alongside-other-agents)). No stash, reset, or rebase of a branch someone else has seen.
-3. **Report** the branch, the commit(s), and the verification you ran (commands, counts, failures with their cause).
-4. **Integrate through the main checkout** (a person or the designated integrator, one branch at a time): `git merge --no-ff <agent>/<topic>` into `develop`, never a force push or history rewrite; then run `docker/backend/codegen.sh --check` and the affected suites there, and push for CI. A merge that conflicts is resolved by the integrator together with the author, not by whoever merges.
-5. **Update your worktree from the accepted state** before starting dependent work: `git merge develop` in your worktree (a merge, not a rebase, so no history is rewritten). Run `docker/dev/worktree.sh list` to see how far behind you are.
-6. **Afterwards** `docker/dev/worktree.sh remove <topic>` (clean and merged only).
+**One designated integrator** merges completed feature branches into `develop`, one at a time. Until the owner names someone else, that is the infrastructure agent working with the owner. Two roles stay separate:
+
+| Role | Does | Does not |
+|---|---|---|
+| Feature agent | Commits and verifies in its own worktree; reports the commit, the checks it ran and what it depends on; updates its branch with `git merge develop` | Merge into `develop`, push `develop`, or restart the shared stack |
+| Integrator | Checks the branch and the repository state; merges **one approved** branch; watches CI; runs the browser specs on the integrated stack; tells the other agents to update | Decide that a business feature is complete or approved — that is the owner's call, given explicitly per branch |
+
+Procedure for each branch:
+
+1. **Feature agent** finishes in its worktree: focused tests, the pre-push checks that apply, one full suite (it waits its turn), `git status` clean of its files.
+2. **Feature agent reports**: branch and tip commit, the commands it ran with their results (counts, failures with cause), migrations and API changes, and which other branches or decisions it depends on. Browser results are not claimed for the branch (they cannot be: see the boundary above).
+3. **Integrator inspects** with `docker/dev/integrate-check.sh <branch>` (read-only): commits and files, behind-develop, migrations that sort before develop's newest, generated-client changes without an API source change, shared files and `docker/` scripts touched, uncommitted work in the owning worktree, and a conflict dry-run. Any ATTENTION line goes back to the agent first.
+4. **Owner approval** of the business feature for that branch is recorded (a message naming the branch and commit). Without it nothing is merged.
+5. **Integrator merges** from the main checkout, which must be clean and on `develop`: `git merge --no-ff <branch>` (never a force push, rebase or history rewrite). Then `docker/backend/migrate-cycle.sh` if migrations came in, `docker/backend/codegen.sh --check` if the API moved, the affected suites, and a push of `develop` as a normal fast-forward only when the owner has authorised publication.
+6. **CI** must pass on the integrated commit (`gh run list --branch develop`); a failure is classified (regression, stale test, environment, drift, another branch) and reported, not retried blindly.
+7. **Browser specs** run from the main checkout against the integrated stack (`docker/frontend/run-e2e.sh`, one at a time) and are reported as *"develop@<sha>"*.
+8. **Agents update**: each active worktree runs `git merge develop` before dependent work; `docker/dev/worktree.sh list` shows who is behind. After a merge that changes `composer.json`/`package.json`, run `docker/dev/worktree.sh vendor|deps <topic>`.
 
 Specific conflicts:
 
@@ -102,11 +113,12 @@ Measured 2026-10-19 on the 16-core / 15.5 GB host (7.5 GB for WSL/Docker):
 | `tsc` core-api / core-ui / main, `vite build` in a worktree | 3 s / 12 s / 13 s, 6 s (all passed; output stayed in the worktree) |
 | Test Postgres (shared) | RAM disk 19–37 % used with up to 8 private databases; one full suite peaked at 37 % |
 
-**The dominant risk is the Windows host, not the setup.** While verifying this, `docker run --rm alpine true` went from 0.7 s to 7–13 s and the runner from 0.6 s to
-30–40 s with the WSL side idle. The host showed 1.8 GB free of 15.5 GB, **4,734 pages/s** of paging, 22.8 GB committed, and `vmmemWSL` holding 5.3 GB resident of
-7.8 GB private, that is about 2.5 GB of the WSL VM paged out to the Windows pagefile (Chrome, VS Code, ChatGPT and XAMPP were among the largest processes). Everything that
-shares the VM slows together: Docker, PostgreSQL and every agent's runs. Before adding agents, free host memory (close Windows applications) or lower the WSL allocation in
-`C:\Users\<you>\.wslconfig` (`[wsl2] memory=6GB`) so the VM is not paged; this was not changed here.
+**The dominant risk is the Windows host, not the setup (cause not proven).** While verifying this, `docker run --rm alpine true` went from 0.7 s to 7–13 s and the runner from 0.6 s to
+30–40 s with the WSL side idle. At that time the host showed 1.8 GB free of 15.5 GB, 22.8 GB committed, a combined Pages/sec of about 4,700, and `vmmemWSL` resident 5.3 GB against 7.8 GB private
+(Chrome, VS Code, ChatGPT and XAMPP were among the largest processes). **What this does and does not show:** low free memory and the slowdowns coincided, but Pages/sec also counts ordinary
+file reads, and a resident-versus-private gap can be memory the VM simply is not using; page *writes* (the pagefile signal) were not captured then. On 2026-10-20, re-measured with the discriminating counters, Page Writes/sec and Pages Output/sec were **0** both idle and while two agents ran seeder tests, so no paging out was happening in
+those samples. Everything that shares the VM slows together when the host is starved: Docker, PostgreSQL and every agent's runs. Free host memory (close Windows applications) before heavy runs; the `.wslconfig`
+change below remains an option to test, not a conclusion.
 
 
 ## Agent cheat sheet (inside your worktree)
@@ -133,28 +145,24 @@ Do not use bare `docker compose exec app …` for any of the above in a worktree
 
 ## Onboarding the first two Phase 4 agents
 
-State checked 2026-10-20: the main checkout is on `develop`, clean, nothing staged or uncommitted; the other two worktrees (`erp-auth-retrofit`, `erp-release-sync`) have no unstaged work. Before moving anyone,
-**the agent itself confirms** `git status --short` shows nothing of theirs uncommitted. An agent with uncommitted work stays in the main checkout until it commits that work by explicit path; it is never moved or stashed for it.
-Substitute your real agent names for `<agentA>` and `<agentB>` (lowercase letters, digits, dashes). Open the new folder as the agent's workspace so its session starts inside it.
+State checked 2026-10-20: the main checkout is on `develop`, clean, nothing staged or uncommitted; all agent sessions were working in it; the other two worktrees (`erp-auth-retrofit`, `erp-release-sync`) have no unstaged work and were not touched. The two workspaces below were created **empty and clean** from `develop` at `afe70e1` and nobody has been moved into them:
+an agent switches only when it says so. **Before switching, the agent confirms** `git status --short` in the main checkout shows nothing of its own uncommitted; an agent with uncommitted work stays in the main checkout until it commits that work by explicit path (never stashed, never copied). Open the new folder as the agent's workspace so its session starts inside it. Both worktrees record the agent as `phase4` in `.erp-agent`; an agent may replace that with its own short name (it renames its test database; the old one can be dropped with `docker/backend/test-db.sh drop`).
 
-**Agent A — Sales quotation workflows** (QL0 is on `develop`; next slices per [phase-4-ql0-delivery-and-decisions.md](../phases/phase-4-ql0-delivery-and-decisions.md) and [phase-4-sales-quotations-and-handover.md](../phases/phase-4-sales-quotations-and-handover.md))
+| | Path | Branch | Test database |
+|---|---|---|---|
+| **Agent A — Sales quotations** (QL1 and later authorised slices; see [phase-4-ql0-delivery-and-decisions.md](../phases/phase-4-ql0-delivery-and-decisions.md), [phase-4-sales-quotations-and-handover.md](../phases/phase-4-sales-quotations-and-handover.md)) | `/home/kaleem/projects/erp-sales-quotes` | `phase4/sales-quotes` | `erp_testing_phase4_sales_quotes` |
+| **Agent B — Documents** (DF0–DF5; DF0 needs separate authorisation: [handoff](../phases/phase-4-documents-df0-handoff.md)) | `/home/kaleem/projects/erp-documents` | `phase4/documents` | `erp_testing_phase4_documents` |
 
-```sh
-cd /home/kaleem/projects/erp && git status --short && git log -3 --oneline        # re-read STATUS.md; nothing of yours uncommitted
-docker/dev/worktree.sh add sales-quotes --agent <agentA>                            # ../erp-sales-quotes, branch <agentA>/sales-quotes, database erp_testing_<agentA>_sales_quotes
-cd ../erp-sales-quotes
-docker/backend/run-tests-tmpfs.sh --filter=Quotation                                # sanity check: QL0 tests pass here
-```
-
-**Agent B — Documents (shared Document & Print Framework)** ([document-print-framework-slices.md](../phases/document-print-framework-slices.md), [documents.md](../domain/documents.md))
-*Application code for DF0 needs the owner's separate authorisation; until then the worktree is for reading, design and documentation only.*
+Exact onboarding command for each agent (paste in a terminal; nothing is created, it only enters and checks the workspace):
 
 ```sh
-cd /home/kaleem/projects/erp && git status --short && git log -3 --oneline
-docker/dev/worktree.sh add documents --agent <agentB>                              # ../erp-documents, branch <agentB>/documents, database erp_testing_<agentB>_documents
-cd ../erp-documents
-docker/backend/run-tests-tmpfs.sh --filter=Numbering                               # sanity check on an unrelated, stable area
+# Agent A
+cd /home/kaleem/projects/erp-sales-quotes && git status --short && git log -3 --oneline && docker/backend/run-tests-tmpfs.sh --filter=Quotation
+# Agent B
+cd /home/kaleem/projects/erp-documents && git status --short && git log -3 --oneline && docker/backend/run-tests-tmpfs.sh --filter=Numbering
 ```
+
+Then tell the integrator *"agent A/B is working in <path> on <branch>"*, and re-read `docs/STATUS.md`.
 
 Where the two meet: Documents' Sales adapter needs real quotation issue contracts (QL3), so A's slices land first; B's DF0/DF1 foundation is independent and delivered disabled. Both touch hotspots, so
 merge `develop` often and expect to resolve: new migrations (check each other's tables), the generated API client (regenerate, never choose a side), and `docs/STATUS.md`/`STATUS-LOG.md`.
@@ -169,14 +177,14 @@ Integration is one branch at a time through the main checkout (steps above); nei
 | Host RAM / free at idle | 15.5 GB / 2.3 GB free; 20.7 GB committed of a 32.5 GB limit |
 | Largest Windows consumers (working set) | Chrome 2.6 GB (20 processes), ChatGPT 1.1 GB (15), VS Code 1.0 GB (12), Windows services 1.1 GB, Edge WebView 0.25 GB, Docker Desktop 0.35 GB |
 | WSL VM | allowed 7.5 GB (the default, half of host RAM); `vmmemWSL` 3.0 GB resident of 5.1 GB private at idle, 5.3 of 7.8 GB under load |
-| Paging under load (2026-10-19) | 4,734 pages/s average with 1.8 GB free; at idle 22 pages/s |
+| Pages/sec (combined reads and writes, includes file reads) | 2026-10-19 during the slowdown: about 4,700 with 1.8 GB free; 2026-10-20: 4–4,300 depending on the moment. **Page Writes/Pages Output (pagefile writes): 0 in every 2026-10-20 sample**; pagefile 12 % used (about 2 GB of 17 GB) |
 | WSL memory during a full backend suite | available never below 3.8 GB of 7.5 GB; swap about 2 MB |
 | Cost of one runner / test Postgres / dev stack | 470 MiB peak / about 480 MiB (its RAM disk counts) / about 0.7 GB for the eight services |
 | In WSL, editors and agents | VS Code server about 0.6 GB, Claude 0.35 GB, Antigravity 0.18 GB, Codex 0.15 GB |
-| Effect observed while paging | Docker start-up 0.7 s → 7–40 s; a trivial test 5 s → 170 s with the WSL side idle |
+| Slowdown observed while the host had 1.8 GB free | Docker start-up 0.7 s → 7–40 s; a trivial test 5 s → 170 s with the WSL side idle |
 
-**Assumptions** (not measured here): that capping WSL lower than 7.5 GB will stop the VM being paged — the measured peak need is about 3.7 GB plus page cache, so **6 GB** should cover the stack, two
-concurrent focused runs and one full suite, but nobody has run that configuration; that adding RAM removes the paging (very likely, since the measured stall coincides with 1.8 GB free, but the speed gain was not measured).
+**Assumptions** (not measured here): that capping WSL lower than 7.5 GB would make the slowdowns stop (the cause of the 2026-10-19 slowdown is not proven to be paging) — the measured peak need is about 3.7 GB plus page cache, so **6 GB** should cover the stack, two
+concurrent focused runs and one full suite, but nobody has run that configuration; that adding RAM would remove the slowdowns (plausible, since they coincided with 1.8 GB free, but neither the cause nor any speed gain was measured).
 
 **Recommendation (nothing was changed):**
 
@@ -184,7 +192,17 @@ concurrent focused runs and one full suite, but nobody has run that configuratio
 2. *Close during heavy tests (full suite, browser run, codegen, a rebuild):* extra Chrome windows and tabs (largest single item), the ChatGPT desktop app, Edge WebView processes, the Docker Desktop dashboard window, XAMPP control panel and its services, and any second editor window on the same repository. Keep one VS Code window per active worktree; each adds a WSL server of about 0.6 GB.
 3. *Two agents running focused tests at once:* **yes**, measured: pairs and triples of focused runs, and nine concurrent fork tests, ran correctly. Condition (assumption): host free memory stays above about 3 GB; below it, one run alone was already slow.
 4. *Keep serial:* one full backend suite, one browser run, one stack restart or rebuild at a time (enforced by the locks).
-5. *More RAM:* worth it. 32 GB would take the host out of the paging regime this machine was in during verification, which is the only thing measured to cause 10–100× slowdowns of container start-up and tests. It would not speed up CPU-bound work, and it is not a substitute for the locks.
+5. *More RAM:* worth it. 32 GB would take the host out of the low-free-memory state it was in during the 2026-10-19 slowdown (10–100× slower container start-up and tests); the link is a coincidence in time, not a demonstrated cause. It would not speed up CPU-bound work, and it is not a substitute for the locks.
+
+**Baseline during normal work** (`docker/dev/host-baseline.sh [label]` appends one line to `/tmp/erp-test-locks/baseline.csv`; run it a few times a day, especially during heavy runs). First samples, 2026-10-20, current configuration:
+
+| Condition | WSL available | Windows free | Pages/sec (not pagefile writes) | Runner start | Focused test (3 tests) |
+|---|---|---|---|---|---|
+| Idle, after the rebuild | 4.1 GB | 1.8 GB | 18 pages/s | 0.6 s | 4.4 s |
+| Two agents running focused seeder tests (24 s and 46 s) | 4.0 GB | 1.8 GB | 4,308 pages/s, **0 page writes** | 1.2 s | 8.2 s |
+| *For comparison, 2026-10-19 during the slowdown* | 3.9 GB | 1.8 GB | 4,734 pages/s, page writes not captured | 30–40 s | up to 170 s |
+
+Two concurrent agents are fine on today's numbers; Windows free memory is the same low 1.8 GB in all three rows, so the difference is what else the host is doing (Chrome, ChatGPT, builds), not these tests; and Pages/sec swings from single digits to thousands with no pagefile writes, so it is not a pressure gauge by itself. If runs become slow again, capture **Page Writes/sec, Pages Output/sec and pagefile % usage** at that moment (the helper now records them) and take the evidence to a separate approval for a `.wslconfig` change: **try** `memory=6GB` and `autoMemoryReclaim=gradual` in `C:\Users\<you>\.wslconfig`, run `wsl --shutdown`, re-run the baseline; **roll back** by deleting those lines (or the file) and running `wsl --shutdown` again. Nothing has been changed.
 
 ## Tracked infrastructure issues (open)
 
@@ -194,16 +212,17 @@ concurrent focused runs and one full suite, but nobody has run that configuratio
 | 2 | Browser tests against a feature branch are not isolated | Browser specs run only from the main checkout, after integration; a private per-run stack needs its own design review |
 | 3 | Restarting the shared stack | Use `docker/dev/stack-exclusive.sh <command>`; it refuses while anyone is testing |
 | 4 | Worker restart fix | Config deployed 2026-10-19; the container then restarted itself 17 times in 17 hours (the hourly `--max-time` exit), which is the intended behaviour |
-| 5 | Dev images still carry the Stage 1 entrypoint (it migrates the shared `erp_testing` on every start) | Needs one rebuild; procedure below |
+| 5 | Dev images carried the Stage 1 entrypoint | **Done 2026-10-20**: `app`, `worker`, `scheduler` rebuilt and recreated through `stack-exclusive.sh` (119 s); their start-up no longer touches the shared `erp_testing`; PostgreSQL, Redis, nginx and Node were not restarted. nginx needed a reload afterwards (below) |
 | 6 | Windows host memory pressure | Recommendations above; no setting changed |
 
 **Rebuilding the dev images (item 5)** — `app`, `worker` and `scheduler` bake `docker/backend/entrypoint.dev.sh` into their images (checked: all three still contain the old text). When nobody is testing, and ideally off-peak:
 
 ```sh
-docker/dev/stack-exclusive.sh docker compose up -d --build app worker scheduler
+docker/dev/stack-exclusive.sh docker compose up -d --build --no-deps app worker scheduler
+docker exec erp-nginx-1 nginx -s reload      # nginx resolves `app` once at start; reload so it follows the recreated container
 ```
 
-It refuses while any test or browser run holds the stack. It builds three images from one Dockerfile (cached; the first build under host memory pressure can take minutes), recreates only those three containers (nginx, node, both Postgres servers and Redis keep running; the API returns 502 for a few seconds while `app` restarts), and keeps all volumes. Afterwards verify:
+`--no-deps` is deliberate: without it Compose re-evaluates the Postgres and Redis services too. It refuses while any test or browser run holds the stack. It builds three images from one Dockerfile (cached; the first build under host memory pressure can take minutes), recreates only those three containers (nginx, node, both Postgres servers and Redis keep running; the API returns 502 for a few seconds while `app` restarts), and keeps all volumes. Afterwards verify:
 `docker exec erp-app-1 grep -c erp_testing /usr/local/bin/entrypoint.dev.sh` prints `1` (a comment), `docker logs erp-worker-1` shows no "Running migrations on test database", and `curl http://127.0.0.1:8090/up` returns 200. The leftover `erp_testing` database on the dev server is harmless and can stay.
 
 ## Limits and what to check before adding agents

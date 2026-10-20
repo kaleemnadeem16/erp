@@ -380,9 +380,10 @@ What was established:
 - **Not reproduced:** the three `pcntl_fork` concurrency tests (`AvcoPoolConcurrencyTest`, `GoodsReceiptConcurrencyTest`,
   `QualityDispositionPostingTest`) ran alone and nine at a time on private databases without any server exit. They are not the cause on
   this evidence, and they are not cleared for all conditions either.
-- **Measured 2026-10-19, host memory pressure:** the Windows host had 1.8 GB free of 15.5 GB, paged at 4,734 pages/s, and held about 2.5 GB of the WSL VM in the
-  pagefile (`vmmemWSL` 5.3 GB resident vs 7.8 GB private). Docker start-up slowed from 0.7 s to 7–13 s with the WSL side idle. This explains the intermittent slow
-  runs and is a plausible reason for VM stalls, but nothing ties it to a specific backend exit yet: no exit happened during the measurement.
+- **Measured 2026-10-19/20, host memory:** during a slowdown on 2026-10-19 the Windows host had 1.8 GB free of 15.5 GB, a combined Pages/sec of about 4,700 and `vmmemWSL` 5.3 GB resident vs 7.8 GB
+  private, and Docker start-up slowed from 0.7 s to 7–13 s with the WSL side idle. That is a coincidence in time, **not an established cause**: Pages/sec includes ordinary file reads, the resident/private gap can be
+  unused VM memory, and pagefile writes were not captured then (on 2026-10-20 Page Writes/sec was 0 in every sample, idle and under load). It is a plausible reason for intermittent slow runs and VM stalls, but nothing ties
+  it to a specific backend exit: no exit happened during any measurement.
 - **Open:** the historical events carry none of the backend-side lines a SIGQUIT now produces (`terminating connection because of
   unexpected SIGQUIT signal`, `Failed process was running`), and some happened with nothing running. The sender is unknown. What to
   check by hand, since Docker Desktop's settings are not readable from WSL: Resource Saver / idle pause, Windows sleep and wake, WSL

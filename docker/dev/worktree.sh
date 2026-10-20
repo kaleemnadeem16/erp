@@ -65,7 +65,7 @@ case "$cmd" in
 
 Worktree ready: $dir   branch: $branch (from $base)   agent: $agent
   cd $dir
-  docker/backend/run-tests-tmpfs.sh --filter=…     # tests of THIS checkout, database erp_testing_${agent}_${topic}
+  docker/backend/run-tests-tmpfs.sh --filter=…     # tests of THIS checkout, database $(printf 'erp_testing_%s_%s' "$agent" "$topic" | tr -c 'a-z0-9_\n' '_')
   docker/backend/run.sh vendor/bin/pint --test <paths>
   docker/backend/run.sh vendor/bin/phpstan analyse --memory-limit=1G
 Browser specs run only from the main checkout (the dev stack serves it): see docs/architecture/multi-agent-workspaces.md.
