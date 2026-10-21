@@ -909,3 +909,10 @@ FR3 calculation or FR4 changes. See [Tax README](../backend/app/Modules/Tax/READ
 Local verification: Tax regression 15 tests / 768 assertions; Architecture 52 tests / 119 assertions including all five required
 ratchets; Pint 30 files; whole-project PHPStan; empty-schema migration apply/rollback/reapply; populated rollback refusal test;
 codegen --check (client unchanged). Browser specs and full local suite were not run (no public surface; coordinator/CI responsibility).
+
+First feature-branch CI identified a stale explicit module-owner list in PermissionRegistrationTest. The Tax provider contributes
+an empty vocabulary, so its expected owner list now includes tax and asserts that vocabulary is empty. No live duty was added.
+
+The corrected PermissionRegistrationTest passes locally (7 tests / 47 assertions; Pint passed). Hosted CI's separate backend
+shard 4 failure is the pre-existing GCX duplicate fixture leak tracked by #27/#21, reported with exact job evidence in #33.
+Issue #12 is blocked on #33 pending coordinator integration of #27; no green-CI submission is claimed.
