@@ -383,21 +383,13 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
      * boundaries, so — same reasoning as the lock test above — the fixture is built
      * via raw, immediately-committed PDO inserts rather than Eloquent.
      *
-     * Unlike the lock test, this fixture is never cleaned up: whichever of the two
-     * processes wins creates a real, posted QualityDisposition, and those are
-     * database-enforced undeletable by design (prevent_quality_disposition_delete) —
-     * attempting to tear the chain back down would itself fail, since it transitively
-     * pins its entire FK ancestry (the line, the receipt, the item, ...) too.
+     * Like the lock test, this fixture is removed afterwards — it commits outside RefreshDatabase's transaction, so anything left would leak into the shared
+     * test database (a stray currency breaks CurrencyApiTest's exact count; a stray company id collides with tests that insert one). The winning process
+     * creates a real, posted QualityDisposition, which the database makes undeletable (prevent_quality_disposition_delete) along with the chain it pins, so
+     * cleanUpRawFixture($committedHistory: true) switches off the user triggers on exactly those tables for the delete and switches them back on.
      *
-     * That permanence is why this fixture deliberately does *not* live under company
-     * 1 like every other test's data: an exact-count assertion elsewhere (company-1
-     * items/locations/etc.) would otherwise start failing depending on test order,
-     * the first time this test happened to run before it. A dedicated, idempotently
-     * reused company keeps it fully isolated from company-1 assertions; a random
-     * per-run suffix on top of that keeps repeated runs from colliding with each
-     * other within that one company. currencies has no company scope at all — the
-     * one genuinely global table this touches — so it reuses one idempotently
-     * created row by a fixed code instead of creating a new one per run.
+     * The fixture still lives in its own company rather than company 1, so an exact-count assertion on company-1 data cannot see it while it exists; a random
+     * per-run suffix keeps repeated or interrupted runs from colliding. currencies has no company scope at all — the one genuinely global table this touches.
      */
     public function test_concurrent_dispositions_from_separate_processes_cannot_together_exceed_capacity(): void
     {
@@ -533,7 +525,15 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
         } finally {
             @unlink($resultPath);
             @unlink($startPath);
+            // Committed outside RefreshDatabase's transaction, so removed here: a leftover currency, company or posted chain would change every later
+            // test's view of the shared database (see CurrencyApiTest's exact currency count).
+            $this->cleanUpRawFixture($pdo, "qa_concurrency_test_{$suffix}", 'QAX', committedHistory: true);
+            $pdo->exec("delete from activity_log where company_id = {$companyId}");
+            $pdo->exec("delete from companies where id = {$companyId}");
         }
+
+        $this->assertFalse(DB::connection('testing')->table('currencies')->where('code', 'QAX')->exists(), 'the raw fixture left its currency in the shared test database');
+        $this->assertFalse(DB::connection('testing')->table('companies')->where('id', $companyId)->exists(), 'the raw fixture left its company in the shared test database');
     }
 
     /**
@@ -587,8 +587,34 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
         return [$lineId, $userId];
     }
 
-    private function cleanUpRawFixture(PDO $pdo, string $prefix, string $currencyCode): void
+    /**
+     * Removes everything createRawFixture() committed. $committedHistory is for the fixture whose dispositions and posted receipt are database-enforced
+     * history: the guards on exactly those tables are switched off for the delete only (the same technique the other raw-PDO cleanups use) and always
+     * switched back on.
+     */
+    private function cleanUpRawFixture(PDO $pdo, string $prefix, string $currencyCode, bool $committedHistory = false): void
     {
+        $guarded = ['quality_dispositions', 'goods_receipt_lines', 'goods_receipts', 'purchase_order_lines', 'purchase_orders'];
+        if ($committedHistory) {
+            foreach ($guarded as $table) {
+                $pdo->exec("alter table {$table} disable trigger user");
+            }
+        }
+
+        try {
+            $this->deleteRawFixtureRows($pdo, $prefix, $currencyCode);
+        } finally {
+            if ($committedHistory) {
+                foreach ($guarded as $table) {
+                    $pdo->exec("alter table {$table} enable trigger user");
+                }
+            }
+        }
+    }
+
+    private function deleteRawFixtureRows(PDO $pdo, string $prefix, string $currencyCode): void
+    {
+        $pdo->exec("delete from model_has_permissions where model_type = '".addslashes(User::class)."' and model_id in (select id from users where email = '{$prefix}@example.com')");
         $pdo->exec("delete from quality_dispositions where goods_receipt_line_id in (select id from goods_receipt_lines where item_id in (select id from items where code = '{$prefix}_item'))");
         $pdo->exec("delete from goods_receipt_lines where item_id in (select id from items where code = '{$prefix}_item')");
         $pdo->exec("delete from goods_receipts where supplier_account_id in (select id from supplier_accounts where code = '{$prefix}_sup')");
