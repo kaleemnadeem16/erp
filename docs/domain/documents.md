@@ -2,7 +2,7 @@
 
 # Documents — shared print, artefact and private file contract
 
-**2026-10-15 · ACCEPTED0137 / SPECIFIED. DF0 foundation implemented (disabled entry; subject bindings and operation receipts only); the rest is not IMPLEMENTED or VERIFIED.**
+**2026-10-15 · ACCEPTED0137 / SPECIFIED. DF0 foundation and DF1a configuration (template/page-policy versions, Company defaults, resolution; internal, brand step absent) implemented, entry disabled; the rest is not IMPLEMENTED or VERIFIED.**
 Documents is shared infrastructure within Laravel, with shared React primitives and a bounded isolated
 render worker in the same application deployment. It is not a separate PDF service or a universal
 business lifecycle. Owners supply typed authorised projections and business policy through adapters.
