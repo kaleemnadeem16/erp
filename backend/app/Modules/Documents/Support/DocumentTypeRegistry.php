@@ -47,6 +47,14 @@ final class DocumentTypeRegistry
         return $adapter;
     }
 
+    /** What this type allows its configuration to be: its own constraints if it declares them, otherwise the fail-safe A4-only default. */
+    public function layoutConstraints(string $key): LayoutConstraints
+    {
+        $adapter = $this->types[$key] ?? throw new DocumentException("No adapter is registered for document type '{$key}'.", 'type_key', 'adapter_missing');
+
+        return $adapter instanceof ConstrainsDocumentLayout ? $adapter->layoutConstraints() : LayoutConstraints::defaultFor($adapter);
+    }
+
     /** @return array<string, DocumentTypeAdapter> */
     public function all(): array
     {
