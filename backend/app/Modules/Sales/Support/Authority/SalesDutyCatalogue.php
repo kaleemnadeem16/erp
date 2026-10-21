@@ -60,7 +60,7 @@ final class SalesDutyCatalogue
             new SalesDuty('sales.handover.hold', DutyClass::Sensitive, DutyStatus::Specified, 'Authorised operational hold', 'Operational', 'HA5'),
             new SalesDuty('sales.handover.amend', DutyClass::Sensitive, DutyStatus::Specified, 'Schedule/unused cancellation/reassignment', 'Operational/impact', 'HA4/5'),
             new SalesDuty('sales.document.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Safe generation/artefact history/status', 'Document-min', 'DF2/DOC1'),
-            new SalesDuty('sales.document.generate', DutyClass::NewOrdinary, DutyStatus::Specified, 'Request pinned generation/retry', 'Customer render profile', 'DF3/DOC2'),
+            new SalesDuty(PermissionVocabulary::DOCUMENT_GENERATE, DutyClass::NewOrdinary, DutyStatus::Staged, 'Request pinned generation/retry', 'Customer render profile', 'DF3/DOC2'),
             new SalesDuty('sales.document.repair', DutyClass::Sensitive, DutyStatus::Specified, 'Authorise labelled semantic rendition', 'Customer render profile', 'DF4/DOC3'),
             new SalesDuty('sales.document.download', DutyClass::NewOrdinary, DutyStatus::Specified, 'Original/permitted rendition/print invocation', 'Exact whole payload', 'DF4/DOC4'),
             new SalesDuty('sales.document.attachment.manage', DutyClass::Sensitive, DutyStatus::Specified, 'Validate/link allowed evidence attachment', 'Association write', 'DF4 + CA/DOC'),
