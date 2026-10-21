@@ -4,6 +4,7 @@ use App\Modules\Accounting\AccountingServiceProvider;
 use App\Modules\Administration\AdministrationServiceProvider;
 use App\Modules\Approvals\ApprovalsServiceProvider;
 use App\Modules\Company\CompanyServiceProvider;
+use App\Modules\Documents\DocumentsServiceProvider;
 use App\Modules\Estimating\EstimatingServiceProvider;
 use App\Modules\Imports\ImportsServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
@@ -32,4 +33,5 @@ return [
     PurchasingServiceProvider::class,
     ApprovalsServiceProvider::class,
     EstimatingServiceProvider::class,
+    DocumentsServiceProvider::class,
 ];
