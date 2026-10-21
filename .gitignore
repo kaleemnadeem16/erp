@@ -3,6 +3,7 @@
 .env.*
 # Written by docker/dev/worktree.sh: which agent works in this worktree (names its test database)
 .erp-agent
+.erp-transitions
 !.env.example
 !backend/.env.example
 
