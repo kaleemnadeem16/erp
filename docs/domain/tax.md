@@ -24,6 +24,23 @@ Operative rounding/allocations and immutable evidence follow0120, independent of
 Unsupported structure/mode refuses; architecture support is not enabled execution. Future invoice
 legal tax may differ with linked evidence, never overwrite quote tax estimates.
 
+## FR2a configuration foundation (2026-10-21)
+
+The dedicated [Tax module](../../backend/app/Modules/Tax/README.md) provides company-scoped component identities,
+append-only effective component/rate/rule/group versions, named dependency versions and generation-fenced group activation.
+Versions use non-overlapping half-open company/code periods and exact bounded-predecessor succession. Group members pin same-company
+rule/component/rate versions covering the whole group period. Activation rejects cycles, missing/duplicate components, incompatible
+bases/methods, assessment scope, modes and currencies; a database trigger repeats validation under the same generation fence as graph
+writers. Activated graphs cannot gain members or edges. All evidence rejects UPDATE/DELETE/TRUNCATE; populated rollback refuses.
+
+`tax.configuration.manage` is STAGED and unregistered, with every configuration Action denied until reviewed activation;
+`tax.profile.manage` stays SPECIFIED for FR2b. There are no routes, grants, UI, source-master writes, Sales integration or client changes.
+`DetermineQuotationTax` supports **classification only**: typed declared goods/services, Assembly defaults and explicit manual facts.
+Missing classification is UNKNOWN, ambiguous nature UNSUPPORTED; even supported classification leaves statutory disposition UNKNOWN.
+It selects no effective tax group and calculates no amount. Source persistence, Party profile/exemption facts (FR2b), composition,
+inclusive normalisation and withholding (FR3) remain separate. No statutory or execution support is implied by stored method names.
+Open-ended versions cannot be shortened by FR2a; scheduled successors require a bounded predecessor rather than rewriting evidence.
+
 ## Problem statement
 
 Tax is not one percentage added to every document. Sales/output and purchase/input tax have

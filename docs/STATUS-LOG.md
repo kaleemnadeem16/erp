@@ -895,3 +895,17 @@ Authorised to implement coordination on top of Stages 1–2. **Mechanism:** GitH
 ## 2026-10-21 — Documents DF0 foundation (branch phase4/df0-documents-foundation)
 
 `backend/app/Modules/Documents`: provider, document-type and access contracts (ADR 0137), a type registry that refuses missing/incompatible adapters, an owner-defined typed projection schema (no universal line schema), `BindDocumentSubject` (idempotent, fails closed) and the tenant-safe `document_subject_bindings` / `document_operation_receipts` tables (composite company keys, CHECKs, append-only trigger). Public entry disabled: no routes, grants, duties or client change. A PO-shaped test fixture binds with zero Purchasing writes. Quotation binding, snapshot tables and DF1–DF5 are not part of this delivery.
+
+
+## 2026-10-21 — Phase 4 FR2a Tax foundation (#12)
+
+Agent C added the dedicated Tax provider/module, typed classification-only determination and company-scoped immutable
+component/rate/rule/group/dependency versions. Generation-fenced Actions use expected generation and atomic replay receipts;
+database activation validates graph periods/tenancy/method/base/mode/currency/assessment scope and cycles, freezing activated graphs.
+Tax evidence rejects updates/deletes/truncation and populated rollback. tax.configuration.manage stays STAGED/unregistered;
+tax.profile.manage remains SPECIFIED for FR2b. No public routes, live grants, UI/client changes, Sales/Documents integration,
+FR3 calculation or FR4 changes. See [Tax README](../backend/app/Modules/Tax/README.md) for support boundaries and verification applicability.
+
+Local verification: Tax regression 15 tests / 768 assertions; Architecture 52 tests / 119 assertions including all five required
+ratchets; Pint 30 files; whole-project PHPStan; empty-schema migration apply/rollback/reapply; populated rollback refusal test;
+codegen --check (client unchanged). Browser specs and full local suite were not run (no public surface; coordinator/CI responsibility).
