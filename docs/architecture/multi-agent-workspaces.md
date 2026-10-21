@@ -28,6 +28,8 @@ docker/backend/run.sh vendor/bin/pint --test app/Modules/Sales/Foo.php
 docker/backend/run.sh vendor/bin/phpstan analyse --memory-limit=1G
 docker/backend/codegen.sh --check                       # OpenAPI spec + API client for this checkout (private database)
 docker/dev/worktree.sh list                             # every worktree: dirty files, ahead/behind develop, its test database
+docker/dev/worktree.sh next sales-fr3 claude/sales-fr4    # the same worktree, next task, fresh branch from develop (refuses dirty/unintegrated work)
+docker/dev/worktree.sh cleanup-report                   # merged branches, orphaned databases/volumes: a report, deletes nothing
 docker/dev/worktree.sh remove sales-fr3                 # only when clean and merged into develop; drops its test database
 ```
 
@@ -72,27 +74,10 @@ drive main's code and look green while testing nothing of the branch. So:
   and seeded personas) is feasible with the pieces above but was **not** built: it adds fragile pieces (CORS/Sanctum origins, the PWA service worker, a multi-minute `demo:seed` per run) and
   needs its own verification. It is the next step if branch-level UI testing becomes a bottleneck.
 
-## Integration workflow and ownership
+## Integration
 
-**One designated integrator** merges completed feature branches into `develop`, one at a time. Until the owner names someone else, that is the infrastructure agent working with the owner. Two roles stay separate:
-
-| Role | Does | Does not |
-|---|---|---|
-| Feature agent | Commits and verifies in its own worktree; reports the commit, the checks it ran and what it depends on; updates its branch with `git merge develop` | Merge into `develop`, push `develop`, or restart the shared stack |
-| Integrator | Checks the branch and the repository state; merges **one approved** branch; watches CI; runs the browser specs on the integrated stack; tells the other agents to update | Decide that a business feature is complete or approved — that is the owner's call, given explicitly per branch |
-
-Procedure for each branch:
-
-1. **Feature agent** finishes in its worktree: focused tests, the pre-push checks that apply, one full suite (it waits its turn), `git status` clean of its files.
-2. **Feature agent reports**: branch and tip commit, the commands it ran with their results (counts, failures with cause), migrations and API changes, and which other branches or decisions it depends on. Browser results are not claimed for the branch (they cannot be: see the boundary above).
-3. **Integrator inspects** with `docker/dev/integrate-check.sh <branch>` (read-only): commits and files, behind-develop, migrations that sort before develop's newest, generated-client changes without an API source change, shared files and `docker/` scripts touched, uncommitted work in the owning worktree, and a conflict dry-run. Any ATTENTION line goes back to the agent first.
-4. **Owner approval** of the business feature for that branch is recorded (a message naming the branch and commit). Without it nothing is merged.
-5. **Integrator merges** from the main checkout, which must be clean and on `develop`: `git merge --no-ff <branch>` (never a force push, rebase or history rewrite). Then `docker/backend/migrate-cycle.sh` if migrations came in, `docker/backend/codegen.sh --check` if the API moved, the affected suites, and a push of `develop` as a normal fast-forward only when the owner has authorised publication.
-6. **CI** must pass on the integrated commit (`gh run list --branch develop`); a failure is classified (regression, stale test, environment, drift, another branch) and reported, not retried blindly.
-7. **Browser specs** run from the main checkout against the integrated stack (`docker/frontend/run-e2e.sh`, one at a time) and are reported as *"develop@<sha>"*.
-8. **Agents update**: each active worktree runs `git merge develop` before dependent work; `docker/dev/worktree.sh list` shows who is behind. After a merge that changes `composer.json`/`package.json`, run `docker/dev/worktree.sh vendor|deps <topic>`.
-
-Specific conflicts:
+Roles, the task register, the cross-agent issue process, the test matrix and the integration steps (owner approval of an exact commit, one non-rewriting merge at a time, CI trace) are in
+[agent-coordination.md](agent-coordination.md). Persistent workspaces move to the next task with `docker/dev/worktree.sh next`. What you will actually have to resolve when branches meet:
 
 - **Migrations.** Names carry a timestamp, so two branches rarely collide on a file, but two migrations can still conflict on the *same table or the same column*. Before handing off, `git diff --name-only develop... -- backend/database/migrations` and read any migration on `develop` that touches your tables. After merging `develop`, re-run the apply → rollback → re-apply recipe on your private database. A migration must sort after the one that adds anything it uses.
 - **Generated API client.** Never merge generated files by hand. After a merge that moved the API, regenerate with `codegen.sh` in the integrating checkout and commit the result by explicit path, tracing every change to a source change ([pre-push-checks.md](pre-push-checks.md#generated-files-openapi--client)). Conflicts in `src/generated` are resolved by regenerating, not by choosing a side.
@@ -129,7 +114,8 @@ Run everything from the root of **your** worktree (`cd ../erp-<topic>`); your ag
 |---|---|---|
 | Focused Laravel tests | `docker/backend/run-tests-tmpfs.sh --filter=Quotation` (or a file: `… tests/Feature/Modules/Sales/QuotationFoundationTest.php`) | Never blocked by another agent's full suite |
 | Ratchet / architecture tests | `docker/backend/run-tests-tmpfs.sh --filter='WriteRouteGuardTest|RecordScopeCoverageTest|StockWriterMatrixTest|PermissionCheckRegistrationTest|ControllerActionBoundaryTest'` | Before committing a route, write, permission or stock writer |
-| Full backend suite | `docker/backend/run-tests-tmpfs.sh` | Takes the one global lock and **waits its turn** (says who holds it). About 20 minutes when the machine is healthy. Before handing off, not while iterating |
+| Module regression (before you submit) | `docker/backend/run-tests-tmpfs.sh tests/Feature/Modules/<Module> tests/Unit/Modules/<Module>` (only directories that exist) | Focused: no lock. Sales: 220 tests in 18 s |
+| Full backend suite | `docker/backend/run-tests-tmpfs.sh` | The **coordinator's** checkpoint tool, not a feature agent's habit: it takes the one global lock and waits its turn; 20+ minutes. Triggers: [agent-coordination.md](agent-coordination.md#test-responsibilities) |
 | Pint | `docker/backend/run.sh vendor/bin/pint --test <your paths>` (without `--test` to fix) | Only the paths you changed; never reformat others' files |
 | Larastan | `docker/backend/run.sh vendor/bin/phpstan analyse --memory-limit=1G` | Whole project (it reads types across files) |
 | Migrations: fresh → rollback → re-apply | `docker/backend/migrate-cycle.sh` | Own database `…_mig`. Not the `docker compose exec app` recipe, which acts on the main checkout |
@@ -143,30 +129,23 @@ Run everything from the root of **your** worktree (`cd ../erp-<topic>`); your ag
 
 Do not use bare `docker compose exec app …` for any of the above in a worktree: it fails with `service "app" is not running` on purpose.
 
-## Onboarding the first two Phase 4 agents
+## Workspaces for the first Phase 4 agents
 
-State checked 2026-10-20: the main checkout is on `develop`, clean, nothing staged or uncommitted; all agent sessions were working in it; the other two worktrees (`erp-auth-retrofit`, `erp-release-sync`) have no unstaged work and were not touched. The two workspaces below were created **empty and clean** from `develop` at `afe70e1` and nobody has been moved into them:
-an agent switches only when it says so. **Before switching, the agent confirms** `git status --short` in the main checkout shows nothing of its own uncommitted; an agent with uncommitted work stays in the main checkout until it commits that work by explicit path (never stashed, never copied). Open the new folder as the agent's workspace so its session starts inside it. Both worktrees record the agent as `phase4` in `.erp-agent`; an agent may replace that with its own short name (it renames its test database; the old one can be dropped with `docker/backend/test-db.sh drop`).
+Created 2026-10-20 from `develop`, clean and **empty**; nobody has been moved into them. The register ([agent-coordination.md](agent-coordination.md#the-task-register-github-issues)) holds the assignments; these are only the places.
 
-| | Path | Branch | Test database |
-|---|---|---|---|
-| **Agent A — Sales quotations** (QL1 and later authorised slices; see [phase-4-ql0-delivery-and-decisions.md](../phases/phase-4-ql0-delivery-and-decisions.md), [phase-4-sales-quotations-and-handover.md](../phases/phase-4-sales-quotations-and-handover.md)) | `/home/kaleem/projects/erp-sales-quotes` | `phase4/sales-quotes` | `erp_testing_phase4_sales_quotes` |
-| **Agent B — Documents** (DF0–DF5; DF0 needs separate authorisation: [handoff](../phases/phase-4-documents-df0-handoff.md)) | `/home/kaleem/projects/erp-documents` | `phase4/documents` | `erp_testing_phase4_documents` |
+| | Path | Idle branch | Identity | Test database |
+|---|---|---|---|---|
+| Agent A, Sales quotations (#10) | `/home/kaleem/projects/erp-sales-quotes` | `phase4/sales-quotes` | `agent-a` | `erp_testing_agent_a_sales_quotes` |
+| Agent B, Documents (#11; [handoff](../phases/phase-4-documents-df0-handoff.md)) | `/home/kaleem/projects/erp-documents` | `phase4/documents` | `agent-b` | `erp_testing_agent_b_documents` |
 
-Exact onboarding command for each agent (paste in a terminal; nothing is created, it only enters and checks the workspace):
+An agent switches only when it says so, after confirming nothing of its own is uncommitted in the main checkout (an agent with uncommitted work stays there until it commits by explicit path; nothing is stashed or copied). When its task is authorised it moves the workspace onto the task's branch with
+`docker/dev/worktree.sh next sales-quotes phase4/ql1-drafts` and runs `tasks.sh claim`. Open the folder as the agent's workspace so its session starts inside it. Phase 5 and the UI agent should have worktrees too (`worktree.sh add phase5 --agent phase5`, `add ui --agent ui`): the integrator needs the main checkout clean to merge.
 
 ```sh
-# Agent A
+# sanity check an agent can paste (enters the workspace and runs a small test; creates nothing)
 cd /home/kaleem/projects/erp-sales-quotes && git status --short && git log -3 --oneline && docker/backend/run-tests-tmpfs.sh --filter=Quotation
-# Agent B
-cd /home/kaleem/projects/erp-documents && git status --short && git log -3 --oneline && docker/backend/run-tests-tmpfs.sh --filter=Numbering
+cd /home/kaleem/projects/erp-documents    && git status --short && git log -3 --oneline && docker/backend/run-tests-tmpfs.sh --filter=Numbering
 ```
-
-Then tell the integrator *"agent A/B is working in <path> on <branch>"*, and re-read `docs/STATUS.md`.
-
-Where the two meet: Documents' Sales adapter needs real quotation issue contracts (QL3), so A's slices land first; B's DF0/DF1 foundation is independent and delivered disabled. Both touch hotspots, so
-merge `develop` often and expect to resolve: new migrations (check each other's tables), the generated API client (regenerate, never choose a side), and `docs/STATUS.md`/`STATUS-LOG.md`.
-Integration is one branch at a time through the main checkout (steps above); neither agent merges into `develop` itself.
 
 ## Host memory on a 16 GB machine
 
@@ -204,26 +183,13 @@ concurrent focused runs and one full suite, but nobody has run that configuratio
 
 Two concurrent agents are fine on today's numbers; Windows free memory is the same low 1.8 GB in all three rows, so the difference is what else the host is doing (Chrome, ChatGPT, builds), not these tests; and Pages/sec swings from single digits to thousands with no pagefile writes, so it is not a pressure gauge by itself. If runs become slow again, capture **Page Writes/sec, Pages Output/sec and pagefile % usage** at that moment (the helper now records them) and take the evidence to a separate approval for a `.wslconfig` change: **try** `memory=6GB` and `autoMemoryReclaim=gradual` in `C:\Users\<you>\.wslconfig`, run `wsl --shutdown`, re-run the baseline; **roll back** by deleting those lines (or the file) and running `wsl --shutdown` again. Nothing has been changed.
 
-## Tracked infrastructure issues (open)
+## Shared-stack operations
 
-| # | Issue | State |
-|---|---|---|
-| 1 | PostgreSQL backend exit code 2 (103 on the test server, 33 on the dev server) — cause unknown | A SIGQUIT to one backend reproduces the signature; the fork tests do not; none since the diagnostics were added except a deliberate probe. `pg-crash-report.sh` collects evidence on the next event. See [environments.md](environments.md#unexplained-backend-exits-updated-2026-10-19) |
-| 2 | Browser tests against a feature branch are not isolated | Browser specs run only from the main checkout, after integration; a private per-run stack needs its own design review |
-| 3 | Restarting the shared stack | Use `docker/dev/stack-exclusive.sh <command>`; it refuses while anyone is testing |
-| 4 | Worker restart fix | Config deployed 2026-10-19; the container then restarted itself 17 times in 17 hours (the hourly `--max-time` exit), which is the intended behaviour |
-| 5 | Dev images carried the Stage 1 entrypoint | **Done 2026-10-20**: `app`, `worker`, `scheduler` rebuilt and recreated through `stack-exclusive.sh` (119 s); their start-up no longer touches the shared `erp_testing`; PostgreSQL, Redis, nginx and Node were not restarted. nginx needed a reload afterwards (below) |
-| 6 | Windows host memory pressure | Recommendations above; no setting changed |
+Open infrastructure limitations are tracked in the register, not here: PostgreSQL exit code 2 (#13), browser specs for feature branches (#14), `codex/auth-retrofit` (#15), host slowdowns (#16), branch pushes and CI (#17).
 
-**Rebuilding the dev images (item 5)** — `app`, `worker` and `scheduler` bake `docker/backend/entrypoint.dev.sh` into their images (checked: all three still contain the old text). When nobody is testing, and ideally off-peak:
-
-```sh
-docker/dev/stack-exclusive.sh docker compose up -d --build --no-deps app worker scheduler
-docker exec erp-nginx-1 nginx -s reload      # nginx resolves `app` once at start; reload so it follows the recreated container
-```
-
-`--no-deps` is deliberate: without it Compose re-evaluates the Postgres and Redis services too. It refuses while any test or browser run holds the stack. It builds three images from one Dockerfile (cached; the first build under host memory pressure can take minutes), recreates only those three containers (nginx, node, both Postgres servers and Redis keep running; the API returns 502 for a few seconds while `app` restarts), and keeps all volumes. Afterwards verify:
-`docker exec erp-app-1 grep -c erp_testing /usr/local/bin/entrypoint.dev.sh` prints `1` (a comment), `docker logs erp-worker-1` shows no "Running migrations on test database", and `curl http://127.0.0.1:8090/up` returns 200. The leftover `erp_testing` database on the dev server is harmless and can stay.
+- **Restart policy (2026-10-21).** A WSL/Docker Desktop restart stopped every container that had no restart policy, leaving the dev stack down for about 55 minutes before anyone noticed; only the worker had one. `restart: unless-stopped` is now on `app`, `nginx`, `node`, `scheduler`, `postgres`, `redis` and `worker` (not `postgres-test`: its data is RAM). It was applied live with `docker update --restart`, so nothing restarted; the compose file also carries it, which changes the services' configuration hash, so **the next plain `docker compose up` will recreate those containers once** (do it with `stack-exclusive.sh`). After a host restart the containers return when Docker Desktop starts; Docker Desktop itself does not auto-start on Windows login (its `AutoStart` setting is off; a Windows setting, not changed).
+- **Recovering a stopped stack:** `docker/dev/stack-exclusive.sh docker compose up -d --no-recreate`; PostgreSQL replays its log and the data volumes are untouched. Check `curl http://127.0.0.1:8090/up` and the row counts.
+- **Rebuilding the dev images** (done 2026-10-20 for the Stage 1 entrypoint). When nobody is testing: `docker/dev/stack-exclusive.sh docker compose up -d --build --no-deps app worker scheduler`, then `docker exec erp-nginx-1 nginx -s reload` (nginx resolves `app` once at start). `--no-deps` is deliberate (it keeps Compose from re-evaluating Postgres and Redis). Verify with the API's `/up`, the worker processing a job, and `grep -c erp_testing /usr/local/bin/entrypoint.dev.sh` printing `1`.
 
 ## Limits and what to check before adding agents
 
@@ -234,4 +200,4 @@ docker exec erp-nginx-1 nginx -s reload      # nginx resolves `app` once at star
 
 ## Related
 
-[environments.md](environments.md) · [pre-push-checks.md](pre-push-checks.md) · [testing-standards.md](testing-standards.md) · [AGENTS.md](../../AGENTS.md)
+[agent-coordination.md](agent-coordination.md) · [environments.md](environments.md) · [pre-push-checks.md](pre-push-checks.md) · [testing-standards.md](testing-standards.md) · [AGENTS.md](../../AGENTS.md)

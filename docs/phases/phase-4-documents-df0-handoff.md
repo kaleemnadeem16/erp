@@ -9,8 +9,8 @@
 
 | | |
 |---|---|
-| Path / branch | `/home/kaleem/projects/erp-documents` / `phase4/documents`, created from `develop` at `afe70e1` |
-| Test database | `erp_testing_phase4_documents` (change `.erp-agent` to the agent's own name to rename it) |
+| Path / branch | `/home/kaleem/projects/erp-documents` / `phase4/documents` (idle placeholder; the task moves it onto its own branch with `worktree.sh next`), created from `develop` at `afe70e1`. Register entry: #11 |
+| Identity / test database | `agent-b` / `erp_testing_agent_b_documents` |
 | Commands | [multi-agent-workspaces.md](../architecture/multi-agent-workspaces.md#agent-cheat-sheet-inside-your-worktree) |
 | Sanity check done | `--filter=Numbering` passes in the worktree (69 tests) |
 
