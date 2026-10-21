@@ -64,6 +64,12 @@ GIN indexes. EXPLAIN representative histories at scale before activation.
 
 ## Later-slice schema candidates
 
+The receiver-integration migration replaces SP0b's UNIQUE(company_id,target_purpose,business_identity)
+with UNIQUE(company_id,stage_id,target_purpose,business_identity), the stage-inclusive receiver
+identity. SP0b omits stage because the real Sales stage table/composite FK is not yet a delivered
+dependency; it must not substitute an unchecked stage string. The initial uniqueness is for the
+disabled foundation only, not the final receiver identity. Replace it when adding the actual stage FK.
+
 | Slice / deferred table | Candidate shape and gate |
 |---|---|
 | Receiver integration: origin extensions | Real acceptance/allocation/stage composite FKs after Sales tables exist; receiver identity UNIQUE(company_id,stage_id,target_purpose,business_identity); exact upstream source/baseline/generation binding; Jobs migration references Sales, never Sales FK into Jobs |
@@ -100,8 +106,7 @@ Sales proof must be obtained through the real supported contract under locks, no
 Return company/Job/default activity IDs, origin identity, target baseline/digest/generation and Job
 origin-row ID as receiver receipt. Sales stores a result link to that origin ID (not a FK into Jobs);
 Jobs never calls Sales OperationReceiptPort. Sales receipt links its exact allocation/stage/baseline
-to this result. All commit
-with the target/allocation effects; a dispatched queue message is not a durable receiver receipt.
+to this result. All commit with the target/allocation effects; a dispatched queue message is not a durable receiver receipt.
 
 Receiver identity is (company,stage,purpose,business_identity), independent of actor/key.
 Same receiver identity + same business intent returns original permitted target, including fresh keys
@@ -152,7 +157,7 @@ use its reviewed safe-read contract. No CRM-manage, assignment or role-name infe
 | job.history.record / job.history.review / job.history.correct | Capture, review and correction distinct; legitimate original record/source reads |
 | job.cost.view | J2/later separate STAGED cost duty; not needed for J1 close; no implicit rates, identities, files or configuration |
 | R9 handover release + job.receive | Later Jobs receiving duty explicitly named job.receive, STAGED until holder recipe; independent Sales release authority and source/target access; never trusted boolean/delegation inference |
-| J2 source record/recognise/correct/coverage declare | Source-owned duties under0146/0147; combined action needs both; never implied by completion |
+| J2 source record/recognise/correct/coverage declare | Source-owned duties under 0146/0147; combined action needs both; never implied by completion |
 
 Recommend initial company-wide scope per required duty; none/units/own/assigned scopes refuse safely
 until full Job mapping exists. Reuse RecordScope resolver; do not add a new parallel scope system.
@@ -166,7 +171,7 @@ read, never a zero placeholder. Documents/file access and approval evidence requ
 
 Propose typed Jobs-local readiness values per named owning adapter: family, contract version,
 source inventory/basis/scope/generation, outcome, safe blocker and private evidence/receipt reference.
-Use0151 outcomes: RESOLVED, SUPPORTED_VALUATION_FOLLOW_UP, BLOCKING, UNSUPPORTED_UNKNOWN,
+Use 0151 outcomes: RESOLVED, SUPPORTED_VALUATION_FOLLOW_UP, BLOCKING, UNSUPPORTED_UNKNOWN,
 NOT_APPLICABLE_WITH_EVIDENCE. No generic registry default to success. Every required family is accounted
 for by supported inventory/rules; absent code/query rows are not proof of inapplicability.
 

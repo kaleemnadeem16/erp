@@ -59,8 +59,8 @@ No migration files produced. Later proposed additive order:
 | Batch | Shape and gate |
 |---|---|
 | SP0b | Exactly job_handover_origins, service_jobs (ServiceJob), job_baselines, job_events; origin is receiver receipt; state CHECK and UNIQUE(company,job,next_generation), append-only origin/baseline/event guards; no production entry point |
-| Receiver integration | Jobs migration adds real composite-FK CA/HA bindings after Sales tables exist; ServiceJob row before origin writes; actual receiver/default activity; components deferred until completion basis approved, optional positive measure/quantity pair; same-connection release proof |
-| Lifecycle | Activities as needed, assignment/hold identities, client operation receipts, outcomes/remainder/resolution and transition/generation guards; Jobs manifest/access and STAGED duties; remainder optional positive measure/quantity pair |
+| Receiver integration | Jobs migration adds real composite-FK CA/HA bindings after Sales tables exist; ServiceJob row before origin writes; actual receiver and job_activities/default activity; components deferred until completion basis approved, optional positive measure/quantity pair; same-connection release proof |
+| Lifecycle | Assignment/hold identities, client operation receipts, outcomes/remainder/resolution and transition/generation guards; Jobs manifest/access and STAGED duties; remainder optional positive measure/quantity pair |
 | Closeout | Source generation participation, readiness/closeout evidence before any close Action |
 | J2 | Source-owned labour/recognition/corrections/attribution/coverage; FinancialActivity, precision and dual-money constraints |
 
@@ -125,7 +125,7 @@ formal output later uses Documents0137 with independent access/snapshot/retentio
 | Security/RecordScope review | Per-duty scopes, non-HTTP guards, safe readiness, sensitive projections and real holder rollout |
 | Coordinator/integrator | Assign tasks, review interfaces and sequence providers/migrations/client; exact-commit integration/CI |
 | Labour/source/costing | J2 recognition/attribution/correction/coverage invalidation/source generations; no double posting |
-| Inventory/Purchasing |0040 consumed-cost participant and0149 service acceptance/commitment/correction before affected paths; ordinary stock/goods receipt is insufficient |
+| Inventory/Purchasing | 0040 consumed-cost participant and 0149 service acceptance/commitment/correction before affected paths; ordinary stock/goods receipt is insufficient |
 | Documents | #11 DF0 contracts first; actual source/Job bindings later; DF0 alone cannot render or prove acceptance |
 | Pricing/tax | #12 gated; eligible commercial source needs actual supported financial/tax/control evidence before issue/acceptance |
 
