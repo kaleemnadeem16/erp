@@ -27,6 +27,18 @@ LOCKDIR="${ERP_TEST_LOCK_DIR:-/tmp/erp-test-locks}"; mkdir -p "$LOCKDIR/checkpoi
 COORD="${ERP_COORDINATOR:-coordinator}"
 STATUSES="ready in-progress blocked in-review integrated"
 die() { echo "tasks: $*" >&2; exit 1; }
+# GitHub's API drops a connection now and then ("tls: bad record MAC", resets, 5xx). Reads and idempotent edits are retried; creating an issue or
+# a comment is NOT (the first attempt may have succeeded), so for those a failure prints the error and you check the issue before repeating.
+gh() {
+  local i rc err sub="$1 ${2:-}"; err=$(mktemp)
+  case "$sub" in "issue view"|"issue list"|"issue edit"|"issue close"|"label create"|"run list"|"label list") ;; *) command gh "$@" 2>"$err" && { rm -f "$err"; return 0; } || rc=$?; cat "$err" >&2; rm -f "$err"; return "$rc" ;; esac
+  for i in 1 2 3 4; do
+    command gh "$@" 2>"$err" && { rm -f "$err"; return 0; } || rc=$?
+    grep -qiE 'tls|connection reset|timeout|EOF|50[234]|temporarily|unexpected end' "$err" || break
+    sleep $((i * 2))
+  done
+  cat "$err" >&2; rm -f "$err"; return "$rc"
+}
 
 AS=""
 args=(); while [ $# -gt 0 ]; do case "$1" in --as) AS="$2"; shift 2 ;; *) args+=("$1"); shift ;; esac; done
@@ -41,10 +53,28 @@ has() { case " $(labels "$1") " in *" $2 "*) return 0 ;; *) return 1 ;; esac; }
 field() { gh issue view "$1" --json body --jq '.body' | grep -m1 -i "^\*\*$2:\*\*" | sed -E "s/^\*\*[^:]*:\*\*[[:space:]]*//" || true; }
 owner_of() { labels "$1" | tr ' ' '\n' | grep '^owner:' | sed 's/^owner://' | head -n1 || true; }
 ws_of() { labels "$1" | tr ' ' '\n' | grep '^ws:' | head -n1 || true; }
-say() { gh issue comment "$1" --body "$2" >/dev/null; }
+# Comments and creations are retried only after checking the first attempt did not already land (no duplicates).
+say() { # N body
+  local i; for i in 1 2 3 4; do
+    if command gh issue comment "$1" --body "$2" >/dev/null 2>"$LOCKDIR/err.$$"; then rm -f "$LOCKDIR/err.$$"; return 0; fi
+    sleep $((i * 2))
+    gh issue view "$1" --json comments --jq '[.comments[-3:][].body] | any(. == '"$(printf '%s' "$2" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')"')' 2>/dev/null | grep -qx true && { rm -f "$LOCKDIR/err.$$"; return 0; }
+  done
+  cat "$LOCKDIR/err.$$" >&2; rm -f "$LOCKDIR/err.$$"; die "could not post the comment on #$1 (GitHub kept failing); check the issue and repeat"
+}
+create_issue() { # title body label... -> prints the issue URL
+  local title="$1" body="$2" i url; shift 2; local largs=(); for l in "$@"; do largs+=(--label "$l"); done
+  for i in 1 2 3 4; do
+    if url=$(command gh issue create --title "$title" --body "$body" "${largs[@]}" 2>"$LOCKDIR/err.$$"); then rm -f "$LOCKDIR/err.$$"; echo "$url"; return 0; fi
+    sleep $((i * 2))
+    url=$(gh issue list --state open --limit 5 --search "\"$title\" in:title" --json url,title --jq ".[] | select(.title == $(printf '%s' "$title" | python3 -c 'import json,sys; print(json.dumps(sys.stdin.read()))')) | .url" 2>/dev/null | head -n1 || true)
+    [ -z "$url" ] || { rm -f "$LOCKDIR/err.$$"; echo "$url"; return 0; }
+  done
+  cat "$LOCKDIR/err.$$" >&2; rm -f "$LOCKDIR/err.$$"; die "could not create the issue (GitHub kept failing); check the board before repeating"
+}
 ensure_label() { gh label create "$1" --color "${2:-ededed}" --description "${3:-}" --force >/dev/null 2>&1 || true; }
 set_status() { # N status
-  local other=""; for s in $STATUSES; do [ "$s" = "$2" ] || other="$other,status:$s"; done
+  local other="" x; for x in $STATUSES; do [ "$x" = "$2" ] || other="$other,status:$x"; done
   ensure_label "status:$2" 0e8a16 "Task status"
   gh issue edit "$1" --add-label "status:$2" --remove-label "${other#,}" >/dev/null 2>&1 || gh issue edit "$1" --add-label "status:$2" >/dev/null
 }
@@ -116,7 +146,8 @@ new)
   [ -n "$title" ] && [ -n "$ws" ] || die "new needs --title and --ws"
   ensure_label "ws:$ws" bfdadc "Workstream"
   body=$(printf '**Workstream:** %s\n**Depends on:** %s\n**Branch / workspace:** (set when claimed)\n**Specs / ADRs:** %s\n**Shared hotspots touched:** %s\n\n## Scope\n(fill in)\n\n## Out of scope\n(fill in)\n\n## Evidence required to submit\nSee the test matrix in docs/architecture/agent-coordination.md.\n' "$ws" "$deps" "${specs:-}" "${hot:-}")
-  url=$(gh issue create --title "$title" --body "$body" --label type:task --label "ws:$ws" --label "prio:$prio" --label status:ready ${gate[@]+"${gate[@]}"}); echo "$url" ;;
+  gl=(); for g in ${gate[@]+"${gate[@]}"}; do [ "$g" = --label ] || gl+=("$g"); done
+  create_issue "$title" "$body" type:task "ws:$ws" "prio:$prio" status:ready ${gl[@]+"${gl[@]}"} ;;
 claim)
   need_me; n=$(num "${1:?claim N}"); shift; br=""; while [ $# -gt 0 ]; do case "$1" in --branch) br="$2"; shift 2 ;; *) die "unknown option $1" ;; esac; done
   [ "$(gh issue view "$n" --json state --jq .state)" = OPEN ] || die "#$n is closed"
@@ -159,7 +190,7 @@ report)
   ensure_label "ws:$ws" bfdadc "Workstream"; ensure_label "reporter:$ME" ededed "Reported by"
   btxt="${blocks:+#$blocks}"; btxt="${btxt:-none}"
   body=$(printf '**Reported by:** %s\n**Against:** %s\n**Blocks:** %s\n**Depends on:** none\n\n## Expected\n%s\n\n## Actual\n%s\n\n## Evidence\n%s\n\n## Investigation outcome\n(pending)\n\n## Resolution and regression coverage\n(pending)\n' "$ME" "$against" "$btxt" "$exp" "$act" "$ev")
-  url=$(gh issue create --title "$title" --body "$body" --label "type:$kind" --label "ws:$ws" --label "prio:$prio" --label status:ready --label needs:triage --label "reporter:$ME"); echo "$url"
+  url=$(create_issue "$title" "$body" "type:$kind" "ws:$ws" "prio:$prio" status:ready needs:triage "reporter:$ME"); echo "$url"
   new=${url##*/}
   if [ -n "$blocks" ]; then add_dep "$blocks" "$new"; set_status "$blocks" blocked; say "$blocks" "Blocked by #$new (reported by $ME)."; echo "#$blocks is now blocked on #$new"; fi ;;
 triage)
