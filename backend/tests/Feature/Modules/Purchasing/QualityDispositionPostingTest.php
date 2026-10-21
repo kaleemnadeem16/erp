@@ -26,6 +26,7 @@ use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Support\CompanyContext;
 use App\Support\UomDimension;
+use Closure;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
@@ -36,6 +37,9 @@ use Tests\Support\PurchasingActor;
 
 class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
 {
+    /** Tables whose user triggers the committed-history cleanup switches off, in one transaction, and back on. */
+    private const GUARDED_TABLES = ['quality_dispositions', 'goods_receipt_lines', 'goods_receipts', 'purchase_order_lines', 'purchase_orders'];
+
     public function test_disposition_list_and_detail_require_receipt_read_access(): void
     {
         [$order, $item, $uom] = $this->issuedOrder(qaRequired: true);
@@ -589,26 +593,37 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
 
     /**
      * Removes everything createRawFixture() committed. $committedHistory is for the fixture whose dispositions and posted receipt are database-enforced
-     * history: the guards on exactly those tables are switched off for the delete only (the same technique the other raw-PDO cleanups use) and always
-     * switched back on.
+     * history: the guards on exactly those tables are switched off for the delete only (the same technique the other raw-PDO cleanups use). That happens in
+     * ONE transaction on this connection — disable, delete, enable, commit, with nothing committed in between — so a failure rolls it all back and a killed
+     * process leaves the guards enabled (PostgreSQL DDL is transactional). $afterDisable is a test seam for injecting a failure at that point.
      */
-    private function cleanUpRawFixture(PDO $pdo, string $prefix, string $currencyCode, bool $committedHistory = false): void
+    private function cleanUpRawFixture(PDO $pdo, string $prefix, string $currencyCode, bool $committedHistory = false, ?Closure $afterDisable = null): void
     {
-        $guarded = ['quality_dispositions', 'goods_receipt_lines', 'goods_receipts', 'purchase_order_lines', 'purchase_orders'];
-        if ($committedHistory) {
-            foreach ($guarded as $table) {
-                $pdo->exec("alter table {$table} disable trigger user");
-            }
+        if (! $committedHistory) {
+            $this->deleteRawFixtureRows($pdo, $prefix, $currencyCode);
+
+            return;
         }
 
+        $pdo->beginTransaction();
         try {
-            $this->deleteRawFixtureRows($pdo, $prefix, $currencyCode);
-        } finally {
-            if ($committedHistory) {
-                foreach ($guarded as $table) {
-                    $pdo->exec("alter table {$table} enable trigger user");
-                }
+            foreach (self::GUARDED_TABLES as $table) {
+                $pdo->exec("alter table {$table} disable trigger user");
             }
+            if ($afterDisable !== null) {
+                $afterDisable($pdo);
+            }
+            $this->deleteRawFixtureRows($pdo, $prefix, $currencyCode);
+            foreach (self::GUARDED_TABLES as $table) {
+                $pdo->exec("alter table {$table} enable trigger user");
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+
+            throw $e;
         }
     }
 
@@ -630,6 +645,61 @@ class QualityDispositionPostingTest extends PurchaseOrderFoundationTest
         $pdo->exec("delete from chart_of_accounts where code = '{$prefix}-pay'");
         $pdo->exec("delete from uoms where code = '{$prefix}_ea'");
         $pdo->exec("delete from currencies where code = '{$currencyCode}'");
+    }
+
+    /** @return int user triggers on the guarded tables that are not in the normal enabled state */
+    private function disabledGuardCount(PDO $pdo): int
+    {
+        $list = implode(',', array_map(fn (string $t) => "'{$t}'::regclass", self::GUARDED_TABLES));
+
+        return (int) $pdo->query("select count(*) from pg_trigger where tgrelid in ({$list}) and not tgisinternal and tgenabled <> 'O'")->fetchColumn();
+    }
+
+    private function rawConnection(): PDO
+    {
+        $config = config('database.connections.testing');
+
+        return new PDO("pgsql:host={$config['host']};port={$config['port']};dbname={$config['database']}", $config['username'], $config['password']);
+    }
+
+    public function test_the_committed_history_cleanup_leaves_the_guards_enabled_on_success(): void
+    {
+        $pdo = $this->rawConnection();
+        $this->assertSame(0, $this->disabledGuardCount($pdo));
+        $this->cleanUpRawFixture($pdo, 'qa_atomic_ok', 'QAO');
+        [$lineId] = $this->createRawFixture($pdo, 1, 'qa_atomic_ok', 'QAO', qaRequired: false, receiptStatus: 'DRAFT');
+
+        $this->cleanUpRawFixture($pdo, 'qa_atomic_ok', 'QAO', committedHistory: true);
+
+        $this->assertSame(0, $this->disabledGuardCount($pdo));
+        $this->assertFalse($pdo->inTransaction());
+        $this->assertSame(0, (int) $pdo->query("select count(*) from goods_receipt_lines where id = {$lineId}")->fetchColumn());
+    }
+
+    public function test_a_failed_committed_history_cleanup_rolls_back_and_leaves_the_guards_enabled(): void
+    {
+        $pdo = $this->rawConnection();
+        $this->cleanUpRawFixture($pdo, 'qa_atomic_fail', 'QAF');
+        [$lineId] = $this->createRawFixture($pdo, 1, 'qa_atomic_fail', 'QAF', qaRequired: false, receiptStatus: 'DRAFT');
+
+        try {
+            $this->cleanUpRawFixture($pdo, 'qa_atomic_fail', 'QAF', committedHistory: true, afterDisable: function (PDO $pdo): void {
+                $this->assertGreaterThan(0, $this->disabledGuardCount($pdo), 'the guards are off inside the cleanup transaction');
+                throw new \RuntimeException('injected cleanup failure');
+            });
+            $this->fail('the injected failure should have propagated');
+        } catch (\RuntimeException $e) {
+            $this->assertSame('injected cleanup failure', $e->getMessage());
+        }
+
+        try {
+            $this->assertFalse($pdo->inTransaction());
+            $this->assertSame(0, $this->disabledGuardCount($pdo), 'a failed cleanup must not leave a guard disabled');
+            $this->assertSame(0, $this->disabledGuardCount($this->rawConnection()), 'and another session sees them enabled too');
+            $this->assertSame(1, (int) $pdo->query("select count(*) from goods_receipt_lines where id = {$lineId}")->fetchColumn(), 'nothing was deleted');
+        } finally {
+            $this->cleanUpRawFixture($pdo, 'qa_atomic_fail', 'QAF');
+        }
     }
 
     private function makeDisposition(): QualityDisposition
