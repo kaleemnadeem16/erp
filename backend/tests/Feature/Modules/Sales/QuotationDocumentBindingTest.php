@@ -76,7 +76,7 @@ class QuotationDocumentBindingTest extends TestCase
             'sections' => ['lines' => [
                 ['description' => 'Prime', 'membership' => 'BASE', 'quantity' => '3.0000', 'unit_price' => '0.3350', 'amount' => '1.0100'],
                 ['description' => 'Topcoat', 'membership' => 'BASE', 'quantity' => '2.5000', 'uom' => 'sqm', 'unit_price' => '10.1250', 'amount' => '25.3100'],
-            ], 'terms' => ['payment_terms' => 'Net 30']],
+            ], 'terms' => ['payment_terms' => 'Net 30', 'customer_notes' => 'Valid for 30 days']],
             ...$override,
         ];
     }
@@ -183,6 +183,7 @@ class QuotationDocumentBindingTest extends TestCase
         foreach ([
             'cost in a line' => $this->projection(['sections' => ['lines' => [['description' => 'x', 'membership' => 'BASE', 'quantity' => '1.0000', 'unit_price' => '1.0000', 'amount' => '1.0000', 'unit_cost' => '0.5000']]]]),
             'margin in the header' => $this->projection(['header' => $this->projection()['header'] + ['margin' => '10.0000']]),
+            'ambiguous notes field' => $this->projection(['sections' => ['lines' => [], 'terms' => ['notes' => 'x']]]),
             'unknown section' => $this->projection(['sections' => ['lines' => [], 'internal_notes' => ['x' => 'y']]]),
             'float money' => $this->projection(['header' => ['net_total' => 27.33] + $this->projection()['header']]),
         ] as $why => $projection) {

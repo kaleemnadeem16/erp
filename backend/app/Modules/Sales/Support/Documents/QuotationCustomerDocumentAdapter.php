@@ -18,7 +18,7 @@ use App\Modules\Sales\Support\SalesAccess;
 /**
  * The customer-facing quotation document type (ADR 0137). Sales owns the projection allowlist and the access decision; Documents validates shape only and
  * never recomputes money, quantities or consent. The allowlist is customer-safe by construction: it has no cost, margin, control, approval or internal-note field,
- * so none can be carried into a snapshot. Access is the owner's: the actor must hold `sales.document.generate` (STAGED, so everyone is refused today) and a
+ * so none can be carried into a snapshot; free text is named `customer_notes` so it cannot be mistaken for an internal note. Access is the owner's: the actor must hold `sales.document.generate` (STAGED, so everyone is refused today) and a
  * missing actor, unknown user or any failure denies. Money and quantities are decimal strings.
  */
 final class QuotationCustomerDocumentAdapter implements DocumentAccess, DocumentTypeAdapter
@@ -66,7 +66,7 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
                     'unit_price' => new FieldSpec(FieldType::Decimal),
                     'amount' => new FieldSpec(FieldType::Decimal),
                 ]),
-                'terms' => new SectionSchema(fields: ['payment_terms' => new FieldSpec(FieldType::String, required: false), 'notes' => new FieldSpec(FieldType::String, required: false)], required: false),
+                'terms' => new SectionSchema(fields: ['payment_terms' => new FieldSpec(FieldType::String, required: false), 'customer_notes' => new FieldSpec(FieldType::String, required: false)], required: false),
             ],
         );
     }
