@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Sales\Models\Opportunity;
 use App\Modules\Sales\Models\QuotationChoiceGroup;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationLogicalScope;
@@ -17,6 +18,7 @@ use App\Modules\Sales\Support\Quotation\DraftChanges;
 use App\Modules\Sales\Support\Quotation\DraftHeader;
 use App\Modules\Sales\Support\Quotation\DraftSource;
 use App\Modules\Sales\Support\Quotation\LineMembership;
+use App\Modules\Sales\Support\Quotation\QuotationAssociation;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationMoney;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
@@ -74,6 +76,12 @@ final class UpdateQuotationDraft
         $header = $changes->header;
         if (($header['currency_id'] ?? $revision->currency_id) !== $revision->currency_id && $this->pricedLines($revision)->exists()) {
             throw QuotationRefusal::make(QuotationRefusal::CURRENCY_LOCKED_BY_PRICES, 'The currency cannot change while a line carries an entered price; clear the prices first.', 'currency_id');
+        }
+        if (($header['recipient_party_id'] ?? null) !== null) {
+            QuotationAssociation::assertRecipientMatches(
+                $revision->family->current_opportunity_id === null ? null : Opportunity::query()->whereKey($revision->family->current_opportunity_id)->value('party_id'),
+                $header['recipient_party_id'],
+            );
         }
         if ($header !== []) {
             $revision->forceFill($header)->save();

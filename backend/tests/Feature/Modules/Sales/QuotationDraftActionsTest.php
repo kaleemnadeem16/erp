@@ -258,6 +258,32 @@ class QuotationDraftActionsTest extends TestCase
         $this->assertSame($before, DB::table('numbering_allocations')->count(), 'Creating a draft allocates no number.');
     }
 
+    public function test_an_opportunity_must_be_open_and_share_the_recipient_party(): void
+    {
+        $stage = SalesStage::create(['code' => 'Q', 'name' => 'Qualification', 'sort_order' => 10, 'status' => 'ACTIVE'])->id;
+        Permission::findOrCreate(PermissionVocabulary::PIPELINE_VIEW, 'web');
+        $this->preparer->givePermissionTo(PermissionVocabulary::PIPELINE_VIEW);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->preparer = $this->preparer->fresh();
+        $other = Party::create(['code' => 'OTHER', 'name' => 'Other Ltd']);
+        $deal = fn (int $party) => DB::table('sales_opportunities')->insertGetId(['company_id' => 1, 'title' => 'Deal', 'party_id' => $party, 'owner_id' => $this->preparer->id,
+            'stage_id' => $stage, 'created_by' => $this->preparer->id, 'created_at' => now(), 'updated_at' => now()]);
+
+        $this->assertSame('OPPORTUNITY_PARTY_MISMATCH', $this->refusal(fn () => $this->create(['opportunity_id' => $deal($other->id)])));
+        $this->assertSame(0, QuotationFamily::query()->count());
+
+        // No recipient yet is allowed; the rule applies once both Parties are known.
+        $withParty = $deal($this->prospect->id);
+        $draft = $this->create(['opportunity_id' => $withParty, 'recipient_party_id' => null]);
+        $this->assertSame('OPPORTUNITY_PARTY_MISMATCH', $this->refusal(fn () => $this->update($draft, ['recipient_party_id' => $other->id])));
+        $this->update($draft, ['recipient_party_id' => $this->prospect->id]);
+        $this->assertSame($this->prospect->id, QuotationRevision::findOrFail($draft->revisionId)->recipient_party_id);
+
+        $closed = $deal($this->prospect->id);
+        DB::table('sales_opportunities')->where('id', $closed)->update(['outcome' => 'LOST', 'closed_at' => now(), 'closed_by' => $this->preparer->id, 'closure_reason' => 'Lost']);
+        $this->assertSame('OPPORTUNITY_NOT_OPEN', $this->refusal(fn () => $this->create(['opportunity_id' => $closed])));
+    }
+
     public function test_the_same_key_replays_and_a_different_request_under_it_is_refused(): void
     {
         $first = $this->create([], key: 'once');

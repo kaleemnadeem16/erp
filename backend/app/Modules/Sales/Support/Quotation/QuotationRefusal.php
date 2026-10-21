@@ -41,6 +41,10 @@ final class QuotationRefusal
 
     public const OPPORTUNITY_NOT_FOUND = 'OPPORTUNITY_NOT_FOUND';
 
+    public const OPPORTUNITY_NOT_OPEN = 'OPPORTUNITY_NOT_OPEN';
+
+    public const OPPORTUNITY_PARTY_MISMATCH = 'OPPORTUNITY_PARTY_MISMATCH';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);
