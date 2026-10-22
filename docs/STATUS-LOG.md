@@ -912,3 +912,18 @@ routes or SP0b implementation. No runtime verification. QL0 committed; #10 inter
 #11 DF0 in review (not integrated), #12 gated at inspection. CA/R7/Job/source adapters remain
 delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
 index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
+
+## 2026-10-22 — Task A R7-to-Job receiver design proposed (#32)
+
+Continued integrated SP0a (#19, merge `3b2d4d1`, CI success recorded) from develop f0e2871.
+[Receiver design](phases/phase-5-r7-job-receiver-design.md) and
+[verification/dependency handoff](phases/phase-5-r7-job-receiver-verification.md) propose parent-consistent
+Jobs→Sales references, fixed-deliverable identity/pinned conditions without invented operational
+quantity, origin receiver receipt, same-connection atomic release, Numbering lock review and exact
+request/business replay separation. Actual CA/HA keys, source verifier, writer locks/connection proof
+and Jobs receiver remain unavailable at inspected baseline; no branch/task treated as integration.
+DF0 exists; #28 disabled foundation separately authorised/queued, not implemented here. J1 remains
+independent of J2; lifecycle/closeout, labour/costing, Inventory/Purchasing remain separate tasks.
+Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accepted ADR/Phase 4
+contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
+Joint Sales/security review requested on #32; technical seams await review before any implementation.
