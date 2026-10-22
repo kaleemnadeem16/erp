@@ -916,3 +916,23 @@ an empty vocabulary, so its expected owner list now includes tax and asserts tha
 The corrected PermissionRegistrationTest passes locally (7 tests / 47 assertions; Pint passed). Hosted CI's separate backend
 shard 4 failure is the pre-existing GCX duplicate fixture leak tracked by #27/#21, reported with exact job evidence in #33.
 Issue #12 is blocked on #33 pending coordinator integration of #27; no green-CI submission is claimed.
+
+## 2026-10-21 — Phase 5 SP0a design proposed (#19)
+
+Owner accepted the provisional read-only readiness baseline at `3ed28be`; ADRs 0145–0152 remain
+authoritative. R7 accepted-service source direction and independent J1 completion-only/J2 optional
+labour milestones confirmed. Proposed [physical/interface/security design](phases/phase-5-sp0a-design.md)
+and [transaction/API/verification contract](phases/phase-5-sp0a-delivery-contract.md) specify tenant-safe
+evidence/head models, receiver/receipts, per-duty scope, atomicity, source readiness, failure coverage
+and smallest disabled SP0b. Technical choices await review; no application code, migrations, grants,
+routes or SP0b implementation. No runtime verification. QL0 committed; #10 internal QL1a blocked on test-isolation issue #21,
+#11 DF0 in review (not integrated), #12 gated at inspection. CA/R7/Job/source adapters remain
+delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
+index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
+
+
+## 2026-10-22 — FR2a prerequisite integration (#12)
+
+Merged origin/develop at f0e2871, including the approved #27 raw-fixture currency cleanup. Preserved both Tax and Phase 5
+append-only log entries while resolving their append conflict. #33 is closed and #12 is unblocked. The owner-list assertion
+already includes Tax with an explicitly empty live vocabulary (33e1420); it remains applicable after the merge.
