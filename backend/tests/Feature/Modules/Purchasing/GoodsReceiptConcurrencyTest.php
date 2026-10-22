@@ -135,6 +135,9 @@ class GoodsReceiptConcurrencyTest extends TestCase
             @unlink($startPath);
             $this->cleanUpRawFixture($pdo, $companyId);
         }
+
+        // The raw fixture commits outside RefreshDatabase's transaction, so it must remove everything it committed — the currency too.
+        $this->assertFalse(DB::connection('testing')->table('currencies')->where('code', 'GCX')->exists(), 'the raw fixture left its currency in the shared test database');
     }
 
     /** @return array{int, int, int, int, int, int} */
@@ -241,5 +244,7 @@ class GoodsReceiptConcurrencyTest extends TestCase
         $pdo->exec("delete from chart_of_accounts where company_id = {$companyId}");
         $pdo->exec("delete from uoms where company_id = {$companyId}");
         $pdo->exec("delete from companies where id = {$companyId}");
+        // Created by createRawFixture() outside the test transaction; every row that referenced it is gone by now.
+        $pdo->exec("delete from currencies where code = 'GCX'");
     }
 }
