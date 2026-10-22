@@ -899,3 +899,16 @@ Authorised to implement coordination on top of Stages 1–2. **Mechanism:** GitH
 ## 2026-10-21 — Documents DF1a template and page-policy configuration (branch phase4/df1a-template-page-policy)
 
 Insert-only `document_template_versions` and `document_page_policy_versions` (curated layout ids, typed section/table rules, A4/Letter, margins, header/footer bands), `document_company_defaults` moving one generation at a time with an append-only `document_default_activations` history the database checks at commit. `LayoutConstraints` express type constraints (A4-only default; Letter by opt-in). Internal Actions: version, activate (generation lock, reasoned downgrade, pinned-version port) and `ResolveDocumentPolicy` (shipped → Company → type → explicit; brand reported NOT_AVAILABLE, never a fallback). No routes, duties, grants, brand/assets, manifests or client change; Company untouched. The STAGED-duty question is deferred: the AU0/AU1 manifest leaves `documents.*` registration to the Documents slices and no guarded public Action exists yet.
+
+## 2026-10-21 — Phase 5 SP0a design proposed (#19)
+
+Owner accepted the provisional read-only readiness baseline at `3ed28be`; ADRs 0145–0152 remain
+authoritative. R7 accepted-service source direction and independent J1 completion-only/J2 optional
+labour milestones confirmed. Proposed [physical/interface/security design](phases/phase-5-sp0a-design.md)
+and [transaction/API/verification contract](phases/phase-5-sp0a-delivery-contract.md) specify tenant-safe
+evidence/head models, receiver/receipts, per-duty scope, atomicity, source readiness, failure coverage
+and smallest disabled SP0b. Technical choices await review; no application code, migrations, grants,
+routes or SP0b implementation. No runtime verification. QL0 committed; #10 internal QL1a blocked on test-isolation issue #21,
+#11 DF0 in review (not integrated), #12 gated at inspection. CA/R7/Job/source adapters remain
+delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
+index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
