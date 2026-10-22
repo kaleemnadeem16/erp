@@ -34,12 +34,74 @@ bases/methods, assessment scope, modes and currencies; a database trigger repeat
 writers. Activated graphs cannot gain members or edges. All evidence rejects UPDATE/DELETE/TRUNCATE; populated rollback refuses.
 
 `tax.configuration.manage` is STAGED and unregistered, with every configuration Action denied until reviewed activation;
-`tax.profile.manage` stays SPECIFIED for FR2b. There are no routes, grants, UI, source-master writes, Sales integration or client changes.
+`tax.profile.manage` is STAGED for the disabled FR2b foundation. There are no routes, grants, UI, source-master writes, Sales integration or client changes.
 `DetermineQuotationTax` supports **classification only**: typed declared goods/services, Assembly defaults and explicit manual facts.
 Missing classification is UNKNOWN, ambiguous nature UNSUPPORTED; even supported classification leaves statutory disposition UNKNOWN.
-It selects no effective tax group and calculates no amount. Source persistence, Party profile/exemption facts (FR2b), composition,
+It selects no effective tax group and calculates no amount. Source persistence, Consumption of Party profile/exemption facts, composition,
 inclusive normalisation and withholding (FR3) remain separate. No statutory or execution support is implied by stored method names.
 Open-ended versions cannot be shortened by FR2a; scheduled successors require a bounded predecessor rather than rewriting evidence.
+
+## FR2b protected Party profile foundation
+
+Tax owns `tax_party_profile_versions`, `tax_party_component_evidence` and
+`tax_party_profile_activations`. Parties remain unchanged: company-scoped composite foreign keys
+reference existing prospects, customers or suppliers without creating a financial account or
+adding reverse relations. Party `tax_id` is never used as profile or exemption evidence.
+
+```text
+tax_party_profile_versions
+  id, company_id, party_id -> parties(company_id, id)
+  jurisdiction, jurisdiction_evidence, registration_details nullable
+  version_no, predecessor_id -> same-company profile version
+  effective_from, effective_to nullable  -- half-open, non-overlapping per Party/jurisdiction
+  created_by -> users(company_id, id), reason, created_at
+
+tax_party_component_evidence
+  id, company_id, profile_version_id -> same-company profile version
+  component_id -> tax_components(company_id, id), disposition
+  grounds, evidence_reference, issuer, issued_on, expires_on  -- textual evidence, nullable
+  created_by -> users(company_id, id), reason, created_at
+  unique(company_id, profile_version_id, component_id)
+
+tax_party_profile_activations
+  id, company_id, profile_version_id -> same-company profile version
+  activated_by -> users(company_id, id), reason, created_at
+  unique(company_id, profile_version_id)
+```
+
+A version records Party, jurisdiction and jurisdiction evidence, optional registration details,
+half-open effective dates, predecessor/version number, actor, reason and creation time. Null
+registration details mean no declared evidence, not unregistered or exempt. Non-overlapping
+periods are per company/Party/jurisdiction. A successor begins exactly at its bounded predecessor's
+end; an open-ended predecessor cannot be rewritten or shortened. Each successor supplies a new
+component evidence set; omission means UNKNOWN, never inherited exemption or no tax.
+
+Each component pins a same-company stable Tax component and preserves TAXABLE, ZERO_RATED,
+EXEMPT, NOT_APPLICABLE or UNKNOWN distinctly. Known dispositions require declared grounds;
+EXEMPT additionally requires a textual evidence reference, issuer and issue date. Optional
+`expires_on` is an **exclusive** bound, matching profile dates; dated evidence covers the whole
+profile interval. These are declared configuration facts, not verification of statutory entitlement.
+No certificate is uploaded, stored or fetched. Profiles may declare no component facts and can be
+activated as unknown; activation does not manufacture complete coverage or enable FR3 determination.
+
+`CreateTaxPartyProfileSuccessor` atomically writes the version and all component facts;
+`ActivateTaxPartyProfile` appends reviewed activation. Both independently check actor company,
+company-wide scope and `tax.profile.manage` through the duty manifest before any lookup or replay.
+The duty is STAGED, unregistered and denied even with a handmade permission grant. Configuration
+management and ordinary Party visibility grant no profile authority. There is no profile view duty,
+public read/write route, grant, command, job, UI, Sales adapter or determination hook.
+
+All inserts share FR2a's company generation lock; idempotency records store only a digest and
+result IDs. Replay rechecks authority, returns the original outcome and does not change history;
+a changed intent or stale generation refuses. Database constraints enforce tenant references,
+periods and adjacency. Evidence rows reject UPDATE/DELETE/TRUNCATE; activated profiles reject
+additional component facts. Populated rollback refuses before dropping anything.
+
+Protected models deliberately serialize to an empty array and emit no generic activity entries;
+actor/reason/time history remains in the protected immutable tables. No Party relationship exposes
+them. Invalid definitions and unavailable references use the same redacted refusal without chained
+SQL/bindings or evidence. There is no profile lookup/filter/count/export/history projection to leak
+these facts. Any future exposure requires an accepted authority decision and reviewed projections.
 
 ## Problem statement
 

@@ -103,7 +103,7 @@ class TaxFoundationTest extends TestCase
 
     public function test_shipped_duties_remain_unregistered_ungrantable_and_actions_disabled(): void
     {
-        $this->assertSame(['tax.configuration.manage' => 'STAGED', 'tax.profile.manage' => 'SPECIFIED'], app(TaxDutyManifest::class)->statuses());
+        $this->assertSame(['tax.configuration.manage' => 'STAGED', 'tax.profile.manage' => 'STAGED'], app(TaxDutyManifest::class)->statuses());
         $this->assertArrayNotHasKey('tax', app(PermissionRegistry::class)->byOwner());
         $this->assertNotContains(TaxDutyManifest::CONFIGURE, app(PermissionRegistry::class)->all());
         $this->assertNotContains(TaxDutyManifest::CONFIGURE, app(PermissionRegistry::class)->automaticGrants());

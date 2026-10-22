@@ -11,6 +11,8 @@ final class TaxDutyManifest
 {
     public const CONFIGURE = 'tax.configuration.manage';
 
+    public const PROFILE = 'tax.profile.manage';
+
     /** @return array<string, string> */
     public function statuses(): array
     {
@@ -18,7 +20,7 @@ final class TaxDutyManifest
     }
 
     /** @param array<string, string> $duties */
-    public function __construct(private readonly array $duties = [self::CONFIGURE => 'STAGED', 'tax.profile.manage' => 'SPECIFIED']) {}
+    public function __construct(private readonly array $duties = [self::CONFIGURE => 'STAGED', self::PROFILE => 'STAGED']) {}
 
     public function isActive(string $duty): bool
     {
