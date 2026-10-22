@@ -29,6 +29,9 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $tax_estimate_date
  * @property Carbon|null $valid_through_local_date
  * @property int|null $predecessor_revision_id
+ * @property string|null $rounding_policy_fingerprint the rounding policy the entered prices were prepared under (null while no price is entered)
+ * @property int|null $rounding_policy_version_no
+ * @property Carbon|null $rounding_policy_as_of
  */
 class QuotationRevision extends Model
 {
@@ -41,7 +44,7 @@ class QuotationRevision extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['pricing_date' => 'date', 'tax_estimate_date' => 'date', 'valid_through_local_date' => 'date', 'cancelled_at' => 'datetime'];
+        return ['pricing_date' => 'date', 'tax_estimate_date' => 'date', 'valid_through_local_date' => 'date', 'cancelled_at' => 'datetime', 'rounding_policy_as_of' => 'date'];
     }
 
     public function isDraft(): bool

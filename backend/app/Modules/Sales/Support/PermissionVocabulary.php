@@ -47,6 +47,15 @@ final class PermissionVocabulary
     public const FINANCIAL_CONFIGURE = 'sales.financial.configure';
 
     /**
+     * Quotation draft preparation (QL1a). STAGED like FINANCIAL_CONFIGURE: `ReadQuotationDraft` (view) and `CreateQuotationDraft`, `UpdateQuotationDraft`,
+     * `PreviewQuotation` (prepare) exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates them with a reviewed holder recipe.
+     * Neither is in `all()`, so nothing registers or grants them.
+     */
+    public const QUOTATION_VIEW = 'sales.quotation.view';
+
+    public const QUOTATION_PREPARE = 'sales.quotation.prepare';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */
