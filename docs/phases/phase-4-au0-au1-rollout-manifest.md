@@ -11,8 +11,8 @@ No new permission is registered, no grant is made, no holder is assigned, no rou
 | | Count | State |
 |---|---|---|
 | Existing CRM duties | 8 | **ACTIVE**, registered exactly as before: same strings, same holders, same read and scope meaning; `sales.opportunity.attribution.correct` stays excluded from automatic grants (ADR 0114) |
-| Sales duties specified, no consumer yet | 42 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
-| Sales duties staged (Action delivered, disabled) | 3 | **STAGED**: `sales.financial.configure` (FR4/PX6 policy foundation) and `sales.quotation.view` / `sales.quotation.prepare` (QL1a draft Actions `ReadQuotationDraft`, `CreateQuotationDraft`, `UpdateQuotationDraft`, `PreviewQuotation`) — each guarded Action exists but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
+| Sales duties specified, no consumer yet | 41 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
+| Sales duties staged (Action delivered, disabled) | 4 | **STAGED**: `sales.financial.configure` (FR4/PX6 policy foundation); `sales.quotation.view` / `sales.quotation.prepare` (QL1a draft Actions `ReadQuotationDraft`, `CreateQuotationDraft`, `UpdateQuotationDraft`, `PreviewQuotation`); and `sales.document.generate` (the internal `BindQuotationDocument` and the quotation document adapter's access callback) — each guarded Action exists but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
 | Sales duties reserved by design | 5 | **DORMANT** (D-S): `sales.delivery.send`, `sales.delivery.reconcile`, `sales.pricing.exception.approve`, `sales.pricing.agreement.depart`, `sales.customer-decision.claim-release` — need their own approved and delivered contract before they may even become SPECIFIED |
 | Other modules' duties in the 78-row matrix | 20 | Not Sales' to register (below); 6 are not registered anywhere yet (Tax 2, Documents 4) |
 
@@ -42,7 +42,7 @@ No new permission is registered, no grant is made, no holder is assigned, no rou
 
 Legitimate incumbents keep exactly what they hold: no migration touches a grant, a role or a scope limit. Only `SalesAccess::may` changed, and only to refuse a name the manifest does not list as ACTIVE — all eight are.
 
-## The 50 duties not yet live (42 specified, 3 staged, 5 dormant)
+## The 50 duties not yet live (41 specified, 4 staged, 5 dormant)
 
 All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or editor continuity is inferred), **no approved holder recipe** (`NONE — owner review required`), and **excluded from automatic grants from the moment they go ACTIVE**. Until then they are neither registered nor grantable.
 
@@ -78,7 +78,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.handover.hold` | Sensitive | SPECIFIED | Authorised operational hold | Operational | HA5 |
 | `sales.handover.amend` | Sensitive | SPECIFIED | Schedule/unused cancellation/reassignment | Operational/impact | HA4/5 |
 | `sales.document.view` | New ordinary | SPECIFIED | Safe generation/artefact history/status | Document-min | DF2/DOC1 |
-| `sales.document.generate` | New ordinary | SPECIFIED | Request pinned generation/retry | Customer render profile | DF3/DOC2 |
+| `sales.document.generate` | New ordinary | STAGED | Request pinned generation/retry | Customer render profile | DF3/DOC2 |
 | `sales.document.repair` | Sensitive | SPECIFIED | Authorise labelled semantic rendition | Customer render profile | DF4/DOC3 |
 | `sales.document.download` | New ordinary | SPECIFIED | Original/permitted rendition/print invocation | Exact whole payload | DF4/DOC4 |
 | `sales.document.attachment.manage` | Sensitive | SPECIFIED | Validate/link allowed evidence attachment | Association write | DF4 + CA/DOC |
