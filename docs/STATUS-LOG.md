@@ -916,3 +916,18 @@ index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
 ## 2026-10-22 — Phase 5 SP0b disabled Jobs foundation (branch phase5/sp0b-jobs-foundation, #28)
 
 `backend/app/Modules/Jobs`: `service_jobs`, `job_handover_origins` (points at the Job; one per Job and per purpose + business identity), `job_baselines` and `job_events`, with company-scoped composite keys, state/generation checks, per-Job uniqueness and append-only origins/baselines/events through the Jobs-specific `job_evidence_append_only_guard`. `down()` refuses while any row exists. A typed `ReleasedServiceInput` and a pure validator only; no receiver, Action, duty, permission, route, grant or client change, and no quantity, measure, money or Sales reference. Fixtures exist only in tests. Migration `2026_10_22_090000_create_jobs_foundation`.
+
+## 2026-10-22 — Task A R7-to-Job receiver design proposed (#32)
+
+Continued integrated SP0a (#19, merge `3b2d4d1`, CI success recorded) from develop f0e2871.
+[Receiver design](phases/phase-5-r7-job-receiver-design.md) and
+[verification/dependency handoff](phases/phase-5-r7-job-receiver-verification.md) propose parent-consistent
+Jobs→Sales references, fixed-deliverable identity/pinned conditions without invented operational
+quantity, origin receiver receipt, same-connection atomic release, Numbering lock review and exact
+request/business replay separation. Actual CA/HA keys, source verifier, writer locks/connection proof
+and Jobs receiver remain unavailable at inspected baseline; no branch/task treated as integration.
+DF0 exists; #28 disabled foundation separately authorised/queued, not implemented here. J1 remains
+independent of J2; lifecycle/closeout, labour/costing, Inventory/Purchasing remain separate tasks.
+Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accepted ADR/Phase 4
+contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
+Joint Sales/security review requested on #32; technical seams await review before any implementation.

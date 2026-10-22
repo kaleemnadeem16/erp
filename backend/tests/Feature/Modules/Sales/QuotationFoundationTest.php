@@ -492,8 +492,9 @@ class QuotationFoundationTest extends TestCase
         foreach (['quotation_candidates', 'quotation_issues', 'quotation_adoptions', 'quotation_operation_receipts', 'quotation_offer_events'] as $later) {
             $this->assertFalse(DB::getSchemaBuilder()->hasTable($later), "{$later} belongs to a later slice");
         }
-        foreach (['entered_unit_price', 'unit_price', 'net_amount', 'cost', 'tax_amount'] as $column) {
-            $this->assertFalse(DB::getSchemaBuilder()->hasColumn('quotation_draft_lines', $column), "{$column}: a draft line holds no money in QL0");
+        // QL1a added the entered unit price with its dual-money evidence; a computed net, cost and tax still have no column on a draft line.
+        foreach (['entered_unit_price', 'net_amount', 'cost', 'tax_amount'] as $column) {
+            $this->assertFalse(DB::getSchemaBuilder()->hasColumn('quotation_draft_lines', $column), "{$column}: a draft line holds no computed net, cost or tax");
         }
         $this->assertSame($before, [DB::table('stock_moves')->count(), DB::table('stock_valuation_entries')->count(), DB::table('numbering_counters')->count(), DB::table('numbering_allocations')->count()]);
     }
