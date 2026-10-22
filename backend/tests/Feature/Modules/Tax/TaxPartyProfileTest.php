@@ -180,6 +180,7 @@ class TaxPartyProfileTest extends TestCase
         $this->dbRefuses(fn () => DB::statement('TRUNCATE tax_party_profile_versions CASCADE'));
         $row = (array) DB::table('tax_party_component_evidence')->first();
         unset($row['id']);
+        $row['component_id'] = DB::table('tax_components')->insertGetId(['company_id' => 1, 'code' => 'post-activation']);
         $this->dbRefuses(fn () => DB::table('tax_party_component_evidence')->insert($row));
         $migration = require database_path('migrations/2026_10_22_140000_create_tax_party_profiles.php');
         $this->assertThrows(fn () => $migration->down(), \RuntimeException::class);
@@ -223,6 +224,7 @@ class TaxPartyProfileTest extends TestCase
         $this->assertThrows(fn () => $this->create(party: $party), TaxRefusal::class);
         $child = (array) DB::table('tax_party_component_evidence')->first();
         unset($child['id']);
+        $child['component_id'] = DB::table('tax_components')->insertGetId(['company_id' => 1, 'code' => 'tenant-fk-probe']);
         foreach ([['component_id' => $component], ['profile_version_id' => $foreign], ['created_by' => $foreignActor]] as $changes) {
             $this->dbRefuses(fn () => DB::table('tax_party_component_evidence')->insert(array_replace($child, $changes)));
         }
