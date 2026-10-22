@@ -44,7 +44,7 @@ class TaxPartyProfileTest extends TestCase
             Permission::findOrCreate($duty, 'web');
             $this->actor->givePermissionTo($duty);
         }
-        $this->party = Party::create(['code' => 'prospect', 'name' => 'Prospect']);
+        $this->party = Party::create(['code' => 'prospect', 'name' => 'Prospect'])->refresh();
         $this->app->instance(TaxDutyManifest::class, new TaxDutyManifest([TaxDutyManifest::CONFIGURE => 'ACTIVE']));
         $this->component = app(CreateTaxComponent::class)($this->actor, 'illustrative', 'component', 0);
         $this->app->instance(TaxDutyManifest::class, new TaxDutyManifest);
