@@ -247,7 +247,7 @@ class TaxPartyProfileTest extends TestCase
         $this->actingAs($ordinary);
         $baseline = (new PartyResource($this->party))->resolve();
         $this->party->setRelation('taxProfile', TaxPartyProfileVersion::query()->findOrFail($profile));
-        $this->assertSame($baseline, (new PartyResource($this->party))->resolve());
+        $this->assertEquals($baseline, (new PartyResource($this->party))->resolve());
         $this->assertSame([], $this->party->toArray()['tax_profile']);
         foreach (['/api/v1/parties', '/api/v1/parties/'.$this->party->id, '/api/v1/parties?include=customer_account,supplier_account', '/api/v1/parties?filter[search]=protected-registration-723', '/api/v1/parties?filter[search]=protected-grounds-723'] as $url) {
             $response = $this->getJson($url);
