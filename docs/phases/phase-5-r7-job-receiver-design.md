@@ -32,13 +32,16 @@ Do not consume unintegrated worktree changes or infer functioning handover from 
 ## Supported source and completion basis
 
 Candidate first path: one authoritative FULL_ONLY accepted fixed-service deliverable, one root
-allocation and one initial Job stage, no technical split or cross-acceptance consolidation. Service
-Item or explicitly supported descriptor source must already be eligible under its actual Sales
-adapter; never fall back from arbitrary manual/stock/Assembly lines to a generic Job.
+allocation and one initial Job stage, no technical split or cross-acceptance consolidation. Grounded
+first source is SERVICE_ITEM: existing source_kind requires item_id, offered_uom_id and
+offered_quantity > 0. These are commercial provenance only, not operational completion measures.
+MANUAL has no descriptor today and is not a candidate. No manual/stock/Assembly fallback to a Job.
+Actual authoritative acceptance/R7 eligibility for SERVICE_ITEM is still GATED, not delivered.
 Fixed-deliverable completion is the SIMPLE default already directed by #32: pin the exact agreed
 scope identity, conditions and evidence requirements to the accepted Sales baseline. Release is not
 completion or start. Customer signature, PDF, hours or worker name are not universal prerequisites.
-Concrete customer-agreed conditions must be supplied by the authoritative source, not chosen by Jobs.
+Completion-condition evidence has NO source today: its shape/version is GATED until Sales/R7
+delivers it. Customer-agreed conditions must come from canonical source evidence; Jobs invents none.
 
 Distinguish commercial offer/pricing quantity from operational completion measure. Sales may legitimately
 preserve a commercial quantity/unit without making the deliverable's execution measurable. Jobs copies
@@ -68,15 +71,17 @@ console shortcut, generic accepted flag or unauthenticated callback creates this
 
 Proposed Jobs-owned persistence additions AFTER actual CA/HA tables exist:
 
-| Change | Tenant/source integrity and purpose |
-|---|---|
-| job_handover_origins | Add real acceptance_id, accepted_component_id, allocation_id, stage_id, source_baseline_id and source generation/version binding; job_id composite FK still points to service_jobs; no unchecked source-ID strings |
-| Origin uniqueness | Replace SP0b UNIQUE(company_id,target_purpose,business_identity) with UNIQUE(company_id,stage_id,target_purpose,business_identity); keep UNIQUE(company_id,job_id). SP0b omitted stage because no actual Sales stage table existed |
-| Cross-reference consistency | Composite source keys include parent where needed: component/acceptance, allocation/component, stage/allocation and source baseline/stage; enforce via source composite unique keys/FKs or jointly reviewed DB constraint checks, not unrelated same-company FKs alone |
-| Stage one-target protection | Sales owns stage target binding and locked release invariant; Jobs unique company/stage/purpose prevents incompatible identities producing two Jobs; never weaken R7 target identity to arbitrary UUID |
-| job_baselines | Add real source baseline composite FK and pinned source generation; keep scope_description, completion_rule_version, fingerprint, immutable version/predecessor; no circular current-head FKs |
-| job_baseline_components | Same-Job/baseline composite FKs, source accepted-component/original anchor FKs, immutable scope/completion evidence; optional paired measure_id/quantity CHECK, quantity positive only when both present; no application-only pair check |
-| job_activities | Arrives in THIS receiver integration slice, one default per Job via unique partial index and commit-time existence guard; no new commercial claim |
+| Change / source key | Tenant/source integrity and purpose | Real today vs specified only |
+|---|---|---|
+| quotation_families | Existing (company_id,id) key for family provenance; not acceptance | REAL on inspected baseline |
+| quotation_revisions | Existing (company_id,family_id,id) key pins revision/family; also require (company_id,id) FK for each direct reference | REAL on inspected baseline |
+| job_handover_origins | Add acceptance_id, accepted_component_id, allocation_id, stage_id, source_baseline_id and source generation/version binding; job_id composite FK to service_jobs; no unchecked source strings | SPECIFIED ONLY; acceptance/allocation/stage/source baseline and CA/HA physical keys GATED |
+| Origin uniqueness | Replace SP0b UNIQUE(company_id,target_purpose,business_identity) with UNIQUE(company_id,stage_id,target_purpose,business_identity); keep UNIQUE(company_id,job_id) | SPECIFIED ONLY, after actual stage FK; SP0b omitted stage because Sales stage table absent |
+| Cross-reference consistency | EVERY Jobs-to-Sales reference has a (company_id,id) composite FK; add parent-consistent FKs for component/acceptance, allocation/component, stage/allocation and baseline/stage | SPECIFIED ONLY; real CA/HA names/composite keys GATED; CHECK is not a replacement for FKs except an explicitly recorded/reviewed exception |
+| Stage one-target protection | ADD a second UNIQUE(company_id,stage_id,target_purpose) on Jobs origins, alongside the business_identity-inclusive key; enforce one target even with different business_identity | SPECIFIED ONLY; Sales also owns locked stage result binding; actual constraints/writers GATED |
+| job_baselines | Real source baseline (company_id,id) FK plus parent binding and pinned generation; immutable scope/completion rule/fingerprint/version/predecessor | SPECIFIED ONLY; source baseline and completion evidence GATED |
+| job_baseline_components | Same-Job/baseline FKs; every Sales reference (company_id,id) FK plus parent binding; immutable canonical scope/conditions; optional paired measure/positive quantity CHECK | GATED until canonical completion/source shape and actual CA/HA keys exist |
+| job_activities | Receiver-integration slice, one default per Job, partial unique index and commit-time existence guard; no commercial claim | GATED default trigger and implementation, not SP0b |
 
 All new local evidence is append-only. Jobs migration owns FKs into Sales AFTER actual tables and
 required composite target keys are integrated; Sales never adds FKs into Jobs. Sales stores an opaque
@@ -91,11 +96,13 @@ backfill fake acceptance or leave production source FKs nullable as a bypass. Fo
 replaces the old unique constraint atomically; down refuses when evidence exists and cannot silently
 revert a broader stage-inclusive identity to conflicting old uniqueness.
 
-## Jobs receiver input/result candidates
+## Jobs receiver input/result candidates — GATED interface
 
 No general shared handover engine. A later Jobs-owned ReceiveReleasedService Action takes a typed
 ReleasedServiceInput-compatible value, after joint review with #28's validator. That foundation has
-no entry point; Task A neither changes #28 nor introduces a production Action.
+no entry point; Task A neither changes #28 nor introduces a production Action. The future receiver
+is a non-routable internal Action callable ONLY by the Sales release coordinator: no receiver
+Request, route, console or import entry point. All callers must use the coordinator.
 
 | Value group | Required facts, ownership and checking |
 |---|---|
@@ -104,13 +111,16 @@ no entry point; Task A neither changes #28 nor introduces a production Action.
 | Exact payload | Immutable scope/completion-condition version and digest, component identities, optional supported measure pair/conversions; actor cannot supply source status or computed capacity |
 | Readiness | Expected root/allocation/stage/source generations, path policy and relied-on approval/readiness fingerprints; source-owned verified result, not client trust |
 | Transaction | Exact runtime connection identity and outer transaction context established by Sales; Jobs validates connection/transaction level and trusted source-contract participation |
-| Result | company, service_job_id, origin_id (the receiver receipt), initial_job_baseline_id/digest, default_activity_id, initial_generation and versioned safe replay indicator |
+| Result | company, service_job_id, origin_id (the receiver receipt), initial_job_baseline_id, default_activity_id, initial_generation and versioned safe replay indicator |
 
 The typed input is data, not proof. Proposed narrow Sales-owned source-read verifier resolves the
 real rows and relationship chain on the SAME connection under coordinator-held locks, returning
 canonical facts or refusal without acquiring inverse locks. Jobs independently uses it to verify
 input binding/contract applicability. Interface name/implementation belongs to the later Sales task;
-no such verifier exists now. It neither mutates Sales nor treats arbitrary input as trusted evidence.
+no such verifier exists now: interface is GATED. Baseline, component and measure values come ONLY
+from a positive verifier canonical output. Any mismatch with typed input refuses. UNAVAILABLE,
+UNSUPPORTED, UNKNOWN or any other non-positive result refuses with zero effects. No input fallback,
+local conditions or default measure. It neither mutates Sales nor treats input as trusted evidence.
 A caller-supplied transaction token or asserted lock flag is insufficient: actual coordinator/verifier
 participation and held-source-fence discipline require independent-session proof. Missing verifier or
 transaction participation fails closed. Jobs never acquires Sales locks or writes
@@ -140,6 +150,9 @@ release event/origin. Proposed Numbering lock position: after Sales source locks
 origin insertion, consistent across all Job creators. Review actual numbering counter/advisory locks
 and rollback against all participants; no MAX(code)+1 or globally held number reservation. GAPLESS
 counter rolls back; ALLOW_GAPS may consume a sequence value, not a durable orphan Job/receipt.
+No Job creator (import, console or any other caller) may take the Numbering counter BEFORE Sales
+locks. Such entry points cannot bypass the coordinator. Exact lock/Numbering positions and Inventory
+compatibility remain GATED pending real writers and independent-session proof.
 No enabled Jobs type/series or reviewed holder configuration exists here; missing configuration refuses.
 
 Sales checks current duty/read/scope first, obtains canonical locks, then handles exact request receipt
@@ -175,7 +188,7 @@ changed expected tokens under an already used key according to its accepted rece
 | Fresh key or different authorised actor, same K/semantic intent | Existing origin/target returned; Sales may record its request receipt atomically; no extra Job or claim |
 | Same K, changed baseline/scope/contract/measure | Business-intent conflict; no receiver overwrite; explicit supported successor needed |
 | Different business identity, same stage/purpose | Conflict under stage one-target rule, no capacity bypass |
-| Existing receipt, now revoked/limited/other company | Refusal or safe scoped absence per API policy; no cached historical privilege |
+| Existing receipt, now revoked/limited/other company | Current refusal for revoked/limited; foreign-company key indistinguishable from absent; no cached historical privilege |
 | Original target later ACTIVE/held/closed | Replay permitted safe original identity with current state; never re-release/start/reset or demand obsolete readiness |
 | Network loss after commit | Retry finds origin/Sales receipt; atomic commit prevents a durable half-target |
 
@@ -187,16 +200,24 @@ manufacture a missing receipt. Raw recovery is not a new release command.
 
 ## Security and ownership review
 
-Sales guards its R9 handover release/source reads; Jobs owns future JobDutyManifest/JobAccess and
-job.receive. Both sides must be ACTIVE under reviewed recipes before enabled receiving; STAGED or
-hand-made permission rows confer nothing. ALL-only RecordScope per required duty, checked separately;
-limited grants refuse across direct Actions, Requests, workers, replay and result lookup. No reuse of
-SalesAccess for Jobs and no generic service-account bypass. Actor/company context stays explicit.
-Source read eligibility and independent target receiving authority cannot be inferred from assignment,
-customer identity or role. Review safe receiving-result access without requiring job.cost.view.
+Sales guards sales.handover.release plus legitimate source reads; Jobs separately guards job.receive
+through future Jobs-owned JobDutyManifest/JobAccess, never SalesAccess. Neither duty implies the other.
+Both are company-wide only: per-duty RecordScope must resolve ALL; limited grants refuse, not filter.
+Actor/company context explicit; coordinator-only receiver has no Request/route/console/import entry.
+Both duties must be ACTIVE under reviewed recipes before enabled receiving. job.receive remains
+STAGED; hand-made permission rows confer nothing. No incumbent Sales releaser, owner or admin gains
+job.receive automatically. GATED holder recipe lists each authorised holder individually and excludes
+job.cost.view, cost and margin access. No inferred role/assignment/customer/service-account authority.
+Follow [R9 rollout](phase-4-r9-permission-rollout.md), the
+[AU manifest](../../backend/app/Modules/Sales/Support/Authority/SalesDutyManifest.php),
+[SP0a permission matrix](phase-5-sp0a-design.md#later-lifecycle-permission-and-recordscope-matrix-c1c2)
+and [SP0a lifecycle contract](phase-5-sp0a-delivery-contract.md#later-lifecyclej2-api-and-frontend-candidates-c1-d1).
+Holder recipe contents remain GATED until source/receiver writers and security review exist.
 
-Result exposes safe target/origin/baseline/activity identities only under current source/target access.
-Never expose private control hashes, cost/rates/margin, consent attachments or hidden competing IDs.
+Replay AND conflict responses expose only the safe identity set: company/Job/origin/initial baseline/
+default activity IDs, permitted generation/state and replay indicator. No digest/hash, cost/margin,
+consent attachment or private competing ID. Foreign-company keys are indistinguishable from absent.
+Private intent/baseline hashes stay server-side. Current source/target access applies on every retry.
 J1 has no cost fields, labour tables or compulsory job.view/job.cost.view for later close authority.
 Formal evidence requirements stay source/path-specific under Documents ADR 0137; #11 alone does not prove
 Sales source issue/consent or secure binary delivery. No universal PDF gate or renderer in this task.
@@ -204,10 +225,12 @@ Sales source issue/consent or secure binary delivery. No universal PDF gate or r
 ## Review gates and genuine remaining choices
 
 Recommend one narrow fixed-service, whole-deliverable adapter first. Owner already chose R7 authority,
-fixed-deliverable default and J1/J2 separation: do not reopen these. Still review: Service Item versus
-supported descriptor adapter for the first real source; concrete accepted-condition evidence shape;
-final CA/HA physical/composite-key mapping; receiving holder recipe; Numbering type/series/defaults;
-source verifier and actual lock/connection proof. These are bounded delivery selections/technical seams,
+fixed-deliverable default and J1/J2 separation: do not reopen these. SERVICE_ITEM is the first grounded
+source; MANUAL is not a candidate. GATED: physical CA/HA names/composite keys, completion-evidence
+shape/version, verifier interface, exact lock/Numbering positions and Inventory compatibility,
+individual holder recipe contents, job_activities default trigger, job_baseline_components and
+independent-session proof. Numbering type/series/defaults also await reviewed implementation binding.
+These are bounded delivery selections/technical seams,
 not new business architecture. Coordinator assigns actual Sales/R7, Jobs and security/integration owners.
 Lifecycle/closeout support gates public J1 after receiver delivery; receiver success alone is not pilot
 sign-off. J2 labour/costing, Inventory ADR 0040 and Purchasing remain separately authorised.

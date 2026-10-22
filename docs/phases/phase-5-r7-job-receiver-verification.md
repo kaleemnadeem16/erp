@@ -9,11 +9,11 @@ Design only: no application implementation, migrations, permissions, registratio
 
 | Owning slice | Required delivery / what Task A can specify now |
 |---|---|
-| Sales QL/issue/acceptance | Real issued scope/consent/component claims, enabled supported service adapter and current source eligibility; #10 QL1a and #30 draft review are upstream work, not accepted business |
+| Sales QL/issue/acceptance | First grounded source SERVICE_ITEM requires item_id/offered_uom_id/offered_quantity > 0 (commercial provenance only); MANUAL has no descriptor and is excluded. Authoritative issued/accepted source and completion evidence remain GATED; draft work is not accepted business |
 | R7 HA0/HA1 | Canonical plan/allocation/stage/business identity and immutable source baseline; fences, generations, supported readiness/approvals and composite source keys; exact physical names not implemented here |
 | R7 HA2/service HA3b | Sales release coordinator/source verifier, capacity/stage uniqueness and Sales receipt linking Jobs origin; real calls/connection/rollback/concurrency proof with Jobs receiver |
 | Jobs #28 | Four-table disabled schema and validator; no production receiving Action, activities, components or real source references. Authorised to Agent A but not delivered at baseline f0e2871 |
-| Jobs receiver integration | Jobs-owned real Sales FKs, stage-inclusive origin uniqueness, default activity and components, immutable initial baseline, job.receive guard and safe typed result; separate implementation approval |
+| Jobs receiver integration | Jobs-owned real Sales FKs, stage-inclusive origin business key AND UNIQUE(company_id,stage_id,target_purpose), GATED default activity/components, immutable initial baseline, job.receive guard and safe typed result; separate implementation approval |
 | Security/R9 | Actual guarded duties, ALL-only independent scopes, current replay authorisation, safe result/source visibility, explicit holder rollout; existing manifest pattern does not activate handover/receiving |
 | Numbering | Actual Job document-type/series binding and reviewed code allocation lock position; central framework exists, Jobs registration/configuration absent |
 | Documents | DF0 #11 integrated; source-specific Sales bindings #24 and later framework/evidence delivery when the selected source requires them. No blanket formal Job PDF dependency |
@@ -35,10 +35,12 @@ was identified in the accepted logical contracts; actual writer compatibility is
 
 ## Suggested separately authorisable delivery groups
 
-1. Joint interface review: agree first supported source, actual FK target keys, fixed completion
-   envelope, semantic versus keyed fingerprints, verifier/result ownership and numbering lock order.
+1. Joint interface review: grounded first source SERVICE_ITEM; GATED actual CA/HA FK target keys,
+   completion-evidence envelope/version, verifier interface, individual holder recipe, exact lock/Numbering
+   positions/Inventory compatibility, activity default trigger/components and independent-session proof.
 2. Disabled schema extension AFTER #28 and actual CA/HA schema: Jobs→Sales FKs and origin uniqueness
-   replacement; components with nullable paired measures, default activity invariants. No fake backfill,
+   replacement PLUS UNIQUE(company_id,stage_id,target_purpose); every Jobs-to-Sales reference has
+   (company_id,id) composite FK and parent binding. Components/default trigger remain GATED. No fake backfill,
    public receiving or authority activation. Review evidence-safe rollback.
 3. Atomic release adapter group: Sales coordinator/verifier + Jobs receiver, actual source/target guards,
    numbering and exact source/origin receipts. No enabled half. Small commits may integrate disabled,
@@ -46,7 +48,8 @@ was identified in the accepted logical contracts; actual writer compatibility is
 4. J1 activation only with separately authorised Task B lifecycle/closeout/source-read proof and reviewed
    holder configuration. J2 remains optional and independently reviewed; receiver creates no costs.
 
-No route/API generator changes in a disabled-only group. Later Sales release Request/Action and safe
+No route/API generator changes in a disabled-only group. Jobs receiver is internal/coordinator-only,
+with no Request, route, console or import entry. Later Sales release Request/Action and safe
 Resource/OpenAPI/client are owned by Sales when that task is authorised; no public Jobs create route.
 Migrations use additive reviewed timestamps after latest develop, company-composite FKs/uniques and
 Jobs-specific append-only guards. Required source composite-key additions are Sales-owned tasks.
@@ -59,21 +62,21 @@ Down refuses evidence; no destructive uniqueness downgrade. No stack/migration t
 | RA01 | Draft quote, evidence observation, unsigned generic accepted flag or bare document binding supplied → unsupported/non-authoritative refusal, zero target effects |
 | RA02 | Genuine fixed-service acceptance but team absent → acceptance remains valid; readiness distinguishes pending execution facts from release prerequisites, no invented worker/hour/unit |
 | RA03 | Fixed unmeasured component → explicit identity/conditions, both measure and quantity NULL; measured component requires both and positive exact source quantity; mismatched pair/raw SQL fails |
-| RA04 | Source component/acceptance/allocation/stage/baseline from wrong parent or company → composite-source integrity fails, even if each individual ID exists |
+| RA04 | EVERY Jobs-to-Sales reference has (company_id,id) composite FK plus required parent binding; wrong-parent/company fails even when individual IDs exist; CHECK only by recorded exception |
 | RA05 | Same K with fresh actor/key → one ServiceJob/origin/default activity/initial baseline; Sales response links original origin; no extra commercial claim |
-| RA06 | New business_identity on same stage/purpose, changed baseline under same K, or changed keyed intent → conflict, never target duplication/overwrite |
+| RA06 | Raw/concurrent insertion with different business_identity on same stage/purpose fails UNIQUE(company_id,stage_id,target_purpose); changed baseline/keyed intent conflicts; safe identities only |
 | RA07 | Real release throws after ServiceJob insertion, origin/baseline/activity writes or Sales stage/receipt writes → entire outer transaction rolls back, no durable half-target; assert runtime connection/backend session |
-| RA08 | Receiver invoked outside outer transaction, on different connection, with fabricated DTO or missing source verifier → refuse; fixture-only tests are not proof of real accepted source |
+| RA08 | Outside coordinator/transaction, different connection, fabricated input, input/canonical mismatch or verifier UNAVAILABLE/UNSUPPORTED/UNKNOWN/non-positive → refuse with zero effects; persist baseline/components/measures only from positive canonical output |
 | RA09 | Parallel releases against same absent stage target; parallel disjoint claims exceeding cap → independent sessions prove single target/cap conservation; non-measured full component cannot branch by inventing quantity |
 | RA10 | Release races reduction/withdrawal/hold/approval or source policy change → locks/generations produce coherent supported result or stale refusal; no bypass via import/worker |
-| RA11 | Revoked/limited actor retries after success → current denial/safe absence; unrelated unrestricted read never widens limited release/receive; direct Action cannot bypass Request guards |
+| RA11 | sales.handover.release and job.receive checked independently, ALL-only; limited/revoked refuses, foreign-company key indistinguishable from absent; no automatic receive for Sales releaser/owner/admin, STAGED default, individually reviewed holders without cost/margin |
 | RA12 | Target later started/held/closed; original exact replay → original safe identity/current permitted state, no reset, new event, numbering or obsolete prerequisite failure |
 | RA13 | Key uniqueness/deadlock → whole transaction rollback then bounded retry; no querying aborted transaction; changed intent maps safe conflict, no private competing IDs |
-| RA14 | Numbering failure after target ID reservation or downstream failure after allocation → no durable target/receipt; GAPLESS restored, ALLOW_GAPS gap allowed; same-identity replay allocates no new number |
+| RA14 | No creator/import/console takes Numbering counter before Sales locks; numbering/downstream failure leaves no target/receipt, GAPLESS restored or ALLOW_GAPS gap allowed; replay allocates no new number |
 | RA15 | Source completion default/master text changes after release → original Job baseline/conditions unchanged; supported successor separate, original source references immutable |
 | RA16 | Required atomic mixed group lacks actual adapter or Inventory/Purchasing effect is unknown → no partial success or NONE; unsupported path remains disabled |
 | RA17 | SP0b fixture evidence exists when real FKs/unique identity attach → rollout blocks pending reviewed reconciliation, never unchecked nullable bypass/delete/fake accepted data |
-| RA18 | Receiver target/origin mismatch → invariant refusal and owned reconciliation; no synthetic recovery receipt or acceptance; cost-blind safe response hides private evidence/hashes |
+| RA18 | Receiver target/origin mismatch → invariant refusal and owned reconciliation; no synthetic recovery receipt or acceptance; all replay/conflict responses expose safe identities only, never cost/hashes/private competing IDs |
 
 Implementation evidence names real dependency commits, fixture versus actual integration tests,
 connection/session identity, independent-session barriers and all conflicting writer paths. Backend
@@ -92,10 +95,12 @@ actor/key receiver identity duplicates targets, queue-only creation splits manda
 strings weaken source integrity, live-master baseline recalculation rewrites history, arbitrary 1-unit
 services fake measures, and universal document/timesheet gates contradict accepted SIMPLE direction.
 
-No accepted business choice reopened and no ADR modified. Remaining joint technical selections:
-actual CA/HA SQL/composite keys and source verifier implementation, supported initial Service Item
-versus descriptor source, condition evidence schema/version, numbered Jobs registration/configuration,
-receiver holder recipe and real lock/transaction proof. Some cannot be frozen before source writers
+No accepted business choice reopened and no ADR modified. First grounded source is SERVICE_ITEM;
+MANUAL is not a descriptor candidate. GATED until Sales/R7 writers exist: physical CA/HA names/keys,
+completion evidence shape/version (no source today), verifier interface, exact lock/Numbering positions
+and Inventory compatibility, individual holder recipe contents, job_activities default trigger,
+job_baseline_components and independent-session proof. Jobs numbering registration/configuration
+also awaits implementation review. Some cannot be frozen before source writers
 exist; record unresolved exact bindings explicitly rather than approve a placeholder. Actual execution,
 closeout and correction behaviour belongs to later tasks. Owner approval of this design does not
 approve migrations, duties, routes, Job activation or public pilot sign-off.
