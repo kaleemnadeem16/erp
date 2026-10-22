@@ -117,6 +117,10 @@ END $$;
 CREATE TRIGGER job_handover_origins_guard BEFORE UPDATE OR DELETE ON job_handover_origins FOR EACH ROW EXECUTE FUNCTION job_evidence_append_only_guard();
 CREATE TRIGGER job_baselines_guard BEFORE UPDATE OR DELETE ON job_baselines FOR EACH ROW EXECUTE FUNCTION job_evidence_append_only_guard();
 CREATE TRIGGER job_events_guard BEFORE UPDATE OR DELETE ON job_events FOR EACH ROW EXECUTE FUNCTION job_evidence_append_only_guard();
+-- TRUNCATE skips row triggers, so it needs its own statement-level guard on each evidence table.
+CREATE TRIGGER job_handover_origins_truncate_guard BEFORE TRUNCATE ON job_handover_origins FOR EACH STATEMENT EXECUTE FUNCTION job_evidence_append_only_guard();
+CREATE TRIGGER job_baselines_truncate_guard BEFORE TRUNCATE ON job_baselines FOR EACH STATEMENT EXECUTE FUNCTION job_evidence_append_only_guard();
+CREATE TRIGGER job_events_truncate_guard BEFORE TRUNCATE ON job_events FOR EACH STATEMENT EXECUTE FUNCTION job_evidence_append_only_guard();
 SQL);
     }
 
@@ -128,6 +132,9 @@ SQL);
                 throw new RuntimeException("{$table} has rows; rolling this migration back would erase Job evidence. Plan a backout first.");
             }
         }
+        DB::statement('DROP TRIGGER IF EXISTS job_events_truncate_guard ON job_events');
+        DB::statement('DROP TRIGGER IF EXISTS job_baselines_truncate_guard ON job_baselines');
+        DB::statement('DROP TRIGGER IF EXISTS job_handover_origins_truncate_guard ON job_handover_origins');
         DB::statement('DROP TRIGGER IF EXISTS job_events_guard ON job_events');
         DB::statement('DROP TRIGGER IF EXISTS job_baselines_guard ON job_baselines');
         DB::statement('DROP TRIGGER IF EXISTS job_handover_origins_guard ON job_handover_origins');

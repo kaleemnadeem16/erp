@@ -180,13 +180,16 @@ class JobsFoundationTest extends TestCase
         foreach (['job_handover_origins' => ['target_purpose' => 'X'], 'job_baselines' => ['fingerprint' => 'x'], 'job_events' => ['reason' => 'x']] as $table => $change) {
             $this->assertDbRefuses(fn () => DB::table($table)->update($change), 'append-only');
             $this->assertDbRefuses(fn () => DB::table($table)->delete(), 'append-only');
+            $this->assertDbRefuses(fn () => DB::statement("TRUNCATE TABLE {$table}"), 'append-only');
         }
+        // Truncating the parent with CASCADE would empty the evidence tables too; their own guards refuse that as well.
+        $this->assertDbRefuses(fn () => DB::statement('TRUNCATE TABLE service_jobs CASCADE'), 'append-only');
         // The parent cannot be deleted from under its evidence either.
         $this->assertDbRefuses(fn () => DB::table('service_jobs')->where('id', $job)->delete(), 'violates foreign key');
 
         $guards = DB::select("select c.relname as tbl, p.proname as fn from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid
             where not t.tgisinternal and c.relname in ('job_handover_origins','job_baselines','job_events') order by c.relname");
-        $this->assertCount(3, $guards);
+        $this->assertCount(6, $guards, 'a row guard and a truncate guard on each evidence table');
         foreach ($guards as $g) {
             $this->assertSame('job_evidence_append_only_guard', $g->fn, "{$g->tbl} uses the Jobs guard, never the Documents one");
         }
