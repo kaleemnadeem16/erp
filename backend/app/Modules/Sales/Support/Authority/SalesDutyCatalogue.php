@@ -11,8 +11,8 @@ use App\Modules\Sales\Support\PermissionVocabulary;
  * The matrix's rows owned by other modules (Documents, Tax, Company, Currency, Estimating, Inventory, Approvals, Numbering) are deliberately **not**
  * here: one permission has one owning module, and each of those is registered, or will be, by its own.
  *
- * Only the eight existing CRM duties are ACTIVE. One duty, `sales.financial.configure`, is STAGED: its guarded Action exists but is disabled until its holder
- * recipe is reviewed. Every other duty is a name with a specified meaning and no consumer: it is not registered, has no
+ * Only the eight existing CRM duties are ACTIVE. Three duties are STAGED: `sales.financial.configure`, `sales.quotation.view` and `sales.quotation.prepare` have
+ * guarded Actions that exist but are disabled until their holder recipes are reviewed. Every other duty is a name with a specified meaning and no consumer: it is not registered, has no
  * constant, and is refused by `SalesAccess` until the slice that delivers its operation changes its status here, in the same change as its Action,
  * its guard, its projection and its owner-reviewed holder recipe.
  */
@@ -30,9 +30,9 @@ final class SalesDutyCatalogue
             new SalesDuty(PermissionVocabulary::STAGE_MANAGE, DutyClass::Existing, DutyStatus::Active, 'Configure open stages/history', 'Config', 'Existing CRM only; future WON waits authoritative CA/RP'),
             new SalesDuty(PermissionVocabulary::NUMBERING_MANAGE, DutyClass::Existing, DutyStatus::Active, 'Existing Sales numbering formats', 'Config', 'Existing CRM only; future WON waits authoritative CA/RP'),
             new SalesDuty(PermissionVocabulary::OPPORTUNITY_ATTRIBUTION_CORRECT, DutyClass::ExistingSensitive, DutyStatus::Active, 'Append historical attribution correction + independent CRM read', 'Attribution', 'Existing CRM only; future WON waits authoritative CA/RP'),
-            new SalesDuty('sales.quotation.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Quotation list/detail safe metadata', 'Quote-min', 'QL1'),
+            new SalesDuty(PermissionVocabulary::QUOTATION_VIEW, DutyClass::NewOrdinary, DutyStatus::Staged, 'Quotation list/detail safe metadata', 'Quote-min', 'QL1'),
             new SalesDuty('sales.quotation.commercial.view', DutyClass::Sensitive, DutyStatus::Specified, 'General chosen-commercial figures', 'Commercial', 'QL1/FR5'),
-            new SalesDuty('sales.quotation.prepare', DutyClass::NewOrdinary, DutyStatus::Specified, 'Draft/revise/cancel-draft/preview/ordinary submit', 'Commercial-workflow', 'QL1/2 + PR/FR'),
+            new SalesDuty(PermissionVocabulary::QUOTATION_PREPARE, DutyClass::NewOrdinary, DutyStatus::Staged, 'Draft/revise/cancel-draft/preview/ordinary submit', 'Commercial-workflow', 'QL1/2 + PR/FR'),
             new SalesDuty('sales.quotation.issue', DutyClass::NewOrdinary, DutyStatus::Specified, 'Official issue', 'Commercial-workflow', 'QL3'),
             new SalesDuty('sales.quotation.withdraw', DutyClass::Sensitive, DutyStatus::Specified, 'Eligible unaccepted withdrawal/replacement disposition', 'Commercial-workflow', 'QL4/5; partial remains gated'),
             new SalesDuty('sales.quotation.history.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Quote lifecycle history', 'Quote-min + independent fields', 'QL1–6'),
