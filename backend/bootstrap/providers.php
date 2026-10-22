@@ -13,6 +13,7 @@ use App\Modules\Numbering\NumberingServiceProvider;
 use App\Modules\Parties\PartiesServiceProvider;
 use App\Modules\Purchasing\PurchasingServiceProvider;
 use App\Modules\Sales\SalesServiceProvider;
+use App\Modules\Tax\TaxServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
 use App\Providers\CurrencyServiceProvider;
@@ -36,4 +37,5 @@ return [
     EstimatingServiceProvider::class,
     DocumentsServiceProvider::class,
     JobsServiceProvider::class,
+    TaxServiceProvider::class,
 ];
