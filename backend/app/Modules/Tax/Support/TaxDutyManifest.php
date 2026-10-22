@@ -28,6 +28,9 @@ final class TaxDutyManifest
     public function registerWith(PermissionRegistry $registry): void
     {
         $names = array_keys(array_filter($this->statuses(), static fn (string $status): bool => $status === 'ACTIVE'));
+        if ($names === []) {
+            return;
+        }
         $registry->registerVocabulary('tax', $names);
         $registry->excludeFromAutomaticGrants($names, 'Tax duties require reviewed explicit holders or a verified full-access mandate (ADR 0138).');
     }

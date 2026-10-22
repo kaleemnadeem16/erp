@@ -16,8 +16,7 @@ final class PermissionRegistrationTest extends TestCase
     {
         $vocabularies = app(PermissionRegistry::class)->byOwner();
 
-        $this->assertSame(['accounting', 'administration', 'approvals', 'company', 'currency', 'estimating', 'inventory', 'numbering', 'parties', 'purchasing', 'sales', 'tax'], array_keys($vocabularies));
-        $this->assertSame([], $vocabularies['tax'], 'FR2a stages its duty without registering a live permission.');
+        $this->assertSame(['accounting', 'administration', 'approvals', 'company', 'currency', 'estimating', 'inventory', 'numbering', 'parties', 'purchasing', 'sales'], array_keys($vocabularies));
         $this->assertContains('administration.access.assign', $vocabularies['administration']);
         foreach (['accounting.account-mapping.view', 'accounting.account-mapping.manage'] as $capability) {
             $this->assertContains($capability, $vocabularies['accounting']);

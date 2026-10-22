@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Tax\Actions;
 
 use App\Models\User;
-use App\Modules\Sales\Support\Fx\EffectivePeriod;
 use App\Modules\Tax\Models\TaxComponentVersion;
 use App\Modules\Tax\Models\TaxGroupVersion;
 use App\Modules\Tax\Models\TaxRateVersion;
 use App\Modules\Tax\Models\TaxRuleVersion;
+use App\Modules\Tax\Support\EffectivePeriod;
 use App\Modules\Tax\Support\TaxAccess;
 use App\Modules\Tax\Support\TaxMutation;
 use App\Modules\Tax\Support\TaxRefusal;

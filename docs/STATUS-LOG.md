@@ -955,3 +955,16 @@ independent of J2; lifecycle/closeout, labour/costing, Inventory/Purchasing rema
 Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accepted ADR/Phase 4
 contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
 Joint Sales/security review requested on #32; technical seams await review before any implementation.
+
+
+## 2026-10-22 — FR2a review corrections (#12)
+
+Merged origin/develop at 5525293 (QL1a, DF1a, SP0a/Task A and #27), preserving both sides of the STATUS/STATUS-LOG conflicts.
+Tax's staged manifest now skips both registry calls when no duty is ACTIVE, so it adds no empty Tax owner group to public
+role metadata. Reverted Agent C's shared PermissionRegistrationTest expectation change; a Tax-local regression asserts owner
+absence. Replaced the Sales EffectivePeriod import with a Tax-local calendar-date/half-open period value object and focused
+date/boundary refusal tests. No Sales edits or new FR2b/#29a work. The existing migration name is retained (deterministic ordering).
+
+Correction validation on the merged baseline: Tax regression 17 tests/781 assertions; unchanged shared permission-registration
+suite 7 tests/46 assertions; Architecture 52 tests/119 assertions including all five required ratchets; Pint 33 PHP files;
+whole-project PHPStan, migrate-cycle and codegen --check all pass. No generated-client change.

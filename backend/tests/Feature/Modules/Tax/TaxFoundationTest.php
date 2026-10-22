@@ -3,12 +3,12 @@
 namespace Tests\Feature\Modules\Tax;
 
 use App\Models\User;
-use App\Modules\Sales\Support\Fx\EffectivePeriod;
 use App\Modules\Tax\Actions\ActivateTaxGroup;
 use App\Modules\Tax\Actions\CreateTaxComponent;
 use App\Modules\Tax\Actions\CreateTaxVersionSuccessor;
 use App\Modules\Tax\Actions\DefineTaxGroupGraph;
 use App\Modules\Tax\Models\TaxGroupVersion;
+use App\Modules\Tax\Support\EffectivePeriod;
 use App\Modules\Tax\Support\TaxDutyManifest;
 use App\Modules\Tax\Support\TaxRefusal;
 use App\Modules\Tax\Support\TaxVersionKind;
@@ -104,6 +104,7 @@ class TaxFoundationTest extends TestCase
     public function test_shipped_duties_remain_unregistered_ungrantable_and_actions_disabled(): void
     {
         $this->assertSame(['tax.configuration.manage' => 'STAGED', 'tax.profile.manage' => 'SPECIFIED'], app(TaxDutyManifest::class)->statuses());
+        $this->assertArrayNotHasKey('tax', app(PermissionRegistry::class)->byOwner());
         $this->assertNotContains(TaxDutyManifest::CONFIGURE, app(PermissionRegistry::class)->all());
         $this->assertNotContains(TaxDutyManifest::CONFIGURE, app(PermissionRegistry::class)->automaticGrants());
         $this->assertTrue($this->actor->can(TaxDutyManifest::CONFIGURE));
