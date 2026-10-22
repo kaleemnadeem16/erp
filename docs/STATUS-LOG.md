@@ -896,6 +896,27 @@ Authorised to implement coordination on top of Stages 1–2. **Mechanism:** GitH
 
 `backend/app/Modules/Documents`: provider, document-type and access contracts (ADR 0137), a type registry that refuses missing/incompatible adapters, an owner-defined typed projection schema (no universal line schema), `BindDocumentSubject` (idempotent, fails closed) and the tenant-safe `document_subject_bindings` / `document_operation_receipts` tables (composite company keys, CHECKs, append-only trigger). Public entry disabled: no routes, grants, duties or client change. A PO-shaped test fixture binds with zero Purchasing writes. Quotation binding, snapshot tables and DF1–DF5 are not part of this delivery.
 
+
+## 2026-10-21 — Phase 4 FR2a Tax foundation (#12)
+
+Agent C added the dedicated Tax provider/module, typed classification-only determination and company-scoped immutable
+component/rate/rule/group/dependency versions. Generation-fenced Actions use expected generation and atomic replay receipts;
+database activation validates graph periods/tenancy/method/base/mode/currency/assessment scope and cycles, freezing activated graphs.
+Tax evidence rejects updates/deletes/truncation and populated rollback. tax.configuration.manage stays STAGED/unregistered;
+tax.profile.manage remains SPECIFIED for FR2b. No public routes, live grants, UI/client changes, Sales/Documents integration,
+FR3 calculation or FR4 changes. See [Tax README](../backend/app/Modules/Tax/README.md) for support boundaries and verification applicability.
+
+Local verification: Tax regression 15 tests / 768 assertions; Architecture 52 tests / 119 assertions including all five required
+ratchets; Pint 30 files; whole-project PHPStan; empty-schema migration apply/rollback/reapply; populated rollback refusal test;
+codegen --check (client unchanged). Browser specs and full local suite were not run (no public surface; coordinator/CI responsibility).
+
+First feature-branch CI identified a stale explicit module-owner list in PermissionRegistrationTest. The Tax provider contributes
+an empty vocabulary, so its expected owner list now includes tax and asserts that vocabulary is empty. No live duty was added.
+
+The corrected PermissionRegistrationTest passes locally (7 tests / 47 assertions; Pint passed). Hosted CI's separate backend
+shard 4 failure is the pre-existing GCX duplicate fixture leak tracked by #27/#21, reported with exact job evidence in #33.
+Issue #12 is blocked on #33 pending coordinator integration of #27; no green-CI submission is claimed.
+
 ## 2026-10-21 — Documents DF1a template and page-policy configuration (branch phase4/df1a-template-page-policy)
 
 Insert-only `document_template_versions` and `document_page_policy_versions` (curated layout ids, typed section/table rules, A4/Letter, margins, header/footer bands), `document_company_defaults` moving one generation at a time with an append-only `document_default_activations` history the database checks at commit. `LayoutConstraints` express type constraints (A4-only default; Letter by opt-in). Internal Actions: version, activate (generation lock, reasoned downgrade, pinned-version port) and `ResolveDocumentPolicy` (shipped → Company → type → explicit; brand reported NOT_AVAILABLE, never a fallback). No routes, duties, grants, brand/assets, manifests or client change; Company untouched. The STAGED-duty question is deferred: the AU0/AU1 manifest leaves `documents.*` registration to the Documents slices and no guarded public Action exists yet.
@@ -913,6 +934,13 @@ routes or SP0b implementation. No runtime verification. QL0 committed; #10 inter
 delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
 index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
 
+
+## 2026-10-22 — FR2a prerequisite integration (#12)
+
+Merged origin/develop at f0e2871, including the approved #27 raw-fixture currency cleanup. Preserved both Tax and Phase 5
+append-only log entries while resolving their append conflict. #33 is closed and #12 is unblocked. The owner-list assertion
+already includes Tax with an explicitly empty live vocabulary (33e1420); it remains applicable after the merge.
+
 ## 2026-10-22 — Task A R7-to-Job receiver design proposed (#32)
 
 Continued integrated SP0a (#19, merge `3b2d4d1`, CI success recorded) from develop f0e2871.
@@ -927,3 +955,16 @@ independent of J2; lifecycle/closeout, labour/costing, Inventory/Purchasing rema
 Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accepted ADR/Phase 4
 contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
 Joint Sales/security review requested on #32; technical seams await review before any implementation.
+
+
+## 2026-10-22 — FR2a review corrections (#12)
+
+Merged origin/develop at 5525293 (QL1a, DF1a, SP0a/Task A and #27), preserving both sides of the STATUS/STATUS-LOG conflicts.
+Tax's staged manifest now skips both registry calls when no duty is ACTIVE, so it adds no empty Tax owner group to public
+role metadata. Reverted Agent C's shared PermissionRegistrationTest expectation change; a Tax-local regression asserts owner
+absence. Replaced the Sales EffectivePeriod import with a Tax-local calendar-date/half-open period value object and focused
+date/boundary refusal tests. No Sales edits or new FR2b/#29a work. The existing migration name is retained (deterministic ordering).
+
+Correction validation on the merged baseline: Tax regression 17 tests/781 assertions; unchanged shared permission-registration
+suite 7 tests/46 assertions; Architecture 52 tests/119 assertions including all five required ratchets; Pint 33 PHP files;
+whole-project PHPStan, migrate-cycle and codegen --check all pass. No generated-client change.
