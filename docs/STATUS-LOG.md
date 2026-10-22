@@ -934,6 +934,10 @@ routes or SP0b implementation. No runtime verification. QL0 committed; #10 inter
 delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
 index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
 
+## 2026-10-22 — Phase 5 SP0b disabled Jobs foundation (branch phase5/sp0b-jobs-foundation, #28)
+
+`backend/app/Modules/Jobs`: `service_jobs`, `job_handover_origins` (points at the Job; one per Job and per purpose + business identity), `job_baselines` and `job_events`, with company-scoped composite keys, state/generation checks, per-Job uniqueness and append-only origins/baselines/events through the Jobs-specific `job_evidence_append_only_guard`. `down()` refuses while any row exists. A typed `ReleasedServiceInput` and a pure validator only; no receiver, Action, duty, permission, route, grant or client change, and no quantity, measure, money or Sales reference. Fixtures exist only in tests. Migration `2026_10_22_090000_create_jobs_foundation`.
+
 
 ## 2026-10-22 — FR2a prerequisite integration (#12)
 
