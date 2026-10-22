@@ -85,6 +85,14 @@ This milestone makes scope reviewable for authorisation, not automatically imple
 activate. Actual implementation readiness still requires owner selection, named owners, dependency
 delivery proof and applicable migration/API/security/concurrency/browser/demo checks at implementation.
 
+## SP0a design review — 2026-10-21
+
+Task #19 adds a proposed [physical/interface/security package](phase-5-sp0a-design.md) and
+[transaction/API/verification companion](phase-5-sp0a-delivery-contract.md). The owner accepted the
+21 October provisional readiness baseline and confirmed R7 accepted-service direction, independently
+signable J1 completion-only and optional J2 labour. Technical candidates await review; SP0b remains
+separately gated. No Job implementation, verification or public enablement follows from this package.
+
 ## Current tasks
 
 - [x] Accept/specify0145–0152; resolve Q51–Q57 and preserve research evidence.

@@ -895,3 +895,16 @@ Authorised to implement coordination on top of Stages 1–2. **Mechanism:** GitH
 ## 2026-10-21 — Documents DF0 foundation (branch phase4/df0-documents-foundation)
 
 `backend/app/Modules/Documents`: provider, document-type and access contracts (ADR 0137), a type registry that refuses missing/incompatible adapters, an owner-defined typed projection schema (no universal line schema), `BindDocumentSubject` (idempotent, fails closed) and the tenant-safe `document_subject_bindings` / `document_operation_receipts` tables (composite company keys, CHECKs, append-only trigger). Public entry disabled: no routes, grants, duties or client change. A PO-shaped test fixture binds with zero Purchasing writes. Quotation binding, snapshot tables and DF1–DF5 are not part of this delivery.
+
+## 2026-10-21 — Phase 5 SP0a design proposed (#19)
+
+Owner accepted the provisional read-only readiness baseline at `3ed28be`; ADRs 0145–0152 remain
+authoritative. R7 accepted-service source direction and independent J1 completion-only/J2 optional
+labour milestones confirmed. Proposed [physical/interface/security design](phases/phase-5-sp0a-design.md)
+and [transaction/API/verification contract](phases/phase-5-sp0a-delivery-contract.md) specify tenant-safe
+evidence/head models, receiver/receipts, per-duty scope, atomicity, source readiness, failure coverage
+and smallest disabled SP0b. Technical choices await review; no application code, migrations, grants,
+routes or SP0b implementation. No runtime verification. QL0 committed; #10 internal QL1a blocked on test-isolation issue #21,
+#11 DF0 in review (not integrated), #12 gated at inspection. CA/R7/Job/source adapters remain
+delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
+index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
