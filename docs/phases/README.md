@@ -199,7 +199,7 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 
 ## Related
 
-- [Phase 5 SP0a design](phase-5-sp0a-design.md) — proposed physical/interface/security package; [transaction/API/verification companion](phase-5-sp0a-delivery-contract.md); design only, SP0b not authorised
+- [Phase 5 SP0a design](phase-5-sp0a-design.md) — proposed physical/interface/security package; [transaction/API/verification companion](phase-5-sp0a-delivery-contract.md); SP0b disabled foundation (four tables, no entry point) implemented on branch `phase5/sp0b-jobs-foundation`, pending integration
 
 - [Rejected-stock exit (supplier return and scrap) — implementation plan](rejected-stock-exit-plan.md) — ADR 0097, accepted, not started
 - [Package feature handoff](package-balance-handoff.md) — grouped package tracking v1 is complete; lists known limitations and future enhancements, independent of other agents' workstreams
