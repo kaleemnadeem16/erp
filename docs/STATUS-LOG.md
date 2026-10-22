@@ -917,6 +917,10 @@ The corrected PermissionRegistrationTest passes locally (7 tests / 47 assertions
 shard 4 failure is the pre-existing GCX duplicate fixture leak tracked by #27/#21, reported with exact job evidence in #33.
 Issue #12 is blocked on #33 pending coordinator integration of #27; no green-CI submission is claimed.
 
+## 2026-10-21 — Documents DF1a template and page-policy configuration (branch phase4/df1a-template-page-policy)
+
+Insert-only `document_template_versions` and `document_page_policy_versions` (curated layout ids, typed section/table rules, A4/Letter, margins, header/footer bands), `document_company_defaults` moving one generation at a time with an append-only `document_default_activations` history the database checks at commit. `LayoutConstraints` express type constraints (A4-only default; Letter by opt-in). Internal Actions: version, activate (generation lock, reasoned downgrade, pinned-version port) and `ResolveDocumentPolicy` (shipped → Company → type → explicit; brand reported NOT_AVAILABLE, never a fallback). No routes, duties, grants, brand/assets, manifests or client change; Company untouched. The STAGED-duty question is deferred: the AU0/AU1 manifest leaves `documents.*` registration to the Documents slices and no guarded public Action exists yet.
+
 ## 2026-10-21 — Phase 5 SP0a design proposed (#19)
 
 Owner accepted the provisional read-only readiness baseline at `3ed28be`; ADRs 0145–0152 remain
@@ -936,3 +940,18 @@ index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
 Merged origin/develop at f0e2871, including the approved #27 raw-fixture currency cleanup. Preserved both Tax and Phase 5
 append-only log entries while resolving their append conflict. #33 is closed and #12 is unblocked. The owner-list assertion
 already includes Tax with an explicitly empty live vocabulary (33e1420); it remains applicable after the merge.
+
+## 2026-10-22 — Task A R7-to-Job receiver design proposed (#32)
+
+Continued integrated SP0a (#19, merge `3b2d4d1`, CI success recorded) from develop f0e2871.
+[Receiver design](phases/phase-5-r7-job-receiver-design.md) and
+[verification/dependency handoff](phases/phase-5-r7-job-receiver-verification.md) propose parent-consistent
+Jobs→Sales references, fixed-deliverable identity/pinned conditions without invented operational
+quantity, origin receiver receipt, same-connection atomic release, Numbering lock review and exact
+request/business replay separation. Actual CA/HA keys, source verifier, writer locks/connection proof
+and Jobs receiver remain unavailable at inspected baseline; no branch/task treated as integration.
+DF0 exists; #28 disabled foundation separately authorised/queued, not implemented here. J1 remains
+independent of J2; lifecycle/closeout, labour/costing, Inventory/Purchasing remain separate tasks.
+Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accepted ADR/Phase 4
+contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
+Joint Sales/security review requested on #32; technical seams await review before any implementation.

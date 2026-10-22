@@ -93,6 +93,17 @@ Task #19 adds a proposed [physical/interface/security package](phase-5-sp0a-desi
 signable J1 completion-only and optional J2 labour. Technical candidates await review; SP0b remains
 separately gated. No Job implementation, verification or public enablement follows from this package.
 
+## Task A receiver design — 2026-10-22
+
+SP0a is integrated as `3b2d4d1` with CI success recorded on #19. Task #32 proposes the
+[R7-to-Job receiver contract](phase-5-r7-job-receiver-design.md) and
+[dependency/verification handoff](phase-5-r7-job-receiver-verification.md): fixed-deliverable source
+binding, immutable conditions, origin identity, same-transaction release and current-authorised replay.
+Actual CA/HA source keys/verifier/locks and Jobs adapters remain missing delivery dependencies at
+baseline f0e2871. SP0b #28 is a separately authorised disabled foundation, not runtime delivery;
+this design does not implement it, Task B lifecycle/closeout or Task C/J2. Technical seams need joint
+Sales/security/owner review; J1 sign-off is not established by receiver design or release alone.
+
 ## Current tasks
 
 - [x] Accept/specify0145–0152; resolve Q51–Q57 and preserve research evidence.
