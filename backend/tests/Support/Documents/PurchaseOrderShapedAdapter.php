@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Support\Documents;
 
+use App\Modules\Documents\Support\ConstrainsDocumentLayout;
 use App\Modules\Documents\Support\DocumentAccess;
+use App\Modules\Documents\Support\DocumentLayouts;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentProjection;
 use App\Modules\Documents\Support\DocumentTypeAdapter;
 use App\Modules\Documents\Support\FieldSpec;
 use App\Modules\Documents\Support\FieldType;
+use App\Modules\Documents\Support\LayoutConstraints;
+use App\Modules\Documents\Support\PageFormat;
 use App\Modules\Documents\Support\ProjectionSchema;
 use App\Modules\Documents\Support\SectionSchema;
 
@@ -17,14 +21,20 @@ use App\Modules\Documents\Support\SectionSchema;
  * A pure, purchase-order-shaped adapter (supplier audience, repeating priced lines, terms). It proves the contract serves a non-Sales document. It
  * deliberately imports nothing from Purchasing and writes nothing: the projection is plain data supplied by the test.
  */
-final class PurchaseOrderShapedAdapter implements DocumentAccess, DocumentTypeAdapter
+final class PurchaseOrderShapedAdapter implements ConstrainsDocumentLayout, DocumentAccess, DocumentTypeAdapter
 {
     public const KEY = 'purchasing.purchase-order.supplier';
 
     /** @var list<DocumentOperationContext> */
     public array $asked = [];
 
-    public function __construct(private readonly bool $allow = true) {}
+    public function __construct(private readonly bool $allow = true, private readonly bool $supportsLetter = false) {}
+
+    /** Letter is a shared capability an adapter must opt into explicitly; without it this fixture is A4 only like any default type. */
+    public function layoutConstraints(): LayoutConstraints
+    {
+        return new LayoutConstraints($this->supportsLetter ? [PageFormat::A4, PageFormat::Letter] : [PageFormat::A4], DocumentLayouts::all(), ['lines', 'terms'], ['lines']);
+    }
 
     public function typeKey(): string
     {

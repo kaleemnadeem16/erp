@@ -896,6 +896,10 @@ Authorised to implement coordination on top of Stages 1–2. **Mechanism:** GitH
 
 `backend/app/Modules/Documents`: provider, document-type and access contracts (ADR 0137), a type registry that refuses missing/incompatible adapters, an owner-defined typed projection schema (no universal line schema), `BindDocumentSubject` (idempotent, fails closed) and the tenant-safe `document_subject_bindings` / `document_operation_receipts` tables (composite company keys, CHECKs, append-only trigger). Public entry disabled: no routes, grants, duties or client change. A PO-shaped test fixture binds with zero Purchasing writes. Quotation binding, snapshot tables and DF1–DF5 are not part of this delivery.
 
+## 2026-10-21 — Documents DF1a template and page-policy configuration (branch phase4/df1a-template-page-policy)
+
+Insert-only `document_template_versions` and `document_page_policy_versions` (curated layout ids, typed section/table rules, A4/Letter, margins, header/footer bands), `document_company_defaults` moving one generation at a time with an append-only `document_default_activations` history the database checks at commit. `LayoutConstraints` express type constraints (A4-only default; Letter by opt-in). Internal Actions: version, activate (generation lock, reasoned downgrade, pinned-version port) and `ResolveDocumentPolicy` (shipped → Company → type → explicit; brand reported NOT_AVAILABLE, never a fallback). No routes, duties, grants, brand/assets, manifests or client change; Company untouched. The STAGED-duty question is deferred: the AU0/AU1 manifest leaves `documents.*` registration to the Documents slices and no guarded public Action exists yet.
+
 ## 2026-10-21 — Phase 5 SP0a design proposed (#19)
 
 Owner accepted the provisional read-only readiness baseline at `3ed28be`; ADRs 0145–0152 remain
