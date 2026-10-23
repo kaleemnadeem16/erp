@@ -972,3 +972,7 @@ date/boundary refusal tests. No Sales edits or new FR2b/#29a work. The existing 
 Correction validation on the merged baseline: Tax regression 17 tests/781 assertions; unchanged shared permission-registration
 suite 7 tests/46 assertions; Architecture 52 tests/119 assertions including all five required ratchets; Pint 33 PHP files;
 whole-project PHPStan, migrate-cycle and codegen --check all pass. No generated-client change.
+
+## 2026-10-23 — Phase 4 FR2b Tax-owned Party tax profiles and exemptions, disabled foundation (branch agent-c/fr2b-tax-profiles, #35)
+
+Integrated from source c66fbb2d6ed99d697bb81dcb9ab05ad33b472e57 (owner approval relayed 2026-10-23); migration `2026_10_22_140000_create_tax_party_profiles`. Detail: `backend/app/Modules/Tax/README.md`, `docs/domain/tax.md`.
