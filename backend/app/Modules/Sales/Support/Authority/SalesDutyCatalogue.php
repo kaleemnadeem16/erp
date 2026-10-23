@@ -11,7 +11,7 @@ use App\Modules\Sales\Support\PermissionVocabulary;
  * The matrix's rows owned by other modules (Documents, Tax, Company, Currency, Estimating, Inventory, Approvals, Numbering) are deliberately **not**
  * here: one permission has one owning module, and each of those is registered, or will be, by its own.
  *
- * Only the eight existing CRM duties are ACTIVE. Three duties are STAGED: `sales.financial.configure`, `sales.quotation.view` and `sales.quotation.prepare` have
+ * Only the eight existing CRM duties are ACTIVE. Four duties are STAGED: `sales.financial.configure`, `sales.quotation.view`, `sales.quotation.prepare` and `sales.document.generate` have
  * guarded Actions that exist but are disabled until their holder recipes are reviewed. Every other duty is a name with a specified meaning and no consumer: it is not registered, has no
  * constant, and is refused by `SalesAccess` until the slice that delivers its operation changes its status here, in the same change as its Action,
  * its guard, its projection and its owner-reviewed holder recipe.
@@ -60,7 +60,7 @@ final class SalesDutyCatalogue
             new SalesDuty('sales.handover.hold', DutyClass::Sensitive, DutyStatus::Specified, 'Authorised operational hold', 'Operational', 'HA5'),
             new SalesDuty('sales.handover.amend', DutyClass::Sensitive, DutyStatus::Specified, 'Schedule/unused cancellation/reassignment', 'Operational/impact', 'HA4/5'),
             new SalesDuty('sales.document.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Safe generation/artefact history/status', 'Document-min', 'DF2/DOC1'),
-            new SalesDuty('sales.document.generate', DutyClass::NewOrdinary, DutyStatus::Specified, 'Request pinned generation/retry', 'Customer render profile', 'DF3/DOC2'),
+            new SalesDuty(PermissionVocabulary::DOCUMENT_GENERATE, DutyClass::NewOrdinary, DutyStatus::Staged, 'Request pinned generation/retry', 'Customer render profile', 'DF3/DOC2'),
             new SalesDuty('sales.document.repair', DutyClass::Sensitive, DutyStatus::Specified, 'Authorise labelled semantic rendition', 'Customer render profile', 'DF4/DOC3'),
             new SalesDuty('sales.document.download', DutyClass::NewOrdinary, DutyStatus::Specified, 'Original/permitted rendition/print invocation', 'Exact whole payload', 'DF4/DOC4'),
             new SalesDuty('sales.document.attachment.manage', DutyClass::Sensitive, DutyStatus::Specified, 'Validate/link allowed evidence attachment', 'Association write', 'DF4 + CA/DOC'),

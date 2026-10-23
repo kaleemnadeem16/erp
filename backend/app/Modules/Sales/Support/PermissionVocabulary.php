@@ -56,6 +56,12 @@ final class PermissionVocabulary
     public const QUOTATION_PREPARE = 'sales.quotation.prepare';
 
     /**
+     * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
+     * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
+     */
+    public const DOCUMENT_GENERATE = 'sales.document.generate';
+
+    /**
      * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified
      * in `Authority\SalesDutyManifest` and deliberately has no constant here until the slice that delivers it.
      *
