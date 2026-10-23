@@ -8,10 +8,12 @@ use App\Modules\Documents\DocumentsServiceProvider;
 use App\Modules\Estimating\EstimatingServiceProvider;
 use App\Modules\Imports\ImportsServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
+use App\Modules\Jobs\JobsServiceProvider;
 use App\Modules\Numbering\NumberingServiceProvider;
 use App\Modules\Parties\PartiesServiceProvider;
 use App\Modules\Purchasing\PurchasingServiceProvider;
 use App\Modules\Sales\SalesServiceProvider;
+use App\Modules\Tax\TaxServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AuthServiceProvider;
 use App\Providers\CurrencyServiceProvider;
@@ -34,4 +36,6 @@ return [
     ApprovalsServiceProvider::class,
     EstimatingServiceProvider::class,
     DocumentsServiceProvider::class,
+    JobsServiceProvider::class,
+    TaxServiceProvider::class,
 ];
