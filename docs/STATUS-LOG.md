@@ -960,6 +960,19 @@ Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accep
 contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
 Joint Sales/security review requested on #32; technical seams await review before any implementation.
 
+## 2026-10-22 — Task B J1 execution and closeout design proposed (#34)
+
+Continued Task A integrated at `5525293` on the claimed codex/phase5-task-b-j1-execution branch.
+[J1 execution](phases/phase-5-task-b-j1-execution.md) and
+[closeout/transaction/verification companion](phases/phase-5-task-b-j1-closeout.md) propose responsibility,
+start/independent holds/fixed-deliverable attestation, source-owned readiness/closeout, historical
+evidence, STAGED duty/scope matrix, client command receipts, safe worksheet and smallest disabled
+batch. GATED: Sales/R7 authoritative source/conditions, Jobs #28 (In Review on agent-b branch, not
+integrated at inspected baseline), receiver activities/components, Inventory ADR 0040 and Purchasing
+acceptance/owning correction/readiness, holder inventory and source lock/generation proof. No missing
+adapter treated as NONE; optional absent labour never a fabricated closure prerequisite. J2 labour/
+costing remains separate. No ADR/Phase 4 contract edits, code, migrations, routes, grants or activation;
+no runtime verification. Shared edits: Phase 5 STATUS row, this log, phase index/overview links.
 
 ## 2026-10-22 — FR2a review corrections (#12)
 
@@ -976,3 +989,7 @@ whole-project PHPStan, migrate-cycle and codegen --check all pass. No generated-
 ## 2026-10-23 — Phase 4 FR2b Tax-owned Party tax profiles and exemptions, disabled foundation (branch agent-c/fr2b-tax-profiles, #35)
 
 Integrated from source c66fbb2d6ed99d697bb81dcb9ab05ad33b472e57 (owner approval relayed 2026-10-23); migration `2026_10_22_140000_create_tax_party_profiles`. Detail: `backend/app/Modules/Tax/README.md`, `docs/domain/tax.md`.
+
+## 2026-10-26 — Documents TRUNCATE protection for append-only tables (branch phase4/documents-truncate-guard, #25)
+
+Integrated from source 72c38a30ec4cb34c4d5c6f101e1a8ad0935978c0 (owner approval relayed 2026-10-26); migration `2026_10_22_100000_guard_documents_truncate` guards TRUNCATE on six Documents tables and reuses `documents_append_only_guard`. Owner accepted the migration-ordering attention (sorts before the Tax profile migration; no Tax table referenced). Detail: `backend/app/Modules/Documents/README.md`.
