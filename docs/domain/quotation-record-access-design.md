@@ -36,11 +36,12 @@ future work; it does not retrospectively activate R9 or reopen accepted CRM duti
 | Sales `Actions/{CreateQuotationDraft,ReadQuotationDraft,PreviewQuotation,UpdateQuotationDraft}.php` | Current guards are company-wide. Detail uses view; preview/update use prepare. Create records creator. Preview checks input generation, not access freshness. |
 | Sales `Support/Quotation/{QuotationOperation,QuotationOperationReceipts}.php` | Existing transactions, actor/company/key receipt, 85-character key, exact replay and stable result IDs. Reuse and extend authority-before-replay/lock ordering; no second receipt engine. |
 
-The Dynamics 365/Odoo/ERPNext comparison is owned by the Phase 4 discussion chat. No new findings
-were supplied in #45/#30 when inspected. Do not attribute this proposal to those products. Reuse
-[0106's bounded research](../phases/phase-4-r1-remaining-evidence.md) and
-[0089](../decisions/0089-organisation-units-and-record-scope.md) as precedent only. Attach the
-separate comparison and reconcile it before accepting new delegation/manager semantics.
+The [five-source primary-documentation comparison](quotation-record-access-comparison.md)
+was completed for the #45 CHANGES verdict on 2026-10-26. It distinguishes vendor behaviour from
+project choices, reconciles creator/owner/reassignment/sharing and maps every OD approval gate.
+Research is no longer missing; all seven OD entries still contain owner decisions. Reuse
+[0106's earlier evidence](../phases/phase-4-r1-remaining-evidence.md) and
+[0089](../decisions/0089-organisation-units-and-record-scope.md) alongside that comparison.
 
 Repository entry points: [SalesAccess](../../backend/app/Modules/Sales/Support/SalesAccess.php), [RecordScope](../../backend/app/Support/Scope/RecordScope.php), [QuotationFamily](../../backend/app/Modules/Sales/Models/QuotationFamily.php), [ReassignOpportunity](../../backend/app/Modules/Sales/Actions/ReassignOpportunity.php), [QuotationOperation](../../backend/app/Modules/Sales/Support/Quotation/QuotationOperation.php).
 
@@ -158,14 +159,15 @@ retries after access loss must refuse before receipt replay and reveal no previo
 
 | ID | Proposed default; actual decision needed |
 |---|---|
-| OD1 | Approve explicit OWN/OWN_OR_DELEGATED and additive union semantics; no unrestricted quotation grant for ordinary preparers. Review per-company real holder inventory, including mandate paths. |
-| OD2 | Approve unit-based team oversight with existing descendant reach, explicit family unit and null-unit own-only workflow. If actual line-manager reporting is required, specify its separate governed relationship first. |
-| OD3 | Approve new assignment/delegation/revocation duties and their independently scoped recovery holders; proposed recipes are in the delivery plan, no real names or grants inferred. |
-| OD4 | Approve default owner=creator for new families; confirm explicit legacy mapping and quarantine of unresolved owners/units instead of a fabricated historical owner. |
-| OD5 | Decide permitted delegation duration/unbounded expiry, whether PREPARE must require both view+prepare, and who may revoke others' grants. Recommendation: separate revoke duty, no onward delegation, no arbitrary issue/approval delegation. |
-| OD6 | Approve conservative permanent epoch invalidation (including benign access changes), owner/unit transfer invalidating shares, and current-authority read linearisation. Refine precision later only with equivalent revocation proof. |
-| OD7 | Receive/reconcile the separate ERP comparison; obtain review of this design and any new proposed ADR before authorising slices. Exact holder rollout/staging sign-off remains a later decision, not settled by approving this document. |
+| OD1 | **Owner approval required:** OWN/OWN_OR_DELEGATED choices, default scope and per-company real holder/mandate recipe. Preserve already accepted additive per-duty grants; ordinary preparers should not receive an unnoticed unrestricted path. |
+| OD2 | **Owner approval required:** Approve unit-based team oversight with existing descendant reach, explicit family unit and null-unit own-only workflow. If actual line-manager reporting is required, specify its separate governed relationship first. |
+| OD3 | **Owner approval required:** Approve new assignment/delegation/revocation duties and their independently scoped recovery holders; proposed recipes are in the delivery plan, no real names or grants inferred. |
+| OD4 | **Owner approval required:** Approve default owner=creator for new families; confirm explicit legacy mapping and quarantine of unresolved owners/units instead of a fabricated historical owner. |
+| OD5 | **Owner approval required:** Decide permitted delegation duration/unbounded expiry, whether PREPARE must require both view+prepare, and who may revoke others' grants. Recommendation: separate revoke duty, no onward delegation, no arbitrary issue/approval delegation. |
+| OD6 | **Owner approval required:** Approve conservative permanent epoch invalidation (including benign access changes), owner/unit transfer invalidating shares, and current-authority read linearisation. Refine precision later only with equivalent revocation proof. |
+| OD7 | **Comparison delivered:** review the attached primary-source synthesis. **Owner approval still required:** accept/reconcile this design and any future ADR before authorising slices; exact real-holder rollout/staging remains separately gated. |
 
+The [comparison approval matrix](quotation-record-access-comparison.md) marks the remaining owner approval in **each** OD1–OD7; research delivery alone closes none of those decisions.
 These are proposal choices, not unanswered questions about accepted CRM/financial semantics.
 No accepted ADR is edited. A future accepted decision records the agreed extensions; no ADR number
 is reserved here. Rejected alternatives: creator-as-owner forever, role-name manager bypass,
@@ -173,6 +175,8 @@ automatic Opportunity inheritance, generic permissions assigned by sharing, reci
 frontend-only filtering, polymorphic-only tenant references, and an independent ACL permission engine.
 
 ## Related
+
+- [Primary-documentation comparison and OD approval matrix](quotation-record-access-comparison.md)
 
 - [Storage, Actions and concurrency](quotation-record-access-storage.md)
 - [Ordered delivery and acceptance tests](../phases/phase-4-quotation-record-access-slices.md)

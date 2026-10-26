@@ -12,7 +12,7 @@ No status files or accepted ADR bodies are changed by the design task.
 
 ## Dependency and separation contract
 
-Current develop baseline `d4746d7d` has the QL0/QL1a internal Actions. #30's branch contains bounded
+Inspected Sales baseline `d4746d7d` has the QL0/QL1a internal Actions. #30's branch contains bounded
 read adapters, still subject to its separate review/correction; do not assume those files are merged.
 Agent A owns #30's generic cross-company 404, current-develop merge and exact-SHA revalidation.
 That correction neither implements nor depends on a new own/team/delegation model unless a proven
@@ -29,8 +29,9 @@ aggregate/export. [Quotation lifecycle](../domain/quotation-lifecycle.md) keeps 
 CRM association, issue snapshots and current access distinct. This is an operational-authority
 extension, not a commercial revision, R6 acceptance, R7 handover or retrospective attribution edit.
 
-Receive the separate Phase 4 Dynamics 365/Odoo/ERPNext findings, resolve OD1–OD7 and record the
-owner-approved decision before coding the new durable semantics. An accepted architecture is still
+The [requested primary-documentation comparison](../domain/quotation-record-access-comparison.md)
+is now delivered. Review its observations and divergences, resolve the owner-approval components
+of OD1–OD7 and record the owner-approved decision before coding the new durable semantics. An accepted architecture is still
 not permission to implement, register names, grant real users or expose a UI.
 
 ## Smallest reviewable slices, in order
@@ -164,6 +165,8 @@ where applicable; full suite/actual integrations and exact-SHA CI before owner a
 planning document/link check is not evidence any of those implementation behaviours are delivered.
 
 ## Related
+
+- [Primary-source comparison and OD1–OD7 approval status](../domain/quotation-record-access-comparison.md)
 
 - [Domain index](../domain/README.md) · [Architecture and open owner decisions](../domain/quotation-record-access-design.md)
 - [Storage and Action specification](../domain/quotation-record-access-storage.md)
