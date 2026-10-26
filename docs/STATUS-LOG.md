@@ -976,3 +976,7 @@ whole-project PHPStan, migrate-cycle and codegen --check all pass. No generated-
 ## 2026-10-23 — Phase 4 FR2b Tax-owned Party tax profiles and exemptions, disabled foundation (branch agent-c/fr2b-tax-profiles, #35)
 
 Integrated from source c66fbb2d6ed99d697bb81dcb9ab05ad33b472e57 (owner approval relayed 2026-10-23); migration `2026_10_22_140000_create_tax_party_profiles`. Detail: `backend/app/Modules/Tax/README.md`, `docs/domain/tax.md`.
+
+## 2026-10-26 — Documents TRUNCATE protection for append-only tables (branch phase4/documents-truncate-guard, #25)
+
+Integrated from source 72c38a30ec4cb34c4d5c6f101e1a8ad0935978c0 (owner approval relayed 2026-10-26); migration `2026_10_22_100000_guard_documents_truncate` guards TRUNCATE on six Documents tables and reuses `documents_append_only_guard`. Owner accepted the migration-ordering attention (sorts before the Tax profile migration; no Tax table referenced). Detail: `backend/app/Modules/Documents/README.md`.
