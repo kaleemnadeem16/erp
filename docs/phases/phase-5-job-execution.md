@@ -120,6 +120,7 @@ Sales/security/owner review; J1 sign-off is not established by receiver design o
 
 ## Related
 
+- [Task C optional J2 labour design](phase-5-task-c-j2-labour.md) and [coverage/reporting design](phase-5-task-c-j2-reporting.md) — separately gated costing, never a J1 prerequisite.
 - [Q55 resolution](phase-5-unified-costing-resolution.md) · [Historical Job sketch](../domain/job-costing.md)
 - [R7 slices](phase-4-r7-implementation-slices.md) · [R9 handoff](phase-4-implementation-handoff.md)
 - [Documents](../domain/documents.md) · [STATUS](../STATUS.md) · [Questions](../OPEN-QUESTIONS.md)
