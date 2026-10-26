@@ -132,8 +132,11 @@ class QuotationDraftReviewApiTest extends TestCase
             }
         });
 
-        $unknown = $this->getJson('/api/v1/quotations/999999');
-        $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertNotFound()->assertExactJson($unknown->json());
+        config(['app.debug' => false]);
+        // The refusal is the framework's own not-found, identical to an unknown id apart from the id the caller sent; nothing says the quotation exists elsewhere.
+        $unknown = $this->getJson('/api/v1/quotations/999999')->assertNotFound()->json('message');
+        $other = $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertNotFound()->json('message');
+        $this->assertSame($unknown, str_replace((string) $this->revisionId, '999999', $other));
         $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertNotFound();
     }
 }
