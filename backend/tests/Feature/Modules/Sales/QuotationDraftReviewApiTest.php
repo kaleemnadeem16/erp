@@ -107,12 +107,13 @@ class QuotationDraftReviewApiTest extends TestCase
         $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertForbidden();
     }
 
-    public function test_an_unknown_revision_is_a_stable_refusal(): void
+    public function test_an_unknown_revision_is_not_found(): void
     {
         $this->activate([self::VIEW, self::PREPARE]);
         Sanctum::actingAs($this->preparer);
 
-        $this->getJson('/api/v1/quotations/999999')->assertStatus(422)->assertJsonPath('reason_code', 'QUOTATION_NOT_FOUND');
+        $this->getJson('/api/v1/quotations/999999')->assertNotFound();
+        $this->getJson('/api/v1/quotations/999999/preview')->assertNotFound();
         $this->getJson('/api/v1/quotations/abc')->assertNotFound();
     }
 
@@ -131,7 +132,8 @@ class QuotationDraftReviewApiTest extends TestCase
             }
         });
 
-        $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertStatus(422)->assertJsonPath('reason_code', 'QUOTATION_NOT_FOUND');
-        $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertStatus(422)->assertJsonPath('reason_code', 'ACTOR_OUTSIDE_COMPANY');
+        $unknown = $this->getJson('/api/v1/quotations/999999');
+        $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertNotFound()->assertExactJson($unknown->json());
+        $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertNotFound();
     }
 }
