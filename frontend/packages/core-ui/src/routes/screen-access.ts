@@ -1,3 +1,4 @@
+import { quotationDevModeEnabled } from "../lib/quotation-dev-mode";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -222,6 +223,9 @@ export function canAccessScreen(
   pathname: string,
   permissions: ReadonlySet<string>,
 ): boolean {
+  if (pathname === "/quotations") {
+    return quotationDevModeEnabled() && ["sales.quotation.view", "sales.quotation.prepare"].some((duty) => permissions.has(duty));
+  }
   // A view-only grant must not mount an edit form through a bookmarked URL.
   if (
     pathname === "/purchase-orders/new" ||

@@ -146,6 +146,32 @@ No forecasting, acceptance, reservation, Inventory posting, invoice or job is im
 cannot be counted twice; current Opportunity expected amount remains unreviewed assumption (0101/0102).
 C1d remains separately gated; existing C2/CRM delivery and Supplier Return/Scrap remain untouched.
 
+## Local quotation navigation — M1 preparation
+
+The Quotations workspace is an entry by revision number, not a list or search API.
+It links entitled users to metadata (`sales.quotation.view`) or read-only review
+(`sales.quotation.prepare`); opening requires a positive safe whole revision number.
+Empty, zero, fractional and unsafe input stays on the page with an associated text error.
+The shared shell's navigation and the direct workspace URL use the same access policy.
+Create/edit controls belong to the subsequent corrected-#53 form slice.
+
+The frontend exposure opt-in is `VITE_DEV_QUOTATIONS=1` in the main app's local
+Vite environment (or its process environment). Restart that local Vite process after
+changing its environment. No opt-in is committed as an active default. Bootstrap
+requires Vite's built-in `DEV` plus the exact flag value and a loopback hostname
+(`localhost`, `127.0.0.1` or IPv6 loopback). Production builds and remote/LAN hosts
+remain denied even if the flag is accidentally set. Local storage and URL query
+parameters cannot enable the app's gate. Actual duties remain required, and this
+flag never registers/grants a permission or changes server authorisation.
+
+Submission prerequisites: integrate #54 slice 1 so the destination routes exist,
+then wire its shared gate to this dev policy and exercise navigation/record access
+with intercepted fixtures. The independent dev policy tests cover default-off,
+production refusal, loopback/remote/opt-in combinations, reconfiguration and the
+shared screen rule with/without duties; they do not prove an enabled backend journey.
+Agent A owns the separately reviewed local-only backend mechanism. No real backend
+permission activation or database operation is performed by this frontend preparation.
+
 ## Related
 
 - [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)
