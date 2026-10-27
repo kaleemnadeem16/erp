@@ -104,6 +104,15 @@ baseline f0e2871. SP0b #28 is a separately authorised disabled foundation, not r
 this design does not implement it, Task B lifecycle/closeout or Task C/J2. Technical seams need joint
 Sales/security/owner review; J1 sign-off is not established by receiver design or release alone.
 
+## Task B execution/closeout design — 2026-10-22
+
+Task A is integrated as `5525293`. Task #34 proposes [J1 assignment/start/hold/completion](phase-5-task-b-j1-execution.md)
+and [source-owned closeout/transaction verification](phase-5-task-b-j1-closeout.md), with STAGED duty
+candidates, client receipts and a separately reviewable disabled batch. Sales authoritative conditions,
+Jobs #28/receiver delivery, Inventory/Purchasing source checks/affected corrections, actual holder
+rollout and lock proof remain GATED; source inapplicability must be evidenced, never assumed.
+J2 labour/costing is separate. This adds no application code, migration, permission, route or activation.
+
 ## Current tasks
 
 - [x] Accept/specify0145–0152; resolve Q51–Q57 and preserve research evidence.
@@ -120,6 +129,7 @@ Sales/security/owner review; J1 sign-off is not established by receiver design o
 
 ## Related
 
+- [Task D lifecycle foundation design](phase-5-task-d-j1-foundation.md) and [J1-F1 batch proposal](phase-5-task-d-j1-f1-proposal.md) — technical candidates for separate review/implementation authority.
 - [Task E source integration design](phase-5-task-e-source-integration.md) — Sales/Inventory/Purchasing readiness, ownership and transaction delivery gates.
 - [Q55 resolution](phase-5-unified-costing-resolution.md) · [Historical Job sketch](../domain/job-costing.md)
 - [R7 slices](phase-4-r7-implementation-slices.md) · [R9 handoff](phase-4-implementation-handoff.md)

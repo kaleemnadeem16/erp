@@ -21,6 +21,9 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
   Company `'*'` → type → explicit; **brand is always `NOT_AVAILABLE`**, never a fallback; reads no user preference).
 - `Actions\BindDocumentSubject`: internal, idempotent, fails closed (missing adapter, wrong version/audience, denied or throwing access, invalid projection).
 
+- Every history table also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on the same guard (row triggers never fire on TRUNCATE, and the runtime role is a
+  superuser, so revoking the privilege would not help). A new Documents history table adds both triggers in its own migration.
+
 ## Boundaries
 
 - The owner supplies the projection, totals, access, audiences and retention; Documents validates shape and never recomputes money, quantities or consent.
