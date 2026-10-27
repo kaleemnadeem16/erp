@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, Link } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { useStockMovesShow } from '@erp/core-api';
 
@@ -6,10 +6,12 @@ import { Button } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { PageHeader } from '../../components/page/page-header';
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { formatDateTime } from '../../lib/format-date';
 import { formatLocation } from '../../lib/format-location';
+import { getApiErrorMessage } from '../../lib/api-errors';
 import { usePermission } from '../../hooks/use-permission';
 
 export function StockMoveDetailScreen() {
@@ -27,86 +29,138 @@ export function StockMoveDetailScreen() {
 
   if (moveQuery.isLoading) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-40 w-full" />
-      </div>
+      <ScreenTemplate kind="detail" className="erp-screen space-y-4 p-4 pb-24 md:p-6">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-64" />
+          <Skeleton className="h-4 w-48" />
+        </div>
+        <DetailPageLayout>
+          <DetailSection title="Movement">
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+            <div className="space-y-1.5">
+              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </DetailSection>
+        </DetailPageLayout>
+      </ScreenTemplate>
     );
   }
 
   if (moveQuery.isError || !move) {
     return (
-      <div className="space-y-4 p-6">
-        <p className="text-sm text-destructive">Couldn't load this stock movement.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/stock-moves')}>
-          <ArrowLeft className="h-4 w-4" />
-          Back to the stock ledger
-        </Button>
-      </div>
+      <ScreenTemplate kind="detail" className="erp-screen space-y-4 p-4 pb-24 md:p-6">
+        <PageHeader
+          title="Stock movement"
+          description="Error loading record"
+          breadcrumbs={[{ label: 'Stock Ledger', to: '/stock-moves' }, { label: 'Error' }]}
+        />
+        <div className="space-y-4 rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-card-foreground">
+          <p className="text-sm font-medium text-destructive">
+            {getApiErrorMessage(moveQuery.error) ?? "Couldn't load this stock movement."}
+          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => void moveQuery.refetch()}>
+              Try again
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/stock-moves')}>
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              Back to the stock ledger
+            </Button>
+          </div>
+        </div>
+      </ScreenTemplate>
     );
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <ScreenTemplate kind="detail" className="erp-screen space-y-4 p-4 pb-24 md:p-6">
       <PageHeader
         title={`Stock move #${move.id}`}
         description={move.item ? `${move.item.code} — ${move.item.name}` : `Item #${move.item_id}`}
         breadcrumbs={[{ label: 'Stock Ledger', to: '/stock-moves' }, { label: `#${move.id}` }]}
+        actions={
+          <Button variant="outline" size="sm" asChild>
+            <Link to="/stock-moves">
+              <ArrowLeft className="mr-1.5 h-4 w-4" />
+              Back to stock ledger
+            </Link>
+          </Button>
+        }
       />
 
       <DetailPageLayout>
         <DetailSection title="Movement">
+          <DetailField label="Item">
+            {move.item ? `${move.item.code} — ${move.item.name}` : `Item #${move.item_id}`}
+          </DetailField>
           <DetailField label="Moved at">{formatDateTime(move.moved_at)}</DetailField>
           <DetailField label="Source">{`${move.source_type} #${move.source_id}`}</DetailField>
           <DetailField label="From location">{formatLocation(move.from_location)}</DetailField>
           <DetailField label="To location">{formatLocation(move.to_location)}</DetailField>
-          <DetailField label="Quantity">{move.qty}</DetailField>
+          <DetailField label="Quantity">
+            <span className="tabular-nums font-medium">{move.qty}</span>
+          </DetailField>
           {mayViewValuation && move.unit_cost != null && (
-            <DetailField label="Unit cost">{`${move.unit_cost} (fx ${move.fx_rate})`}</DetailField>
+            <DetailField label="Unit cost">
+              <span className="tabular-nums font-medium">{move.unit_cost}</span>
+              {move.fx_rate != null ? ` (fx ${move.fx_rate})` : ''}
+            </DetailField>
           )}
           <DetailField label="Batch">{move.batch?.code}</DetailField>
-          <DetailField label="Serial">{move.serial_no}</DetailField>
+          <DetailField label="Serial">{move.serial_no || undefined}</DetailField>
         </DetailSection>
 
         {mayViewValuation && (
           <DetailSection title="Valuation entries" description="The cost impact this movement posted to the ledger." fullWidth>
-          <div className="sm:col-span-2 overflow-x-auto rounded-md border border-border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Pool effect</TableHead>
-                  <TableHead className="text-right">Quantity</TableHead>
-                  <TableHead className="text-right">Unit cost</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-right">Base amount</TableHead>
-                  <TableHead>Account</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {(move.valuation_entries ?? []).length === 0 ? (
+            <div className="sm:col-span-2 min-w-0 overflow-x-auto rounded-md border border-border">
+              <Table className="min-w-[500px]">
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={6} className="h-16 text-center text-muted-foreground">
-                      No valuation entries.
-                    </TableCell>
+                    <TableHead>Pool effect</TableHead>
+                    <TableHead className="text-right">Quantity</TableHead>
+                    <TableHead className="text-right">Unit cost</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-right">Base amount</TableHead>
+                    <TableHead>Account</TableHead>
                   </TableRow>
-                ) : (
-                  (move.valuation_entries ?? []).map((entry) => (
-                    <TableRow key={entry.id}>
-                      <TableCell>{entry.pool_effect ?? '—'}</TableCell>
-                      <TableCell className="text-right tabular-nums">{entry.qty}</TableCell>
-                      <TableCell className="text-right tabular-nums">{entry.unit_cost}</TableCell>
-                      <TableCell className="text-right tabular-nums">{entry.amount}</TableCell>
-                      <TableCell className="text-right tabular-nums">{entry.base_amount}</TableCell>
-                      <TableCell>#{entry.account_id}</TableCell>
+                </TableHeader>
+                <TableBody>
+                  {(move.valuation_entries ?? []).length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="h-16 text-center text-muted-foreground">
+                        No valuation entries.
+                      </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+                  ) : (
+                    (move.valuation_entries ?? []).map((entry) => (
+                      <TableRow key={entry.id}>
+                        <TableCell className="font-medium">{entry.pool_effect ?? '—'}</TableCell>
+                        <TableCell className="text-right tabular-nums">{entry.qty}</TableCell>
+                        <TableCell className="text-right tabular-nums">{entry.unit_cost}</TableCell>
+                        <TableCell className="text-right tabular-nums">{entry.amount}</TableCell>
+                        <TableCell className="text-right tabular-nums">{entry.base_amount}</TableCell>
+                        <TableCell className="text-muted-foreground">#{entry.account_id}</TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </DetailSection>
         )}
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }
