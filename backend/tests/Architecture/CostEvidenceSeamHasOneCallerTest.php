@@ -15,6 +15,7 @@ class CostEvidenceSeamHasOneCallerTest extends TestCase
     /** File => why it may reference the seam. */
     private const ALLOWED = [
         'Modules/Estimating/Actions/ReadAssemblyCostEvidence.php' => 'The seam itself.',
+        'Modules/Sales/Support/Financial/Controls/EstimatingAssemblyCostEvidence.php' => 'The Sales cost-blind evaluator\'s provider (#29b): the one consumer, under QUOTATION_CONTROL_EVALUATION.',
     ];
 
     public function test_only_the_named_workflows_may_reach_the_seam(): void

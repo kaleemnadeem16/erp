@@ -14,6 +14,8 @@ use App\Modules\Sales\Numbering\OpportunityNumbering;
 use App\Modules\Sales\Numbering\QuotationNumbering;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
+use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
+use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyLocks\ExistsProbe;
@@ -27,6 +29,7 @@ class SalesServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDutyManifest::shipped());
+        $this->app->bind(AssemblyCostEvidenceProvider::class, EstimatingAssemblyCostEvidence::class);
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });
