@@ -107,6 +107,7 @@ approve migrations, duties, routes, Job activation or public pilot sign-off.
 
 ## Related
 
+- [Task G Sales-to-Jobs implementation batch proposal](phase-5-task-g-r7-batch-proposal.md) — proposed ownership, prerequisite order and disabled first Agent A batch.
 - [Receiver integration design](phase-5-r7-job-receiver-design.md)
 - [SP0a](phase-5-sp0a-design.md) · [Phase 5 overview](phase-5-job-execution.md)
 - [R7 slices](phase-4-r7-implementation-slices.md) · [R6](../domain/sales-customer-decisions.md)
