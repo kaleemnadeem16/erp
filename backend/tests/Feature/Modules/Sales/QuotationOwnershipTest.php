@@ -221,7 +221,7 @@ class QuotationOwnershipTest extends TestCase
         $this->assertEquals($before, $this->snapshot(), 'no projection, event or receipt changed');
 
         // An actor from another company is refused as well, whatever they hold.
-        $this->expectException(DomainInvariantException::class);
+        $this->expectException(AuthorizationException::class);
         app(ReassignQuotationOwner::class)(User::query()->withoutGlobalScopes()->findOrFail($this->otherUser), $family->id, $this->colleague->id, 1, 0, $this->key(), 'x');
     }
 
