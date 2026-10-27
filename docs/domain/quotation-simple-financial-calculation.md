@@ -21,7 +21,9 @@ already prove source-specific quantity representability through PR0/Quantity con
 arithmetic ceiling does not make a nine-place manual or ledger quantity valid.
 
 The adjustment is NONE, PERCENT, PER_PRICED_UNIT or PER_LINE. Percent is a non-negative plain
-decimal through 100 at nine places; amount adjustments obey decimal(19,4). Base is exact unit
+decimal through 100 at four places via the existing DiscretionaryInput control contract; amount
+adjustments reuse its declared Line/PerUnit basis and decimal(19,4). Tax rates retain their separate
+nine-place precision. Base is exact unit
 price × quantity; deduct the one benefit on its declared basis, then settle the net once. No
 clamping, stacking, implicit best-price selection, benefit already embedded in a rate, final
 exception or replacement confirmation is modelled. Unknown price returns UNKNOWN; explicit zero

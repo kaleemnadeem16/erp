@@ -5,6 +5,7 @@ namespace Tests\Unit\Modules\Sales;
 use App\Exceptions\DomainInvariantException;
 use App\Modules\Sales\Support\Financial\Calculation\CalculateQuotationFinancials;
 use App\Modules\Sales\Support\Financial\Calculation\QuotationFinancialLine;
+use App\Modules\Sales\Support\Financial\Controls\ControlRefusal;
 use App\Modules\Sales\Support\Financial\CurrencyQuantum;
 use App\Modules\Sales\Support\Financial\Policy\RoundingPolicy;
 use App\Modules\Sales\Support\Financial\Policy\SettlementRounding;
@@ -58,6 +59,9 @@ class QuotationFinancialCalculationTest extends TestCase
             $result = $prices($this->input('1000', '2', $kind, $value), RoundingPolicy::builtInDefault(1), $this->rule());
             $this->assertSame($expected, $result['net']);
             $this->assertSame($kind->value, $result['adjustment_kind']);
+            $input = $this->input('1000', '2', $kind, $value);
+            $this->assertSame($kind === SimpleAdjustment::Percent, $input->discretionary->isPercent);
+            $this->assertSame($kind === SimpleAdjustment::PerUnit ? 'PER_UNIT' : 'LINE', $input->discretionary->basis->value);
         }
     }
 
@@ -66,7 +70,8 @@ class QuotationFinancialCalculationTest extends TestCase
         $prices = new CalculateSimplePrice;
         $policy = RoundingPolicy::builtInDefault(1);
         $this->refused(fn () => $prices($this->input('1', '2', SimpleAdjustment::PerLine, '3'), $policy, $this->rule()), 'SIMPLE_ADJUSTMENT_EXCEEDS_BASE');
-        $this->refused(fn () => $this->input(kind: SimpleAdjustment::Percent, value: '100.000000001'), 'SIMPLE_ADJUSTMENT_INVALID');
+        $this->refused(fn () => $this->input(kind: SimpleAdjustment::Percent, value: '100.000000001'), ControlRefusal::FACTS_INVALID);
+        $this->refused(fn () => $this->input(kind: SimpleAdjustment::Percent, value: '0.00001'), ControlRefusal::FACTS_INVALID);
         $this->refused(fn () => $this->input(value: '1'), 'SIMPLE_ADJUSTMENT_INVALID');
         $this->refused(fn () => $this->input(quantity: '0'), 'SIMPLE_PRICE_INVALID');
         $this->refused(fn () => $prices($this->input('1.00001'), $policy, $this->rule()), 'UNIT_PRICE_PRECISION_EXCEEDED');

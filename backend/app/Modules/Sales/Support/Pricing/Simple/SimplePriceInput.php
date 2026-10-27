@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Pricing\Simple;
 
 use App\Modules\Sales\Support\Financial\Arithmetic;
+use App\Modules\Sales\Support\Financial\Controls\ControlBasis;
+use App\Modules\Sales\Support\Financial\Controls\DiscretionaryInput;
 use App\Modules\Sales\Support\Financial\FinancialRefusal;
-use App\Modules\Sales\Support\Financial\StorageAmount;
 use App\Modules\Sales\Support\Fx\FinancialDate;
 use Brick\Math\BigDecimal;
 
@@ -16,6 +17,8 @@ final readonly class SimplePriceInput
     public BigDecimal $quantity;
 
     public BigDecimal $adjustmentValue;
+
+    public DiscretionaryInput $discretionary;
 
     public function __construct(
         public int $companyId,
@@ -39,17 +42,15 @@ final readonly class SimplePriceInput
         if (preg_match('/^\d+(\.\d+)?$/', $adjustmentValue) !== 1) {
             throw FinancialRefusal::make('SIMPLE_ADJUSTMENT_INVALID', 'An adjustment must be a non-negative plain decimal.');
         }
-        $value = BigDecimal::of($adjustmentValue);
-        if ($adjustment === SimpleAdjustment::Percent) {
-            if ($value->isGreaterThan(100) || $value->strippedOfTrailingZeros()->getScale() > 9) {
-                throw FinancialRefusal::make('SIMPLE_ADJUSTMENT_INVALID', 'A percentage is at most 100 with at most nine decimal places.');
-            }
-        } else {
-            $value = StorageAmount::of($value, 'adjustment');
-        }
-        if ($adjustment === SimpleAdjustment::None && ! $value->isZero()) {
+        if ($adjustment === SimpleAdjustment::None && ! BigDecimal::of($adjustmentValue)->isZero()) {
             throw FinancialRefusal::make('SIMPLE_ADJUSTMENT_INVALID', 'No adjustment cannot carry a benefit.');
         }
-        $this->adjustmentValue = $value;
+        $this->discretionary = match ($adjustment) {
+            SimpleAdjustment::None => DiscretionaryInput::none(),
+            SimpleAdjustment::Percent => DiscretionaryInput::percent($adjustmentValue),
+            SimpleAdjustment::PerUnit => DiscretionaryInput::amount($adjustmentValue, $currencyId, ControlBasis::PerUnit),
+            SimpleAdjustment::PerLine => DiscretionaryInput::amount($adjustmentValue, $currencyId, ControlBasis::Line),
+        };
+        $this->adjustmentValue = $this->discretionary->value ?? BigDecimal::zero();
     }
 }
