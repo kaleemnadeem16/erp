@@ -8,12 +8,13 @@ import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { usePermission } from "../../hooks/use-permission";
 import { quotationDevModeEnabled } from "../../lib/quotation-dev-mode";
+import { QUOTATION_VIEW, QUOTATION_PREPARE } from "./quotation-access";
 import { AccessDenied } from "../../routes/permission-route";
 
 /** Entry by revision identity; this is deliberately not a list or a search endpoint. */
 export function QuotationsWorkspaceScreen() {
-  const mayView = usePermission("sales.quotation.view");
-  const mayPrepare = usePermission("sales.quotation.prepare");
+  const mayView = usePermission(QUOTATION_VIEW);
+  const mayPrepare = usePermission(QUOTATION_PREPARE);
   if (!quotationDevModeEnabled() || (!mayView && !mayPrepare))
     return <AccessDenied />;
   return <OpenQuotation mayView={mayView} mayPrepare={mayPrepare} />;

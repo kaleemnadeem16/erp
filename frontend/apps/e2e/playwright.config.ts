@@ -38,8 +38,11 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
-      // Pure-function specs (`*.unit.spec.ts`): no browser, no sign-in, no running stack. They test the shared frontend libraries directly, so the
-      // decimal foundation is verified without a unit-test framework this repository does not otherwise use.
+      // Isolated specs (`*.unit.spec.ts`): no sign-in or running application/database.
+      // Decimal checks are pure functions; quotation fixtures launch Chromium and mount
+      // real React components against intercepted requests, or inspect static markup.
+      // Build the frontend first for their production CSS: from frontend/apps/main run
+      // npx vite build, then from the repo root docker/frontend/run-e2e.sh --project=unit.
       name: 'unit',
       testMatch: /.*\.unit\.spec\.ts/,
     },

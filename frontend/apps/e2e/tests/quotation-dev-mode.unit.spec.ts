@@ -68,7 +68,7 @@ test("reconfiguration fails closed instead of retaining an earlier enabled state
 });
 
 test("quotation navigation and direct workspace access require both dev exposure and a quotation duty", async () => {
-  const { canAccessScreen } =
+  const { canAccessScreen, homeScreen } =
     await import("../../../packages/core-ui/src/routes/screen-access");
   const grants = new Set(["sales.quotation.view", "sales.quotation.prepare"]);
   try {
@@ -79,6 +79,25 @@ test("quotation navigation and direct workspace access require both dev exposure
       hostname: "localhost",
     });
     expect(canAccessScreen("/quotations", grants)).toBe(true);
+    expect(homeScreen(grants)).toBe("/quotations");
+    expect(
+      canAccessScreen("/quotations/12", new Set(["sales.quotation.view"])),
+    ).toBe(true);
+    expect(
+      canAccessScreen(
+        "/quotations/12/review",
+        new Set(["sales.quotation.view"]),
+      ),
+    ).toBe(false);
+    expect(
+      canAccessScreen(
+        "/quotations/12/review",
+        new Set(["sales.quotation.prepare"]),
+      ),
+    ).toBe(true);
+    expect(
+      canAccessScreen("/quotations/12", new Set(["sales.quotation.prepare"])),
+    ).toBe(false);
     expect(
       canAccessScreen("/quotations", new Set(["sales.quotation.view"])),
     ).toBe(true);

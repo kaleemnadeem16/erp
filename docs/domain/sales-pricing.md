@@ -164,11 +164,15 @@ remain denied even if the flag is accidentally set. Local storage and URL query
 parameters cannot enable the app's gate. Actual duties remain required, and this
 flag never registers/grants a permission or changes server authorisation.
 
-Submission prerequisites: integrate #54 slice 1 so the destination routes exist,
-then wire its shared gate to this dev policy and exercise navigation/record access
-with intercepted fixtures. The independent dev policy tests cover default-off,
+Submission prerequisite: integrate #54 slice 1 so the destination routes exist.
+The shared gate uses this dev policy while its production rollout constant stays false. The independent dev policy tests cover default-off,
 production refusal, loopback/remote/opt-in combinations, reconfiguration and the
-shared screen rule with/without duties; they do not prove an enabled backend journey.
+shared screen rule with/without duties. Mounted shell/workspace fixtures cover absent
+navigation and direct denial in production/default-off/no-duty/remote-host cases,
+keyboard validation/opening a revision, and the phone More menu. Their destination is a
+fixture route; these tests do not prove the real detail/preview screens or an enabled
+backend journey. Run a local frontend build first, then
+`docker/frontend/run-e2e.sh --project=unit`; no running application or database is used.
 Agent A owns the separately reviewed local-only backend mechanism. No real backend
 permission activation or database operation is performed by this frontend preparation.
 
