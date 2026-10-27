@@ -40,10 +40,12 @@ export async function quotationDraftWriteContract(): Promise<void> {
   const form = await quotationsEditable(1);
   if (form.status === 200) {
     const generation: number = form.data.data.input_generation;
-    const line = form.data.data.lines[0];
-    const scope: string = line.scope_ref;
-    const quantity: string = line.offered_quantity;
-    void [generation, scope, quantity];
+    for (const line of form.data.data.lines) {
+      const scope: string = line.scope_ref;
+      const quantity: string = line.offered_quantity;
+      void [scope, quantity];
+    }
+    void generation;
   }
 
   // @ts-expect-error the Idempotency-Key header is required on create
