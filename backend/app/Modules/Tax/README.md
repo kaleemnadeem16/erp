@@ -80,6 +80,8 @@ Illustrative fixtures are tests, never installed company tax law. Full-suite and
 
 ## Related
 
+- **BASIC raw calculation (M-PRFR1).** Pure `Support/Calculation/CalculateBasicTax` accepts already-determined single PERCENT/NET component facts; it selects no profile/rate and changes no determination or activation contract. Sales settles the result; unknown disposition is never zero. [Calculation boundary](../../../../docs/domain/quotation-simple-financial-calculation.md).
+
 - [Financial contract](../../../../docs/domain/quotation-financial-calculation.md)
 - [R4 slices](../../../../docs/phases/phase-4-r4-implementation-slices.md)
 - [Rollout manifest](../../../../docs/phases/phase-4-au0-au1-rollout-manifest.md)
