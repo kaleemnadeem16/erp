@@ -2,6 +2,7 @@
 
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
+use App\Modules\Sales\Http\Controllers\Api\V1\QuotationController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesOwnerController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesStageController;
 use Illuminate\Support\Facades\Route;
@@ -30,6 +31,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('opportunities/{opportunity}/attribution-corrections', [OpportunityController::class, 'attributionCorrection'])->whereNumber('opportunity')->name('opportunities.attribution-corrections.store');
     Route::get('opportunities/{opportunity}/attribution-members', [OpportunityController::class, 'attributionMembers'])->whereNumber('opportunity')->name('opportunities.attribution-members.index');
     Route::post('opportunities/{opportunity}/notes', [OpportunityController::class, 'addNote'])->whereNumber('opportunity')->name('opportunities.notes.store');
+
+    Route::get('quotations/{revision}', [QuotationController::class, 'show'])->whereNumber('revision')->name('quotations.show');
+    Route::get('quotations/{revision}/preview', [QuotationController::class, 'preview'])->whereNumber('revision')->name('quotations.preview');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');
     Route::get('sales-stages', [SalesStageController::class, 'index'])->name('sales-stages.index');

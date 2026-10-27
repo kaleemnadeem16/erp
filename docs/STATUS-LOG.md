@@ -997,3 +997,15 @@ Integrated from source 72c38a30ec4cb34c4d5c6f101e1a8ad0935978c0 (owner approval 
 ## 2026-10-27 — Phase 5 Task D: J1 lifecycle foundation design and J1-F1 batch proposal (branch codex/phase5-task-d-j1-foundation, #42)
 
 Integrated from source ff75f726a296ea94552b081bf703ea429663316e (owner approval relayed 2026-10-27); planning only, docs only: `docs/phases/phase-5-task-d-j1-foundation.md`, `phase-5-task-d-j1-f1-proposal.md`.
+
+## 2026-10-27 — Phase 4 QL1b bounded quotation draft review API (branch phase4/ql1b-draft-review, #30)
+
+Integrated from source d1e6dacad2e36f16a32ac2411f3ac3067a97c804 (owner approval relayed 2026-10-27): two read-only quotation GET routes (`quotations/{revision}`, `quotations/{revision}/preview`) and the generated client; `sales.quotation.view`/`prepare` remain STAGED (SalesAccess refuses everyone). No migration, seed or grant. Detail: `backend/app/Modules/Sales/README.md`.
+
+## 2026-10-27 — Shared file and document upload foundation design (branch agent-b/shared-file-foundation-design, #47)
+
+Integrated from source 1c7e8f22af18e7c7a6d9075c07369cb765fd9920 (owner approval relayed 2026-10-27); design proposal only, docs only, not implementation authority: `docs/architecture/shared-file-foundation-design.md`.
+
+## 2026-10-27 — Phase 5 Task E: Jobs source integration design (branch codex/phase5-task-e-source-integration, #43)
+
+Integrated from source 6e2107f67dd6acf54fb187f769550aaeaa7aa05b (owner approval relayed 2026-10-27); planning only, docs only: `docs/phases/phase-5-task-e-source-integration.md`. Task D lines in `phase-5-job-execution.md` preserved.
