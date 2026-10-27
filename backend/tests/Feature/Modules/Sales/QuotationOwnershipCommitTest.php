@@ -111,4 +111,43 @@ class QuotationOwnershipCommitTest extends TestCase
         }
         $this->assertSame(2, DB::table('quotation_ownership_events')->where('family_id', $family->id)->count());
     }
+
+    /** The trigger's own family lock (not a hand-written SELECT FOR UPDATE): a competing insert through the real trigger waits behind an uncommitted successor and cannot fork. */
+    public function test_the_insert_trigger_serialises_competing_events_on_the_family_without_forking(): void
+    {
+        $family = $this->nativeFamily();
+        $initial = DB::table('quotation_ownership_events')->where('family_id', $family->id)->value('id');
+        $successor = fn (int $newOwner) => ['company_id' => 1, 'family_id' => $family->id, 'generation' => 2, 'previous_event_id' => $initial, 'kind' => 'REASSIGNED', 'old_owner_id' => $this->preparer->id,
+            'new_owner_id' => $newOwner, 'access_generation' => 0, 'actor_id' => $this->assigner->id, 'reason' => 'x', 'recorded_at' => now()];
+
+        // Session A appends a coherent successor and has not committed.
+        DB::connection('owner_a')->statement('BEGIN');
+        DB::connection('owner_a')->table('quotation_ownership_events')->insert($successor($this->colleague->id));
+        DB::connection('owner_a')->table('quotation_families')->where('id', $family->id)->update(['responsible_owner_id' => $this->colleague->id, 'ownership_generation' => 2]);
+
+        // Session B inserts the same predecessor and generation through the actual trigger: it must wait (bounded here), not race past.
+        DB::connection('owner_b')->statement('BEGIN');
+        DB::connection('owner_b')->statement("SET LOCAL lock_timeout = '300ms'");
+        try {
+            DB::connection('owner_b')->table('quotation_ownership_events')->insert($successor($this->assigner->id));
+            $this->fail('A competing event must wait for the family lock held by the uncommitted successor.');
+        } catch (QueryException $e) {
+            $this->assertSame('55P03', $e->errorInfo[0]);
+        }
+        DB::connection('owner_b')->statement('ROLLBACK');
+        DB::connection('owner_a')->statement('COMMIT');
+
+        // After A's commit, B's copy of the same generation cannot fork the chain: the chain check or the unique generation refuses it.
+        DB::connection('owner_b')->statement('BEGIN');
+        try {
+            DB::connection('owner_b')->table('quotation_ownership_events')->insert($successor($this->assigner->id));
+            DB::connection('owner_b')->statement('COMMIT');
+            $this->fail('A second generation 2 must be refused.');
+        } catch (QueryException $e) {
+            $this->assertContains($e->errorInfo[0], ['23505', '23514']);
+            DB::connection('owner_b')->statement('ROLLBACK');
+        }
+        $this->assertSame(2, DB::table('quotation_ownership_events')->where('family_id', $family->id)->count());
+        $this->assertSame([$this->colleague->id, 2], [DB::table('quotation_families')->where('id', $family->id)->value('responsible_owner_id'), (int) DB::table('quotation_families')->where('id', $family->id)->value('ownership_generation')]);
+    }
 }

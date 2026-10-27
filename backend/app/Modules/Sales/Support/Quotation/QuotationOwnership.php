@@ -6,16 +6,18 @@ namespace App\Modules\Sales\Support\Quotation;
 
 use App\Models\User;
 use App\Modules\Administration\Models\OrganisationUnit;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Models\QuotationOwnershipEvent;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\SalesRecords;
+use App\Support\CompanyContext;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /**
  * The one writer of quotation ownership: the locked family projection and its event are always written together, so the database's commit-time check (the family
- * equals the end of its chain) holds. Authority is the dedicated STAGED duty AND an independent view of quotations, each judged by its own scope through
+ * equals the end of its chain) holds. Authority is a currently active member of this company holding the dedicated STAGED duty AND an independent view of quotations, each judged by its own scope through
  * `SalesAccess` (which today accepts only an unrestricted grant and refuses every caller while the duties are staged). Ownership is responsibility, not access:
  * naming an owner grants that person nothing, and no unit is inferred or read for visibility.
  */
@@ -28,6 +30,12 @@ final class QuotationOwnership
     /** Checked before the family is looked up, so capability absence is the same refusal whether or not the family exists. */
     public static function requireAuthority(?User $actor): void
     {
+        // SalesAccess judges capabilities and scope, not membership: an actor who has since been suspended (or never belonged to this company) must not change ownership,
+        // and the object in hand may be stale, so the member is read again, in this company, before anything else is asked.
+        $current = $actor === null ? null : User::query()->where('company_id', app(CompanyContext::class)->id())->whereKey($actor->id)->first();
+        if ($current === null || $current->status !== MemberStatus::Active) {
+            throw new AuthorizationException('You are not permitted to change who is responsible for a quotation.');
+        }
         if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to change who is responsible for a quotation.');
         }

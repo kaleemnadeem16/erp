@@ -5,6 +5,7 @@ namespace Tests\Feature\Modules\Sales;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Administration\Support\MemberStatus;
+use App\Modules\Sales\Actions\CaptureQuotationAccessBaseline;
 use App\Modules\Sales\Actions\ChangeQuotationAccessUnit;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
 use App\Modules\Sales\Actions\ReassignQuotationOwner;
@@ -180,6 +181,48 @@ class QuotationOwnershipTest extends TestCase
             $this->refusal(fn () => app(ChangeQuotationAccessUnit::class)($this->assigner, $this->foreignFamilyId(), null, 1, 0, $this->key(), 'x')),
         ];
         $this->assertSame(['QUOTATION_NOT_FOUND', 'QUOTATION_NOT_FOUND', 'QUOTATION_NOT_FOUND'], $codes);
+    }
+
+    public function test_a_suspended_or_stale_actor_cannot_change_ownership_and_nothing_is_written(): void
+    {
+        $family = $this->nativeFamily();
+        $legacy = $this->legacyFamily();
+        $before = $this->snapshot();
+
+        // Holds both duties but is suspended: refused by every ownership Action before the family is looked up or a receipt considered.
+        $this->leaver->givePermissionTo([self::ASSIGN, self::VIEW]);
+        $calls = [
+            fn ($actor) => app(ReassignQuotationOwner::class)($actor, $family->id, $this->colleague->id, 1, 0, $this->key(), 'x'),
+            fn ($actor) => app(ChangeQuotationAccessUnit::class)($actor, $family->id, null, 1, 0, $this->key(), 'x'),
+            fn ($actor) => app(CaptureQuotationAccessBaseline::class)($actor, $legacy->id, $this->colleague->id, null, 's', 'a', $this->key(), 'x'),
+        ];
+        foreach ($calls as $call) {
+            try {
+                $call($this->leaver);
+                $this->fail('A suspended actor must be refused.');
+            } catch (AuthorizationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+
+        // A hydrated actor who was active when loaded and is suspended afterwards: the object still says Active, the database does not.
+        $stale = User::query()->findOrFail($this->assigner->id);
+        $this->assertSame(MemberStatus::Active, $stale->status);
+        DB::table('users')->where('id', $this->assigner->id)->update(['status' => 'SUSPENDED']);
+        $this->assertSame(MemberStatus::Active, $stale->status, 'the hydrated object is stale');
+        foreach ($calls as $call) {
+            try {
+                $call($stale);
+                $this->fail('A stale actor suspended in the database must be refused.');
+            } catch (AuthorizationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        $this->assertEquals($before, $this->snapshot(), 'no projection, event or receipt changed');
+
+        // An actor from another company is refused as well, whatever they hold.
+        $this->expectException(DomainInvariantException::class);
+        app(ReassignQuotationOwner::class)(User::query()->withoutGlobalScopes()->findOrFail($this->otherUser), $family->id, $this->colleague->id, 1, 0, $this->key(), 'x');
     }
 
     // ---- reassignment ----------------------------------------------------------------------------------------------------------------------------------
