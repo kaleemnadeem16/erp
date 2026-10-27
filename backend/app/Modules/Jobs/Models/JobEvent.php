@@ -25,6 +25,8 @@ use Illuminate\Support\Carbon;
  * @property int $actor_id
  * @property string|null $reason
  * @property int $evidence_version
+ * @property string|null $command_identity the command's stable identity (J1-F1); present together with the semantic intent hash
+ * @property string|null $semantic_intent_hash
  */
 class JobEvent extends Model
 {
