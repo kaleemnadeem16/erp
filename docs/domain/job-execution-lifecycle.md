@@ -175,6 +175,7 @@ NONE, duplicate ledger or independent renderer. Imports need truthful lineage, n
 
 ## Related
 
+- [Task F Jobs duty/holder activation plan](../phases/phase-5-task-f-jobs-access-plan.md) — proposed access catalogue and separately authorised disabled batch.
 - [Labour recognition0146](job-labour-recognition.md)
 - [0145](../decisions/0145-separate-job-lifecycle-execution-and-operational-closeout.md)
 - [Phase 5](../phases/phase-5-job-execution.md) · [Labour research](../phases/phase-5-labour-resource-research.md)
