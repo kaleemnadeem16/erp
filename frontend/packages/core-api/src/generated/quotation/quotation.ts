@@ -4,15 +4,18 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
@@ -22,6 +25,8 @@ import type {
   AuthorizationExceptionResponse,
   QuotationsPreview200,
   QuotationsShow200,
+  QuotationsUpdate200,
+  UpdateQuotationDraftRequest,
   ValidationExceptionResponse,
 } from ".././models";
 
@@ -29,6 +34,134 @@ import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Starts a draft. The Idempotency-Key header is the Action's request key: an exact retry replays the stored result (200), a first success is 201
+ */
+export type quotationsStoreResponse200 = {
+  data: string;
+  status: 200;
+};
+
+export type quotationsStoreResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsStoreResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsStoreResponseSuccess = quotationsStoreResponse200 & {
+  headers: Headers;
+};
+export type quotationsStoreResponseError = (
+  | quotationsStoreResponse401
+  | quotationsStoreResponse403
+  | quotationsStoreResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsStoreResponse =
+  quotationsStoreResponseSuccess | quotationsStoreResponseError;
+
+export const getQuotationsStoreUrl = () => {
+  return `/v1/quotations`;
+};
+
+export const quotationsStore = async (
+  options?: RequestInit,
+): Promise<quotationsStoreResponse> => {
+  return fetchClient<quotationsStoreResponse>(getQuotationsStoreUrl(), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getQuotationsStoreMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof quotationsStore>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof quotationsStore>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["quotationsStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof quotationsStore>>,
+    void
+  > = () => {
+    return quotationsStore(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QuotationsStoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsStore>>
+>;
+
+export type QuotationsStoreMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Starts a draft. The Idempotency-Key header is the Action's request key: an exact retry replays the stored result (200), a first success is 201
+ */
+export const useQuotationsStore = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof quotationsStore>>,
+      TError,
+      void,
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof quotationsStore>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationOptions = getQuotationsStoreMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type quotationsShowResponse200 = {
   data: QuotationsShow200;
   status: 200;
@@ -226,6 +359,143 @@ export function useQuotationsShow<
   return query;
 }
 
+/**
+ * @summary Changes a draft the caller last saw at `expected_generation`
+ */
+export type quotationsUpdateResponse200 = {
+  data: QuotationsUpdate200;
+  status: 200;
+};
+
+export type quotationsUpdateResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsUpdateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsUpdateResponseSuccess = quotationsUpdateResponse200 & {
+  headers: Headers;
+};
+export type quotationsUpdateResponseError = (
+  | quotationsUpdateResponse401
+  | quotationsUpdateResponse403
+  | quotationsUpdateResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsUpdateResponse =
+  quotationsUpdateResponseSuccess | quotationsUpdateResponseError;
+
+export const getQuotationsUpdateUrl = (revision: number) => {
+  return `/v1/quotations/${revision}`;
+};
+
+export const quotationsUpdate = async (
+  revision: number,
+  updateQuotationDraftRequest: UpdateQuotationDraftRequest,
+  options?: RequestInit,
+): Promise<quotationsUpdateResponse> => {
+  return fetchClient<quotationsUpdateResponse>(
+    getQuotationsUpdateUrl(revision),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(updateQuotationDraftRequest),
+    },
+  );
+};
+
+export const getQuotationsUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof quotationsUpdate>>,
+    TError,
+    { revision: number; data: UpdateQuotationDraftRequest },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof quotationsUpdate>>,
+  TError,
+  { revision: number; data: UpdateQuotationDraftRequest },
+  TContext
+> => {
+  const mutationKey = ["quotationsUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof quotationsUpdate>>,
+    { revision: number; data: UpdateQuotationDraftRequest }
+  > = (props) => {
+    const { revision, data } = props ?? {};
+
+    return quotationsUpdate(revision, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QuotationsUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsUpdate>>
+>;
+export type QuotationsUpdateMutationBody = UpdateQuotationDraftRequest;
+export type QuotationsUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Changes a draft the caller last saw at `expected_generation`
+ */
+export const useQuotationsUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof quotationsUpdate>>,
+      TError,
+      { revision: number; data: UpdateQuotationDraftRequest },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof quotationsUpdate>>,
+  TError,
+  { revision: number; data: UpdateQuotationDraftRequest },
+  TContext
+> => {
+  const mutationOptions = getQuotationsUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type quotationsPreviewResponse200 = {
   data: QuotationsPreview200;
   status: 200;
