@@ -21,6 +21,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Testing\TestResponse;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -317,7 +318,7 @@ class QuotationDraftWriteApiTest extends TestCase
         return $user;
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('limitedPreparers')]
+    #[DataProvider('limitedPreparers')]
     public function test_a_limited_preparer_cannot_write_through_either_route_or_either_action(string $kind): void
     {
         $this->activate();
