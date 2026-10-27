@@ -25,7 +25,15 @@ import type {
   AuthorizationExceptionResponse,
   QuotationsPreview200,
   QuotationsShow200,
+  QuotationsStore200,
+  QuotationsStore201,
+  QuotationsStore409,
+  QuotationsStoreHeaders,
   QuotationsUpdate200,
+  QuotationsUpdate404,
+  QuotationsUpdate409,
+  QuotationsUpdateHeaders,
+  StoreQuotationDraftRequest,
   UpdateQuotationDraftRequest,
   ValidationExceptionResponse,
 } from ".././models";
@@ -38,8 +46,13 @@ type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
  * @summary Starts a draft. The Idempotency-Key header is the Action's request key: an exact retry replays the stored result (200), a first success is 201
  */
 export type quotationsStoreResponse200 = {
-  data: string;
+  data: QuotationsStore200;
   status: 200;
+};
+
+export type quotationsStoreResponse201 = {
+  data: QuotationsStore201;
+  status: 201;
 };
 
 export type quotationsStoreResponse401 = {
@@ -52,17 +65,25 @@ export type quotationsStoreResponse403 = {
   status: 403;
 };
 
+export type quotationsStoreResponse409 = {
+  data: QuotationsStore409;
+  status: 409;
+};
+
 export type quotationsStoreResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
 };
 
-export type quotationsStoreResponseSuccess = quotationsStoreResponse200 & {
+export type quotationsStoreResponseSuccess = (
+  quotationsStoreResponse200 | quotationsStoreResponse201
+) & {
   headers: Headers;
 };
 export type quotationsStoreResponseError = (
   | quotationsStoreResponse401
   | quotationsStoreResponse403
+  | quotationsStoreResponse409
   | quotationsStoreResponse422
 ) & {
   headers: Headers;
@@ -76,11 +97,19 @@ export const getQuotationsStoreUrl = () => {
 };
 
 export const quotationsStore = async (
+  storeQuotationDraftRequest: StoreQuotationDraftRequest,
+  headers: QuotationsStoreHeaders,
   options?: RequestInit,
 ): Promise<quotationsStoreResponse> => {
   return fetchClient<quotationsStoreResponse>(getQuotationsStoreUrl(), {
     ...options,
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+      ...options?.headers,
+    },
+    body: JSON.stringify(storeQuotationDraftRequest),
   });
 };
 
@@ -88,20 +117,21 @@ export const getQuotationsStoreMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
+    | QuotationsStore409
     | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof quotationsStore>>,
     TError,
-    void,
+    { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
     TContext
   >;
   request?: SecondParameter<typeof fetchClient>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof quotationsStore>>,
   TError,
-  void,
+  { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
   TContext
 > => {
   const mutationKey = ["quotationsStore"];
@@ -115,9 +145,11 @@ export const getQuotationsStoreMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof quotationsStore>>,
-    void
-  > = () => {
-    return quotationsStore(requestOptions);
+    { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders }
+  > = (props) => {
+    const { data, headers } = props ?? {};
+
+    return quotationsStore(data, headers, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -126,10 +158,11 @@ export const getQuotationsStoreMutationOptions = <
 export type QuotationsStoreMutationResult = NonNullable<
   Awaited<ReturnType<typeof quotationsStore>>
 >;
-
+export type QuotationsStoreMutationBody = StoreQuotationDraftRequest;
 export type QuotationsStoreMutationError =
   | AuthenticationExceptionResponse
   | AuthorizationExceptionResponse
+  | QuotationsStore409
   | ValidationExceptionResponse;
 
 /**
@@ -139,6 +172,7 @@ export const useQuotationsStore = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
+    | QuotationsStore409
     | ValidationExceptionResponse,
   TContext = unknown,
 >(
@@ -146,7 +180,7 @@ export const useQuotationsStore = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof quotationsStore>>,
       TError,
-      void,
+      { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
       TContext
     >;
     request?: SecondParameter<typeof fetchClient>;
@@ -155,7 +189,7 @@ export const useQuotationsStore = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof quotationsStore>>,
   TError,
-  void,
+  { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
   TContext
 > => {
   const mutationOptions = getQuotationsStoreMutationOptions(options);
@@ -360,7 +394,7 @@ export function useQuotationsShow<
 }
 
 /**
- * @summary Changes a draft the caller last saw at `expected_generation`
+ * @summary Changes a draft the caller last saw at `expected_generation`. A replay of the same key and body returns the stored result with the header Idempotency-Replayed: true
  */
 export type quotationsUpdateResponse200 = {
   data: QuotationsUpdate200;
@@ -377,6 +411,16 @@ export type quotationsUpdateResponse403 = {
   status: 403;
 };
 
+export type quotationsUpdateResponse404 = {
+  data: QuotationsUpdate404;
+  status: 404;
+};
+
+export type quotationsUpdateResponse409 = {
+  data: QuotationsUpdate409;
+  status: 409;
+};
+
 export type quotationsUpdateResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -388,6 +432,8 @@ export type quotationsUpdateResponseSuccess = quotationsUpdateResponse200 & {
 export type quotationsUpdateResponseError = (
   | quotationsUpdateResponse401
   | quotationsUpdateResponse403
+  | quotationsUpdateResponse404
+  | quotationsUpdateResponse409
   | quotationsUpdateResponse422
 ) & {
   headers: Headers;
@@ -403,6 +449,7 @@ export const getQuotationsUpdateUrl = (revision: number) => {
 export const quotationsUpdate = async (
   revision: number,
   updateQuotationDraftRequest: UpdateQuotationDraftRequest,
+  headers: QuotationsUpdateHeaders,
   options?: RequestInit,
 ): Promise<quotationsUpdateResponse> => {
   return fetchClient<quotationsUpdateResponse>(
@@ -410,7 +457,11 @@ export const quotationsUpdate = async (
     {
       ...options,
       method: "PATCH",
-      headers: { "Content-Type": "application/json", ...options?.headers },
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+        ...options?.headers,
+      },
       body: JSON.stringify(updateQuotationDraftRequest),
     },
   );
@@ -420,20 +471,30 @@ export const getQuotationsUpdateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
+    | QuotationsUpdate404
+    | QuotationsUpdate409
     | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof quotationsUpdate>>,
     TError,
-    { revision: number; data: UpdateQuotationDraftRequest },
+    {
+      revision: number;
+      data: UpdateQuotationDraftRequest;
+      headers: QuotationsUpdateHeaders;
+    },
     TContext
   >;
   request?: SecondParameter<typeof fetchClient>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof quotationsUpdate>>,
   TError,
-  { revision: number; data: UpdateQuotationDraftRequest },
+  {
+    revision: number;
+    data: UpdateQuotationDraftRequest;
+    headers: QuotationsUpdateHeaders;
+  },
   TContext
 > => {
   const mutationKey = ["quotationsUpdate"];
@@ -447,11 +508,15 @@ export const getQuotationsUpdateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof quotationsUpdate>>,
-    { revision: number; data: UpdateQuotationDraftRequest }
+    {
+      revision: number;
+      data: UpdateQuotationDraftRequest;
+      headers: QuotationsUpdateHeaders;
+    }
   > = (props) => {
-    const { revision, data } = props ?? {};
+    const { revision, data, headers } = props ?? {};
 
-    return quotationsUpdate(revision, data, requestOptions);
+    return quotationsUpdate(revision, data, headers, requestOptions);
   };
 
   return { mutationFn, ...mutationOptions };
@@ -464,15 +529,19 @@ export type QuotationsUpdateMutationBody = UpdateQuotationDraftRequest;
 export type QuotationsUpdateMutationError =
   | AuthenticationExceptionResponse
   | AuthorizationExceptionResponse
+  | QuotationsUpdate404
+  | QuotationsUpdate409
   | ValidationExceptionResponse;
 
 /**
- * @summary Changes a draft the caller last saw at `expected_generation`
+ * @summary Changes a draft the caller last saw at `expected_generation`. A replay of the same key and body returns the stored result with the header Idempotency-Replayed: true
  */
 export const useQuotationsUpdate = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
+    | QuotationsUpdate404
+    | QuotationsUpdate409
     | ValidationExceptionResponse,
   TContext = unknown,
 >(
@@ -480,7 +549,11 @@ export const useQuotationsUpdate = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof quotationsUpdate>>,
       TError,
-      { revision: number; data: UpdateQuotationDraftRequest },
+      {
+        revision: number;
+        data: UpdateQuotationDraftRequest;
+        headers: QuotationsUpdateHeaders;
+      },
       TContext
     >;
     request?: SecondParameter<typeof fetchClient>;
@@ -489,7 +562,11 @@ export const useQuotationsUpdate = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof quotationsUpdate>>,
   TError,
-  { revision: number; data: UpdateQuotationDraftRequest },
+  {
+    revision: number;
+    data: UpdateQuotationDraftRequest;
+    headers: QuotationsUpdateHeaders;
+  },
   TContext
 > => {
   const mutationOptions = getQuotationsUpdateMutationOptions(options);

@@ -14,6 +14,8 @@ use Illuminate\Validation\Validator;
  */
 class StoreQuotationDraftRequest extends SalesRequest
 {
+    use DescribesQuotationDraftBody;
+
     protected function capability(): ?string
     {
         return PermissionVocabulary::QUOTATION_PREPARE;
@@ -22,15 +24,11 @@ class StoreQuotationDraftRequest extends SalesRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return [];
+        return $this->headerRules() + ['opportunity_id' => ['sometimes', 'nullable', 'integer', 'min:1']];
     }
 
     public function withValidator(Validator $validator): void
     {
-        $validator->after(function (Validator $validator): void {
-            if (! $this->isJson()) {
-                $validator->errors()->add('body', 'The request body must be JSON.');
-            }
-        });
+        $this->requireJsonObject($validator);
     }
 }

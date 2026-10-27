@@ -17,6 +17,6 @@ class QuotationDraftWriteResource extends JsonResource
         /** @var QuotationDraftOutcome $outcome */
         $outcome = $this->resource;
 
-        return ['family_id' => $outcome->familyId, 'revision_id' => $outcome->revisionId, 'input_generation' => $outcome->inputGeneration, 'replayed' => $outcome->replayed];
+        return ['family_id' => (int) $outcome->familyId, 'revision_id' => (int) $outcome->revisionId, 'input_generation' => (int) $outcome->inputGeneration, 'replayed' => (bool) $outcome->replayed];
     }
 }

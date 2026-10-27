@@ -4,6 +4,12 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { UpdateQuotationDraftRequestRecipientPartyId } from "./updateQuotationDraftRequestRecipientPartyId";
+import type { UpdateQuotationDraftRequestPricingDate } from "./updateQuotationDraftRequestPricingDate";
+import type { UpdateQuotationDraftRequestTaxEstimateDate } from "./updateQuotationDraftRequestTaxEstimateDate";
+import type { UpdateQuotationDraftRequestValidThroughLocalDate } from "./updateQuotationDraftRequestValidThroughLocalDate";
+import type { UpdateQuotationDraftRequestAddLinesItem } from "./updateQuotationDraftRequestAddLinesItem";
+import type { UpdateQuotationDraftRequestUpdateLinesItem } from "./updateQuotationDraftRequestUpdateLinesItem";
 
 /**
  * Changing a draft needs `sales.quotation.prepare` (STAGED) and the input generation the caller last saw. Everything else in the JSON body goes to
@@ -12,4 +18,14 @@
 export interface UpdateQuotationDraftRequest {
   /** @minimum 1 */
   expected_generation: number;
+  /** @minimum 1 */
+  recipient_party_id?: UpdateQuotationDraftRequestRecipientPartyId;
+  /** @minimum 1 */
+  currency_id?: number;
+  pricing_date?: UpdateQuotationDraftRequestPricingDate;
+  tax_estimate_date?: UpdateQuotationDraftRequestTaxEstimateDate;
+  valid_through_local_date?: UpdateQuotationDraftRequestValidThroughLocalDate;
+  add_lines?: UpdateQuotationDraftRequestAddLinesItem[];
+  update_lines?: UpdateQuotationDraftRequestUpdateLinesItem[];
+  remove_lines?: number[];
 }

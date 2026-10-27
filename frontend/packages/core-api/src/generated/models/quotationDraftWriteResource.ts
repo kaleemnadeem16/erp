@@ -6,8 +6,8 @@
  */
 
 export interface QuotationDraftWriteResource {
-  family_id: string;
-  revision_id: string;
-  input_generation: string;
-  replayed: string;
+  family_id: number;
+  revision_id: number;
+  input_generation: number;
+  replayed: boolean;
 }
