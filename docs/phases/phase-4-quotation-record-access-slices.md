@@ -12,13 +12,14 @@ No status files or accepted ADR bodies are changed by the design task.
 
 ## Dependency and separation contract
 
-Inspected Sales baseline `d4746d7d` has the QL0/QL1a internal Actions. #30's branch contains bounded
-read adapters, still subject to its separate review/correction; do not assume those files are merged.
-Agent A owns #30's generic cross-company 404, current-develop merge and exact-SHA revalidation.
-That correction neither implements nor depends on a new own/team/delegation model unless a proven
-security dependency is reported and explicitly coordinated. #45 supplies a design, not a silent
-expansion of #30 or its holder recipe. Once #30 integrates, re-inspect actual Request/controller/
-Resource/client names before adapting them in slice QA3; no parallel HTTP implementation.
+Original Sales baseline `d4746d7d` had QL0/QL1a internal Actions. On 2026-10-27, #30's bounded
+read adapters and generic cross-company 404 integrated at `2f74f66bd24d04015d53a919cf24f16f894cbe80`
+([integration record](https://github.com/kaleemnadeem16/erp/issues/30#issuecomment-6436238275)).
+The existing `QuotationController`, `ShowQuotationDraftRequest`, `PreviewQuotationRequest`,
+Resources and `QuotationDraftReviewApiTest` are the QA3 adaptation targets; no parallel HTTP
+implementation. Agent A owns #30 and any separately authorised write adapters. Its later write
+proposal is not delivered code. #45 supplies a design, not an expansion of #30 or its holder recipe.
+The read routes remain STAGED; integration supplies no record-level access or activation authority.
 
 [0138](../decisions/0138-authorise-sales-and-document-duties-with-explicit-scope-and-grants.md)
 and [R9 rollout](phase-4-r9-permission-rollout.md) still gate scope/registration/holders/mandates.
@@ -154,7 +155,7 @@ recipient, no-unit and foreign user. Link UI only after it performs a real suppo
 | `QuotationTeamAccessTest` | Parent/descendant, leaf/sibling, archived unit, multiple owner memberships, explicit unit change, member removal/manager movement, null unit and explicit recovery; a Manager-named user with no grant gets nothing. |
 | `QuotationDelegationTest`, `QuotationDelegationStorageTest` | VIEW/PREPARE asymmetry, missing recipient capability, capability removal, grantor loses rights, scope ceilings, no self/onward sharing, duplicates, future/exact-start/exact-end/null end, revoke, transfer, suspend/reactivate and permanent epoch invalidation; immutable raw evidence. |
 | `QuotationAccessConcurrencyTest` | Two DB connections: revoke/expiry/status/role/unit/owner change versus preview/update/export/replay; security-fence order, no stale hydrated actor/permission cache, no partial receipt/event; one decision instant and new-operation stale refusals. |
-| Extend `QuotationDraftReviewApiTest` after #30 integrates; Action tests | Missing duty403 versus unknown/foreign/hidden404 parity, view-only preview denial, state/source errors only after access, protected fields absent, direct Action checks, current-authority replay. Do not change #30's correction in this design task. |
+| Extend integrated `QuotationDraftReviewApiTest`; Action tests | Missing duty403 versus unknown/foreign/hidden404 parity, view-only preview denial, state/source errors only after access, protected fields absent, direct Action checks, current-authority replay. Do not change #30's correction in this design task. |
 | `QuotationAccessSurfaceCoverageTest`, leakage/query-equivalence tests | Detail/update/preview, includes/lookups/counts/search/order/pagination, later revisions/history, cached/jobs/exports/reports/attachments; SQL scoped before aggregate; forbidden filters cannot infer hidden totals; batch/delivery recheck. Future unsupported surfaces absent/disabled. |
 | `QuotationAccessRolloutTest` | STAGED handmade-row denial, exact registration ownership/exclusions, per-company grant origin/scope, verified mandate proof, rerun/backout, legacy/quarantined records and staging personas. |
 | Existing architecture ratchets | `WriteRouteGuardTest`, `OpenReadRoutesTest`, `RecordScopeCoverageTest`, `PermissionCheckRegistrationTest`, `CompanyScopedForeignKeyTest`, `CompanyScopedUniqueIndexTest`, `ControllerActionBoundaryTest`; register changed surfaces in the same implementation commit. |

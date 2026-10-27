@@ -7,7 +7,8 @@ Owner direction: [#45](https://github.com/kaleemnadeem16/erp/issues/45) and the 
 [#30 direction](https://github.com/kaleemnadeem16/erp/issues/30#issuecomment-6413435143).
 Inspected baseline: `develop@d4746d7d`. This proposal authorises no code, schema, routes,
 permission registration, grants or activation. Owner decisions below gate implementation.
-It does not change #30's separate cross-company-404 correction or claim its branch is integrated.
+It does not change #30's separate cross-company-404 correction. On 2026-10-27, #30's read adapters
+and correction integrated at `2f74f66bd24d04015d53a919cf24f16f894cbe80`; they remain STAGED.
 
 ## Governing boundaries and evidence
 
