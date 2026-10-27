@@ -122,6 +122,7 @@ class JobsFoundationTest extends TestCase
         $this->assertDbRefuses(fn () => DB::table('job_baselines')->insert($this->baseline($mine, ['company_id' => $this->otherCompany])), 'job_baselines_job_fk');
         $this->assertDbRefuses(fn () => DB::table('job_events')->insert($this->event($mine, ['company_id' => $this->otherCompany, 'actor_id' => $this->otherUser])), 'job_events_job_fk');
         $this->assertDbRefuses(fn () => DB::table('job_events')->insert($this->event($mine, ['actor_id' => $this->otherUser])), 'job_events_actor_fk');
+        $this->assertDbRefuses(fn () => DB::table('job_events')->insert($this->event($mine, ['operation' => ' '])), 'is not allowed by the lifecycle foundation');
         $this->assertDbRefuses(fn () => DB::table('job_events')->insert($this->event($theirs)), 'job_events_job_fk');
 
         // A predecessor must be a baseline of the SAME job in the same company.
@@ -165,7 +166,7 @@ class JobsFoundationTest extends TestCase
         foreach ([['version' => 0], ['version' => 1, 'predecessor_id' => 1], ['scope_description' => ' '], ['completion_rule_version' => ''], ['fingerprint' => '']] as $bad) {
             $this->assertDbRefuses(fn () => DB::table('job_baselines')->insert($this->baseline($job, $bad)), 'job_baselines_shape');
         }
-        foreach ([['next_generation' => 0], ['sequence' => 0], ['to_state' => 'DONE'], ['from_state' => 'NOPE'], ['operation' => ' '], ['evidence_version' => 0], ['reason' => ' ']] as $bad) {
+        foreach ([['next_generation' => 0], ['sequence' => 0], ['to_state' => 'DONE'], ['from_state' => 'NOPE'], ['evidence_version' => 0], ['reason' => ' ']] as $bad) {
             $this->assertDbRefuses(fn () => DB::table('job_events')->insert($this->event($job, $bad)), 'job_events_shape');
         }
     }
@@ -176,11 +177,16 @@ class JobsFoundationTest extends TestCase
         DB::table('job_handover_origins')->insert($this->origin($job));
         DB::table('job_baselines')->insert($this->baseline($job));
         DB::table('job_events')->insert($this->event($job));
+        // The fixtures are a coherent chain (head RELEASED at generation 1, one RELEASE event); settle the commit-time checks, which TRUNCATE will not run past.
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        DB::statement('SET CONSTRAINTS ALL DEFERRED');
 
         foreach (['job_handover_origins' => ['target_purpose' => 'X'], 'job_baselines' => ['fingerprint' => 'x'], 'job_events' => ['reason' => 'x']] as $table => $change) {
             $this->assertDbRefuses(fn () => DB::table($table)->update($change), 'append-only');
             $this->assertDbRefuses(fn () => DB::table($table)->delete(), 'append-only');
-            $this->assertDbRefuses(fn () => DB::statement("TRUNCATE TABLE {$table}"), 'append-only');
+            // job_events is now referenced by the lifecycle tables, so PostgreSQL refuses a lone TRUNCATE on it by itself; truncated together with them, only the guard stands in the way.
+            $set = $table === 'job_events' ? 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts' : $table;
+            $this->assertDbRefuses(fn () => DB::statement("TRUNCATE TABLE {$set}"), 'append-only');
         }
         // Truncating the parent with CASCADE would empty the evidence tables too; their own guards refuse that as well.
         $this->assertDbRefuses(fn () => DB::statement('TRUNCATE TABLE service_jobs CASCADE'), 'append-only');
@@ -188,12 +194,13 @@ class JobsFoundationTest extends TestCase
         $this->assertDbRefuses(fn () => DB::table('service_jobs')->where('id', $job)->delete(), 'violates foreign key');
 
         $guards = DB::select("select c.relname as tbl, p.proname as fn from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid
-            where not t.tgisinternal and c.relname in ('job_handover_origins','job_baselines','job_events') order by c.relname");
+            where not t.tgisinternal and c.relname in ('job_handover_origins','job_baselines','job_events') and p.proname not like 'job_lifecycle_%' order by c.relname");
         $this->assertCount(6, $guards, 'a row guard and a truncate guard on each evidence table');
         foreach ($guards as $g) {
             $this->assertSame('job_evidence_append_only_guard', $g->fn, "{$g->tbl} uses the Jobs guard, never the Documents one");
         }
-        $this->assertSame(0, (int) DB::selectOne("select count(*) c from pg_trigger t join pg_class c on c.oid = t.tgrelid where not t.tgisinternal and c.relname = 'service_jobs'")->c);
+        // The head is not history (its state and generation advance with each event), so it carries no append-only guard; J1-F1 adds only its own head guard and commit-time check.
+        $this->assertSame(['service_jobs_lifecycle_consistency', 'service_jobs_lifecycle_head_guard'], collect(DB::select("select t.tgname from pg_trigger t join pg_class c on c.oid = t.tgrelid where not t.tgisinternal and c.relname = 'service_jobs' order by 1"))->pluck('tgname')->all());
     }
 
     public function test_a_populated_rollback_refuses_and_changes_nothing(): void
