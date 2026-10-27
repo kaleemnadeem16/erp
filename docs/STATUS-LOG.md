@@ -1009,3 +1009,11 @@ Integrated from source 1c7e8f22af18e7c7a6d9075c07369cb765fd9920 (owner approval 
 ## 2026-10-27 — Phase 5 Task E: Jobs source integration design (branch codex/phase5-task-e-source-integration, #43)
 
 Integrated from source 6e2107f67dd6acf54fb187f769550aaeaa7aa05b (owner approval relayed 2026-10-27); planning only, docs only: `docs/phases/phase-5-task-e-source-integration.md`. Task D lines in `phase-5-job-execution.md` preserved.
+
+## 2026-10-27 — Phase 5 Task F: Jobs permission holder recipe and activation plan (branch codex/phase5-task-f-jobs-access-plan, #51)
+
+Integrated from source 4258ec6f55493802d7df128b8a0045f4171f664a (owner approval 2026-10-27); design only, docs only: `docs/phases/phase-5-task-f-jobs-access-plan.md`, `phase-5-task-f-jobs-access-batch.md`, `docs/domain/job-execution-lifecycle.md`.
+
+## 2026-10-27 — Phase 5 Task G: Sales release (R7) implementation batch proposal (branch codex/phase5-task-g-r7-batch-proposal, #52)
+
+Integrated from source 6e246ad897422f745977efe410a4cd729e58eb05 (owner approval 2026-10-27); design only, docs only: `docs/phases/phase-5-task-g-r7-batch-proposal.md`, `phase-5-task-g-r7-delivery-matrix.md`, `phase-5-r7-job-receiver-verification.md`.
