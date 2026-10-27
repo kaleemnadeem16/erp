@@ -129,6 +129,7 @@ J2 labour/costing is separate. This adds no application code, migration, permiss
 
 ## Related
 
+- [Task D lifecycle foundation design](phase-5-task-d-j1-foundation.md) and [J1-F1 batch proposal](phase-5-task-d-j1-f1-proposal.md) — technical candidates for separate review/implementation authority.
 - [Q55 resolution](phase-5-unified-costing-resolution.md) · [Historical Job sketch](../domain/job-costing.md)
 - [R7 slices](phase-4-r7-implementation-slices.md) · [R9 handoff](phase-4-implementation-handoff.md)
 - [Documents](../domain/documents.md) · [STATUS](../STATUS.md) · [Questions](../OPEN-QUESTIONS.md)
