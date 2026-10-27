@@ -146,6 +146,44 @@ No forecasting, acceptance, reservation, Inventory posting, invoice or job is im
 cannot be counted twice; current Opportunity expected amount remains unreviewed assumption (0101/0102).
 C1d remains separately gated; existing C2/CRM delivery and Supplier Return/Scrap remain untouched.
 
+## Quotation detail/review UI — #54 slice 1
+
+Owner-approved scope is a deep-link page (no list exists): `/quotations/:revision`
+for safe metadata and `/quotations/:revision/review` for financial preview. This page
+exception is intentional: there is no parent list behind a record sheet. Users inspect
+draft identity, readiness and uncertain amounts; no submission or lifecycle action exists.
+The shared display components are reusable by the subsequent create/edit form.
+
+`QUOTATION_UI_ENABLED` remains false. Navigation contains no quotation entry, direct
+routes default-deny, and the screen guards itself before mounting queries. Even a forged
+local grant cannot enable it. Future activation needs separate owner approval and server
+rollout. Metadata requires `sales.quotation.view`; preview independently requires
+`sales.quotation.prepare`. A prepare-only holder must never trigger the metadata GET,
+and view alone never triggers preview. Backend Request/Action guards remain authoritative;
+company/record scope is not inferred by the client. No permissions or grants are changed.
+
+| Contract element | UI destination | Coverage and acceptance |
+|---|---|---|
+| Safe identity, revision/family, state, generation, line count | Details | Generated show hook; no commercial data fetched |
+| Recipient, currency, opportunity, creator | Labelled references | Temporary numeric-reference fallback: these projections contain IDs only; no inferred names or permission-expanding lookup calls. Human labels need a separately reviewed projection/lookup contract before activation |
+| Pricing, tax-estimate, local validity dates | Details | Shared date formatting; absent dates show placeholder |
+| Preview identity, generation, pricing date, authority | Review heading/summary | Independent preview GET; explicitly read-only, never adopted as authority |
+| Lines: scope/baseline/choice, description/section, source, offered/priced/stock units and quantities | Responsive line cards | Quantities remain distinct; no page-wide horizontal table; empty lines explicit |
+| Entered/base unit prices, settled line net, optional/base totals | Line cards/totals | Decimal strings only; zero is known, UNKNOWN never zero, PARTIAL shows known amount separately; currency reference always visible |
+| Settlement computed amount/fraction/residual, FX freshness | Line evidence | Server evidence only; opaque FX fingerprints/routes/ratios remain internal metadata, not operator controls |
+| Rounding policy and stale-policy revalidation | Review sections | Policy basis/scale/mode; review reasons and affected line references |
+| Tax, total including tax, controls, issue readiness/blockers/issues | Review summary | Unknown tax, unconfigured controls and unavailable issue remain explicit; no issue button |
+| Loading, 403, non-disclosing 404, 422, network/server/malformed response | Shared failure/loading components | 404 never repeats response details; 422 preserves server message and offers refresh; retry transient failures only |
+| Filters, sorts, pagination, bulk, print/export, history | Deferred/not applicable | No list endpoint (#55), no history projection or output adapter in this slice; do not fabricate |
+| POST/PATCH, 409 request-key reuse, Idempotency-Key, expected_generation | Slice 2 | No mutations here; dependent on #53 integration and a fresh branch |
+
+Acceptance: independent capability combinations, disabled gate despite supplied grants,
+invalid revision without requests, generated GET URLs, malformed financial response rejection,
+complete/partial/unknown amounts, long descriptions at phone width, light/dark, keyboard
+links/retry, and server refusal recovery. The normal route remains inaccessible during STAGED;
+fixture-only display tests do not activate real permissions. Closing/navigating detail/review
+preserves the query string; the work-area link provides a safe fallback with no invented list.
+
 ## Related
 
 - [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)

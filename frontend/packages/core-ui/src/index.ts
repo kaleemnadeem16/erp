@@ -284,3 +284,5 @@ export { StageFormScreen } from "./features/sales/stage-form-screen";
 export * from "./lib/decimal";
 export { DecimalInput, type DecimalInputProps } from "./components/ui/decimal-input";
 export { DecimalText, MoneyText } from "./components/ui/decimal-text";
+
+export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
