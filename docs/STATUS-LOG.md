@@ -993,3 +993,7 @@ Integrated from source c66fbb2d6ed99d697bb81dcb9ab05ad33b472e57 (owner approval 
 ## 2026-10-26 — Documents TRUNCATE protection for append-only tables (branch phase4/documents-truncate-guard, #25)
 
 Integrated from source 72c38a30ec4cb34c4d5c6f101e1a8ad0935978c0 (owner approval relayed 2026-10-26); migration `2026_10_22_100000_guard_documents_truncate` guards TRUNCATE on six Documents tables and reuses `documents_append_only_guard`. Owner accepted the migration-ordering attention (sorts before the Tax profile migration; no Tax table referenced). Detail: `backend/app/Modules/Documents/README.md`.
+
+## 2026-10-27 — Phase 5 Task D: J1 lifecycle foundation design and J1-F1 batch proposal (branch codex/phase5-task-d-j1-foundation, #42)
+
+Integrated from source ff75f726a296ea94552b081bf703ea429663316e (owner approval relayed 2026-10-27); planning only, docs only: `docs/phases/phase-5-task-d-j1-foundation.md`, `phase-5-task-d-j1-f1-proposal.md`.
