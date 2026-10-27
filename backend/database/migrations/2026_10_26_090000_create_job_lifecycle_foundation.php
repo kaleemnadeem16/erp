@@ -179,6 +179,7 @@ return new class extends Migration
         $problems = [
             'jobs with no lifecycle event' => 'SELECT count(*) AS n FROM service_jobs j WHERE NOT EXISTS (SELECT 1 FROM job_events e WHERE e.company_id = j.company_id AND e.job_id = j.id)',
             'events outside the release-only history SP0b can hold' => "SELECT count(*) AS n FROM job_events e WHERE e.operation <> 'RELEASE'",
+            'release events after the initial release' => "SELECT count(*) AS n FROM job_events e WHERE e.operation = 'RELEASE' AND e.sequence <> 1",
             'first events that are not a coherent release' => "SELECT count(*) AS n FROM job_events e WHERE e.sequence = 1 AND NOT (e.operation = 'RELEASE' AND e.prior_generation = 0 AND e.next_generation = 1 AND e.from_state IS NULL AND e.to_state = 'RELEASED')",
             'jobs whose history does not start at sequence 1 or has a gap' => 'SELECT count(*) AS n FROM (SELECT company_id, job_id FROM job_events GROUP BY company_id, job_id HAVING min(sequence) <> 1 OR max(sequence) <> count(*)) g',
             'events that do not continue their predecessor' => 'SELECT count(*) AS n FROM job_events e JOIN job_events p ON p.company_id = e.company_id AND p.job_id = e.job_id AND p.sequence = e.sequence - 1
@@ -221,6 +222,8 @@ DECLARE
 BEGIN
  PERFORM 1 FROM service_jobs WHERE company_id = NEW.company_id AND id = NEW.job_id FOR UPDATE;
  IF TG_TABLE_NAME = 'job_events' THEN
+  -- The recorded time is the database server's clock, read after the head lock is held: whatever the writer supplied (past, future or NULL) is discarded.
+  NEW.recorded_at := clock_timestamp();
   IF NEW.operation NOT IN {$ops} THEN
    RAISE EXCEPTION 'Job event operation % is not allowed by the lifecycle foundation', NEW.operation USING ERRCODE = '23514';
   END IF;
@@ -228,13 +231,31 @@ BEGIN
    RAISE EXCEPTION 'Job event operation % needs a command identity and a semantic intent hash', NEW.operation USING ERRCODE = '23514';
   END IF;
  ELSIF TG_TABLE_NAME = 'job_assignment_events' THEN
+  SELECT * INTO ev FROM job_events WHERE company_id = NEW.company_id AND job_id = NEW.job_id AND id = NEW.event_id;
+  IF FOUND THEN
+   NEW.recorded_at := ev.recorded_at;
+  END IF;
   IF NEW.predecessor_id IS NOT NULL THEN
    SELECT * INTO pa FROM job_assignment_events WHERE company_id = NEW.company_id AND job_id = NEW.job_id AND id = NEW.predecessor_id;
    IF NOT FOUND OR pa.sequence <> NEW.sequence - 1 THEN
     RAISE EXCEPTION 'Job assignment % must continue the assignment with sequence %', NEW.sequence, NEW.sequence - 1 USING ERRCODE = '23514';
    END IF;
   END IF;
+ ELSIF TG_TABLE_NAME = 'job_holds' THEN
+  -- A hold takes effect at its event's recorded server time and no other: a supplied effective time is discarded.
+  SELECT * INTO ev FROM job_events WHERE company_id = NEW.company_id AND job_id = NEW.job_id AND id = NEW.event_id;
+  IF FOUND THEN
+   NEW.effective_from := ev.recorded_at;
+   NEW.recorded_at := ev.recorded_at;
+  END IF;
+ ELSIF TG_TABLE_NAME = 'job_hold_resolutions' THEN
+  SELECT * INTO ev FROM job_events WHERE company_id = NEW.company_id AND job_id = NEW.job_id AND id = NEW.event_id;
+  IF FOUND THEN
+   NEW.resolved_effective_at := ev.recorded_at;
+   NEW.recorded_at := ev.recorded_at;
+  END IF;
  ELSIF TG_TABLE_NAME = 'job_operation_receipts' THEN
+  NEW.recorded_at := clock_timestamp();
   SELECT * INTO ev FROM job_events WHERE company_id = NEW.company_id AND job_id = NEW.job_id AND id = NEW.result_event_id;
   IF NOT FOUND OR ev.operation = 'RELEASE' OR ev.operation <> NEW.operation THEN
    RAISE EXCEPTION 'Job receipt operation % must name the lifecycle operation of its result event', NEW.operation USING ERRCODE = '23514';
@@ -332,11 +353,14 @@ BEGIN
      WHERE a.company_id = v_company AND a.job_id = v_job AND ae.sequence < NEW.sequence) THEN
     RAISE EXCEPTION 'Job % cannot start without a recorded responsibility', v_job USING ERRCODE = '23514';
    END IF;
+  END IF;
+  -- A hold blocks ordinary mutation: START and ASSIGN are refused while any earlier hold is unresolved. Only a further HOLD and a named RESOLVE_HOLD are exceptions.
+  IF NEW.operation IN ('START', 'ASSIGN') THEN
    IF EXISTS (SELECT 1 FROM job_holds hd JOIN job_events he ON he.company_id = hd.company_id AND he.job_id = hd.job_id AND he.id = hd.event_id
      WHERE hd.company_id = v_company AND hd.job_id = v_job AND he.sequence < NEW.sequence
      AND NOT EXISTS (SELECT 1 FROM job_hold_resolutions r JOIN job_events re ON re.company_id = r.company_id AND re.job_id = r.job_id AND re.id = r.event_id
        WHERE r.company_id = hd.company_id AND r.hold_id = hd.id AND re.sequence < NEW.sequence)) THEN
-    RAISE EXCEPTION 'Job % has an unresolved hold and cannot start', v_job USING ERRCODE = '23514';
+    RAISE EXCEPTION 'Job % has an unresolved hold and cannot %', v_job, lower(NEW.operation) USING ERRCODE = '23514';
    END IF;
   END IF;
 

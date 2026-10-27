@@ -348,6 +348,11 @@ class JobLifecycleFoundationTest extends TestCase
         $this->resolveHold($job, $one['hold']);
         $this->settle();
         $this->assertRefused(fn () => $this->start($job), 'unresolved hold');
+        // A hold blocks ordinary mutation: responsibility cannot change while any hold is unresolved. A further hold and a named resolution are the only exceptions.
+        $this->assertRefused(fn () => $this->assign($job, $this->user->id), 'unresolved hold and cannot assign');
+        $this->assertCommits(fn () => $this->placeHold($job));
+        $this->resolveHold($job, DB::table('job_holds')->where('job_id', $job)->orderByDesc('id')->value('id'));
+        $this->settle();
         // The hold cannot be resolved twice, and a resolution cannot name the wrong Job's hold.
         $this->assertRefused(fn () => $this->resolveHold($job, $one['hold']), 'job_hold_resolutions_hold_unique');
         $sibling = $this->newJob('SIB');
@@ -356,30 +361,69 @@ class JobLifecycleFoundationTest extends TestCase
         $this->assertRefused(fn () => $this->resolveHold($job, $siblingHold['hold']), 'job_hold_resolutions_hold_fk');
 
         $this->resolveHold($job, $two['hold']);
+        // With every hold resolved, responsibility may change again and the Job may start.
+        $this->assertCommits(fn () => $this->assign($job, $this->user->id));
         $this->assertCommits(fn () => $this->start($job));
         $this->assertSame('ACTIVE', DB::table('service_jobs')->where('id', $job)->value('state'));
-        $this->assertSame(2, DB::table('job_hold_resolutions')->where('job_id', $job)->count());
+        $this->assertSame(3, DB::table('job_hold_resolutions')->where('job_id', $job)->count());
     }
 
-    public function test_hold_and_resolution_must_agree_with_their_events_and_the_server_time(): void
+    public function test_hold_and_resolution_must_agree_with_their_events(): void
     {
         $job = $this->newJob();
         $this->assign($job, $this->worker->id);
         $this->settle();
 
-        // Future-effective or client-chosen times are refused: a hold is effective at the event's recorded server time.
-        $this->assertRefused(fn () => $this->placeHold($job, [], ['effective_from' => $this->at(500)]), 'effective at the recorded server time');
-        $this->assertRefused(fn () => $this->placeHold($job, [], ['effective_from' => $this->at(-5)]), 'effective at the recorded server time');
         $this->assertRefused(fn () => $this->placeHold($job, [], ['reason' => 'a different reason']), 'does not agree with its HOLD event');
         $this->assertRefused(fn () => $this->placeHold($job, [], ['actor_id' => $this->worker->id]), 'does not agree with its HOLD event');
         $this->assertRefused(fn () => $this->placeHold($job, [], ['scope_kind' => 'ACTIVITY']), 'job_holds_shape');
-
         $placed = $this->placeHold($job);
         $this->settle();
-        $this->assertRefused(fn () => $this->resolveHold($job, $placed['hold'], [], ['resolved_effective_at' => $this->at(900)]), 'effective at the recorded server time');
-        // A resolution whose event is recorded before the hold took effect.
-        $this->assertRefused(fn () => $this->resolveHold($job, $placed['hold'], ['recorded_at' => $this->at(1)]), 'must come after');
+        $this->assertRefused(fn () => $this->resolveHold($job, $placed['hold'], [], ['reason' => 'a different reason']), 'does not agree with its RESOLVE_HOLD event');
         $this->assertCommits(fn () => $this->resolveHold($job, $placed['hold']));
+    }
+
+    /** The only source of lifecycle time is the database server's clock; nothing a writer supplies can place a hold, or its resolution, in the past or the future. */
+    public function test_event_and_hold_times_come_from_the_database_clock(): void
+    {
+        $job = $this->newJob();
+        $this->assign($job, $this->worker->id);
+        $this->settle();
+
+        $source = (string) DB::selectOne("select pg_get_functiondef('job_lifecycle_evidence_guard_v1'::regproc) as def")->def;
+        $this->assertStringContainsString('NEW.recorded_at := clock_timestamp()', $source, 'the event time is read from the server clock');
+        $this->assertStringContainsString('NEW.effective_from := ev.recorded_at', $source, 'a hold takes the event time');
+        $this->assertStringContainsString('NEW.resolved_effective_at := ev.recorded_at', $source, 'a resolution takes the event time');
+
+        foreach (['past' => '2001-01-01 00:00:00+00', 'future' => '2099-01-01 00:00:00+00', 'null' => null] as $label => $client) {
+            $before = DB::selectOne('select clock_timestamp() as t')->t;
+            $placed = $this->placeHold($job, ['recorded_at' => $client], ['effective_from' => $client ?? $this->at(0), 'recorded_at' => $client]);
+            $resolved = $this->resolveHold($job, $placed['hold'], ['recorded_at' => $client], ['resolved_effective_at' => $client ?? $this->at(0), 'recorded_at' => $client]);
+            $after = DB::selectOne('select clock_timestamp() as t')->t;
+            $this->settle();
+
+            $holdEvent = DB::table('job_events')->find($placed['event']);
+            $resolutionEvent = DB::table('job_events')->find($resolved);
+            $hold = DB::table('job_holds')->find($placed['hold']);
+            $resolution = DB::table('job_hold_resolutions')->where('event_id', $resolved)->first();
+            // The columns keep whole seconds, so "now" is judged to within a couple of seconds of the database clock, never to the writer's value.
+            foreach ([$holdEvent->recorded_at, $resolutionEvent->recorded_at, $hold->effective_from, $resolution->resolved_effective_at] as $stored) {
+                $distance = (float) DB::selectOne('select abs(extract(epoch from (clock_timestamp() - ?::timestamptz))) as d', [$stored])->d;
+                $this->assertLessThan(3.0, $distance, "{$label}: stored time {$stored} is the database clock's, not the writer's (window {$before} .. {$after})");
+            }
+            $this->assertSame($holdEvent->recorded_at, $hold->effective_from, "{$label}: the hold takes effect at its event's time");
+            $this->assertSame($holdEvent->recorded_at, $hold->recorded_at);
+            $this->assertSame($resolutionEvent->recorded_at, $resolution->resolved_effective_at, "{$label}: the resolution takes effect at its event's time");
+            $this->assertTrue($resolution->resolved_effective_at >= $hold->effective_from, "{$label}: a resolution is never earlier than its hold");
+        }
+        // Time never runs backwards along the chain.
+        $times = DB::table('job_events')->where('job_id', $job)->orderBy('sequence')->pluck('recorded_at')->all();
+        $sorted = $times;
+        sort($sorted);
+        $this->assertSame($sorted, $times);
+        // Receipts and assignment children carry server time too.
+        $this->assertSame(0, DB::table('job_operation_receipts')->where('recorded_at', '<', '2025-01-01')->count());
+        $this->assertSame(0, DB::table('job_events')->where('recorded_at', '>', now()->addMinute())->count());
     }
 
     public function test_each_lifecycle_event_has_exactly_its_own_child_and_a_receipt_from_its_actor(): void

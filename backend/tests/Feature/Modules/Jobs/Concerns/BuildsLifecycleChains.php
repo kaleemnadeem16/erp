@@ -19,6 +19,7 @@ trait BuildsLifecycleChains
         return DB::connection();
     }
 
+    /** A fixed instant for rows whose time the database is expected to replace; it must never survive into the stored row. */
     protected function at(int $minutes): string
     {
         return Carbon::parse('2026-10-27 09:00:00', 'UTC')->addMinutes($minutes)->format('Y-m-d H:i:s').'+00';
@@ -53,7 +54,7 @@ trait BuildsLifecycleChains
 
         return $this->conn()->table('job_events')->insertGetId(['company_id' => $last->company_id, 'job_id' => $job, 'sequence' => $last->sequence + 1, 'operation' => $operation,
             'from_state' => $last->to_state, 'to_state' => $operation === 'START' ? 'ACTIVE' : $last->to_state, 'prior_generation' => $last->next_generation,
-            'next_generation' => $last->next_generation + 1, 'occurrence_precision' => 'EXACT', 'recorded_at' => $this->at($last->sequence + 1), 'actor_id' => $this->actorOf($last->company_id),
+            'next_generation' => $last->next_generation + 1, 'occurrence_precision' => 'EXACT', 'actor_id' => $this->actorOf($last->company_id),
             'reason' => 'because', 'evidence_version' => 1, 'command_identity' => (string) Str::uuid(), 'semantic_intent_hash' => hash('sha256', (string) Str::uuid()), ...$over]);
     }
 

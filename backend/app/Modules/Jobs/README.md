@@ -19,7 +19,10 @@ It is eight tables and their models (four from SP0b, four from J1-F1). **Nothing
   predecessor, the head against the latest event, exactly one child per ASSIGN/HOLD/RESOLVE_HOLD (none for START), a receipt from each command's own actor, START only with a
   recorded responsibility and no unresolved hold, and an operation allowlist (RELEASE, ASSIGN, HOLD, RESOLVE_HOLD, START; completion, termination and closeout are refused).
   Writers take the Job head lock first (`job_lifecycle_evidence_guard_v1`), so concurrent writers serialise. The head's company, id and code are fixed once it has evidence.
-  Holds and their resolutions are effective at their event's recorded server time; ASSIGN and a further HOLD remain possible while a hold is unresolved (only START is blocked).
+  A hold blocks ordinary mutation: START and ASSIGN are refused while any earlier hold is unresolved; only a further HOLD and a named RESOLVE_HOLD are exceptions.
+  Lifecycle time is the database server's: the event's `recorded_at` is `clock_timestamp()` read inside `job_lifecycle_evidence_guard_v1` after the head lock is held, a hold's
+  `effective_from` and a resolution's `resolved_effective_at` are taken from their event, and receipts take the server clock; any value a writer supplies is discarded
+  (the columns keep whole seconds). `occurred_at` stays the writer's claim, with its stated precision.
 - Installing checks that stored SP0b evidence already satisfies these rules and aborts, changing nothing, if it does not. `down()` locks the tables, then refuses while any new
   table has a row or any event carries a command identity.
 - `Support\ReleasedServiceInput` and `ReleasedServiceValidator`: a typed value object and a pure shape check. They are not an entry point.

@@ -205,4 +205,42 @@ class JobLifecycleCommitTest extends TestCase
         $this->sql('life_b', 'ROLLBACK');
         $this->assertSame(1, DB::table('job_holds')->count());
     }
+
+    public function test_a_committed_hold_and_resolution_carry_database_time_whatever_the_writer_supplied(): void
+    {
+        $job = $this->committedAssignedJob();
+        $this->sql('life_a', 'BEGIN');
+        $placed = $this->as('life_a', fn () => $this->placeHold($job, ['recorded_at' => '1999-01-01 00:00:00+00'], ['effective_from' => '2099-01-01 00:00:00+00', 'recorded_at' => '1999-01-01 00:00:00+00']));
+        $this->sql('life_a', 'COMMIT');
+        $this->sql('life_b', 'BEGIN');
+        $resolved = $this->as('life_b', fn () => $this->resolveHold($job, $placed['hold'], ['recorded_at' => '2099-01-01 00:00:00+00'], ['resolved_effective_at' => '1999-01-01 00:00:00+00']));
+        $this->sql('life_b', 'COMMIT');
+
+        $hold = DB::table('job_holds')->find($placed['hold']);
+        $resolution = DB::table('job_hold_resolutions')->where('event_id', $resolved)->first();
+        foreach ([DB::table('job_events')->find($placed['event'])->recorded_at, $hold->effective_from, $resolution->resolved_effective_at, DB::table('job_events')->find($resolved)->recorded_at] as $stored) {
+            $distance = (float) DB::selectOne('select abs(extract(epoch from (clock_timestamp() - ?::timestamptz))) as d', [$stored])->d;
+            $this->assertLessThan(60.0, $distance, "the committed time {$stored} is the server's, not the writer's 1999 or 2099");
+        }
+        $this->assertTrue($resolution->resolved_effective_at >= $hold->effective_from);
+    }
+
+    public function test_responsibility_cannot_change_over_an_unresolved_hold_at_commit(): void
+    {
+        $job = $this->committedAssignedJob();
+        $this->sql('life_a', 'BEGIN');
+        $this->as('life_a', fn () => $this->placeHold($job));
+        $this->sql('life_a', 'COMMIT');
+
+        $this->sql('life_b', 'BEGIN');
+        try {
+            $this->as('life_b', fn () => $this->assign($job, $this->user->id));
+            $this->sql('life_b', 'COMMIT');
+            $this->fail('An ASSIGN over an unresolved hold must be refused at COMMIT.');
+        } catch (QueryException $e) {
+            $this->assertStringContainsString('unresolved hold and cannot assign', $e->getMessage());
+            $this->sql('life_b', 'ROLLBACK');
+        }
+        $this->assertSame(1, DB::table('job_assignment_events')->count());
+    }
 }

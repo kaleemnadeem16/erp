@@ -175,6 +175,11 @@ class JobLifecycleMigrationTest extends TestCase
             'a history that does not start at 1' => function () use ($head, $event): void {
                 $event($head('GAP'), ['sequence' => 2]);
             },
+            'a repeated release (independent review finding)' => function () use ($head, $event): void {
+                $job = $head('REPEATED', 'RELEASED', 2);
+                $event($job);
+                $event($job, ['sequence' => 2, 'operation' => 'RELEASE', 'from_state' => 'RELEASED', 'to_state' => 'RELEASED', 'prior_generation' => 1, 'next_generation' => 2]);
+            },
             'an event outside release-only history' => function () use ($head, $event): void {
                 $job = $head('ODD');
                 $event($job);
