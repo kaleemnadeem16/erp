@@ -17,6 +17,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
@@ -49,7 +50,7 @@ class SalesDevPreviewTest extends TestCase
         $this->assertFalse(app(SalesDutyManifest::class)->isActive(self::PREPARE));
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('nonLocalEnvironments')]
+    #[DataProvider('nonLocalEnvironments')]
     public function test_the_flag_is_ignored_and_reported_outside_a_local_environment(string $environment): void
     {
         Log::spy();
@@ -85,7 +86,8 @@ class SalesDevPreviewTest extends TestCase
         $registry = app(PermissionRegistry::class);
         $this->assertContains(self::VIEW, $registry->all());
         $this->assertContains(self::PREPARE, $registry->all());
-        $this->assertArrayHasKey(self::PREPARE, $registry->notAutomaticallyGranted(), 'Never part of an automatic grant.');
+        $this->assertContains(self::PREPARE, $registry->notAutomaticallyGranted(), 'Never part of an automatic grant.');
+        $this->assertContains(self::VIEW, $registry->notAutomaticallyGranted(), 'Never part of an automatic grant.');
     }
 
     public function test_activation_by_the_manifest_helper_is_limited_to_staged_duties(): void
@@ -111,7 +113,6 @@ class SalesDevPreviewTest extends TestCase
             $this->artisan('sales:dev-grant-quotation', ['email' => $user->email])->assertFailed();
         }
 
-        $this->assertFalse($user->fresh()->hasPermissionTo(self::PREPARE, 'web') ?? false);
         $this->assertSame([], $user->fresh()->getAllPermissions()->pluck('name')->all());
     }
 
