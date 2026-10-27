@@ -10,6 +10,8 @@ import { formatDate } from "../../lib/format-date";
 import {
   describeLoadError,
   getApiErrorMessage,
+  getApiReasonCode,
+  isTransientFailure,
   isApiError,
 } from "../../lib/api-errors";
 import type {
@@ -28,7 +30,27 @@ const REASON_LABELS: Record<string, string> = {
     "The rounding policy has changed; review the entered prices.",
   CHOICE_BASELINE_MISSING: "Choose a baseline for each set of alternatives.",
   NO_LINES: "Add quotation lines before reviewing totals.",
+  NET_NOT_COMPUTED: "The line net has not been calculated.",
+  UNIT_PRICE_NO_LONGER_FITS:
+    "Review unit prices that exceed the current precision policy.",
+  SOURCE_NOT_FOUND: "The source Item is unavailable or archived.",
+  SOURCE_INCOMPATIBLE: "The source is not compatible with this quotation line.",
+  SOURCE_KIND_UNSUPPORTED:
+    "This source type is not supported for quotation pricing.",
+  SOURCE_EVIDENCE_NOT_AUTHORISED:
+    "The source evidence is not available for this workflow.",
+  SELLING_UNIT_UNSUPPORTED:
+    "Use the Item's supported stock unit for this quotation line.",
+  PRICE_BASIS_INCOMPATIBLE:
+    "The price basis does not match this quotation line.",
+  NO_ELIGIBLE_PRICE: "No eligible price is available for this line.",
+  PRICING_RULE_CONFLICT: "Conflicting pricing rules need review.",
+  PARTY_NOT_FOUND: "The recipient is unavailable or archived.",
+  INVALID_INPUT: "The quotation inputs need correction.",
 };
+function unitReference(id: number | null): string {
+  return id === null ? "Unit not specified" : `Unit reference #${id}`;
+}
 function label(value: string): string {
   const text = value.toLowerCase().replaceAll("_", " ");
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -55,7 +77,7 @@ export function QuotationMoney({
   return (
     <span className="tabular-nums">
       {value.certainty === "PARTIAL"
-        ? `Partial — known amount ${value.known_amount}`
+        ? `Partial — at least ${value.known_amount}`
         : value.amount}{" "}
       · {unit}
     </span>
@@ -71,6 +93,11 @@ export function QuotationFailure({
 }) {
   const status = isApiError(error) ? error.status : null;
   const missing = status === 404;
+  const canRefreshReview =
+    status === 422 && getApiReasonCode(error) === "QUOTATION_DRAFT_CHANGED";
+  const canRetry =
+    canRefreshReview ||
+    (!(error instanceof ZodError) && isTransientFailure(error));
   return (
     <div
       role="alert"
@@ -86,12 +113,12 @@ export function QuotationFailure({
             ? (getApiErrorMessage(error) ??
               "The quotation needs to be reviewed again.")
             : error instanceof ZodError
-              ? "The server returned an unsupported quotation response. Refresh or contact support."
+              ? "The server returned an unsupported quotation response. Contact support if this continues."
               : describeLoadError(error)}
       </p>
-      {retry && status !== 403 && !missing && (
+      {retry && canRetry && (
         <Button variant="outline" onClick={retry}>
-          {status === 422 ? "Refresh review" : "Try again"}
+          {canRefreshReview ? "Refresh review" : "Try again"}
         </Button>
       )}
     </div>
@@ -145,12 +172,27 @@ export function QuotationMetadata({ draft }: { draft: QuotationDraft }) {
   );
 }
 
+function reasonLabel(reason: string): string {
+  const [code, reference] = reason.split(":");
+  if (
+    code === "CHOICE_BASELINE_MISSING" &&
+    reference &&
+    /^[1-9]\d*$/.test(reference)
+  ) {
+    return `Choose a baseline for choice group #${reference}.`;
+  }
+  return (
+    REASON_LABELS[code ?? ""] ??
+    "A quotation check needs attention. Contact support if it persists."
+  );
+}
+
 function Reasons({ values }: { values: string[] }) {
   return values.length ? (
     <ul className="list-inside list-disc text-sm">
       {values.map((reason, index) => (
         <li key={`${reason}-${index}`} className="break-words">
-          {REASON_LABELS[reason] ?? label(reason)}
+          {reasonLabel(reason)}
         </li>
       ))}
     </ul>
@@ -220,17 +262,16 @@ export function QuotationLines({ preview }: { preview: QuotationPreview }) {
               </DetailField>
               <DetailField label="Offered quantity">
                 {line.offered.quantity} ·{" "}
-                {line.manual_measure ??
-                  `Unit reference #${line.offered.uom_id}`}
+                {line.manual_measure ?? unitReference(line.offered.uom_id)}
               </DetailField>
               <DetailField label="Priced quantity">
                 {line.priced
-                  ? `${line.priced.quantity} · Unit reference #${line.priced.uom_id}`
+                  ? `${line.priced.quantity} · ${unitReference(line.priced.uom_id)}`
                   : "Not resolved"}
               </DetailField>
               <DetailField label="Stock quantity">
                 {line.stock
-                  ? `${line.stock.quantity} · Unit reference #${line.stock.uom_id} · Conversion ${line.stock.conversion_version}`
+                  ? `${line.stock.quantity} · ${unitReference(line.stock.uom_id)}${line.stock.conversion_version === null ? "" : ` · Conversion ${line.stock.conversion_version}`}`
                   : "Not applicable"}
               </DetailField>
               <DetailField label="Unit price">
@@ -247,8 +288,10 @@ export function QuotationLines({ preview }: { preview: QuotationPreview }) {
               </DetailField>
               {line.fx && (
                 <DetailField label="Pinned exchange evidence">
-                  {line.fx.current} · {line.base_unit_price} in base currency
-                  reference #{line.fx.base_currency_id}
+                  {label(line.fx.current)} ·{" "}
+                  {line.base_unit_price === null
+                    ? "Base unit price not available"
+                    : `${line.base_unit_price} in base currency reference #${line.fx.base_currency_id}`}
                 </DetailField>
               )}
               {line.settlement && (

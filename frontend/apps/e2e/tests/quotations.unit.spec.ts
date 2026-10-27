@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readFileSync, readdirSync } from "node:fs";
@@ -69,6 +69,46 @@ const {
 test.afterAll(() => {
   unlinkSync(bundle);
 });
+const browserFixture = buildSync({
+  entryPoints: [
+    new URL("./fixtures/quotation-record.ts", import.meta.url).pathname,
+  ],
+  bundle: true,
+  platform: "browser",
+  format: "iife",
+  jsx: "automatic",
+  write: false,
+  define: { "process.env.NODE_ENV": JSON.stringify("test") },
+}).outputFiles[0]!.text;
+
+async function mountRecord(
+  page: Page,
+  path: string,
+  reply: (url: URL, attempt: number) => { status: number; body: unknown },
+) {
+  const requests: string[] = [];
+  await page.route("http://quotation.test/**", async (route) => {
+    const url = new URL(route.request().url());
+    if (url.pathname.startsWith("/api/")) {
+      requests.push(url.pathname);
+      const response = reply(url, requests.length);
+      await route.fulfill({
+        status: response.status,
+        contentType: "application/json",
+        body: JSON.stringify(response.body),
+      });
+    } else {
+      await route.fulfill({
+        contentType: "text/html",
+        body: '<!doctype html><html lang="en"><head><title>Quotation fixture</title></head><body><div id="root"></div></body></html>',
+      });
+    }
+  });
+  await page.goto(`http://quotation.test${path}`);
+  await page.addScriptTag({ content: browserFixture });
+  return requests;
+}
+
 import {
   configureCoreApi,
   setAuthToken,
@@ -288,7 +328,7 @@ test("financial display keeps complete zero, partial known amounts and unknown s
     );
   expect(render(money())).toContain("0.0000");
   expect(render(money("PARTIAL", null, "999999999999999.9999"))).toContain(
-    "Partial — known amount 999999999999999.9999",
+    "Partial — at least 999999999999999.9999",
   );
   expect(render(money("UNKNOWN", null, null))).toContain("Unknown");
   expect(render(money("UNKNOWN", null, null))).not.toContain("0.0000");
@@ -311,15 +351,21 @@ test("financial display keeps complete zero, partial known amounts and unknown s
     }),
   );
   expect(metadata).not.toContain("secret");
+  expect(() =>
+    readPreview({
+      ...preview,
+      lines: [{ ...preview.lines[0], unit_price: "-1.0000" }],
+    }),
+  ).toThrow();
 });
 
 test("404 never echoes revealing backend text; stale evidence offers review refresh", () => {
-  const render = (status: number) =>
+  const render = (status: number, code?: string) =>
     renderToStaticMarkup(
       createElement(QuotationFailure, {
         error: Object.assign(new Error(), {
           status,
-          body: { message: "Foreign company secret" },
+          body: { message: "Foreign company secret", reason_code: code },
         }),
         retry: () => {},
       }),
@@ -327,7 +373,15 @@ test("404 never echoes revealing backend text; stale evidence offers review refr
   expect(render(404)).toContain("This quotation is not available.");
   expect(render(404)).not.toContain("Foreign company");
   expect(render(404)).not.toContain("Try again");
-  expect(render(422)).toContain("Refresh review");
+  expect(render(422, "QUOTATION_DRAFT_CHANGED")).toContain("Refresh review");
+  for (const code of [
+    undefined,
+    "RECIPIENT_REQUIRED",
+    "QUOTATION_NOT_EDITABLE",
+    "PRICING_DATE_REQUIRED",
+  ]) {
+    expect(render(422, code)).not.toContain("<button");
+  }
   expect(render(403)).not.toContain("Try again");
   expect(render(503)).toContain("Try again");
 });
@@ -372,27 +426,165 @@ test("empty and manual scope remain explicit without invented financial facts", 
   expect(manualHtml).not.toContain("#null");
 });
 
-test("review refusal recovery is keyboard reachable", async ({ page }) => {
-  const html = renderToStaticMarkup(
-    createElement(QuotationFailure, {
-      error: Object.assign(new Error(), {
-        status: 422,
-        body: {
-          message: "The draft changed; review it again.",
-          reason_code: "QUOTATION_DRAFT_CHANGED",
-        },
-      }),
-      retry: () => {},
-    }),
+test("keyboard Refresh review refetches through the mounted generated hook", async ({
+  page,
+}) => {
+  const requests = await mountRecord(
+    page,
+    "/quotations/12/review?fixtureDuty=prepare&context=retained",
+    (_url, attempt) =>
+      attempt === 1
+        ? {
+            status: 422,
+            body: {
+              message: "The draft changed; review it again.",
+              reason_code: "QUOTATION_DRAFT_CHANGED",
+            },
+          }
+        : { status: 200, body: { data: preview } },
   );
-  await page.setContent(`<main><h1>Quotation review</h1>${html}</main>`);
   await expect(page.getByRole("alert")).toContainText(
     "The draft changed; review it again.",
   );
+  expect(requests).toEqual(["/api/v1/quotations/12/preview"]);
+  // Follow actual keyboard order: work-area link, then the retry button.
+  await page.keyboard.press("Tab");
+  await expect(
+    page.getByRole("link", { name: "Back to work area" }),
+  ).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(
     page.getByRole("button", { name: "Refresh review" }),
   ).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(
+    page.getByRole("heading", { name: "Draft review", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("alert")).toHaveCount(0);
+  expect(requests).toEqual([
+    "/api/v1/quotations/12/preview",
+    "/api/v1/quotations/12/preview",
+  ]);
+  await expect(
+    page.getByRole("link", { name: "Quotation details" }),
+  ).toHaveCount(0);
+});
+
+test("mounted invalid /quotations/abc does not issue a request", async ({
+  page,
+}) => {
+  const requests = await mountRecord(page, "/quotations/abc", () => ({
+    status: 500,
+    body: {},
+  }));
+  await expect(
+    page.getByRole("heading", { name: "Quotation unavailable" }),
+  ).toBeVisible();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  expect(requests).toEqual([]);
+});
+
+test("mounted metadata loads no financial preview and preserves link context", async ({
+  page,
+}) => {
+  const requests = await mountRecord(
+    page,
+    "/quotations/12?context=retained",
+    () => ({ status: 200, body: { data: draft } }),
+  );
+  await expect(
+    page.getByRole("heading", { name: "Quotation", exact: true }),
+  ).toBeVisible();
+  expect(requests).toEqual(["/api/v1/quotations/12"]);
+  await expect(
+    page.getByRole("link", { name: "Review quotation" }),
+  ).toHaveAttribute("href", "/quotations/12/review?context=retained");
+});
+
+for (const [reason, message] of [
+  ["RECIPIENT_REQUIRED", "A preview needs the recipient Party."],
+  ["QUOTATION_NOT_EDITABLE", "Only a draft quotation can be previewed."],
+])
+  test(`mounted ${reason} refuses without a futile refresh`, async ({
+    page,
+  }) => {
+    const requests = await mountRecord(page, "/quotations/12/review", () => ({
+      status: 422,
+      body: { message, reason_code: reason },
+    }));
+    await expect(page.getByRole("alert")).toContainText(message!);
+    await expect(
+      page.getByRole("button", { name: "Refresh review" }),
+    ).toHaveCount(0);
+    expect(requests).toEqual(["/api/v1/quotations/12/preview"]);
+  });
+
+test("malformed preview is rejected by the mounted hook without rendering extras", async ({
+  page,
+}) => {
+  const requests = await mountRecord(page, "/quotations/12/review", () => ({
+    status: 200,
+    body: {
+      data: { ...preview, authority: "UNSUPPORTED", cost: "PRIVATE_EVIDENCE" },
+    },
+  }));
+  await expect(page.getByRole("alert")).toContainText(
+    "unsupported quotation response",
+  );
+  await expect(page.getByText("PRIVATE_EVIDENCE")).toHaveCount(0);
+  expect(requests).toEqual(["/api/v1/quotations/12/preview"]);
+});
+
+// Static fixtures isolate the display boundary; sensitive extras are stripped by zod
+// before any component sees them, including extras nested on preview lines/totals.
+test("preview lines and totals omit protected extras and label missing evidence", () => {
+  const parsed = readPreview({
+    ...preview,
+    issues: ["CHOICE_BASELINE_MISSING:7", "FUTURE_INTERNAL_CHECK:opaque"],
+    lines: [
+      {
+        ...preview.lines[0],
+        cost: "SECRET_COST",
+        margin: "SECRET_MARGIN",
+        base_unit_price: null,
+        stock: { ...preview.lines[0]!.stock, conversion_version: null },
+        issues: ["SOURCE_NOT_FOUND"],
+        net: { ...money(), margin: "SECRET_NET_MARGIN" },
+      },
+    ],
+    totals: {
+      cost: "SECRET_TOTAL_COST",
+      net: {
+        ...money("PARTIAL", null, "5.0000"),
+        margin: "SECRET_TOTAL_MARGIN",
+      },
+      optional_net: null,
+    },
+  });
+  const html = renderToStaticMarkup(
+    createElement(QuotationReview, { preview: parsed }),
+  );
+  for (const secret of [
+    "SECRET_COST",
+    "SECRET_MARGIN",
+    "SECRET_NET_MARGIN",
+    "SECRET_TOTAL_COST",
+    "SECRET_TOTAL_MARGIN",
+    "FUTURE_INTERNAL_CHECK",
+    "opaque",
+  ])
+    expect(html).not.toContain(secret);
+  expect(html).not.toContain("Conversion ");
+  expect(html).not.toContain("null in base currency");
+  expect(html).toContain("Base unit price not available");
+  expect(html).toContain("Choose a baseline for choice group #7.");
+  expect(html).toContain("The source Item is unavailable or archived.");
+  expect(html).toContain("Partial — at least 5.0000");
 });
 
 // Standalone browser fixtures: only compiled CSS and server-rendered components;
@@ -415,7 +607,7 @@ for (const theme of ["light", "dark"])
       page.getByRole("heading", { name: "Quotation lines" }),
     ).toBeVisible();
     await expect(
-      page.getByText("Partial — known amount 999999999999999.9999", {
+      page.getByText("Partial — at least 999999999999999.9999", {
         exact: false,
       }),
     ).toBeVisible();

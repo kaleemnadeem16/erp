@@ -169,20 +169,46 @@ company/record scope is not inferred by the client. No permissions or grants are
 | Pricing, tax-estimate, local validity dates | Details | Shared date formatting; absent dates show placeholder |
 | Preview identity, generation, pricing date, authority | Review heading/summary | Independent preview GET; explicitly read-only, never adopted as authority |
 | Lines: scope/baseline/choice, description/section, source, offered/priced/stock units and quantities | Responsive line cards | Quantities remain distinct; no page-wide horizontal table; empty lines explicit |
-| Entered/base unit prices, settled line net, optional/base totals | Line cards/totals | Decimal strings only; zero is known, UNKNOWN never zero, PARTIAL shows known amount separately; currency reference always visible |
+| Entered/base unit prices, settled line net, optional/base totals | Line cards/totals | Decimal strings only; zero is known, UNKNOWN never zero, PARTIAL shows the known lower bound as “at least”; currency reference always visible |
 | Settlement computed amount/fraction/residual, FX freshness | Line evidence | Server evidence only; opaque FX fingerprints/routes/ratios remain internal metadata, not operator controls |
 | Rounding policy and stale-policy revalidation | Review sections | Policy basis/scale/mode; review reasons and affected line references |
 | Tax, total including tax, controls, issue readiness/blockers/issues | Review summary | Unknown tax, unconfigured controls and unavailable issue remain explicit; no issue button |
-| Loading, 403, non-disclosing 404, 422, network/server/malformed response | Shared failure/loading components | 404 never repeats response details; 422 preserves server message and offers refresh; retry transient failures only |
+| Loading, 403, non-disclosing 404, 422, network/server/malformed response | Shared failure/loading components | 404 never repeats response details; 422 preserves the server message; Refresh review is offered only for QUOTATION_DRAFT_CHANGED. Other 422s need input/state correction; transient request failures offer retry |
 | Filters, sorts, pagination, bulk, print/export, history | Deferred/not applicable | No list endpoint (#55), no history projection or output adapter in this slice; do not fabricate |
 | POST/PATCH, 409 request-key reuse, Idempotency-Key, expected_generation | Slice 2 | No mutations here; dependent on #53 integration and a fresh branch |
 
-Acceptance: independent capability combinations, disabled gate despite supplied grants,
-invalid revision without requests, generated GET URLs, malformed financial response rejection,
-complete/partial/unknown amounts, long descriptions at phone width, light/dark, keyboard
-links/retry, and server refusal recovery. The normal route remains inaccessible during STAGED;
-fixture-only display tests do not activate real permissions. Closing/navigating detail/review
-preserves the query string; the work-area link provides a safe fallback with no invented list.
+Automated evidence is deliberately split:
+
+- Policy and server-render checks cover independent capability combinations and denial
+  despite supplied grants while the production gate stays false. They do not activate routes.
+- A standalone browser fixture mounts the real internal `QuotationRecord` renderer with
+  React Query, MemoryRouter and intercepted generated-client requests. The stale-preview
+  test tabs through the actual links/button, presses Enter on Refresh review, asserts a
+  second preview GET, then asserts the review replaces the error. `/quotations/abc` is
+  mounted and checked for zero API requests. Metadata requests no financial preview;
+  review navigation retains the query string. Nonrecoverable recipient/noneditable 422s
+  offer no refresh; malformed previews render the safe unsupported-response error.
+- Static display-boundary fixtures check complete zero/partial/unknown values, empty/manual
+  lines, missing conversion/base-price evidence and rejection of negative unit prices;
+  protected extra cost/margin fields nested on preview lines and totals are not rendered.
+  The 404 fixture checks non-disclosing text, not a live hidden-record lookup.
+- Separate 390px light/dark fixtures inspect static display markup with the production CSS:
+  long descriptions, no horizontal page overflow and no serious/critical axe findings.
+  These are layout checks, not an enabled production-route user journey.
+
+These isolated tests use no running application or database. From the worktree, first run
+`cd frontend/apps/main && npx vite build`, then from the repository root run
+`docker/frontend/run-e2e.sh --project=unit`. The isolated project contains both pure-function
+checks and browser fixtures; it needs Chromium and the built CSS. The renderer fixture seam
+is not exported through the UI package barrel; production entry remains the guarded screen.
+
+Before activation: independently verify the live enabled routes, backend entitlement/scope
+and real hidden/missing-record 404 parity after QA1–QA3; supply entitled human labels for
+Party/currency/unit/creator references; apply the separately reviewed holder/activation plan.
+This slice does not claim those checks. Current non-negative monetary parsing follows
+QL1a's `StorageAmount` contract (negative amounts refused); signed settlement residuals are
+separate evidence and remain signed strings. Credits would require a new server/UI contract.
+The work-area link provides a safe fallback with no invented list.
 
 ## Related
 

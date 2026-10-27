@@ -37,7 +37,8 @@ export function QuotationDetailScreen({
   );
 }
 
-function QuotationRecord({
+/** Internal renderer below the production gate; exported for isolated fixtures, not the package barrel. */
+export function QuotationRecord({
   review,
   mayDetail,
   mayReview,
@@ -86,7 +87,10 @@ function QuotationRecord({
                 Review quotation
               </Link>
             )}
-            <Link className="ui-link-action inline-flex min-h-11 items-center" to="/">
+            <Link
+              className="ui-link-action inline-flex min-h-11 items-center"
+              to="/"
+            >
               Back to work area
             </Link>
           </div>
@@ -102,7 +106,7 @@ function QuotationRecord({
           }}
         />
       ) : query.isPending ? (
-        <div role="status" aria-label="Loading quotation">
+        <div role="status">
           <Skeleton className="h-48 w-full" />
           <span className="sr-only">Loading quotation…</span>
         </div>
