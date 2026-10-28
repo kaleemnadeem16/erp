@@ -13,7 +13,7 @@ Governed by [Tax](../../../../docs/domain/tax.md), ADRs 0056/0119 and the accept
 ## Does not own
 
 Source-master classification persistence/adapters, quotation snapshots or Sales integration,
-composition/inclusive normalisation/withholding (FR3), FR4 settlement, Finance postings, jurisdiction law or public setup.
+inclusive/compound/withholding execution beyond the BASIC internal calculation, FR4 settlement, Finance postings, jurisdiction law or public setup.
 
 ## Key actions
 
@@ -50,8 +50,8 @@ Graph validation supports structurally valid percent/fixed-line/fixed-document/p
 NET cannot have predecessors; TAX_AMOUNT/NET_PLUS_COMPONENTS require them. Document-to-line dependencies and mismatched assessment
 classification/jurisdiction/nature or currency refuse. Named dependency reachability uses bounded finite-set UNION, not display order.
 No configured group is automatically used. A known source classification returns SUPPORTED **only for classification**;
-missing facts return UNKNOWN, ambiguous BOTH nature returns UNSUPPORTED. Consumption of Party exemptions, effective group selection and all
-monetary results remain unknown/unimplemented. Callers must not interpret classification support as executable tax support.
+missing facts return UNKNOWN, ambiguous BOTH nature returns UNSUPPORTED. FR3 adds a separate guarded context resolver and BASIC calculation;
+its default consumer refuses access and no operational Sales adapter is delivered. Callers must not interpret classification support as executable tax support.
 
 ## Protected profile evidence
 
