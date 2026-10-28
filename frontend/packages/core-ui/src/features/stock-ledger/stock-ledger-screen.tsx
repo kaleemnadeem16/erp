@@ -68,7 +68,8 @@ export function StockLedgerScreen() {
       if (searchInput !== (query.filters.search ?? '')) query.setFilter('search', searchInput || undefined);
     }, 300);
     return () => clearTimeout(handle);
-  }, [searchInput, query]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
 
   // Only the filtered item is needed (for the filter chip); it is resolved by id.
   const items = useItemsById<ItemResource>(query.filters.item_id ? [Number(query.filters.item_id)] : [], []);
@@ -171,7 +172,7 @@ export function StockLedgerScreen() {
           />
           <Input
             className="h-10 pl-9 pr-9"
-            placeholder="Search item code or name…"
+            placeholder="Search item…"
             aria-label="Search items"
             value={searchInput}
             onChange={(event) => setSearchInput(event.target.value)}
