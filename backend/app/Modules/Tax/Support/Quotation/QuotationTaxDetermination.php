@@ -21,7 +21,11 @@ final readonly class QuotationTaxDetermination implements JsonSerializable
             (in_array($reason, ['LINE_NATURE_AMBIGUOUS', 'TAX_CALCULATION_UNSUPPORTED'], true) ? TaxSupport::Unsupported : TaxSupport::Unknown);
     }
 
-    /** Safe consumer projection excludes rule/rate/profile identities and protected grounds. @return array<string, mixed> */
+    /**
+     * Safe consumer projection excludes rule/rate/profile identities and protected grounds.
+     *
+     * @return array<string, mixed>
+     */
     public function jsonSerialize(): array
     {
         return ['support' => $this->support->value, 'line_reference' => $this->lineReference, 'disposition' => $this->disposition->value, 'reason' => $this->disposition === TaxDisposition::Unknown ? 'TAX_CONTEXT_UNKNOWN' : 'TAX_DETERMINED',

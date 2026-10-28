@@ -12,7 +12,10 @@ use JsonSerializable;
 /** Immutable computed evidence. No legal/issue authority, profile facts, rates or base-currency conversion is implied. */
 final readonly class QuotationTaxCalculation implements JsonSerializable
 {
-    /** @param array<string,mixed> $safe @param array<string,mixed> $internal */
+    /**
+     * @param array<string, mixed> $safe
+     * @param array<string, mixed> $internal
+     */
     public function __construct(private array $safe, private array $internal) {}
 
     /** @return array<string,mixed> */
@@ -21,7 +24,11 @@ final readonly class QuotationTaxCalculation implements JsonSerializable
         return $this->safe;
     }
 
-    /** Server-owned snapshot consumer only. @return array<string,mixed> */
+    /**
+     * Server-owned snapshot consumer only.
+     *
+     * @return array<string, mixed>
+     */
     public function internalEvidence(): array
     {
         return $this->internal;

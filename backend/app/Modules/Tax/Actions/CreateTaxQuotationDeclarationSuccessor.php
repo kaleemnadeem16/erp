@@ -19,7 +19,7 @@ final class CreateTaxQuotationDeclarationSuccessor
 {
     public function __construct(private readonly TaxMutation $mutation) {}
 
-    /** @param list<array<string, int|string|bool|null>> $rules */
+    /** @param array<array-key, array<string, int|string|bool|null>> $rules */
     public function __invoke(User $actor, string $code, string $jurisdiction, ?int $predecessorId, EffectivePeriod $period,
         string $roundingMode, array $rules, string $reason, string $operationKey, int $expectedGeneration): int
     {
