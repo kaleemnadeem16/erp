@@ -248,7 +248,8 @@ class JobsFoundationTest extends TestCase
             }
             $this->assertDoesNotMatchRegularExpression('/->can\(|authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, basename($file).' must not guard, route or register anything');
         }
-        $this->assertDirectoryDoesNotExist(base_path('app/Modules/Jobs/Actions'));
+        // The four lifecycle Actions (issue #62) are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
+        $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ResolveJobHold.php', 'StartJob.php'])));
         $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
     }
 
