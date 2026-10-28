@@ -32,7 +32,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('opportunities/{opportunity}/attribution-members', [OpportunityController::class, 'attributionMembers'])->whereNumber('opportunity')->name('opportunities.attribution-members.index');
     Route::post('opportunities/{opportunity}/notes', [OpportunityController::class, 'addNote'])->whereNumber('opportunity')->name('opportunities.notes.store');
 
+    Route::post('quotations', [QuotationController::class, 'store'])->name('quotations.store');
     Route::get('quotations/{revision}', [QuotationController::class, 'show'])->whereNumber('revision')->name('quotations.show');
+    Route::patch('quotations/{revision}', [QuotationController::class, 'update'])->whereNumber('revision')->name('quotations.update');
     Route::get('quotations/{revision}/preview', [QuotationController::class, 'preview'])->whereNumber('revision')->name('quotations.preview');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');

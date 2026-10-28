@@ -257,16 +257,21 @@ class SalesDutyRegistrationTest extends TestCase
     {
         $dormant = array_map(fn (SalesDuty $duty): string => $duty->name, array_filter(SalesDutyManifest::shipped()->all(), fn (SalesDuty $duty): bool => ! $duty->isActive()));
 
-        // The only quotation routes are the two read-only QL1b-1 adapters; their duties are STAGED, so they refuse everyone (QuotationDraftReviewApiTest).
-        $readAdapters = ['api/v1/quotations/{revision}', 'api/v1/quotations/{revision}/preview'];
+        // The only quotation routes are the QL1b adapters: two reads and the two draft writes. Their duties are STAGED, so they refuse everyone
+        // (QuotationDraftReviewApiTest, QuotationDraftWriteApiTest). Each URI may only carry the methods listed here.
+        $adapters = [
+            'api/v1/quotations' => ['POST'],
+            'api/v1/quotations/{revision}' => ['GET', 'HEAD', 'PATCH'],
+            'api/v1/quotations/{revision}/preview' => ['GET', 'HEAD'],
+        ];
 
         foreach (Route::getRoutes() as $route) {
             $declared = implode(' ', array_merge($route->gatherMiddleware(), [$route->uri()]));
             foreach ($dormant as $name) {
                 $this->assertStringNotContainsString($name, $declared);
             }
-            if (in_array($route->uri(), $readAdapters, true)) {
-                $this->assertSame(['GET', 'HEAD'], $route->methods(), 'The quotation adapters are read-only until the write slice is authorised.');
+            if (isset($adapters[$route->uri()])) {
+                $this->assertSame([], array_diff($route->methods(), $adapters[$route->uri()]), 'A quotation adapter may only carry the methods QL1b delivers.');
 
                 continue;
             }
