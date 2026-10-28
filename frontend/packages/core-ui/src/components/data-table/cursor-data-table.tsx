@@ -1,5 +1,14 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type OnChangeFn, type SortingState, type VisibilityState } from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
+  type SortingState,
+  type VisibilityState,
+} from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
@@ -20,8 +29,11 @@ export interface CursorDataTableProps<TRow> {
   data: TRow[];
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   columnVisibility?: VisibilityState;
   onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
+  getRowId?: (row: TRow) => string;
   onRowClick?: (row: TRow) => void;
   isLoading?: boolean;
   isError?: boolean;
@@ -63,8 +75,11 @@ export function CursorDataTable<TRow>({
   data,
   sorting,
   onSortingChange,
+  rowSelection = {},
+  onRowSelectionChange,
   columnVisibility,
   onColumnVisibilityChange,
+  getRowId,
   onRowClick,
   isLoading,
   isError,
@@ -87,12 +102,15 @@ export function CursorDataTable<TRow>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility },
+    state: { sorting, columnVisibility, rowSelection },
     manualPagination: true,
     manualSorting: true,
     enableMultiSort: false,
+    enableRowSelection: !!onRowSelectionChange,
     onSortingChange,
+    onRowSelectionChange,
     onColumnVisibilityChange,
+    getRowId,
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -124,8 +142,11 @@ export function CursorDataTable<TRow>({
           columns={cardColumns}
           data={data}
           columnVisibility={columnVisibility}
+          getRowId={getRowId}
           onRowClick={onRowClick}
           rowActions={rowActions}
+          rowSelection={rowSelection}
+          onRowSelectionChange={onRowSelectionChange ? (next) => onRowSelectionChange(next) : undefined}
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}
@@ -180,6 +201,7 @@ export function CursorDataTable<TRow>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
                   // No role="button": see the identical comment in data-table.tsx —
                   // this row can carry a nested rowActions link/button, and
                   // overriding the role collapses both into one confusing stop.
