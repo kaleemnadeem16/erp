@@ -1033,3 +1033,7 @@ Integrated from source 7dbc8c326e4bbdc11a56042962333a06ea3fd8ae (owner approval 
 ## 2026-10-28 — Files superseding ADR for ADR 0137 and decision package D1-D12 (branch agent-b/files-adr, #48)
 
 Integrated from source fc83d8271b6d4ea949d941b515be3f984a0df656 (owner approval 2026-10-28); docs only: ADR 0153 (own shared file storage in a dedicated Files module) and the decisions README.
+
+## 2026-10-28 — Sales quotation record-level access design (branch agent-c/quotation-access-design, #45)
+
+Integrated from source 21ffa475bbe04d7238e16b6a020f4c41344de174 (owner approval 2026-10-28); planning only, docs only: `docs/domain/quotation-record-access-design.md`, `-storage.md`, `-comparison.md`, `docs/phases/phase-4-quotation-record-access-slices.md`.
