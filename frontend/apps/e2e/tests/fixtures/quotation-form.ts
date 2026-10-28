@@ -7,15 +7,13 @@ import { QuotationCreateForm } from "../../../../packages/core-ui/src/features/q
 import { QuotationEditForm } from "../../../../packages/core-ui/src/features/quotations/quotation-edit-screen";
 import { useAuthStore } from "../../../../packages/core-ui/src/stores/auth-store";
 configureCoreApi({ baseUrl: `${location.origin}/api` });
-useAuthStore
-  .getState()
-  .setUser({
-    id: 7,
-    name: "Test",
-    email: "test@example.invalid",
-    must_change_password: false,
-    permissions: ["sales.quotation.prepare"],
-  });
+useAuthStore.getState().setUser({
+  id: 7,
+  name: "Test",
+  email: "test@example.invalid",
+  must_change_password: false,
+  permissions: ["sales.quotation.prepare"],
+});
 const client = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });
