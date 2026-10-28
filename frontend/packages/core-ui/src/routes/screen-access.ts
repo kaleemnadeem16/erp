@@ -227,6 +227,7 @@ export function canAccessScreen(
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
     if (pathname === "/quotations") return access.detail || access.review;
+    if (pathname === "/quotations/new" || /^\/quotations\/[1-9]\d*\/edit$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*\/review$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*$/.test(pathname)) return access.detail;
     return false;

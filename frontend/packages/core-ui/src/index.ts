@@ -288,3 +288,6 @@ export { DecimalText, MoneyText } from "./components/ui/decimal-text";
 export { configureQuotationDevMode } from "./lib/quotation-dev-mode";
 export { QuotationsWorkspaceScreen } from "./features/quotations/quotations-workspace-screen";
 export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
+
+export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";
+export { QuotationEditScreen } from "./features/quotations/quotation-edit-screen";

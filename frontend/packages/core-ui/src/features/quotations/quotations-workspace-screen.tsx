@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { PageHeader } from "../../components/page/page-header";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { DetailSection } from "../../components/detail/detail-page-layout";
@@ -49,6 +49,13 @@ function OpenQuotation({
       <PageHeader
         title="Quotations"
         description="Open a quotation by its revision number."
+        actions={
+          mayPrepare ? (
+            <Link className="ui-link-action" to="/quotations/new">
+              Create draft
+            </Link>
+          ) : undefined
+        }
       />
       <DetailSection title="Open a quotation">
         <form className="col-span-full space-y-4" onSubmit={submit}>
@@ -77,6 +84,22 @@ function OpenQuotation({
           </div>
           <div className="flex flex-wrap gap-3">
             {mayView && <Button type="submit">Open details</Button>}
+            {mayPrepare && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  if (
+                    /^[1-9]\d*$/.test(revision) &&
+                    Number.isSafeInteger(Number(revision))
+                  )
+                    navigate(`/quotations/${revision}/edit`);
+                  else setError("Enter a positive whole revision number.");
+                }}
+              >
+                Edit draft
+              </Button>
+            )}
             {mayPrepare && (
               <Button
                 type={mayView ? "button" : "submit"}
