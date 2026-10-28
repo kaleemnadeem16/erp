@@ -655,21 +655,23 @@ export function StockLedgerScreen() {
       </div>
 
       {/* Hidden Quick Print Layout for Selected Rows */}
-      <div className="hidden">
-        <div ref={printSelectedRef}>
-          <PrintLayout
-            title="STOCK LEDGER (SELECTED)"
-            printedAt={new Date()}
-            recordCount={selectedMoves.length}
-            meta={[
-              ...(query.sort ? [{ label: 'Sort', value: describeSort(query.sort, columns) ?? query.sort }] : []),
-              ...activeFilterLines.map((line) => ({ label: 'Filter', value: line })),
-            ]}
-          >
-            <PrintableTable columns={columns} rows={selectedMoves} getRowKey={(move) => move.id} />
-          </PrintLayout>
+      {selectedMoves.length > 0 && (
+        <div style={{ display: 'none' }}>
+          <div ref={printSelectedRef}>
+            <PrintLayout
+              title="STOCK LEDGER (SELECTED)"
+              printedAt={new Date()}
+              recordCount={selectedMoves.length}
+              meta={[
+                ...(query.sort ? [{ label: 'Sort', value: describeSort(query.sort, columns) ?? query.sort }] : []),
+                ...activeFilterLines.map((line) => ({ label: 'Filter', value: line })),
+              ]}
+            >
+              <PrintableTable columns={columns} rows={selectedMoves} getRowKey={(move) => move.id} />
+            </PrintLayout>
+          </div>
         </div>
-      </div>
+      )}
     </ScreenTemplate>
   );
 }
