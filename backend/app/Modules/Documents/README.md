@@ -30,7 +30,11 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
   ORIGINAL manifest whatever the configuration has become; different content for that identity is `manifest_conflict`. `RequestDocumentGeneration` (a retry intent, only
   after every earlier intent FAILED) and `ReadDocumentGenerationStatus` (pending/running/failed/verified/missing; no payload, key or owner identity) ask the owner
   every time. The Company default activation chain is now database-enforced (each activation continues the previous one; `is_downgrade` is derived). No route, grant,
-  duty, renderer, byte or blob.
+  duty, renderer, byte or blob. An ORIGINAL is authorised as its own operation (`bind_manifest_original`) with the purpose, source generation, snapshot reference and
+  stable generation identity in `DocumentOperationContext`, so an owner that allows drafts can refuse originals; Documents infers no business state (issued, accepted)
+  from them. At most one ORIGINAL exists per binding (a changed document is a new source generation, hence a new binding), and an explicit template or page-policy
+  choice that differs from the pinned one is `manifest_conflict` even under a fresh key. A manifest that pinned the `UNASSIGNED` renderer and no fonts
+  (`DocumentManifest::isRenderable()` is false) must never be rendered by DF3 with whichever renderer is current, nor mutated: it is insert-only.
 
 - Every history table also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on the same guard (row triggers never fire on TRUNCATE, and the runtime role is a
   superuser, so revoking the privilege would not help). A new Documents history table adds both triggers in its own migration.

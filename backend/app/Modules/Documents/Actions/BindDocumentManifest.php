@@ -7,6 +7,8 @@ namespace App\Modules\Documents\Actions;
 use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Models\DocumentOperationReceipt;
+use App\Modules\Documents\Models\DocumentPagePolicyVersion;
+use App\Modules\Documents\Models\DocumentTemplateVersion;
 use App\Modules\Documents\Support\DocumentAccessGate;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Documents\Support\DocumentOperationContext;
@@ -22,7 +24,8 @@ use Illuminate\Support\Facades\DB;
  * without content) and on a payload outside the adapter's schema. The template and page policy are resolved at this moment and pinned as configuration, the brand
  * as NOT_AVAILABLE, assets and fonts as empty lists (none exist yet) and the renderer as unassigned (DF3 assigns it); nothing is rendered.
  *
- * Identity: one manifest per (binding, purpose, stable generation identity). A fresh key for the same identity and the same frozen content resolves the ORIGINAL
+ * Identity: one manifest per (binding, purpose, stable generation identity), and at most ONE ORIGINAL per binding (a changed document is a new source generation, hence
+ * a new binding); an ORIGINAL is authorised as its own operation (`bind_manifest_original`) with the purpose, source generation and snapshot reference in the context. A fresh key for the same identity and the same frozen content resolves the ORIGINAL
  * manifest — whatever the configuration has since become — and a different frozen content for it is a conflict, never silent reuse. A used key with a different
  * request is a conflict too. Concurrent callers serialise on the identity, so exactly one manifest and one intent are ever written.
  *
@@ -31,6 +34,8 @@ use Illuminate\Support\Facades\DB;
 final class BindDocumentManifest
 {
     public const OPERATION = 'bind_manifest';
+
+    public const OPERATION_ORIGINAL = 'bind_manifest_original';
 
     public const INITIAL_INTENT = 'initial';
 
@@ -76,7 +81,10 @@ final class BindDocumentManifest
             throw new DocumentException("Document type '{$projection->typeKey}' is not bound for audience '{$audience}'.", 'audience', 'audience_unsupported');
         }
         $companyId = $this->company->id();
-        if (! DocumentAccessGate::allows($adapter, new DocumentOperationContext($companyId, $actorId, self::OPERATION, $projection->typeKey, $audience, $ownerBindingIdentity))) {
+        // An ORIGINAL is its own operation, so an owner that allows drafts can still refuse originals, and it gets the frozen context it needs to decide.
+        $operation = $purpose === DocumentManifest::ORIGINAL ? self::OPERATION_ORIGINAL : self::OPERATION;
+        if (! DocumentAccessGate::allows($adapter, new DocumentOperationContext($companyId, $actorId, $operation, $projection->typeKey, $audience, $ownerBindingIdentity,
+            $purpose, $sourceGeneration, $sourceSnapshotReference, $stableGenerationIdentity))) {
             throw new DocumentException("The owner of '{$projection->typeKey}' did not authorise this operation.", null, 'access_denied');
         }
         $adapter->projectionSchema()->validate($projection->payload);
@@ -110,9 +118,25 @@ final class BindDocumentManifest
                 if ($existing->input_digest !== $inputDigest) {
                     throw new DocumentException('This document identity was already frozen with different content; a changed document needs a new generation identity.', 'stable_generation_identity', 'manifest_conflict');
                 }
+                // Defaults that changed since are the original's business, but an EXPLICIT choice is a request about the frozen configuration: it must exist and be the one pinned.
+                foreach ([['template', $explicitTemplateVersionId, $existing->template_version_id, DocumentTemplateVersion::class], ['page_policy', $explicitPagePolicyVersionId, $existing->page_policy_version_id, DocumentPagePolicyVersion::class]] as [$kind, $asked, $pinnedId, $model]) {
+                    if ($asked === null) {
+                        continue;
+                    }
+                    if (! $model::query()->whereKey($asked)->exists()) {
+                        throw new DocumentException("That {$kind} version does not exist for this company.", $kind, 'version_not_found');
+                    }
+                    if ($pinnedId !== $asked) {
+                        throw new DocumentException("This document identity was already frozen with a different {$kind}; a changed configuration needs a new generation identity.", $kind, 'manifest_conflict');
+                    }
+                }
                 $this->receipt($operationKey, $requestDigest, $binding->id, $actorId);
 
                 return ['manifest' => $existing, 'intent' => $this->initialIntent($existing), 'replayed' => true];
+            }
+
+            if ($purpose === DocumentManifest::ORIGINAL && DocumentManifest::query()->where(['subject_binding_id' => $binding->id, 'purpose' => DocumentManifest::ORIGINAL])->exists()) {
+                throw new DocumentException('This document already has its one ORIGINAL; a changed document is a new source generation with its own binding.', 'purpose', 'original_exists');
             }
 
             $resolved = $this->policy->execute($projection->typeKey, $explicitTemplateVersionId, $explicitPagePolicyVersionId);

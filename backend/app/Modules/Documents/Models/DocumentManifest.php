@@ -57,6 +57,16 @@ class DocumentManifest extends Model
             'locale_formatting' => 'array', 'recorded_at' => 'datetime'];
     }
 
+    /**
+     * A manifest that pins the UNASSIGNED renderer contract (DF2 scaffolding, before DF3 exists) cannot be rendered: DF3 must not render it with whichever renderer
+     * or fonts happen to be current, nor mutate it to fill the pins in (it is insert-only). A renderable freeze needs a real contract at an eligible future bind, or
+     * a separately governed successor.
+     */
+    public function isRenderable(): bool
+    {
+        return $this->renderer_contract !== 'UNASSIGNED' && $this->renderer_version !== '0' && $this->fonts !== [];
+    }
+
     /** @return BelongsTo<DocumentSubjectBinding, $this> */
     public function binding(): BelongsTo
     {

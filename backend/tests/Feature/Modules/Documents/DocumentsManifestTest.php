@@ -179,7 +179,7 @@ class DocumentsManifestTest extends TestCase
         $this->assertSame(1, DocumentGenerationIntent::count());
 
         // A genuinely new generation of the same document freezes under the newer configuration.
-        $second = $this->bind(identity: 'gen-2')['manifest'];
+        $second = $this->bind(identity: 'gen-2', generation: 2)['manifest'];
         $this->assertSame($t2, $second->template_version_id);
     }
 
@@ -189,7 +189,7 @@ class DocumentsManifestTest extends TestCase
         $t2 = $this->template('alternate');
         $manifest = $this->bind(template: $t2)['manifest'];
         $this->assertSame([$t2, 'EXPLICIT'], [$manifest->template_version_id, $manifest->resolved_template['source']]);
-        $this->assertSame('version_not_found', $this->refusal(fn () => $this->bind(identity: 'gen-x', template: 9999999)));
+        $this->assertSame('version_not_found', $this->refusal(fn () => $this->bind(identity: 'gen-x', generation: 2, template: 9999999)));
         $this->assertNotSame($t1, $manifest->template_version_id);
     }
 
@@ -207,7 +207,7 @@ class DocumentsManifestTest extends TestCase
         $this->assertSame($first->input_digest, DocumentManifest::query()->sole()->input_digest);
 
         // The changed document is its own generation, with its own manifest and intent.
-        $second = $this->bind($changed, identity: 'gen-2');
+        $second = $this->bind($changed, identity: 'gen-2', generation: 2);
         $this->assertFalse($second['replayed']);
         $this->assertNotSame($first->id, $second['manifest']->id);
         // Another purpose of the same identity is a separate freeze too.
@@ -278,7 +278,7 @@ class DocumentsManifestTest extends TestCase
         $this->assertSame('access_denied', $this->refusal(fn () => app(BindDocumentManifest::class)->execute($sheet, 'COUNTER', 'count:1', 1, 'ORIGINAL', 'g', 'k', $this->user->id)));
         $this->assertSame([0, 0, 0, 0], $this->counts());
 
-        Log::shouldHaveReceived('warning')->with('documents.access_refused', \Mockery::on(fn (array $c) => $c['outcome'] === 'denied' && $c['operation'] === 'bind_manifest' && $c['type_key'] === self::PO
+        Log::shouldHaveReceived('warning')->with('documents.access_refused', \Mockery::on(fn (array $c) => $c['outcome'] === 'denied' && $c['operation'] === 'bind_manifest_original' && $c['type_key'] === self::PO
             && $c['company_id'] === 1 && $c['actor_id'] === $this->user->id && ! array_key_exists('exception', $c)))->once();
         Log::shouldHaveReceived('warning')->with('documents.access_refused', \Mockery::on(fn (array $c) => $c['outcome'] === 'threw' && $c['type_key'] === 'inventory.count-sheet.blind' && isset($c['exception'])))->once();
         Log::shouldHaveReceived('warning')->with('documents.access_refused', \Mockery::on(function (array $c): bool {
@@ -286,6 +286,74 @@ class DocumentsManifestTest extends TestCase
 
             return ! str_contains((string) $flat, 'Acme Supplies') && ! str_contains((string) $flat, 'po:1') && ! str_contains((string) $flat, 'count:1');
         }))->twice();
+    }
+
+    public function test_a_fresh_key_cannot_silently_satisfy_a_different_explicit_configuration(): void
+    {
+        $t1 = $this->template('standard');
+        $t2 = $this->template('alternate');
+        $p1 = $this->page('plain');
+        $p2 = $this->page('other');
+        $first = $this->bind(template: $t1, page: $p1)['manifest'];
+        $before = $this->counts();
+
+        // A different explicit template or page policy is a different frozen configuration: conflict, not the old manifest with replayed=true.
+        $this->assertSame('manifest_conflict', $this->refusal(fn () => $this->bind(template: $t2, page: $p1)));
+        $this->assertSame('manifest_conflict', $this->refusal(fn () => $this->bind(template: $t1, page: $p2)));
+        $this->assertSame('manifest_conflict', $this->refusal(fn () => $this->bind(template: $t2, page: $p2)));
+        // An explicit version that does not exist is an error, not ignored.
+        $this->assertSame('version_not_found', $this->refusal(fn () => $this->bind(template: 9999999)));
+        $this->assertSame('version_not_found', $this->refusal(fn () => $this->bind(page: 9999999)));
+        $this->assertSame($before, $this->counts(), 'nothing was written by any of them');
+
+        // The same explicit choice, or none (defaults may have changed since), resolves the original.
+        $this->assertSame($first->id, $this->bind(template: $t1, page: $p1)['manifest']->id);
+        $this->assertSame($first->id, $this->bind(template: $t1)['manifest']->id);
+        $this->assertSame($first->id, $this->bind()['manifest']->id);
+        $this->assertSame(1, DocumentManifest::count());
+    }
+
+    public function test_the_owner_authorises_a_freeze_by_purpose_with_the_frozen_context_and_an_original_is_unique_per_binding(): void
+    {
+        $owner = new PurchaseOrderShapedAdapter(allowOriginals: false);
+        $registry = new DocumentTypeRegistry;
+        $registry->register($owner);
+        $this->app->instance(DocumentTypeRegistry::class, $registry);
+
+        // Drafts are allowed; an ORIGINAL is a separate operation the owner has not decided to allow, so it is denied before anything is written.
+        $draft = $this->bind(purpose: DocumentManifest::DRAFT_PREVIEW, reference: 'draft-snapshot')['manifest'];
+        $before = $this->counts();
+        $this->assertSame('access_denied', $this->refusal(fn () => $this->bind(identity: 'gen-1', reference: 'final-snapshot', generation: 1)));
+        $this->assertSame('access_denied', $this->refusal(fn () => $this->bind(identity: 'gen-9', purpose: DocumentManifest::ORIGINAL)));
+        $this->assertSame($before, $this->counts());
+        $asked = array_values(array_filter($owner->asked, fn ($c) => str_starts_with($c->operation, 'bind_manifest')));
+        $this->assertSame(['bind_manifest', 'bind_manifest_original', 'bind_manifest_original'], array_map(fn ($c) => $c->operation, $asked));
+        $this->assertSame(['DRAFT_PREVIEW', 1, 'draft-snapshot', 'gen-1'], [$asked[0]->purpose, $asked[0]->sourceGeneration, $asked[0]->sourceSnapshotReference, $asked[0]->stableGenerationIdentity]);
+        $this->assertSame(['ORIGINAL', 1, 'final-snapshot', 'gen-1'], [$asked[1]->purpose, $asked[1]->sourceGeneration, $asked[1]->sourceSnapshotReference, $asked[1]->stableGenerationIdentity]);
+        $this->assertSame(DocumentManifest::DRAFT_PREVIEW, $draft->purpose);
+        // A draft freeze never becomes an original: the same identity as ORIGINAL is a separate, separately authorised freeze.
+        $this->assertSame(1, DocumentManifest::count());
+
+        // Once the owner allows originals, one binding has exactly one: a fresh identity cannot mint a second, a new source generation (a new binding) can.
+        $registry = new DocumentTypeRegistry;
+        $registry->register(new PurchaseOrderShapedAdapter);
+        $this->app->instance(DocumentTypeRegistry::class, $registry);
+        $original = $this->bind(identity: 'gen-1')['manifest'];
+        $count = $this->counts();
+        $this->assertSame('original_exists', $this->refusal(fn () => $this->bind(identity: 'gen-1b')));
+        $this->assertSame($count, $this->counts());
+        $this->assertSame(DocumentManifest::ORIGINAL, $original->purpose);
+        $this->assertFalse($this->bind(identity: 'gen-1', generation: 2)['replayed']);
+        // Drafts of the same binding are unlimited.
+        $this->assertFalse($this->bind(identity: 'draft-2', purpose: DocumentManifest::DRAFT_PREVIEW)['replayed']);
+        $this->assertFalse($this->bind(identity: 'draft-3', purpose: DocumentManifest::DRAFT_PREVIEW)['replayed']);
+    }
+
+    public function test_a_manifest_with_the_unassigned_renderer_is_not_renderable(): void
+    {
+        $manifest = $this->bind()['manifest'];
+        $this->assertSame(['UNASSIGNED', '0', []], [$manifest->renderer_contract, $manifest->renderer_version, $manifest->fonts]);
+        $this->assertFalse($manifest->isRenderable(), 'DF3 must not render a freeze that pinned no renderer or fonts, nor mutate it (it is insert-only)');
     }
 
     // ---- intents -------------------------------------------------------------------------------------------------------------------------------------
@@ -390,9 +458,10 @@ class DocumentsManifestTest extends TestCase
 
         $row = (array) DB::table('document_manifests')->find($manifest->id);
         unset($row['id']);
-        $row = [...$row, 'frozen_payload' => json_encode($manifest->frozen_payload), 'resolved_template' => json_encode($manifest->resolved_template), 'resolved_page_policy' => json_encode($manifest->resolved_page_policy),
+        $row = [...$row, 'purpose' => 'DRAFT_PREVIEW', 'frozen_payload' => json_encode($manifest->frozen_payload), 'resolved_template' => json_encode($manifest->resolved_template), 'resolved_page_policy' => json_encode($manifest->resolved_page_policy),
             'asset_manifest' => '[]', 'fonts' => '[]', 'locale_formatting' => json_encode($manifest->locale_formatting), 'stable_generation_identity' => 'raw-1'];
-        $this->assertRefused(fn () => DB::table('document_manifests')->insert([...$row, 'stable_generation_identity' => $manifest->stable_generation_identity]), 'document_manifests_identity_unique');
+        $this->assertRefused(fn () => DB::table('document_manifests')->insert([...$row, 'purpose' => 'ORIGINAL', 'stable_generation_identity' => $manifest->stable_generation_identity]), 'document_manifests_identity_unique|document_manifests_one_original');
+        $this->assertRefused(fn () => DB::table('document_manifests')->insert([...$row, 'purpose' => 'ORIGINAL', 'stable_generation_identity' => 'a-second-original']), 'document_manifests_one_original');
         $this->assertRefused(fn () => DB::table('document_manifests')->insert([...$row, 'company_id' => $this->otherCompany]), 'document_manifests_binding_fk');
         $this->assertRefused(fn () => DB::table('document_manifests')->insert([...$row, 'initiator_id' => 9999999]), 'document_manifests_initiator_fk');
         $this->assertRefused(fn () => DB::table('document_manifests')->insert([...$row, 'template_version_id' => 9999999]), 'document_manifests_template_fk');
@@ -408,6 +477,7 @@ class DocumentsManifestTest extends TestCase
         $manifest = $this->bind()['manifest'];
         $row = (array) DB::table('document_manifests')->find($manifest->id);
         unset($row['id']);
+        $row['purpose'] = 'DRAFT_PREVIEW';
         foreach (['1999-01-01 00:00:00+00', '2099-01-01 00:00:00+00'] as $i => $client) {
             $id = DB::table('document_manifests')->insertGetId([...$row, 'stable_generation_identity' => "clock-{$i}", 'recorded_at' => $client]);
             $stored = DB::table('document_manifests')->find($id)->recorded_at;

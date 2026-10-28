@@ -13,7 +13,8 @@ use Illuminate\Support\Facades\Schema;
  *
  *  - A MANIFEST pins, at the owner's snapshot event, the typed payload and its schema version, the source generation, the template and page policy exactly as
  *    resolved (the configuration itself, not only a version id, so a later change of either cannot alter it), the brand state, assets, fonts, renderer contract
- *    and the formatting. It is insert-only from birth and its time is the database clock. One manifest exists per (binding, purpose, stable generation identity):
+ *    and the formatting. It is insert-only from birth and its time is the database clock. One manifest exists per (binding, purpose, stable generation identity)
+ *    and at most one ORIGINAL per binding:
  *    a second, different freeze of the same identity is refused by the Action as a conflict, and a duplicate cannot be written by anyone.
  *  - A GENERATION INTENT is the durable record that this manifest is to be generated. It is a mutable projection with a guarded state machine and a monotone
  *    fencing generation; DF2 writes it PENDING and the renderer slice (DF3) owns every later transition. A retry is a new intent under another operation
@@ -69,6 +70,9 @@ return new class extends Migration
             AND brand_state = 'NOT_AVAILABLE' AND jsonb_typeof(asset_manifest) = 'array' AND jsonb_typeof(fonts) = 'array' AND jsonb_typeof(locale_formatting) = 'object'
             AND length(trim(renderer_contract)) > 0 AND length(trim(renderer_version)) > 0
         )");
+
+        // One ORIGINAL per binding: a changed document is a new source generation with its own binding, never a second original of the same one.
+        DB::statement("CREATE UNIQUE INDEX document_manifests_one_original ON document_manifests (company_id, subject_binding_id) WHERE purpose = 'ORIGINAL'");
 
         Schema::create('document_generation_intents', function (Blueprint $t): void {
             $t->id();

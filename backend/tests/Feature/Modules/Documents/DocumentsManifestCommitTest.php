@@ -54,9 +54,9 @@ class DocumentsManifestCommitTest extends TestCase
         $this->app->instance(DocumentTypeRegistry::class, $registry);
     }
 
-    private function bind(string $identity = 'gen-1', string $key = 'k'): array
+    private function bind(string $identity = 'gen-1', string $key = 'k', int $generation = 1): array
     {
-        return app(BindDocumentManifest::class)->execute(PurchaseOrderShapedAdapter::projection(), 'SUPPLIER', 'po:1', 1, 'ORIGINAL', $identity, $key, $this->user->id);
+        return app(BindDocumentManifest::class)->execute(PurchaseOrderShapedAdapter::projection(), 'SUPPLIER', 'po:1', $generation, 'ORIGINAL', $identity, $key, $this->user->id);
     }
 
     private function tryLock(string $name, bool $shared = false): bool
@@ -74,7 +74,7 @@ class DocumentsManifestCommitTest extends TestCase
 
         try {
             DB::transaction(function (): void {
-                $this->bind('gen-2', 'k2');
+                $this->bind('gen-2', 'k2', 2);
                 throw new RuntimeException('the owner failed after binding');
             });
         } catch (RuntimeException) {
@@ -169,5 +169,85 @@ class DocumentsManifestCommitTest extends TestCase
             DB::connection('doc_b')->statement('ROLLBACK');
         }
         $this->assertSame(1, DB::table('document_default_activations')->where('type_key', self::PO)->count());
+    }
+
+    /**
+     * Two genuinely separate OS processes (pcntl_fork, the repository's existing concurrency technique) each run the COMPLETE Action with a different fresh key on
+     * the same document identity, released together. Each has its own connection; the committed fixtures are wiped by migrate:fresh afterwards.
+     *
+     * @return array{child: array<string, mixed>, parent: array<string, mixed>}
+     */
+    private function race(\Closure $childWork, \Closure $parentWork): array
+    {
+        $resultPath = sys_get_temp_dir().'/doc_manifest_race_'.getmypid().'.json';
+        $startPath = sys_get_temp_dir().'/doc_manifest_race_'.getmypid().'.start';
+        @unlink($resultPath);
+        @unlink($startPath);
+        $outcome = static function (\Closure $work): array {
+            try {
+                $result = $work();
+
+                return ['ok' => true, 'manifest' => $result['manifest']->id, 'replayed' => $result['replayed']];
+            } catch (DocumentException $e) {
+                return ['ok' => false, 'reason' => $e->reasonCode];
+            } catch (\Throwable $e) {
+                return ['ok' => false, 'reason' => 'ERROR: '.$e->getMessage()];
+            }
+        };
+        try {
+            $pid = pcntl_fork();
+            $this->assertNotSame(-1, $pid, 'unable to fork');
+            if ($pid === 0) {
+                config(['database.connections.doc_race_child' => config('database.connections.testing'), 'database.default' => 'doc_race_child']);
+                for ($waited = 0; ! file_exists($startPath) && $waited < 3_000_000; $waited += 1000) {
+                    usleep(1000);
+                }
+                file_put_contents($resultPath, json_encode($outcome($childWork)));
+                posix_kill(getmypid(), SIGKILL);
+            }
+            $default = config('database.default');
+            config(['database.connections.doc_race_parent' => config('database.connections.testing'), 'database.default' => 'doc_race_parent']);
+            file_put_contents($startPath, '1');
+            try {
+                $parent = $outcome($parentWork);
+            } finally {
+                config(['database.default' => $default]);
+                DB::purge('doc_race_parent');
+            }
+            pcntl_waitpid($pid, $status);
+            $child = json_decode((string) file_get_contents($resultPath), true);
+            $this->assertIsArray($child, 'the forked child did not report an outcome');
+
+            return ['child' => $child, 'parent' => $parent];
+        } finally {
+            @unlink($resultPath);
+            @unlink($startPath);
+        }
+    }
+
+    public function test_two_processes_freezing_the_same_content_under_different_fresh_keys_produce_one_manifest(): void
+    {
+        $bind = fn (string $key) => fn () => app(BindDocumentManifest::class)->execute(PurchaseOrderShapedAdapter::projection(), 'SUPPLIER', 'po:1', 1, 'ORIGINAL', 'gen-1', $key, $this->user->id);
+        $result = $this->race($bind('child-key'), $bind('parent-key'));
+
+        $this->assertTrue($result['child']['ok'] && $result['parent']['ok'], json_encode($result));
+        $this->assertSame($result['child']['manifest'], $result['parent']['manifest'], 'both resolve the one manifest');
+        $this->assertSame(1, count(array_filter([$result['child']['replayed'], $result['parent']['replayed']])), 'exactly one of them created it');
+        $this->assertSame([1, 1, 1], [DB::table('document_manifests')->count(), DB::table('document_generation_intents')->count(), DB::table('document_subject_bindings')->count()]);
+    }
+
+    public function test_two_processes_freezing_conflicting_content_under_different_fresh_keys_produce_exactly_one_winner(): void
+    {
+        $changed = PurchaseOrderShapedAdapter::projection(['header' => ['po_number' => 'PO-0001', 'supplier_name' => 'Acme Supplies', 'currency_code' => 'PKR', 'order_date' => '2026-10-21', 'total' => '9999.0000']]);
+        $a = fn () => app(BindDocumentManifest::class)->execute(PurchaseOrderShapedAdapter::projection(), 'SUPPLIER', 'po:1', 1, 'ORIGINAL', 'gen-1', 'child-key', $this->user->id);
+        $b = fn () => app(BindDocumentManifest::class)->execute($changed, 'SUPPLIER', 'po:1', 1, 'ORIGINAL', 'gen-1', 'parent-key', $this->user->id);
+        $result = $this->race($a, $b);
+
+        $outcomes = [$result['child'], $result['parent']];
+        $this->assertCount(1, array_filter($outcomes, fn ($o) => $o['ok']), 'exactly one freeze wins: '.json_encode($result));
+        $loser = array_values(array_filter($outcomes, fn ($o) => ! $o['ok']))[0];
+        $this->assertSame('manifest_conflict', $loser['reason']);
+        $this->assertSame([1, 1], [DB::table('document_manifests')->count(), DB::table('document_generation_intents')->count()]);
+        $this->assertSame(1, DB::table('document_operation_receipts')->where('operation', 'bind_manifest')->count(), 'the loser left no receipt');
     }
 }
