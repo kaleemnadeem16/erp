@@ -54,7 +54,7 @@ final class AssemblyCostEvidence implements JsonSerializable
         return new self($assemblyVersionId, CostEvidenceCertainty::Unknown, $reasonCode, null);
     }
 
-    /** The figures, or null when there are none (UNKNOWN). Only a named, authorised workflow may ask. */
+    /** The figures, or null when there are none (UNKNOWN). Evidence is only ever produced for a caller the owning workflow's authority permitted (the cost-evidence seam Action). */
     public function amounts(CostEvidenceWorkflow $workflow): ?ConfidentialCostAmounts
     {
         return $this->reveal === null ? null : new ConfidentialCostAmounts($this->reveal);
