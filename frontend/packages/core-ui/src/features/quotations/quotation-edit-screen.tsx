@@ -84,7 +84,9 @@ export function QuotationEditForm({ id }: { id: number }) {
     stored?.pending ?? null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [serverErrors, setServerErrors] = useState<string[]>([]);
   const [review, setReview] = useState(false);
+  const [needsRefresh, setNeedsRefresh] = useState(false);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const query = useQuotationsEditable(id, { query: { retry: false } });
@@ -109,15 +111,18 @@ export function QuotationEditForm({ id }: { id: number }) {
   useEffect(() => {
     if (baseline && values) writeDraft(key, { baseline, values, pending });
   }, [baseline, values, pending, key]);
-  const stale = !!(
-    baseline &&
-    fresh &&
-    baseline.input_generation !== fresh.input_generation
-  );
+  const stale =
+    needsRefresh ||
+    !!(
+      baseline &&
+      fresh &&
+      baseline.input_generation !== fresh.input_generation
+    );
   function update(next: DraftValues) {
     setValues(next);
     setReview(false);
     setError(null);
+    setServerErrors([]);
   }
   function validate(): string | null {
     if (!values) return "The draft has not loaded.";
@@ -150,6 +155,13 @@ export function QuotationEditForm({ id }: { id: number }) {
         (!line.item_id || !line.offered_uom_id)
       )
         return "Select an Item and its stock unit for each Item line.";
+      if (
+        line.sort_order !== undefined &&
+        (!Number.isSafeInteger(line.sort_order) || line.sort_order < 0)
+      )
+        return "Line order must be a non-negative whole number.";
+      if (line.scope_ref !== undefined && !line.scope_ref.trim())
+        return "A scope reference cannot be blank.";
       if (
         (line.section_title?.length ?? 0) > 200 ||
         (line.scope_ref?.length ?? 0) > 80 ||
@@ -209,6 +221,20 @@ export function QuotationEditForm({ id }: { id: number }) {
         );
       else {
         setPending(null);
+        setServerErrors(
+          isApiError(failure) && failure.status === 422
+            ? Object.values(failure.body?.errors ?? {}).flat()
+            : [],
+        );
+        if (
+          ["QUOTATION_DRAFT_STALE", "QUOTATION_DRAFT_CHANGED"].includes(
+            getApiReasonCode(failure) ?? "",
+          )
+        ) {
+          setNeedsRefresh(true);
+          void query.refetch();
+        }
+        if (isApiError(failure) && failure.status === 404) void query.refetch();
         writeDraft(key, { baseline, values, pending: null });
         setReview(false);
         const status = isApiError(failure) ? failure.status : 0;
@@ -270,6 +296,13 @@ export function QuotationEditForm({ id }: { id: number }) {
           {error}
         </p>
       )}
+      {serverErrors.length > 0 && (
+        <ul role="alert" className="list-disc pl-5 text-sm text-destructive">
+          {serverErrors.map((message, index) => (
+            <li key={index}>{message}</li>
+          ))}
+        </ul>
+      )}
       {pending ? (
         <DetailSection title="Resolve the previous request">
           <div className="col-span-full space-y-3">
@@ -286,6 +319,8 @@ export function QuotationEditForm({ id }: { id: number }) {
             </Button>
           </div>
         </DetailSection>
+      ) : query.isPending ? (
+        <p role="status">Loading current draft…</p>
       ) : query.isError || parseError ? (
         <QuotationFailure
           error={query.error ?? parseError}
@@ -298,15 +333,41 @@ export function QuotationEditForm({ id }: { id: number }) {
               Your unfinished input is preserved. The saved draft changed since
               you started; start over only after recording any changes you need.
             </p>
+            <ul className="list-disc pl-5">
+              {values.lines.map((line) => (
+                <li key={line.id}>
+                  {line.description}: quantity {line.offered_quantity}; unit
+                  price {line.unit_price ?? "not entered"}
+                </li>
+              ))}
+              {values.added.map((line) => (
+                <li key={line.client_id}>
+                  New: {line.description || "Untitled"}; quantity{" "}
+                  {line.offered_quantity}; unit price{" "}
+                  {line.unit_price ?? "not entered"}
+                </li>
+              ))}
+              {values.removed.map((lineId) => (
+                <li key={lineId}>
+                  Remove:{" "}
+                  {
+                    baseline.lines.find((line) => line.id === lineId)
+                      ?.description
+                  }
+                </li>
+              ))}
+            </ul>
             <Button
               type="button"
               variant="outline"
+              disabled={!fresh || query.isFetching}
               onClick={() => {
-                if (!fresh) return;
+                if (!fresh || query.isFetching) return;
                 clearDraft(key);
                 setBaseline(fresh);
                 setValues(valuesFromEditable(fresh));
                 setError(null);
+                setNeedsRefresh(false);
               }}
             >
               Start over from current draft
@@ -532,6 +593,18 @@ export function QuotationEditForm({ id }: { id: number }) {
                           "remove_lines",
                         ].includes(k),
                     )
+                    .map(
+                      (k) =>
+                        (
+                          ({
+                            recipient_party_id: "recipient",
+                            currency_id: "currency",
+                            pricing_date: "pricing date",
+                            tax_estimate_date: "tax estimate date",
+                            valid_through_local_date: "valid through",
+                          }) as Record<string, string>
+                        )[k] ?? k,
+                    )
                     .join(", ") || "none"}
                   .
                 </p>
@@ -540,6 +613,37 @@ export function QuotationEditForm({ id }: { id: number }) {
                   {changes.update_lines?.length ?? 0}; removed:{" "}
                   {changes.remove_lines?.length ?? 0}.
                 </p>
+                <ul className="list-disc pl-5">
+                  {values.added.map((line) => (
+                    <li key={line.client_id}>
+                      Add {line.description}: quantity {line.offered_quantity},
+                      unit price {line.unit_price ?? "not entered"}
+                    </li>
+                  ))}
+                  {changes.update_lines?.map((line) => (
+                    <li key={line.id}>
+                      Change{" "}
+                      {
+                        values.lines.find((current) => current.id === line.id)
+                          ?.description
+                      }
+                      :{" "}
+                      {Object.keys(line)
+                        .filter((key) => key !== "id")
+                        .map((key) => key.replaceAll("_", " "))
+                        .join(", ")}
+                    </li>
+                  ))}
+                  {changes.remove_lines?.map((lineId) => (
+                    <li key={lineId}>
+                      Remove{" "}
+                      {
+                        baseline.lines.find((line) => line.id === lineId)
+                          ?.description
+                      }
+                    </li>
+                  ))}
+                </ul>
                 <Button
                   type="button"
                   disabled={busy}
@@ -649,6 +753,37 @@ function LineEditor({
           maxLength={200}
           value={line.section_title ?? ""}
           onChange={(e) => set({ section_title: e.target.value || null })}
+        />
+      </div>
+      {"client_id" in line && (
+        <div className="space-y-2">
+          <Label htmlFor={`scope-${key}`}>Scope reference (optional)</Label>
+          <Input
+            id={`scope-${key}`}
+            maxLength={80}
+            value={line.scope_ref ?? ""}
+            onChange={(e) => set({ scope_ref: e.target.value || undefined })}
+          />
+        </div>
+      )}
+      <div className="space-y-2">
+        <Label htmlFor={`order-${key}`}>Sort order (optional)</Label>
+        <Input
+          id={`order-${key}`}
+          type="number"
+          min="0"
+          step="1"
+          value={Number.isNaN(line.sort_order) ? "" : (line.sort_order ?? "")}
+          onChange={(e) =>
+            set({
+              sort_order:
+                e.target.value === ""
+                  ? "id" in line
+                    ? Number.NaN
+                    : undefined
+                  : Number(e.target.value),
+            })
+          }
         />
       </div>
       <div className="space-y-2">
