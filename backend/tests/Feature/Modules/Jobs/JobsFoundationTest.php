@@ -240,6 +240,12 @@ class JobsFoundationTest extends TestCase
         $this->assertNotEmpty($files);
         foreach ($files as $file) {
             $code = (string) file_get_contents($file);
+            if (basename($file) === 'JobAccess.php') {
+                // J-AU0's reviewed capability predicate necessarily calls ->can(); it must still register, route and gate nothing (JobAccessFoundationTest covers its behaviour).
+                $this->assertDoesNotMatchRegularExpression('/authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, 'JobAccess must not gate, route or register anything');
+
+                continue;
+            }
             $this->assertDoesNotMatchRegularExpression('/->can\(|authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, basename($file).' must not guard, route or register anything');
         }
         $this->assertDirectoryDoesNotExist(base_path('app/Modules/Jobs/Actions'));
