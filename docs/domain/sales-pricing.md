@@ -153,7 +153,7 @@ It links entitled users to metadata (`sales.quotation.view`) or read-only review
 (`sales.quotation.prepare`); opening requires a positive safe whole revision number.
 Empty, zero, fractional and unsafe input stays on the page with an associated text error.
 The shared shell's navigation and the direct workspace URL use the same access policy.
-Create/edit controls belong to the subsequent corrected-#53 form slice.
+Prepare holders can create a header-only draft and then add or edit lines, or open an existing draft by revision number for editing. The editable read is independent of metadata-view permission.
 
 The frontend exposure opt-in is `VITE_QUOTATION_UI_ENABLED=1` in the main app's local
 Vite environment (or its process environment). Restart that local Vite process after
@@ -164,7 +164,7 @@ remain denied even if the flag is accidentally set. Local storage and URL query
 parameters cannot enable the app's gate. Actual duties remain required, and this
 flag never registers/grants a permission or changes server authorisation.
 
-Submission prerequisite: integrate #54 slice 1 so the destination routes exist.
+Integration prerequisites: #54 slice 1, the corrected #53 write contract and Agent A’s M1 editable-read contract must land before this dependent branch can be submitted for integration.
 The shared gate uses this dev policy while its production rollout constant stays false. The independent dev policy tests cover default-off,
 production refusal, loopback/remote/opt-in combinations, reconfiguration and the
 shared screen rule with/without duties. Mounted shell/workspace fixtures cover absent
@@ -175,6 +175,14 @@ backend journey. Run a local frontend build first, then
 `docker/frontend/run-e2e.sh --project=unit`; no running application or database is used.
 Agent A owns the separately reviewed local-only backend mechanism. No real backend
 permission activation or database operation is performed by this frontend preparation.
+## Quotation draft create/edit — M1
+
+The create page saves a header, then opens the editable draft; adding lines is a separate PATCH. The edit page hydrates only from the generated editable read and retains the input generation. Header changes, direct Item or manual lines, optional/choice grouping and removal with undo are reviewed before saving. Unit prices and quantities remain exact strings and no financial totals are calculated in the browser. The server remains authoritative for source eligibility, pricing precision, currency locking and evidence. An optional Opportunity picker is offered only with pipeline view access.
+
+Each new attempt gets a distinct key via the generated client’s required typed `Idempotency-Key` parameter. PATCH includes the baseline `expected_generation`. An uncertain response retains the exact key and payload in the per-user tab session; retrying sends those same bytes of intent, including after a reload. A definitive 409 permits a newly reviewed attempt; 404 is non-disclosing; stale 422 preserves unfinished input and requires a fresh baseline. None of these controls grants backend access.
+
+The isolated form tests mount the real forms against intercepted responses and cover default denial, minimal changes, uncertain retries across reload, 404, 409, stale 422, decimal refusal and a 390px accessibility/overflow check. A separate 5178 Vite smoke check loaded both actual screens with all API requests intercepted; neither proves a live backend journey. Real backend verification waits for the write and editable-read contracts, an explicitly enabled local preview and the agreed isolated test data.
+
 ## Quotation detail/review UI — #54 slice 1
 
 Owner-approved scope is a deep-link page (no list exists): `/quotations/:revision`
@@ -183,9 +191,8 @@ exception is intentional: there is no parent list behind a record sheet. Users i
 draft identity, readiness and uncertain amounts; no submission or lifecycle action exists.
 The shared display components are reusable by the subsequent create/edit form.
 
-`QUOTATION_UI_ENABLED` remains false. Navigation contains no quotation entry, direct
-routes default-deny, and the screen guards itself before mounting queries. Even a forged
-local grant cannot enable it. Future activation needs separate owner approval and server
+`QUOTATION_UI_ENABLED` remains false. In the slice-1 baseline navigation has no quotation entry, direct
+routes default-deny, and the screen guards itself before mounting queries. The separate M1 branch adds the strictly local opt-in above. Future activation needs separate owner approval and server
 rollout. Metadata requires `sales.quotation.view`; preview independently requires
 `sales.quotation.prepare`. A prepare-only holder must never trigger the metadata GET,
 and view alone never triggers preview. Backend Request/Action guards remain authoritative;
