@@ -108,22 +108,30 @@ test.describe('stock moves columns and formatting', () => {
   test('describeFilters formats all active filter lines accurately', () => {
     const items = [{ id: 42, code: 'RAW-001', name: 'Titanium Powder' }];
     const warehouses = [{ id: 10, name: 'Main Warehouse' }];
+    const locations = [
+      { id: 2, code: 'BIN-44', warehouse: { code: 'WH-MAIN' } },
+    ];
 
     const lines = describeFilters(
       {
         item_id: '42',
         warehouse_id: '10',
+        location_id: '2',
+        batch_id: '5',
         source_type: 'GOODS_RECEIPT',
         moved_from: '2026-10-01',
         moved_to: '2026-10-31',
         search: 'powder',
       },
       items,
-      warehouses
+      warehouses,
+      locations
     );
 
     expect(lines).toContain('Item = RAW-001 — Titanium Powder');
     expect(lines).toContain('Warehouse = Main Warehouse');
+    expect(lines).toContain('Location = WH-MAIN / BIN-44');
+    expect(lines).toContain('Batch = #5');
     expect(lines).toContain('Source type = GOODS_RECEIPT');
     expect(lines).toContain('From = 2026-10-01');
     expect(lines).toContain('To = 2026-10-31');
