@@ -4,15 +4,18 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type {
   DataTag,
   DefinedInitialDataOptions,
   DefinedUseQueryResult,
+  MutationFunction,
   QueryClient,
   QueryFunction,
   QueryKey,
   UndefinedInitialDataOptions,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult,
 } from "@tanstack/react-query";
@@ -20,8 +23,19 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  QuotationsEditable200,
   QuotationsPreview200,
   QuotationsShow200,
+  QuotationsStore200,
+  QuotationsStore201,
+  QuotationsStore409,
+  QuotationsStoreHeaders,
+  QuotationsUpdate200,
+  QuotationsUpdate404,
+  QuotationsUpdate409,
+  QuotationsUpdateHeaders,
+  StoreQuotationDraftRequest,
+  UpdateQuotationDraftRequest,
   ValidationExceptionResponse,
 } from ".././models";
 
@@ -29,6 +43,160 @@ import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
+/**
+ * @summary Starts a draft. The Idempotency-Key header is the Action's request key: an exact retry replays the stored result (200), a first success is 201
+ */
+export type quotationsStoreResponse200 = {
+  data: QuotationsStore200;
+  status: 200;
+};
+
+export type quotationsStoreResponse201 = {
+  data: QuotationsStore201;
+  status: 201;
+};
+
+export type quotationsStoreResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsStoreResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsStoreResponse409 = {
+  data: QuotationsStore409;
+  status: 409;
+};
+
+export type quotationsStoreResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsStoreResponseSuccess = (
+  quotationsStoreResponse200 | quotationsStoreResponse201
+) & {
+  headers: Headers;
+};
+export type quotationsStoreResponseError = (
+  | quotationsStoreResponse401
+  | quotationsStoreResponse403
+  | quotationsStoreResponse409
+  | quotationsStoreResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsStoreResponse =
+  quotationsStoreResponseSuccess | quotationsStoreResponseError;
+
+export const getQuotationsStoreUrl = () => {
+  return `/v1/quotations`;
+};
+
+export const quotationsStore = async (
+  storeQuotationDraftRequest: StoreQuotationDraftRequest,
+  headers: QuotationsStoreHeaders,
+  options?: RequestInit,
+): Promise<quotationsStoreResponse> => {
+  return fetchClient<quotationsStoreResponse>(getQuotationsStoreUrl(), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+      ...options?.headers,
+    },
+    body: JSON.stringify(storeQuotationDraftRequest),
+  });
+};
+
+export const getQuotationsStoreMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsStore409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof quotationsStore>>,
+    TError,
+    { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof quotationsStore>>,
+  TError,
+  { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
+  TContext
+> => {
+  const mutationKey = ["quotationsStore"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof quotationsStore>>,
+    { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders }
+  > = (props) => {
+    const { data, headers } = props ?? {};
+
+    return quotationsStore(data, headers, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QuotationsStoreMutationResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsStore>>
+>;
+export type QuotationsStoreMutationBody = StoreQuotationDraftRequest;
+export type QuotationsStoreMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | QuotationsStore409
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Starts a draft. The Idempotency-Key header is the Action's request key: an exact retry replays the stored result (200), a first success is 201
+ */
+export const useQuotationsStore = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsStore409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof quotationsStore>>,
+      TError,
+      { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof quotationsStore>>,
+  TError,
+  { data: StoreQuotationDraftRequest; headers: QuotationsStoreHeaders },
+  TContext
+> => {
+  const mutationOptions = getQuotationsStoreMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
 export type quotationsShowResponse200 = {
   data: QuotationsShow200;
   status: 200;
@@ -215,6 +383,413 @@ export function useQuotationsShow<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getQuotationsShowQueryOptions(revision, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Changes a draft the caller last saw at `expected_generation`. A replay of the same key and body returns the stored result with the header Idempotency-Replayed: true
+ */
+export type quotationsUpdateResponse200 = {
+  data: QuotationsUpdate200;
+  status: 200;
+};
+
+export type quotationsUpdateResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsUpdateResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsUpdateResponse404 = {
+  data: QuotationsUpdate404;
+  status: 404;
+};
+
+export type quotationsUpdateResponse409 = {
+  data: QuotationsUpdate409;
+  status: 409;
+};
+
+export type quotationsUpdateResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsUpdateResponseSuccess = quotationsUpdateResponse200 & {
+  headers: Headers;
+};
+export type quotationsUpdateResponseError = (
+  | quotationsUpdateResponse401
+  | quotationsUpdateResponse403
+  | quotationsUpdateResponse404
+  | quotationsUpdateResponse409
+  | quotationsUpdateResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsUpdateResponse =
+  quotationsUpdateResponseSuccess | quotationsUpdateResponseError;
+
+export const getQuotationsUpdateUrl = (revision: number) => {
+  return `/v1/quotations/${revision}`;
+};
+
+export const quotationsUpdate = async (
+  revision: number,
+  updateQuotationDraftRequest: UpdateQuotationDraftRequest,
+  headers: QuotationsUpdateHeaders,
+  options?: RequestInit,
+): Promise<quotationsUpdateResponse> => {
+  return fetchClient<quotationsUpdateResponse>(
+    getQuotationsUpdateUrl(revision),
+    {
+      ...options,
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+        ...options?.headers,
+      },
+      body: JSON.stringify(updateQuotationDraftRequest),
+    },
+  );
+};
+
+export const getQuotationsUpdateMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsUpdate404
+    | QuotationsUpdate409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof quotationsUpdate>>,
+    TError,
+    {
+      revision: number;
+      data: UpdateQuotationDraftRequest;
+      headers: QuotationsUpdateHeaders;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof quotationsUpdate>>,
+  TError,
+  {
+    revision: number;
+    data: UpdateQuotationDraftRequest;
+    headers: QuotationsUpdateHeaders;
+  },
+  TContext
+> => {
+  const mutationKey = ["quotationsUpdate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof quotationsUpdate>>,
+    {
+      revision: number;
+      data: UpdateQuotationDraftRequest;
+      headers: QuotationsUpdateHeaders;
+    }
+  > = (props) => {
+    const { revision, data, headers } = props ?? {};
+
+    return quotationsUpdate(revision, data, headers, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QuotationsUpdateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsUpdate>>
+>;
+export type QuotationsUpdateMutationBody = UpdateQuotationDraftRequest;
+export type QuotationsUpdateMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | QuotationsUpdate404
+  | QuotationsUpdate409
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Changes a draft the caller last saw at `expected_generation`. A replay of the same key and body returns the stored result with the header Idempotency-Replayed: true
+ */
+export const useQuotationsUpdate = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsUpdate404
+    | QuotationsUpdate409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof quotationsUpdate>>,
+      TError,
+      {
+        revision: number;
+        data: UpdateQuotationDraftRequest;
+        headers: QuotationsUpdateHeaders;
+      },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof quotationsUpdate>>,
+  TError,
+  {
+    revision: number;
+    data: UpdateQuotationDraftRequest;
+    headers: QuotationsUpdateHeaders;
+  },
+  TContext
+> => {
+  const mutationOptions = getQuotationsUpdateMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary The draft as a form needs it: header and lines in the shape the PATCH accepts, at the generation to send back. For preparers (`sales.quotation.prepare`), not viewers
+ */
+export type quotationsEditableResponse200 = {
+  data: QuotationsEditable200;
+  status: 200;
+};
+
+export type quotationsEditableResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsEditableResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsEditableResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsEditableResponseSuccess =
+  quotationsEditableResponse200 & {
+    headers: Headers;
+  };
+export type quotationsEditableResponseError = (
+  | quotationsEditableResponse401
+  | quotationsEditableResponse403
+  | quotationsEditableResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsEditableResponse =
+  quotationsEditableResponseSuccess | quotationsEditableResponseError;
+
+export const getQuotationsEditableUrl = (revision: number) => {
+  return `/v1/quotations/${revision}/editable`;
+};
+
+export const quotationsEditable = async (
+  revision: number,
+  options?: RequestInit,
+): Promise<quotationsEditableResponse> => {
+  return fetchClient<quotationsEditableResponse>(
+    getQuotationsEditableUrl(revision),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getQuotationsEditableQueryKey = (revision?: number) => {
+  return [`/v1/quotations/${revision}/editable`] as const;
+};
+
+export const getQuotationsEditableQueryOptions = <
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getQuotationsEditableQueryKey(revision);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof quotationsEditable>>
+  > = () => quotationsEditable(revision, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!revision,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof quotationsEditable>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QuotationsEditableQueryResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsEditable>>
+>;
+export type QuotationsEditableQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsEditable>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsEditable>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsEditable>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsEditable>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary The draft as a form needs it: header and lines in the shape the PATCH accepts, at the generation to send back. For preparers (`sales.quotation.prepare`), not viewers
+ */
+
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQuotationsEditableQueryOptions(revision, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

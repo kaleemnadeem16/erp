@@ -12,6 +12,7 @@ use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Numbering\LeadNumbering;
 use App\Modules\Sales\Numbering\OpportunityNumbering;
 use App\Modules\Sales\Numbering\QuotationNumbering;
+use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
 use App\Modules\Sales\Support\PermissionVocabulary;
@@ -26,7 +27,7 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDutyManifest::shipped());
+        $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDevPreview::manifest());
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });
