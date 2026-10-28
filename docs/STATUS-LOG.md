@@ -1021,3 +1021,7 @@ Integrated from source 6e246ad897422f745977efe410a4cd729e58eb05 (owner approval 
 ## 2026-10-27 — Phase 5 J1-F1 disabled Job lifecycle database foundation (branch phase5/j1-f1-lifecycle-foundation, #46)
 
 Integrated from source bc17dd61a98e34a83cd98cdac49723af5996d424 (owner approval 2026-10-27); migration `2026_10_26_090000_create_job_lifecycle_foundation`, Jobs models and tests; disabled foundation. Detail: `backend/app/Modules/Jobs/README.md`.
+
+## 2026-10-28 — UI standards pass 1: Stock ledger screens (branch antigravity/ui-standards, #67)
+
+Integrated from source 66fa5f3566861f6359ccb34a533d788051fd5e70 (owner approval 2026-10-28); frontend only, no migration: `frontend/packages/core-ui/src/features/stock-ledger/` screens and columns, with the `stock-moves-columns` unit spec.

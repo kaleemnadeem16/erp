@@ -10,6 +10,9 @@ export default defineConfig({
       client: 'react-query',
       httpClient: 'fetch',
       clean: true,
+      // Declared header parameters (today only the quotation draft writes' required Idempotency-Key) become a typed `headers` argument instead of
+      // something every caller must remember to put into the generic request options.
+      headers: true,
       prettier: true,
       override: {
         mutator: {
