@@ -283,11 +283,20 @@ export function QuotationEditForm({ id }: { id: number }) {
         title={`Edit quotation #${id}`}
         description="Changes apply to the saved draft. Review them before saving."
         actions={
-          <Link className="ui-link-action" to="/quotations">
-            Back to quotations
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link className="ui-link-action" to={`/quotations/${id}/review`}>
+              Review saved quotation
+            </Link>
+            <Link className="ui-link-action" to="/quotations">
+              Back to quotations
+            </Link>
+          </div>
         }
       />
+      <p className="text-sm text-muted-foreground">
+        The review page shows the last saved quotation; unfinished changes are
+        kept in this tab.
+      </p>
       {stored && (
         <p className="text-sm">Picked up your unfinished quotation.</p>
       )}
