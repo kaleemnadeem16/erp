@@ -1029,3 +1029,7 @@ Integrated from source 66fa5f3566861f6359ccb34a533d788051fd5e70 (owner approval 
 ## 2026-10-28 — Phase 4 QL1b-2 quotation draft write adapters (branch phase4/ql1b-2-write-adapters, #53)
 
 Integrated from source 7dbc8c326e4bbdc11a56042962333a06ea3fd8ae (owner approval 2026-10-28): POST create and PATCH update adapters, refusal-status map and generated client; no migration. Detail: `backend/app/Modules/Sales/README.md`.
+
+## 2026-10-28 — Files superseding ADR for ADR 0137 and decision package D1-D12 (branch agent-b/files-adr, #48)
+
+Integrated from source fc83d8271b6d4ea949d941b515be3f984a0df656 (owner approval 2026-10-28); docs only: ADR 0153 (own shared file storage in a dedicated Files module) and the decisions README.
