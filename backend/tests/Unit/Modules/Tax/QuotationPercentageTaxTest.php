@@ -125,8 +125,8 @@ class QuotationPercentageTaxTest extends TestCase
         $known = $calculate($this->facts(line: 'known'), '100.0000', 'NET_FIXED');
         $unknown = $calculate($this->facts(TaxDisposition::Unknown, null, line: 'unknown'), '100.0000', 'NET_FIXED');
         $sum = QuotationTaxCalculation::sum([$unknown, $known])->jsonSerialize();
-        $this->assertSame(['certainty' => 'PARTIAL', 'amount' => null, 'known_amount' => '10.0000'],$sum['tax']);
-        $this->assertSame('PARTIAL',$sum['gross']['certainty']);
-        $this->assertSame('200.0000',$sum['net']['amount']);
+        $this->assertSame(['certainty' => 'PARTIAL', 'amount' => null, 'known_amount' => '10.0000'], $sum['tax']);
+        $this->assertSame('PARTIAL', $sum['gross']['certainty']);
+        $this->assertSame('200.0000', $sum['net']['amount']);
     }
 }

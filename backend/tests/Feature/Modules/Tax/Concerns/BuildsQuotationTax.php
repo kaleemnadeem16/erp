@@ -94,9 +94,9 @@ trait BuildsQuotationTax
         {
             public function __construct(private array $fingerprints, private int $actorId) {}
 
-            public function authorise(User $actor,QuotationTaxContext $context): void
+            public function authorise(User $actor, QuotationTaxContext $context): void
             {
-                if ($actor->id !== $this->actorId || ! in_array($context->fingerprint(),$this->fingerprints,true)) {
+                if ($actor->id !== $this->actorId || ! in_array($context->fingerprint(), $this->fingerprints, true)) {
                     throw new AuthorizationException('Fixture source context is not authorised.');
                 }
             }

@@ -131,8 +131,8 @@ final class QuotationTaxDeclarationResolver
     }
 
     /** @param array<string,int|string|null> $pins */
-    private function unknown(QuotationTaxContext $context,string $reason,array $pins): QuotationTaxDetermination
+    private function unknown(QuotationTaxContext $context, string $reason, array $pins): QuotationTaxDetermination
     {
-        return new QuotationTaxDetermination($context->lineReference,TaxDisposition::Unknown,$reason,$pins);
+        return new QuotationTaxDetermination($context->lineReference, TaxDisposition::Unknown, $reason, $pins);
     }
 }

@@ -13,8 +13,8 @@ use JsonSerializable;
 final readonly class QuotationTaxCalculation implements JsonSerializable
 {
     /**
-     * @param array<string, mixed> $safe
-     * @param array<string, mixed> $internal
+     * @param  array<string, mixed>  $safe
+     * @param  array<string, mixed>  $internal
      */
     public function __construct(private array $safe, private array $internal) {}
 

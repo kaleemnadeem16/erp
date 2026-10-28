@@ -190,14 +190,14 @@ class QuotationTaxDeterminationTest extends TestCase
         $this->allowContext($context);
         $result = app(DetermineQuotationTaxContext::class)($this->actor, $context);
         $before = $result->fingerprint();
-        app(RequireCurrentQuotationTaxEvidence::class)($this->actor,$context,$result);
-        $this->profile($result->internalEvidence()['component_id'],'TAXABLE');
+        app(RequireCurrentQuotationTaxEvidence::class)($this->actor, $context, $result);
+        $this->profile($result->internalEvidence()['component_id'], 'TAXABLE');
         try {
-            app(RequireCurrentQuotationTaxEvidence::class)($this->actor,$context,$result);
+            app(RequireCurrentQuotationTaxEvidence::class)($this->actor, $context, $result);
             $this->fail('Stale Tax evidence accepted.');
         } catch (TaxRefusal $e) {
-            $this->assertSame('TAX_CONTEXT_STALE',$e->reasonCode);
+            $this->assertSame('TAX_CONTEXT_STALE', $e->reasonCode);
         }
-        $this->assertSame($before,$result->fingerprint());
+        $this->assertSame($before, $result->fingerprint());
     }
 }

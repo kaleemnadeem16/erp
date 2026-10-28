@@ -202,7 +202,7 @@ class TaxQuotationDeclarationTest extends TestCase
             $q->execute([$id, $this->actor->id, 'contender']);
             $this->fail('Contender passed the generation fence.');
         } catch (\PDOException $e) {
-            $this->assertSame('55P03',$e->getCode());
+            $this->assertSame('55P03', $e->getCode());
         }
     }
 }
