@@ -138,7 +138,8 @@ inbox)
   done | sort -u
   if [ "${1:-}" = "--seen" ]; then echo "$now" > "$cp"; echo "(checkpoint set to $now)"; fi ;;
 deps) n=$(num "${1:?deps N}"); u=$(unmet "$n"); if [ -n "$u" ]; then echo "unmet dependencies of #$n:"; echo "$u"; exit 1; fi; echo "all dependencies of #$n are integrated or closed" ;;
-show) n=$(num "${1:?show N}"); gh issue view "$n" --comments ;;
+show) n=$(num "${1:?show N}") # --json avoids the default view's projectCards GraphQL call, which GitHub is sunsetting
+  gh issue view "$n" --json number,title,state,labels,body,comments --jq '"#\(.number) [\(.state)] \(.title)\nlabels: \([.labels[].name] | join(", "))\n\n\(.body)\n" + (.comments | map("\n--- \(.author.login) \(.createdAt)\n\(.body)") | join("\n"))' ;;
 new)
   need_coord; title=""; ws=""; prio="p1"; deps="none"; specs=""; hot=""; gate=()
   while [ $# -gt 0 ]; do case "$1" in --title) title="$2"; shift 2 ;; --ws) ws="$2"; shift 2 ;; --prio) prio="$2"; shift 2 ;; --depends) deps="$2"; shift 2 ;; --specs) specs="$2"; shift 2 ;; --hotspots) hot="$2"; shift 2 ;;
@@ -154,7 +155,8 @@ claim)
   L=" $(labels "$n") "
   case "$L" in *" needs:authorisation "*|*" needs:owner-decision "*|*" needs:triage "*) die "#$n is gated ($L): the owner or coordinator must clear it first" ;; esac
   case "$L" in *" status:ready "*) ;; *) die "#$n is not Ready (labels:$L)" ;; esac
-  o=$(owner_of "$n"); [ -z "$o" ] || die "#$n already has an owner: $o"
+  # A task the coordinator pre-assigned to YOU (an owner: label equal to your name) is yours to claim; anyone else's is not.
+  o=$(owner_of "$n"); { [ -z "$o" ] || [ "$o" = "$ME" ]; } || die "#$n already has an owner: $o"
   u=$(unmet "$n"); [ -z "$u" ] || die "#$n has unmet dependencies: $(echo "$u" | tr '\n' ' ')"
   w=$(ws_of "$n"); [ -n "$w" ] || die "#$n has no ws: label; ask the coordinator"
   if case "$L" in *" type:task "*) true ;; *) false ;; esac; then

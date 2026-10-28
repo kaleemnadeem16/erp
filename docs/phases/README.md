@@ -199,6 +199,12 @@ real second customer ([Q8](../OPEN-QUESTIONS.md#q8--second-customer-profile)).
 
 ## Related
 
+- [Task B: J1 execution](phase-5-task-b-j1-execution.md) and [closeout/transactions/verification](phase-5-task-b-j1-closeout.md) — proposed completion-only workflow; design only, J2 separate
+
+- [Task A: R7-to-Job receiver design](phase-5-r7-job-receiver-design.md) and [verification/dependencies](phase-5-r7-job-receiver-verification.md) — proposed authoritative source/receiver integration; design only
+
+- [Phase 5 SP0a design](phase-5-sp0a-design.md) — proposed physical/interface/security package; [transaction/API/verification companion](phase-5-sp0a-delivery-contract.md); integrated design only; SP0b disabled foundation (four tables, no entry point) implemented on branch `phase5/sp0b-jobs-foundation`, pending integration (#28)
+
 - [Rejected-stock exit (supplier return and scrap) — implementation plan](rejected-stock-exit-plan.md) — ADR 0097, accepted, not started
 - [Package feature handoff](package-balance-handoff.md) — grouped package tracking v1 is complete; lists known limitations and future enhancements, independent of other agents' workstreams
 

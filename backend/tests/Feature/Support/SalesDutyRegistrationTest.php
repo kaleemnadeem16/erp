@@ -257,12 +257,20 @@ class SalesDutyRegistrationTest extends TestCase
     {
         $dormant = array_map(fn (SalesDuty $duty): string => $duty->name, array_filter(SalesDutyManifest::shipped()->all(), fn (SalesDuty $duty): bool => ! $duty->isActive()));
 
+        // The only quotation routes are the two read-only QL1b-1 adapters; their duties are STAGED, so they refuse everyone (QuotationDraftReviewApiTest).
+        $readAdapters = ['api/v1/quotations/{revision}', 'api/v1/quotations/{revision}/preview'];
+
         foreach (Route::getRoutes() as $route) {
             $declared = implode(' ', array_merge($route->gatherMiddleware(), [$route->uri()]));
             foreach ($dormant as $name) {
                 $this->assertStringNotContainsString($name, $declared);
             }
-            $this->assertDoesNotMatchRegularExpression('#sales-fx-polic|quotation-rounding|/quotations#', $route->uri(), 'No Phase 4 configuration or quotation route exists yet.');
+            if (in_array($route->uri(), $readAdapters, true)) {
+                $this->assertSame(['GET', 'HEAD'], $route->methods(), 'The quotation adapters are read-only until the write slice is authorised.');
+
+                continue;
+            }
+            $this->assertDoesNotMatchRegularExpression('#sales-fx-polic|quotation-rounding|/quotations#', $route->uri(), 'No Phase 4 configuration or other quotation route exists yet.');
         }
     }
 }

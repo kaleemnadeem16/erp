@@ -891,3 +891,133 @@ Authorised after Stage 1 (`1bd18b6`) was accepted. **Worker:** `erp-worker-1` ha
 ## 2026-10-21 — Multi-agent coordination and feature-delivery workflow
 
 Authorised to implement coordination on top of Stages 1–2. **Mechanism:** GitHub Issues are the single task register (status/priority/owner/workstream as labels; dependencies, branch and specs as fields in the issue body); comments and `docker/dev/tasks.sh submit` carry review evidence; docs and ADRs keep permanent decisions. Chosen over a repo file because the token already has `repo` scope, comments give an audit trail, there are no file conflicts and no service to run; Projects boards were not used (no `project` scope). `tasks.sh claim` refuses an owned task, a gated one, unmet dependencies, or a second owner in an active workstream; `report`/`triage`/`outcome` implement the cross-agent issue process (investigate before any change; ADR conflicts become `needs:owner-decision`); `approve` binds the owner's authorisation to one exact commit; `integrate.sh merge` merges only that commit, non-rewriting, never pushes; `integrate.sh record` writes task → owner → source commit → integration commit → CI run on the issue. `worktree.sh next` moves a persistent worktree to a fresh branch (refuses dirty, untracked, in-progress, unintegrated or unpublished-baseline cases; never deletes); `cleanup-report` lists deletions without doing them. Test policy: feature agents run focused tests and the module regression (Sales: 220 tests in 18 s), CI runs the full suite on every pushed branch, the coordinator runs a full local suite only at defined triggers. **Verified** with temporary issues and worktrees (since deleted): duplicate/gated/dependent claims refused, a blocked dependency visible on the board, a defect raised, triaged, investigated, submitted, approved, merged in a sandbox clone and recorded; a moved branch refused after approval; six worktree-transition refusals and two successful transitions; locks and own-code isolation unchanged. **Found and fixed:** GitHub API TLS errors broke comment/create calls (now retried with a duplicate check); a status-variable bug in the tool; and the **dev stack had been down since a WSL restart at 06:28 UTC** because only the worker had a restart policy: restored (data intact, 1,109 POs), `restart: unless-stopped` added to the long-running services (live via `docker update`; the next `docker compose up` recreates them once). Seeded issues #10–#12 (candidate Phase 4 boundaries, gated) and #13–#17 (infrastructure limitations and owner decisions). Not done: any Phase 4/5/UI implementation, branch pushes, `.wslconfig` changes.
+
+## 2026-10-21 — Documents DF0 foundation (branch phase4/df0-documents-foundation)
+
+`backend/app/Modules/Documents`: provider, document-type and access contracts (ADR 0137), a type registry that refuses missing/incompatible adapters, an owner-defined typed projection schema (no universal line schema), `BindDocumentSubject` (idempotent, fails closed) and the tenant-safe `document_subject_bindings` / `document_operation_receipts` tables (composite company keys, CHECKs, append-only trigger). Public entry disabled: no routes, grants, duties or client change. A PO-shaped test fixture binds with zero Purchasing writes. Quotation binding, snapshot tables and DF1–DF5 are not part of this delivery.
+
+
+## 2026-10-21 — Phase 4 FR2a Tax foundation (#12)
+
+Agent C added the dedicated Tax provider/module, typed classification-only determination and company-scoped immutable
+component/rate/rule/group/dependency versions. Generation-fenced Actions use expected generation and atomic replay receipts;
+database activation validates graph periods/tenancy/method/base/mode/currency/assessment scope and cycles, freezing activated graphs.
+Tax evidence rejects updates/deletes/truncation and populated rollback. tax.configuration.manage stays STAGED/unregistered;
+tax.profile.manage remains SPECIFIED for FR2b. No public routes, live grants, UI/client changes, Sales/Documents integration,
+FR3 calculation or FR4 changes. See [Tax README](../backend/app/Modules/Tax/README.md) for support boundaries and verification applicability.
+
+Local verification: Tax regression 15 tests / 768 assertions; Architecture 52 tests / 119 assertions including all five required
+ratchets; Pint 30 files; whole-project PHPStan; empty-schema migration apply/rollback/reapply; populated rollback refusal test;
+codegen --check (client unchanged). Browser specs and full local suite were not run (no public surface; coordinator/CI responsibility).
+
+First feature-branch CI identified a stale explicit module-owner list in PermissionRegistrationTest. The Tax provider contributes
+an empty vocabulary, so its expected owner list now includes tax and asserts that vocabulary is empty. No live duty was added.
+
+The corrected PermissionRegistrationTest passes locally (7 tests / 47 assertions; Pint passed). Hosted CI's separate backend
+shard 4 failure is the pre-existing GCX duplicate fixture leak tracked by #27/#21, reported with exact job evidence in #33.
+Issue #12 is blocked on #33 pending coordinator integration of #27; no green-CI submission is claimed.
+
+## 2026-10-21 — Documents DF1a template and page-policy configuration (branch phase4/df1a-template-page-policy)
+
+Insert-only `document_template_versions` and `document_page_policy_versions` (curated layout ids, typed section/table rules, A4/Letter, margins, header/footer bands), `document_company_defaults` moving one generation at a time with an append-only `document_default_activations` history the database checks at commit. `LayoutConstraints` express type constraints (A4-only default; Letter by opt-in). Internal Actions: version, activate (generation lock, reasoned downgrade, pinned-version port) and `ResolveDocumentPolicy` (shipped → Company → type → explicit; brand reported NOT_AVAILABLE, never a fallback). No routes, duties, grants, brand/assets, manifests or client change; Company untouched. The STAGED-duty question is deferred: the AU0/AU1 manifest leaves `documents.*` registration to the Documents slices and no guarded public Action exists yet.
+
+## 2026-10-21 — Phase 5 SP0a design proposed (#19)
+
+Owner accepted the provisional read-only readiness baseline at `3ed28be`; ADRs 0145–0152 remain
+authoritative. R7 accepted-service source direction and independent J1 completion-only/J2 optional
+labour milestones confirmed. Proposed [physical/interface/security design](phases/phase-5-sp0a-design.md)
+and [transaction/API/verification contract](phases/phase-5-sp0a-delivery-contract.md) specify tenant-safe
+evidence/head models, receiver/receipts, per-duty scope, atomicity, source readiness, failure coverage
+and smallest disabled SP0b. Technical choices await review; no application code, migrations, grants,
+routes or SP0b implementation. No runtime verification. QL0 committed; #10 internal QL1a blocked on test-isolation issue #21,
+#11 DF0 in review (not integrated), #12 gated at inspection. CA/R7/Job/source adapters remain
+delivery dependencies, not inferred from active tasks. Shared edits: STATUS row and this log; phase
+index/overview link the package. Accepted ADRs and Phase 4 contracts untouched.
+
+## 2026-10-22 — Phase 5 SP0b disabled Jobs foundation (branch phase5/sp0b-jobs-foundation, #28)
+
+`backend/app/Modules/Jobs`: `service_jobs`, `job_handover_origins` (points at the Job; one per Job and per purpose + business identity), `job_baselines` and `job_events`, with company-scoped composite keys, state/generation checks, per-Job uniqueness and append-only origins/baselines/events through the Jobs-specific `job_evidence_append_only_guard`. `down()` refuses while any row exists. A typed `ReleasedServiceInput` and a pure validator only; no receiver, Action, duty, permission, route, grant or client change, and no quantity, measure, money or Sales reference. Fixtures exist only in tests. Migration `2026_10_22_090000_create_jobs_foundation`.
+
+
+## 2026-10-22 — FR2a prerequisite integration (#12)
+
+Merged origin/develop at f0e2871, including the approved #27 raw-fixture currency cleanup. Preserved both Tax and Phase 5
+append-only log entries while resolving their append conflict. #33 is closed and #12 is unblocked. The owner-list assertion
+already includes Tax with an explicitly empty live vocabulary (33e1420); it remains applicable after the merge.
+
+## 2026-10-22 — Task A R7-to-Job receiver design proposed (#32)
+
+Continued integrated SP0a (#19, merge `3b2d4d1`, CI success recorded) from develop f0e2871.
+[Receiver design](phases/phase-5-r7-job-receiver-design.md) and
+[verification/dependency handoff](phases/phase-5-r7-job-receiver-verification.md) propose parent-consistent
+Jobs→Sales references, fixed-deliverable identity/pinned conditions without invented operational
+quantity, origin receiver receipt, same-connection atomic release, Numbering lock review and exact
+request/business replay separation. Actual CA/HA keys, source verifier, writer locks/connection proof
+and Jobs receiver remain unavailable at inspected baseline; no branch/task treated as integration.
+DF0 exists; #28 disabled foundation separately authorised/queued, not implemented here. J1 remains
+independent of J2; lifecycle/closeout, labour/costing, Inventory/Purchasing remain separate tasks.
+Shared edits: Phase 5 STATUS row, this log, phase index/overview links. No accepted ADR/Phase 4
+contract edits, code, migrations, permission registrations/grants, routes or runtime tests.
+Joint Sales/security review requested on #32; technical seams await review before any implementation.
+
+## 2026-10-22 — Task B J1 execution and closeout design proposed (#34)
+
+Continued Task A integrated at `5525293` on the claimed codex/phase5-task-b-j1-execution branch.
+[J1 execution](phases/phase-5-task-b-j1-execution.md) and
+[closeout/transaction/verification companion](phases/phase-5-task-b-j1-closeout.md) propose responsibility,
+start/independent holds/fixed-deliverable attestation, source-owned readiness/closeout, historical
+evidence, STAGED duty/scope matrix, client command receipts, safe worksheet and smallest disabled
+batch. GATED: Sales/R7 authoritative source/conditions, Jobs #28 (In Review on agent-b branch, not
+integrated at inspected baseline), receiver activities/components, Inventory ADR 0040 and Purchasing
+acceptance/owning correction/readiness, holder inventory and source lock/generation proof. No missing
+adapter treated as NONE; optional absent labour never a fabricated closure prerequisite. J2 labour/
+costing remains separate. No ADR/Phase 4 contract edits, code, migrations, routes, grants or activation;
+no runtime verification. Shared edits: Phase 5 STATUS row, this log, phase index/overview links.
+
+## 2026-10-22 — FR2a review corrections (#12)
+
+Merged origin/develop at 5525293 (QL1a, DF1a, SP0a/Task A and #27), preserving both sides of the STATUS/STATUS-LOG conflicts.
+Tax's staged manifest now skips both registry calls when no duty is ACTIVE, so it adds no empty Tax owner group to public
+role metadata. Reverted Agent C's shared PermissionRegistrationTest expectation change; a Tax-local regression asserts owner
+absence. Replaced the Sales EffectivePeriod import with a Tax-local calendar-date/half-open period value object and focused
+date/boundary refusal tests. No Sales edits or new FR2b/#29a work. The existing migration name is retained (deterministic ordering).
+
+Correction validation on the merged baseline: Tax regression 17 tests/781 assertions; unchanged shared permission-registration
+suite 7 tests/46 assertions; Architecture 52 tests/119 assertions including all five required ratchets; Pint 33 PHP files;
+whole-project PHPStan, migrate-cycle and codegen --check all pass. No generated-client change.
+
+## 2026-10-23 — Phase 4 FR2b Tax-owned Party tax profiles and exemptions, disabled foundation (branch agent-c/fr2b-tax-profiles, #35)
+
+Integrated from source c66fbb2d6ed99d697bb81dcb9ab05ad33b472e57 (owner approval relayed 2026-10-23); migration `2026_10_22_140000_create_tax_party_profiles`. Detail: `backend/app/Modules/Tax/README.md`, `docs/domain/tax.md`.
+
+## 2026-10-26 — Documents TRUNCATE protection for append-only tables (branch phase4/documents-truncate-guard, #25)
+
+Integrated from source 72c38a30ec4cb34c4d5c6f101e1a8ad0935978c0 (owner approval relayed 2026-10-26); migration `2026_10_22_100000_guard_documents_truncate` guards TRUNCATE on six Documents tables and reuses `documents_append_only_guard`. Owner accepted the migration-ordering attention (sorts before the Tax profile migration; no Tax table referenced). Detail: `backend/app/Modules/Documents/README.md`.
+
+## 2026-10-27 — Phase 5 Task D: J1 lifecycle foundation design and J1-F1 batch proposal (branch codex/phase5-task-d-j1-foundation, #42)
+
+Integrated from source ff75f726a296ea94552b081bf703ea429663316e (owner approval relayed 2026-10-27); planning only, docs only: `docs/phases/phase-5-task-d-j1-foundation.md`, `phase-5-task-d-j1-f1-proposal.md`.
+
+## 2026-10-27 — Phase 4 QL1b bounded quotation draft review API (branch phase4/ql1b-draft-review, #30)
+
+Integrated from source d1e6dacad2e36f16a32ac2411f3ac3067a97c804 (owner approval relayed 2026-10-27): two read-only quotation GET routes (`quotations/{revision}`, `quotations/{revision}/preview`) and the generated client; `sales.quotation.view`/`prepare` remain STAGED (SalesAccess refuses everyone). No migration, seed or grant. Detail: `backend/app/Modules/Sales/README.md`.
+
+## 2026-10-27 — Shared file and document upload foundation design (branch agent-b/shared-file-foundation-design, #47)
+
+Integrated from source 1c7e8f22af18e7c7a6d9075c07369cb765fd9920 (owner approval relayed 2026-10-27); design proposal only, docs only, not implementation authority: `docs/architecture/shared-file-foundation-design.md`.
+
+## 2026-10-27 — Phase 5 Task E: Jobs source integration design (branch codex/phase5-task-e-source-integration, #43)
+
+Integrated from source 6e2107f67dd6acf54fb187f769550aaeaa7aa05b (owner approval relayed 2026-10-27); planning only, docs only: `docs/phases/phase-5-task-e-source-integration.md`. Task D lines in `phase-5-job-execution.md` preserved.
+
+## 2026-10-27 — Phase 5 Task F: Jobs permission holder recipe and activation plan (branch codex/phase5-task-f-jobs-access-plan, #51)
+
+Integrated from source 4258ec6f55493802d7df128b8a0045f4171f664a (owner approval 2026-10-27); design only, docs only: `docs/phases/phase-5-task-f-jobs-access-plan.md`, `phase-5-task-f-jobs-access-batch.md`, `docs/domain/job-execution-lifecycle.md`.
+
+## 2026-10-27 — Phase 5 Task G: Sales release (R7) implementation batch proposal (branch codex/phase5-task-g-r7-batch-proposal, #52)
+
+Integrated from source 6e246ad897422f745977efe410a4cd729e58eb05 (owner approval 2026-10-27); design only, docs only: `docs/phases/phase-5-task-g-r7-batch-proposal.md`, `phase-5-task-g-r7-delivery-matrix.md`, `phase-5-r7-job-receiver-verification.md`.
+
+## 2026-10-27 — Phase 5 J1-F1 disabled Job lifecycle database foundation (branch phase5/j1-f1-lifecycle-foundation, #46)
+
+Integrated from source bc17dd61a98e34a83cd98cdac49723af5996d424 (owner approval 2026-10-27); migration `2026_10_26_090000_create_job_lifecycle_foundation`, Jobs models and tests; disabled foundation. Detail: `backend/app/Modules/Jobs/README.md`.
