@@ -15,6 +15,10 @@ use App\Modules\Sales\Numbering\QuotationNumbering;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\Issue\ControlsIssueCheck;
+use App\Modules\Sales\Support\Quotation\Issue\TaxIssueCheck;
+use App\Modules\Sales\Support\Quotation\Issue\UnconfiguredControlsIssueCheck;
+use App\Modules\Sales\Support\Quotation\Issue\UndeterminedTaxIssueCheck;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
@@ -27,6 +31,9 @@ class SalesServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDutyManifest::shipped());
+        // Issue readiness asks two independent evidence questions. Until the Tax-owned FR3 determination and a configured control set exist, both answer "not yet".
+        $this->app->bind(TaxIssueCheck::class, UndeterminedTaxIssueCheck::class);
+        $this->app->bind(ControlsIssueCheck::class, UnconfiguredControlsIssueCheck::class);
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });
