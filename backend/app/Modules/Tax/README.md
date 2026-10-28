@@ -80,6 +80,8 @@ Illustrative fixtures are tests, never installed company tax law. Full-suite and
 
 ## Related
 
+- **FR3 T1/T2 (disabled):** versioned quotation declarations, guarded context determination and BASIC exclusive percentage calculation; [contract and integration gates](../../../../docs/domain/quotation-tax-determination.md).
+
 - [Financial contract](../../../../docs/domain/quotation-financial-calculation.md)
 - [R4 slices](../../../../docs/phases/phase-4-r4-implementation-slices.md)
 - [Rollout manifest](../../../../docs/phases/phase-4-au0-au1-rollout-manifest.md)
