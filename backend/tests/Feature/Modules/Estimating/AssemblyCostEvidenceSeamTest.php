@@ -74,7 +74,9 @@ class AssemblyCostEvidenceSeamTest extends TestCase
         ]);
         $this->uncosted = Item::create(['code' => 'cost-unknown', 'name' => 'No cost yet', 'type' => ItemType::Raw, 'stock_uom_id' => $this->kg->id, 'category_id' => $category->id]);
         // The owning workflow's authority (here a test double of the Sales one): active member, the workflow's own duty, unrestricted scope. Never an estimating cost permission.
-        app(CostEvidenceAuthorities::class)->register(new class(self::WORKFLOW, self::DUTY) implements CostEvidenceAuthority
+        // A registry of its own, so the test exercises the seam against exactly this double — whatever a consuming module registers in a combined tree is not under test here.
+        $this->app->instance(CostEvidenceAuthorities::class, $authorities = new CostEvidenceAuthorities);
+        $authorities->register(new class(self::WORKFLOW, self::DUTY) implements CostEvidenceAuthority
         {
             public function __construct(private readonly CostEvidenceWorkflow $workflow, private readonly string $duty) {}
 
