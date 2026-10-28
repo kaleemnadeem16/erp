@@ -304,7 +304,9 @@ class FilesKernelTest extends TestCase
         } catch (\RuntimeException) {
             $this->addToAssertionCount(1);
         } finally {
-            FileBlob::flushEventListeners();
+            // Only the listener this test added goes: flushing every FileBlob listener would also drop the model's company scoping for the rest of the run.
+            FileBlob::getEventDispatcher()->forget('eloquent.creating: '.FileBlob::class);
+            \Illuminate\Database\Eloquent\Model::clearBootedModels();
         }
         $this->assertSame([], $this->objects());
         $this->assertSame([0, 0], [DB::table('file_blobs')->count(), DB::table('file_blob_events')->count()]);
