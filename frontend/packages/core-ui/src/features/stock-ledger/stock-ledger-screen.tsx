@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
 import { useItemsById } from '../../lib/use-records-by-id';
 import { ItemCombobox, LocationCombobox } from '../../components/lookups/entity-comboboxes';
-import { Search, SlidersHorizontal, X, Printer, Download, Filter } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Printer, Download, Filter, ChevronUp } from 'lucide-react';
 import type { RowSelectionState, SortingState } from '@tanstack/react-table';
 import {
   useStockMovesIndex,
@@ -82,10 +83,13 @@ export function StockLedgerScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchInput]);
 
-  // Clear row selection when filters, search input or pagination change
+  const [searchParams] = useSearchParams();
+
+  // Clear row selection when filters or pagination change
+  const filterKey = `${query.cursor ?? ''}:${searchParams.toString()}`;
   useEffect(() => {
-    setRowSelection({});
-  }, [query.filters, searchInput, query.cursor]);
+    setRowSelection((prev) => (Object.keys(prev).length > 0 ? {} : prev));
+  }, [filterKey]);
 
   // Only the filtered item is needed (for the filter chip); it is resolved by id.
   const items = useItemsById<ItemResource>(query.filters.item_id ? [Number(query.filters.item_id)] : [], []);
@@ -216,6 +220,12 @@ export function StockLedgerScreen() {
     query.setFilter('source_type', undefined);
     query.setFilter('moved_from', undefined);
     query.setFilter('moved_to', undefined);
+  };
+
+  const clearAdvancedFilters = () => {
+    query.setFilter('location_id', undefined);
+    query.setFilter('source_type', undefined);
+    query.setFilter('batch_id', undefined);
   };
 
   function exportSelectedCsv() {
@@ -368,50 +378,92 @@ export function StockLedgerScreen() {
         </Button>
       </div>
 
-      {/* Desktop Advanced Filter Panel */}
-      {advancedOpen && (
-        <div
-          role="region"
-          aria-label="Advanced filters"
-          className="ui-filter-panel grid gap-3 rounded-lg border border-border bg-card p-4 shadow-xs sm:grid-cols-2 md:grid-cols-3"
-        >
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Location</Label>
-            <LocationCombobox
-              label="Location"
-              placeholder="All locations"
-              className="h-10 w-full"
-              warehouseId={query.filters.warehouse_id ? Number(query.filters.warehouse_id) : undefined}
-              value={query.filters.location_id ?? 'all'}
-              onValueChange={(value) => query.setFilter('location_id', value === 'all' ? undefined : value)}
-              allLabel="All locations"
-            />
-          </div>
+      {/* Collapsible Advanced Filters Drawer (Desktop) */}
+      <div
+        className={cn(
+          'hidden md:grid transition-[grid-template-rows,opacity,transform] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none',
+          advancedOpen
+            ? 'grid-rows-[1fr] opacity-100 translate-y-0'
+            : 'grid-rows-[0fr] opacity-0 -translate-y-2 pointer-events-none'
+        )}
+        aria-hidden={!advancedOpen}
+        inert={!advancedOpen}
+      >
+        <div className="overflow-hidden">
+          <div
+            role="region"
+            aria-label="Advanced filters"
+            className="rounded-lg border border-border bg-card p-4 text-card-foreground shadow-xs ui-filter-panel"
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                <SlidersHorizontal aria-hidden="true" className="h-4 w-4" />
+                Advanced filters
+              </span>
+              <div className="flex items-center gap-2">
+                {advancedFilterCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={clearAdvancedFilters}
+                  >
+                    Reset filters
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 gap-1 px-2 text-xs"
+                  onClick={() => setAdvancedOpen(false)}
+                  aria-label="Close filters"
+                >
+                  Hide filters
+                  <ChevronUp aria-hidden="true" className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Source type</Label>
-            <Input
-              placeholder="Source type (e.g. goods_receipt)…"
-              aria-label="Source type"
-              value={query.filters.source_type ?? ''}
-              onChange={(event) => query.setFilter('source_type', event.target.value || undefined)}
-              className="h-10 w-full"
-            />
-          </div>
+            <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Location</Label>
+                <LocationCombobox
+                  label="Location"
+                  placeholder="All locations"
+                  className="h-10 w-full"
+                  warehouseId={query.filters.warehouse_id ? Number(query.filters.warehouse_id) : undefined}
+                  value={query.filters.location_id ?? 'all'}
+                  onValueChange={(value) => query.setFilter('location_id', value === 'all' ? undefined : value)}
+                  allLabel="All locations"
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Batch ID</Label>
-            <Input
-              type="number"
-              placeholder="Batch ID…"
-              aria-label="Batch ID"
-              value={query.filters.batch_id ?? ''}
-              onChange={(event) => query.setFilter('batch_id', event.target.value || undefined)}
-              className="h-10 w-full"
-            />
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Source type</Label>
+                <Input
+                  placeholder="Source type (e.g. goods_receipt)…"
+                  aria-label="Source type"
+                  value={query.filters.source_type ?? ''}
+                  onChange={(event) => query.setFilter('source_type', event.target.value || undefined)}
+                  className="h-10 w-full"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-sm font-medium">Batch ID</Label>
+                <Input
+                  type="number"
+                  placeholder="Batch ID…"
+                  aria-label="Batch ID"
+                  value={query.filters.batch_id ?? ''}
+                  onChange={(event) => query.setFilter('batch_id', event.target.value || undefined)}
+                  className="h-10 w-full"
+                />
+              </div>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Active filter chips */}
       {activeFilters.length > 0 && (
@@ -628,7 +680,7 @@ export function StockLedgerScreen() {
       )}
 
       {/* Desktop Side Panel / Sheet Detail View */}
-      {selectedMoveId && (
+      {selectedMoveId != null && selectedMoveId > 0 && (
         <StockMoveDetailScreen
           moveId={selectedMoveId}
           presentation="sheet"

@@ -33,11 +33,13 @@ export function StockMoveDetailScreen({
   const mayViewValuation = usePermission('inventory.valuation.view');
   const effectiveMoveId = moveId ?? Number(params.id);
 
+  const isInvalidId = Number.isNaN(effectiveMoveId) || effectiveMoveId <= 0;
+
   const moveQuery = useStockMovesShow(effectiveMoveId, {
     include: mayViewValuation
       ? 'item,from_location,to_location,batch,valuation_entries'
       : 'item,from_location,to_location,batch',
-  }, { query: { enabled: !Number.isNaN(effectiveMoveId) && effectiveMoveId > 0 } });
+  }, { query: { enabled: !isInvalidId } });
   const move = moveQuery.data?.status === 200 ? moveQuery.data.data.data : undefined;
 
   const handleClose = () => {
@@ -48,7 +50,7 @@ export function StockMoveDetailScreen({
     }
   };
 
-  if (moveQuery.isLoading) {
+  if (!isInvalidId && (moveQuery.isLoading || (moveQuery.isPending && !moveQuery.isError && !moveQuery.data))) {
     const loadingBody = (
       <DetailPageLayout>
         <DetailSection title="Movement">
@@ -97,16 +99,20 @@ export function StockMoveDetailScreen({
     );
   }
 
-  if (moveQuery.isError || !move) {
+  if (isInvalidId || moveQuery.isError || !move) {
     const errorBody = (
       <div className="space-y-4 rounded-lg border border-destructive/50 bg-destructive/5 p-6 text-card-foreground">
         <p className="text-sm font-medium text-destructive">
-          {getApiErrorMessage(moveQuery.error) ?? "Couldn't load this stock movement."}
+          {isInvalidId
+            ? 'Invalid stock movement ID.'
+            : getApiErrorMessage(moveQuery.error) ?? "Couldn't load this stock movement."}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => void moveQuery.refetch()}>
-            Try again
-          </Button>
+          {!isInvalidId && (
+            <Button variant="outline" size="sm" onClick={() => void moveQuery.refetch()}>
+              Try again
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={handleClose}>
             <ArrowLeft className="mr-1.5 h-4 w-4" />
             Back to stock ledger
