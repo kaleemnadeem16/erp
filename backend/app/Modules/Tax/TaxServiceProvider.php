@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Tax;
 
 use App\Modules\Tax\Models\TaxRateVersion;
-use App\Modules\Tax\Support\TaxDutyManifest;
 use App\Modules\Tax\Support\Quotation\QuotationTaxContextAuthorizer;
 use App\Modules\Tax\Support\Quotation\UnavailableQuotationTaxConsumer;
+use App\Modules\Tax\Support\TaxDutyManifest;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;

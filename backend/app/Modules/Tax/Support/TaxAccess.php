@@ -30,6 +30,7 @@ final class TaxAccess
             || (int) $current->company_id !== app(CompanyContext::class)->id() || $current->status !== MemberStatus::Active) {
             throw new AuthorizationException('Tax operations are not available to this actor.');
         }
+
         return $current;
     }
 

@@ -12,12 +12,21 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tax_quotation_declaration_versions', function (Blueprint $t): void {
-            $t->id(); $t->foreignId('company_id')->constrained(); $t->string('code', 80);
-            $t->integer('version_no'); $t->unsignedBigInteger('predecessor_id')->nullable();
-            $t->string('jurisdiction', 80); $t->date('effective_from'); $t->date('effective_to')->nullable();
-            $t->string('tax_mode', 20); $t->string('calculation_version', 20);
-            $t->string('settlement_basis', 30); $t->string('rounding_mode', 20);
-            $t->unsignedBigInteger('created_by'); $t->text('reason'); $t->timestampTz('created_at')->useCurrent();
+            $t->id();
+            $t->foreignId('company_id')->constrained();
+            $t->string('code', 80);
+            $t->integer('version_no');
+            $t->unsignedBigInteger('predecessor_id')->nullable();
+            $t->string('jurisdiction', 80);
+            $t->date('effective_from');
+            $t->date('effective_to')->nullable();
+            $t->string('tax_mode', 20);
+            $t->string('calculation_version', 20);
+            $t->string('settlement_basis', 30);
+            $t->string('rounding_mode', 20);
+            $t->unsignedBigInteger('created_by');
+            $t->text('reason');
+            $t->timestampTz('created_at')->useCurrent();
             $t->unique(['company_id', 'id'], 'tax_qd_tenant_id');
             $t->unique(['company_id', 'code', 'version_no'], 'tax_qd_series');
             $t->foreign(['company_id', 'predecessor_id'], 'tax_qd_predecessor')->references(['company_id', 'id'])->on('tax_quotation_declaration_versions');
@@ -33,17 +42,25 @@ return new class extends Migration
         DB::statement("ALTER TABLE tax_quotation_declaration_versions ADD CONSTRAINT tax_qd_period EXCLUDE USING gist
             (company_id WITH =, jurisdiction WITH =, daterange(effective_from,effective_to,'[)') WITH &&)");
         Schema::create('tax_quotation_declaration_rules', function (Blueprint $t): void {
-            $t->id(); $t->foreignId('company_id')->constrained(); $t->unsignedBigInteger('declaration_version_id');
-            $t->string('nature', 10); $t->string('classification', 80);
-            $t->unsignedBigInteger('group_version_id'); $t->unsignedBigInteger('component_id'); $t->unsignedBigInteger('rule_version_id');
-            $t->string('disposition', 20); $t->boolean('requires_party_profile'); $t->text('grounds')->nullable();
-            $t->unsignedBigInteger('created_by'); $t->timestampTz('created_at')->useCurrent();
+            $t->id();
+            $t->foreignId('company_id')->constrained();
+            $t->unsignedBigInteger('declaration_version_id');
+            $t->string('nature', 10);
+            $t->string('classification', 80);
+            $t->unsignedBigInteger('group_version_id');
+            $t->unsignedBigInteger('component_id');
+            $t->unsignedBigInteger('rule_version_id');
+            $t->string('disposition', 20);
+            $t->boolean('requires_party_profile');
+            $t->text('grounds')->nullable();
+            $t->unsignedBigInteger('created_by');
+            $t->timestampTz('created_at')->useCurrent();
             $t->unique(['company_id', 'id'], 'tax_qdr_tenant_id');
-            $t->unique(['company_id','declaration_version_id','nature','classification','component_id'], 'tax_qdr_identity');
-            $t->foreign(['company_id','declaration_version_id'], 'tax_qdr_declaration')->references(['company_id','id'])->on('tax_quotation_declaration_versions');
-            $t->foreign(['company_id','group_version_id','component_id'], 'tax_qdr_member')->references(['company_id','group_version_id','component_id'])->on('tax_group_members');
-            $t->foreign(['company_id','rule_version_id','component_id'], 'tax_qdr_rule')->references(['company_id','id','component_id'])->on('tax_rule_versions');
-            $t->foreign(['company_id','created_by'], 'tax_qdr_creator')->references(['company_id','id'])->on('users');
+            $t->unique(['company_id', 'declaration_version_id', 'nature', 'classification', 'component_id'], 'tax_qdr_identity');
+            $t->foreign(['company_id', 'declaration_version_id'], 'tax_qdr_declaration')->references(['company_id', 'id'])->on('tax_quotation_declaration_versions');
+            $t->foreign(['company_id', 'group_version_id', 'component_id'], 'tax_qdr_member')->references(['company_id', 'group_version_id', 'component_id'])->on('tax_group_members');
+            $t->foreign(['company_id', 'rule_version_id', 'component_id'], 'tax_qdr_rule')->references(['company_id', 'id', 'component_id'])->on('tax_rule_versions');
+            $t->foreign(['company_id', 'created_by'], 'tax_qdr_creator')->references(['company_id', 'id'])->on('users');
         });
         DB::statement("ALTER TABLE tax_quotation_declaration_rules ADD CONSTRAINT tax_qdr_shape CHECK (
             nature IN ('GOODS','SERVICES') AND length(trim(classification)) > 0
@@ -55,12 +72,16 @@ return new class extends Migration
         // EXEMPT can only come from the existing protected, activated FR2b evidence,
         // never an unaudited blanket declaration or a seller-provided certificate.
         Schema::create('tax_quotation_declaration_activations', function (Blueprint $t): void {
-            $t->id(); $t->foreignId('company_id')->constrained(); $t->unsignedBigInteger('declaration_version_id');
-            $t->unsignedBigInteger('activated_by'); $t->text('reason'); $t->timestampTz('created_at')->useCurrent();
-            $t->unique(['company_id','id'], 'tax_qda_tenant_id');
-            $t->unique(['company_id','declaration_version_id'], 'tax_qda_identity');
-            $t->foreign(['company_id','declaration_version_id'], 'tax_qda_declaration')->references(['company_id','id'])->on('tax_quotation_declaration_versions');
-            $t->foreign(['company_id','activated_by'], 'tax_qda_actor')->references(['company_id','id'])->on('users');
+            $t->id();
+            $t->foreignId('company_id')->constrained();
+            $t->unsignedBigInteger('declaration_version_id');
+            $t->unsignedBigInteger('activated_by');
+            $t->text('reason');
+            $t->timestampTz('created_at')->useCurrent();
+            $t->unique(['company_id', 'id'], 'tax_qda_tenant_id');
+            $t->unique(['company_id', 'declaration_version_id'], 'tax_qda_identity');
+            $t->foreign(['company_id', 'declaration_version_id'], 'tax_qda_declaration')->references(['company_id', 'id'])->on('tax_quotation_declaration_versions');
+            $t->foreign(['company_id', 'activated_by'], 'tax_qda_actor')->references(['company_id', 'id'])->on('users');
         });
         DB::statement('ALTER TABLE tax_quotation_declaration_activations ADD CONSTRAINT tax_qda_reason CHECK (length(trim(reason)) > 0)');
         DB::unprepared(<<<'SQL'
@@ -127,12 +148,18 @@ SQL);
     {
         // Take locks before checking, so a concurrent writer cannot add history after the check.
         foreach ($this->tables() as $table) {
-            if (Schema::hasTable($table)) DB::statement("LOCK TABLE {$table} IN ACCESS EXCLUSIVE MODE");
+            if (Schema::hasTable($table)) {
+                DB::statement("LOCK TABLE {$table} IN ACCESS EXCLUSIVE MODE");
+            }
         }
         foreach ($this->tables() as $table) {
-            if (Schema::hasTable($table) && DB::table($table)->exists()) throw new RuntimeException('Quotation tax evidence exists; rollback would erase history.');
+            if (Schema::hasTable($table) && DB::table($table)->exists()) {
+                throw new RuntimeException('Quotation tax evidence exists; rollback would erase history.');
+            }
         }
-        foreach (array_reverse($this->tables()) as $table) Schema::dropIfExists($table);
+        foreach (array_reverse($this->tables()) as $table) {
+            Schema::dropIfExists($table);
+        }
         DB::statement('DROP FUNCTION IF EXISTS tax_fr3_write_guard()');
         DB::statement('DROP FUNCTION IF EXISTS tax_fr3_validate_declaration(bigint,bigint)');
     }
@@ -140,6 +167,6 @@ SQL);
     /** @return list<string> */
     private function tables(): array
     {
-        return ['tax_quotation_declaration_versions','tax_quotation_declaration_rules','tax_quotation_declaration_activations'];
+        return ['tax_quotation_declaration_versions', 'tax_quotation_declaration_rules', 'tax_quotation_declaration_activations'];
     }
 };

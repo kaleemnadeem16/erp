@@ -1,7 +1,9 @@
 <?php
 
 declare(strict_types=1);
+
 namespace App\Modules\Tax\Support\Quotation;
+
 use App\Modules\Tax\Support\EffectivePeriod;
 use App\Modules\Tax\Support\TaxClassification;
 use App\Modules\Tax\Support\TaxRefusal;
@@ -17,11 +19,16 @@ final readonly class QuotationTaxContext
             throw TaxRefusal::because('TAX_CONTEXT_INVALID', 'Invalid quotation tax context.');
         }
     }
+
     public function fingerprint(): string
     {
-        return hash('sha256', json_encode([$this->companyId,$this->partyId,$this->currencyId,$this->lineReference,$this->jurisdiction,$this->taxDate,
-            $this->classification->source->value,$this->classification->nature?->value,$this->classification->code,$this->classification->provenance], JSON_THROW_ON_ERROR));
+        return hash('sha256', json_encode([$this->companyId, $this->partyId, $this->currencyId, $this->lineReference, $this->jurisdiction, $this->taxDate,
+            $this->classification->source->value, $this->classification->nature?->value, $this->classification->code, $this->classification->provenance], JSON_THROW_ON_ERROR));
     }
+
     /** @return array<string, mixed> */
-    public function __debugInfo(): array { return []; }
+    public function __debugInfo(): array
+    {
+        return [];
+    }
 }
