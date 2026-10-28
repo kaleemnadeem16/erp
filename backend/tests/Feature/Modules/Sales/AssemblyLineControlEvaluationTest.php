@@ -9,9 +9,14 @@ use App\Models\ExchangeRate;
 use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Estimating\Actions\ActivateAssemblyVersion;
+use App\Modules\Estimating\Actions\ReadAssemblyCostEvidence;
 use App\Modules\Estimating\Models\Assembly;
 use App\Modules\Estimating\Models\AssemblyVersion;
+use App\Modules\Estimating\Support\CostEvidenceAuthorities;
+use App\Modules\Estimating\Support\CostEvidenceNotAuthorised;
+use App\Modules\Estimating\Support\CostEvidenceWorkflow;
 use App\Modules\Inventory\Models\AvcoPool;
 use App\Modules\Inventory\Models\Category;
 use App\Modules\Inventory\Models\Item;
@@ -393,5 +398,112 @@ class AssemblyLineControlEvaluationTest extends TestCase
 
         $this->assertSame(['c' => 'UNEVALUABLE'], $this->outcomes($view));
         $this->assertStringNotContainsString('2348', (string) json_encode($view));
+    }
+
+    /** @return array<string, User> people who must NOT be able to open raw cost evidence, however they ask */
+    private function unentitledActors(): array
+    {
+        $viewOnly = User::factory()->create();
+        Permission::findOrCreate(PermissionVocabulary::QUOTATION_VIEW, 'web');
+        $viewOnly->givePermissionTo(PermissionVocabulary::QUOTATION_VIEW);
+        $limited = User::factory()->create();
+        $limited->givePermissionTo(self::PREPARE);
+        AccessScopeLimit::create(['user_id' => $limited->id, 'permission' => self::PREPARE, 'scope' => 'MY_UNITS']);
+        $suspended = User::factory()->create();
+        $suspended->givePermissionTo(self::PREPARE);
+        DB::table('users')->where('id', $suspended->id)->update(['status' => MemberStatus::Suspended->value]);
+        $invited = User::factory()->create();
+        $invited->givePermissionTo(self::PREPARE);
+        DB::table('users')->where('id', $invited->id)->update(['status' => MemberStatus::Invited->value]);
+        $stale = User::factory()->create();
+        $stale->givePermissionTo(self::PREPARE);
+        $hydrated = User::query()->findOrFail($stale->id);
+        DB::table('users')->where('id', $stale->id)->update(['status' => MemberStatus::Suspended->value]);
+
+        return ['nobody' => User::factory()->create(), 'view only' => $viewOnly, 'limited to my units' => $limited, 'suspended' => $suspended->fresh(), 'invited' => $invited->fresh(), 'stale hydrated, suspended since' => $hydrated];
+    }
+
+    /** @param callable(User): mixed $call */
+    private function assertNoCostEscapes(callable $call, string $what): void
+    {
+        $queries = [];
+        DB::listen(function ($query) use (&$queries): void {
+            if (preg_match('/avco_pools|resource_rates|stock_layers|assembly_components/i', $query->sql) === 1) {
+                $queries[] = $query->sql;
+            }
+        });
+        foreach ($this->unentitledActors() as $name => $actor) {
+            try {
+                $returned = $call($actor);
+                $this->fail("{$what}: '{$name}' obtained a result instead of being refused (".get_debug_type($returned).').');
+            } catch (AuthorizationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        $this->assertSame([], $queries, "{$what}: no cost-bearing row was read for a refused person.");
+    }
+
+    public function test_the_raw_cost_provider_called_directly_refuses_every_unentitled_person_and_returns_no_cost(): void
+    {
+        $version = $this->costedVersion()->id;
+
+        $this->assertNoCostEscapes(fn (User $actor) => app(AssemblyCostEvidenceProvider::class)->costFor(SalesActorContext::forUser($actor, 'direct raw-cost call'), $version, BigDecimal::of('3')), 'provider');
+    }
+
+    public function test_the_provider_is_also_refused_while_the_duty_is_staged_and_serves_only_the_entitled(): void
+    {
+        $version = $this->costedVersion()->id;
+        $context = SalesActorContext::forUser($this->seller, 'direct raw-cost call');
+
+        $cost = app(AssemblyCostEvidenceProvider::class)->costFor($context, $version, BigDecimal::of('3'));
+        $this->assertSame('COMPLETE', $cost->certainty->value, 'an entitled, active preparer still reaches the evaluator path');
+
+        $this->app->instance(SalesDutyManifest::class, SalesDutyManifest::shipped());
+        $this->expectException(AuthorizationException::class);
+        app(AssemblyCostEvidenceProvider::class)->costFor($context, $version, BigDecimal::of('3'));
+    }
+
+    public function test_the_estimating_seam_called_directly_refuses_every_unentitled_person_and_a_staged_duty(): void
+    {
+        $version = $this->costedVersion()->id;
+
+        $this->assertNoCostEscapes(fn (User $actor) => app(ReadAssemblyCostEvidence::class)($version, '3', CostEvidenceWorkflow::QuotationControlEvaluation, $actor), 'seam');
+
+        $this->app->instance(SalesDutyManifest::class, SalesDutyManifest::shipped());
+        $this->expectException(CostEvidenceNotAuthorised::class);
+        app(ReadAssemblyCostEvidence::class)($version, '3', CostEvidenceWorkflow::QuotationControlEvaluation, $this->seller);
+    }
+
+    public function test_the_evaluator_refuses_an_inactive_or_stale_actor_before_touching_any_evidence(): void
+    {
+        $version = $this->costedVersion()->id;
+        $this->app->instance(AssemblyCostEvidenceProvider::class, new class implements AssemblyCostEvidenceProvider
+        {
+            public function costFor(SalesActorContext $actor, int $assemblyVersionId, BigDecimal $quantity): FinancialResult
+            {
+                throw new \LogicException('Evidence must not be touched for a refused person.');
+            }
+        });
+        $set = $this->set($this->control('m', NetControlKind::MinMarginAmount, '1'), $this->control('f', NetControlKind::Floor, '1'));
+
+        foreach (['suspended', 'invited', 'stale hydrated, suspended since'] as $name) {
+            $actor = $this->unentitledActors()[$name];
+            try {
+                $this->evaluate($set, $version, by: $actor);
+                $this->fail("'{$name}' must be refused.");
+            } catch (AuthorizationException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_sales_registers_the_one_authority_the_seam_asks(): void
+    {
+        $authorities = app(CostEvidenceAuthorities::class);
+
+        $authorities->authorise(CostEvidenceWorkflow::QuotationControlEvaluation, $this->seller);
+        $this->assertTrue(true, 'an active preparer is permitted by the registered Sales authority');
+        $this->expectException(CostEvidenceNotAuthorised::class);
+        $authorities->authorise(CostEvidenceWorkflow::QuotationControlEvaluation, User::factory()->create());
     }
 }

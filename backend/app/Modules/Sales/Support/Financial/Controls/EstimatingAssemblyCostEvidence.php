@@ -17,6 +17,7 @@ use Brick\Math\BigDecimal;
  * `CostEvidenceSeamHasOneCallerTest` pins that. Everything it returns is certainty plus, inside the trusted evaluation, the figures — and whatever cannot be
  * established is UNKNOWN with a fixed code, never zero.
  */
+/** @internal */
 final class EstimatingAssemblyCostEvidence implements AssemblyCostEvidenceProvider
 {
     public function __construct(private readonly ReadAssemblyCostEvidence $evidence) {}

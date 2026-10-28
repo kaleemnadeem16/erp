@@ -18,6 +18,7 @@ use App\Modules\Sales\Support\Financial\Policy\ResolveRoundingPolicy;
 use App\Modules\Sales\Support\Fx\FinancialDate;
 use App\Modules\Sales\Support\Fx\FxBundleEvidence;
 use App\Modules\Sales\Support\Fx\ResolveQuotationFx;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Pricing\PricingQuantity;
@@ -30,7 +31,8 @@ use App\Support\CompanyContext;
  * UNEVALUABLE by opaque control reference, and whether issue is blocked. The cost comes from Estimating's guarded seam inside this trusted evaluation; the caller
  * needs `sales.quotation.prepare` (STAGED: refused for everyone until a reviewed holder recipe activates it) and NO estimating cost duty, and the cost, margin,
  * thresholds, FX rate and reasons never leave this class. Missing, partial or refused cost evidence makes a cost-dependent control UNEVALUABLE — never PASS, never
- * zero; `FLOOR` needs no cost and is judged regardless, and the cost is not even read when no control needs it. The control set is resolved elsewhere (R9) and passed
+ * zero; `FLOOR` needs no cost and is judged regardless, and the cost is not even read when no control needs it. The raw-cost provider is `@internal` to this class:
+ * `RawCostProviderHasOneCallerTest` pins that, and the cost-evidence seam re-asks Sales' own authority for the person on every read, so a direct call cannot bypass this guard. The control set is resolved elsewhere (R9) and passed
  * in: it is not a seller input, and any other control kind (the reductions, until their governed-reference evidence exists) is refused. No route, no write, no log.
  */
 final class EvaluateAssemblyLineControls
@@ -47,6 +49,8 @@ final class EvaluateAssemblyLineControls
 
     public function __invoke(User $actor, int $assemblyVersionId, string $workQuantity, string $finalNet, int $currencyId, string $pricingDate, NetControlSet $controls): NetControlOutcomeView
     {
+        // Before any evidence is touched: a person who is no longer an active member is refused even if their role still holds the duty, and a stale object does not count.
+        ActiveActor::require($actor, 'evaluate quotation controls');
         SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'evaluate quotation controls');
         $context = SalesActorContext::forUser($actor, 'quotation.evaluate_assembly_controls');
         if ($assemblyVersionId < 1 || ! Currency::query()->whereKey($currencyId)->exists()) {
