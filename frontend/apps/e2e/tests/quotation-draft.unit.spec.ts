@@ -342,3 +342,55 @@ test("edit form fits a phone viewport and has no serious accessibility findings"
     ),
   ).toEqual([]);
 });
+
+test("the production application denies the form even with quotation duties", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ serviceWorkers: "block" });
+  const page = await context.newPage();
+  const apiPaths: string[] = [];
+  await page.route("http://localhost:8090/**", async (route) => {
+    const url = new URL(route.request().url());
+    apiPaths.push(url.pathname);
+    const body = url.pathname.endsWith("/user")
+      ? {
+          data: {
+            id: 7,
+            name: "Test",
+            email: "test@example.invalid",
+            must_change_password: false,
+            permissions: ["sales.quotation.prepare", "sales.quotation.view"],
+          },
+        }
+      : list;
+    await route.fulfill({
+      status: 200,
+      headers: {
+        "Access-Control-Allow-Origin": "http://localhost:5178",
+        "Access-Control-Allow-Credentials": "true",
+      },
+      contentType: "application/json",
+      body: JSON.stringify(body),
+    });
+  });
+  const dist = new URL("../../main/dist/", import.meta.url);
+  await page.route("http://localhost:5178/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    const name = pathname.startsWith("/assets/")
+      ? pathname.slice(1)
+      : "index.html";
+    const body = readFileSync(new URL(name, dist));
+    const contentType = name.endsWith(".js")
+      ? "text/javascript"
+      : name.endsWith(".css")
+        ? "text/css"
+        : "text/html";
+    await route.fulfill({ status: 200, contentType, body });
+  });
+  await page.goto("http://localhost:5178/quotations/new");
+  await expect(
+    page.getByRole("heading", { name: /you don.t have access/i }),
+  ).toBeVisible();
+  expect(apiPaths.some((path) => path.includes("/quotations"))).toBe(false);
+  await context.close();
+});
