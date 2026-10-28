@@ -144,6 +144,10 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 - [Job cost coverage](job-cost-coverage.md) — 0147/Q52; specified, not implemented.
 - [Job material attribution](job-material-attribution.md) — 0148/Q53; specified, not implemented.
 
+## Proposed quotation access design
+
+- [Quotation record access (#45)](quotation-record-access-design.md) — own/team/delegated architecture, storage and ordered slices; proposed, no implementation or activation.
+
 ## Related
 
 - [architecture/invariants.md](../architecture/invariants.md) — rules that govern all of this
