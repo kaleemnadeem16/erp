@@ -28,7 +28,7 @@ configureCoreApi({
 // Development-only exposure: an env value alone can never enable a production build.
 configureQuotationDevMode({
   development: import.meta.env.DEV,
-  flag: import.meta.env.VITE_DEV_QUOTATIONS,
+  flag: import.meta.env.VITE_QUOTATION_UI_ENABLED,
   hostname: window.location.hostname,
 });
 

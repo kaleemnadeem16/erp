@@ -155,7 +155,7 @@ Empty, zero, fractional and unsafe input stays on the page with an associated te
 The shared shell's navigation and the direct workspace URL use the same access policy.
 Create/edit controls belong to the subsequent corrected-#53 form slice.
 
-The frontend exposure opt-in is `VITE_DEV_QUOTATIONS=1` in the main app's local
+The frontend exposure opt-in is `VITE_QUOTATION_UI_ENABLED=1` in the main app's local
 Vite environment (or its process environment). Restart that local Vite process after
 changing its environment. No opt-in is committed as an active default. Bootstrap
 requires Vite's built-in `DEV` plus the exact flag value and a loopback hostname

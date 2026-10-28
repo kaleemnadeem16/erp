@@ -2,5 +2,5 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL?: string;
-  readonly VITE_DEV_QUOTATIONS?: string;
+  readonly VITE_QUOTATION_UI_ENABLED?: string;
 }
