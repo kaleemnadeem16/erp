@@ -1,5 +1,6 @@
 import type { StockMoveResource } from '@erp/core-api';
 
+import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 import { formatLocation } from '../../lib/format-location';
@@ -22,6 +23,11 @@ export const stockMoveColumns: DataColumn<StockMoveResource>[] = [
     key: 'item',
     header: 'Item',
     value: (move) => (move.item ? `${move.item.code} — ${move.item.name}` : move.item_id),
+    cell: (move) => (
+      <RecordLink>
+        {move.item ? `${move.item.code} — ${move.item.name}` : `Item #${move.item_id}`}
+      </RecordLink>
+    ),
     cardRole: 'title',
   },
   {
