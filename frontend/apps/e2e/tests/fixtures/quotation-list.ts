@@ -40,9 +40,16 @@ function Fixture() {
   const [stateFilter, onStateFilterChange] = useState<
     "" | "DRAFT" | "CANCELLED_DRAFT"
   >("");
+  const fixture = new URLSearchParams(location.search);
   const props = {
-    rows: readQuotationListSummaries([row]),
-    total: 28,
+    rows: readQuotationListSummaries(fixture.has("empty") ? [] : [row]),
+    total: fixture.has("empty") ? 0 : 28,
+    error: fixture.has("missing")
+      ? Object.assign(new Error("SECRET_BACKEND"), { status: 404 })
+      : undefined,
+    onRetry: () => {
+      document.body.dataset.retried = "true";
+    },
     pagination,
     onPaginationChange,
     sorting,

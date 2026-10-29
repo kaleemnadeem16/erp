@@ -97,3 +97,16 @@ test("mock presentation is keyboard accessible, shows safe rows and fits a phone
   await expect(page.getByTestId("route")).toHaveText("/quotations/12");
   expect(requests).toHaveLength(1);
 });
+
+test("mock empty result remains distinct from a non-disclosing load error", async ({
+  page,
+}) => {
+  await mount(page, "?empty=1");
+  await expect(
+    page.getByText("No quotations match these filters."),
+  ).toBeVisible();
+  await page.goto("http://localhost:5178/?missing=1");
+  await page.addScriptTag({ content: source });
+  await expect(page.locator("body")).not.toContainText("SECRET_BACKEND");
+  await expect(page.getByText("Couldn't load quotations.")).toBeVisible();
+});
