@@ -80,6 +80,8 @@ final class DemoDatabaseSeeder extends Seeder
                 // Needs the demo warehouses (InventoryDemoSeeder, StockTransfersDemoSeeder): two sites that own them, and a limited clerk for each.
                 OrganisationDemoSeeder::class,
                 SalesCrmDemoSeeder::class,
+                // After the Sales and Inventory seeders: the draft sells their service and finished-product Items to their customer.
+                QuotationDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
             ]);
         });

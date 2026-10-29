@@ -20,13 +20,13 @@ use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
 use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\Issue\ConfiguredQuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\Fr3QuotationTaxProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use App\Modules\Sales\Support\Quotation\Issue\SalesQuotationTaxContextAuthorizer;
 use App\Modules\Sales\Support\Quotation\Issue\UnavailableQuotationTaxFacts;
-use App\Modules\Sales\Support\Quotation\Issue\UnconfiguredQuotationControlsProvider;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Tax\Support\Quotation\QuotationTaxContextAuthorizer;
 use App\Support\CompanyLocks\ExistsProbe;
@@ -44,7 +44,7 @@ class SalesServiceProvider extends ServiceProvider
         $this->app->bind(QuotationTaxProvider::class, Fr3QuotationTaxProvider::class);
         // The jurisdiction and classification are not persisted anywhere yet, so the shipped facts say "unknown" and every line stays blocked until an owner-reviewed source is bound.
         $this->app->bind(QuotationTaxFacts::class, UnavailableQuotationTaxFacts::class);
-        $this->app->bind(QuotationControlsProvider::class, UnconfiguredQuotationControlsProvider::class);
+        $this->app->bind(QuotationControlsProvider::class, ConfiguredQuotationControlsProvider::class);
         $this->app->bind(AssemblyCostEvidenceProvider::class, EstimatingAssemblyCostEvidence::class);
         // Estimating opens cost evidence only for the authority the owning workflow registers: this is Sales' (active member + preparer duty, judged now).
         $this->app->afterResolving(CostEvidenceAuthorities::class, static function (CostEvidenceAuthorities $authorities): void {
