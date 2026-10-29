@@ -11,6 +11,7 @@ use App\Modules\Files\Support\FileAccessGate;
 use App\Modules\Files\Support\FileException;
 use App\Modules\Files\Support\FileOperationContext;
 use App\Modules\Files\Support\FileOwnerRegistry;
+use App\Modules\Files\Support\FilePurpose;
 use App\Modules\Files\Support\FileScanner;
 use App\Modules\Files\Support\ScanResult;
 use App\Support\CompanyContext;
@@ -42,6 +43,19 @@ final class VerifyStagedFile
             throw new FileException('Only a staged upload can be verified.', 'intent_id', 'intent_not_staged');
         }
 
+        try {
+            return $this->verifyLocked($intent, $purpose, $actorId);
+        } catch (FileException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            report($e);
+            throw new FileException('The file could not be verified.', null, 'verify_failed');
+        }
+    }
+
+    /** @return array{blob: FileBlob, replayed: bool} */
+    private function verifyLocked(FileUploadIntent $intent, FilePurpose $purpose, ?int $actorId): array
+    {
         return DB::transaction(function () use ($intent, $purpose, $actorId): array {
             $blob = FileBlob::query()->whereKey($intent->blob_id)->lockForUpdate()->firstOrFail();
             if ($blob->health !== 'STAGED') {

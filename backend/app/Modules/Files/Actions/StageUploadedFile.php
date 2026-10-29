@@ -74,13 +74,24 @@ final class StageUploadedFile
 
         $key = bin2hex(random_bytes(20));
         $path = $this->path($key);
-        Storage::disk('files')->writeStream($path, $upload->handle);
+        try {
+            Storage::disk('files')->writeStream($path, $upload->handle);
+        } catch (Throwable $e) {
+            report($e);
+            $this->discard($path);
+            throw new FileException('The file could not be stored.', null, 'storage_failed');
+        }
 
         try {
             return DB::transaction(fn (): array => $this->commit($intent->id, $upload, $key, $path, $actorId));
-        } catch (Throwable $e) {
+        } catch (FileException $e) {
             $this->discard($path);
             throw $e;
+        } catch (Throwable $e) {
+            // Database and storage errors carry paths, keys and bindings: they go to the log, and the caller gets a fixed message with no chained cause.
+            report($e);
+            $this->discard($path);
+            throw new FileException('The file could not be recorded.', null, 'record_failed');
         }
     }
 
