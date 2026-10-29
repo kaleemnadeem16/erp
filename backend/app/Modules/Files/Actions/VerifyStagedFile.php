@@ -14,9 +14,9 @@ use App\Modules\Files\Support\FileOwnerRegistry;
 use App\Modules\Files\Support\FilePurpose;
 use App\Modules\Files\Support\FileScanner;
 use App\Modules\Files\Support\ScanResult;
+use App\Modules\Files\Support\StoredObject;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -65,8 +65,8 @@ final class VerifyStagedFile
 
                 return ['blob' => $blob, 'replayed' => true];
             }
-            $path = substr($blob->storage_key, 0, 2).'/'.$blob->storage_key;
-            $observed = $this->observe($blob->storage_disk, $path);
+            $path = StoredObject::path($blob->storage_key);
+            $observed = StoredObject::observe($blob->storage_disk, $path);
             if ($observed === null) {
                 return ['blob' => $this->settle($blob, 'REJECTED', $blob->scan_state, 'REJECTED', 'object_missing', $actorId, null), 'replayed' => false];
             }
@@ -89,36 +89,6 @@ final class VerifyStagedFile
 
             return ['blob' => $blob, 'replayed' => true];
         });
-    }
-
-    /** @return array{sha256: string, size: int}|null null when the object is not there */
-    private function observe(string $disk, string $path): ?array
-    {
-        try {
-            $store = Storage::disk($disk);
-            if (! $store->exists($path)) {
-                return null;
-            }
-            $stream = $store->readStream($path);
-            if ($stream === null) {
-                return null;
-            }
-            $hash = hash_init('sha256');
-            $size = 0;
-            while (! feof($stream)) {
-                $chunk = fread($stream, 65536);
-                if ($chunk === false) {
-                    return null;
-                }
-                $size += strlen($chunk);
-                hash_update($hash, $chunk);
-            }
-            fclose($stream);
-
-            return ['sha256' => hash_final($hash), 'size' => $size];
-        } catch (Throwable) {
-            return null;
-        }
     }
 
     private function settle(FileBlob $blob, string $health, string $scanState, string $event, ?string $reason, ?int $actorId, ?string $observedHash): FileBlob

@@ -25,6 +25,10 @@ UI, no URL, no attachment table. Callable only from code and tests.
   `VerifyStagedFile` (recomputes hash and size against the identity; missing or changed object → `REJECTED`; infected → `QUARANTINED`; an internally authored purpose is
   `VERIFIED` once intact and not infected; a purpose whose files come from outside the company becomes `VERIFIED` only on a `CLEAN` scan, so with the default scanner it
   stays `STAGED`, i.e. nothing externally supplied can become downloadable, D3).
+- Recovery primitives (used by owners such as Documents): `ReconcileFileBlob` (a VERIFIED blob whose object is missing becomes `MISSING`, one whose hash or size changed
+  `QUARANTINED`; evidence recorded; nothing deleted) and `RestoreFileBlob` (a MISSING or QUARANTINED, non-infected blob is restored only from bytes with its recorded hash and
+  size, with a reason). Both ask the owner (`reconcile`, `restore`). Results never serialise the storage disk or key, and database or storage failures reach callers only as
+  fixed safe errors.
 
 ## Boundaries
 
