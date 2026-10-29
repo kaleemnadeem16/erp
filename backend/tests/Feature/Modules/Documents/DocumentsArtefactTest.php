@@ -1,0 +1,247 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Modules\Documents;
+
+use App\Models\User;
+use App\Modules\Documents\Actions\BindDocumentManifest;
+use App\Modules\Documents\Actions\GenerateDocumentArtefact;
+use App\Modules\Documents\Actions\ReconcileDocumentArtefact;
+use App\Modules\Documents\Actions\RestoreDocumentArtefact;
+use App\Modules\Documents\Actions\StreamAuthorisedDocument;
+use App\Modules\Documents\Models\DocumentArtefact;
+use App\Modules\Documents\Models\DocumentArtefactHead;
+use App\Modules\Documents\Models\DocumentGenerationIntent;
+use App\Modules\Documents\Models\DocumentManifest;
+use App\Modules\Documents\Support\DocumentException;
+use App\Modules\Documents\Support\DocumentTypeRegistry;
+use App\Modules\Files\Models\FileBlob;
+use App\Modules\Files\Support\StoredObject;
+use Closure;
+use Illuminate\Database\QueryException;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Tests\Support\Documents\PdfInspector;
+use Tests\Support\Documents\PurchaseOrderShapedAdapter;
+use Tests\TestCase;
+
+/**
+ * DF3 — the generation worker, the stored originals and secure delivery: a PDF is rendered from the manifest alone, stored and verified through Files, published once under the
+ * fence the worker holds, delivered only after the owner's decision and a hash check, and recovered (never regenerated) when the object goes missing or corrupt.
+ */
+class DocumentsArtefactTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private User $user;
+
+    private int $keys = 0;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake('files');
+        $this->user = User::factory()->create();
+        $registry = new DocumentTypeRegistry;
+        $registry->register(new PurchaseOrderShapedAdapter(supportsLetter: true));
+        $this->app->instance(DocumentTypeRegistry::class, $registry);
+    }
+
+    /** @return array{manifest: DocumentManifest, intent: DocumentGenerationIntent} */
+    private function bind(string $purpose = DocumentManifest::ORIGINAL, string $subject = 'po:1', string $identity = 'gen-1'): array
+    {
+        $r = app(BindDocumentManifest::class)->execute(PurchaseOrderShapedAdapter::projection(), 'SUPPLIER', $subject, 1, $purpose, $identity, 'key-'.++$this->keys, $this->user->id);
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+
+        return $r;
+    }
+
+    private function refusal(Closure $call): string
+    {
+        try {
+            $call();
+        } catch (DocumentException $e) {
+            return (string) $e->reasonCode;
+        }
+        $this->fail('Expected a DocumentException.');
+    }
+
+    private function generate(int $intentId): array
+    {
+        return app(GenerateDocumentArtefact::class)->execute($intentId, $this->user->id);
+    }
+
+    public function test_generates_a_verified_stored_pdf_and_publishes_head_and_intent(): void
+    {
+        $b = $this->bind();
+        $r = $this->generate($b['intent']->id);
+
+        $this->assertFalse($r['replayed']);
+        $a = $r['artefact'];
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $this->assertSame('VERIFIED', $blob->health);
+        $bytes = Storage::disk('files')->get(StoredObject::path($blob->storage_key));
+        $this->assertStringStartsWith('%PDF-', $bytes);
+        $this->assertSame(hash('sha256', $bytes), $a->sha256);
+        $this->assertSame(strlen($bytes), $a->size_bytes);
+        $this->assertSame('VERIFIED', $b['intent']->refresh()->state);
+        $this->assertSame(1, $b['intent']->fencing_generation);
+        $head = DocumentArtefactHead::query()->firstOrFail();
+        $this->assertSame([$a->id, 1], [$head->artefact_id, $head->generation]);
+        $this->assertSame($b['manifest']->renderer_contract, $a->renderer_contract);
+        $this->assertGreaterThanOrEqual(1, (new PdfInspector($bytes))->pageCount());
+        $this->assertSame($a->page_count, (new PdfInspector($bytes))->pageCount());
+    }
+
+    public function test_replay_of_a_verified_intent_returns_the_same_artefact(): void
+    {
+        $b = $this->bind();
+        $first = $this->generate($b['intent']->id)['artefact'];
+        $again = $this->generate($b['intent']->id);
+
+        $this->assertTrue($again['replayed']);
+        $this->assertSame($first->id, $again['artefact']->id);
+        $this->assertSame(1, DocumentArtefact::query()->count());
+    }
+
+    public function test_rendering_is_deterministic_for_the_same_manifest(): void
+    {
+        $one = $this->generate($this->bind(identity: 'g1')['intent']->id)['artefact'];
+        $two = $this->generate($this->bind(subject: 'po:2', identity: 'g2')['intent']->id)['artefact'];
+
+        $this->assertSame($one->page_count, $two->page_count);
+    }
+
+    public function test_a_draft_head_advances_but_an_original_head_never_moves(): void
+    {
+        $d1 = $this->generate($this->bind(DocumentManifest::DRAFT_PREVIEW, 'po:1', 'd1')['intent']->id)['artefact'];
+        $d2 = $this->generate($this->bind(DocumentManifest::DRAFT_PREVIEW, 'po:1', 'd2')['intent']->id)['artefact'];
+        $head = DocumentArtefactHead::query()->where('purpose', DocumentManifest::DRAFT_PREVIEW)->firstOrFail();
+        $this->assertSame([$d2->id, 2], [$head->artefact_id, $head->generation]);
+        $this->assertNotSame($d1->id, $d2->id);
+
+        $o = $this->generate($this->bind(DocumentManifest::ORIGINAL, 'po:1', 'o1')['intent']->id)['artefact'];
+        $head = DocumentArtefactHead::query()->where('purpose', DocumentManifest::ORIGINAL)->firstOrFail();
+        $this->assertSame([$o->id, 1], [$head->artefact_id, $head->generation]);
+        $this->expectException(QueryException::class);
+        DB::transaction(fn () => DB::table('document_artefact_heads')->where('id', $head->id)->update(['artefact_id' => $d1->id, 'generation' => 2]));
+    }
+
+    public function test_a_live_lease_held_by_another_worker_is_refused_and_an_expired_one_is_taken_over(): void
+    {
+        $b = $this->bind();
+        DB::table('document_generation_intents')->where('id', $b['intent']->id)->update(['state' => 'RUNNING', 'fencing_generation' => 1, 'lease_expiry' => DB::raw("clock_timestamp() + interval '5 minutes'")]);
+        $this->assertSame('generation_in_progress', $this->refusal(fn () => $this->generate($b['intent']->id)));
+
+        DB::table('document_generation_intents')->where('id', $b['intent']->id)->update(['lease_expiry' => DB::raw("clock_timestamp() - interval '1 second'")]);
+        $a = $this->generate($b['intent']->id)['artefact'];
+        $this->assertSame(2, $a->fence);
+    }
+
+    public function test_the_database_refuses_an_artefact_from_a_worker_that_lost_the_fence(): void
+    {
+        $b = $this->bind();
+        $good = $this->generate($b['intent']->id)['artefact'];
+        $blob = FileBlob::query()->findOrFail($good->blob_id);
+        $other = $this->bind(subject: 'po:9', identity: 'x1');
+        DB::table('document_generation_intents')->where('id', $other['intent']->id)->update(['state' => 'RUNNING', 'fencing_generation' => 2, 'lease_expiry' => DB::raw("clock_timestamp() + interval '5 minutes'")]);
+
+        $this->expectException(QueryException::class);
+        DB::transaction(fn () => DocumentArtefact::create([
+            'manifest_id' => $other['manifest']->id, 'intent_id' => $other['intent']->id, 'fence' => 1, 'blob_id' => $blob->id, 'purpose' => $other['manifest']->purpose, 'media_type' => 'application/pdf',
+            'sha256' => $good->sha256, 'size_bytes' => $good->size_bytes, 'page_count' => 1, 'renderer_contract' => $good->renderer_contract, 'renderer_version' => $good->renderer_version, 'created_at' => now(),
+        ]));
+    }
+
+    public function test_artefacts_are_append_only(): void
+    {
+        $a = $this->generate($this->bind()['intent']->id)['artefact'];
+
+        foreach ([fn () => DB::table('document_artefacts')->where('id', $a->id)->update(['page_count' => 9]), fn () => DB::table('document_artefacts')->where('id', $a->id)->delete(),
+            fn () => DB::statement('TRUNCATE document_artefacts CASCADE')] as $write) {
+            try {
+                DB::transaction($write);
+                $this->fail('Expected the database to refuse.');
+            } catch (QueryException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+    }
+
+    public function test_a_legacy_manifest_without_a_pinned_renderer_fails_closed(): void
+    {
+        $b = $this->bind();
+        DB::statement('ALTER TABLE document_manifests DISABLE TRIGGER USER');
+        DB::table('document_manifests')->where('id', $b['manifest']->id)->update(['renderer_contract' => 'UNASSIGNED', 'renderer_version' => '0', 'fonts' => '[]']);
+        DB::statement('ALTER TABLE document_manifests ENABLE TRIGGER USER');
+
+        $this->assertSame('manifest_not_renderable', $this->refusal(fn () => $this->generate($b['intent']->id)));
+        $this->assertSame('FAILED', $b['intent']->refresh()->state);
+        $this->assertSame(0, DocumentArtefact::query()->count());
+    }
+
+    public function test_an_owner_denial_blocks_generation_and_delivery(): void
+    {
+        $b = $this->bind();
+        $a = $this->generate($b['intent']->id)['artefact'];
+        $registry = new DocumentTypeRegistry;
+        $registry->register(new PurchaseOrderShapedAdapter(allow: false, supportsLetter: true));
+        $this->app->instance(DocumentTypeRegistry::class, $registry);
+
+        $this->assertSame('access_denied', $this->refusal(fn () => app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id)));
+    }
+
+    public function test_delivery_streams_verified_bytes_with_safe_headers_and_no_storage_detail(): void
+    {
+        $a = $this->generate($this->bind()['intent']->id)['artefact'];
+        $dl = app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id);
+
+        $this->assertSame($a->sha256, hash('sha256', stream_get_contents($dl->stream)));
+        $h = $dl->headers();
+        $this->assertSame('application/pdf', $h['Content-Type']);
+        $this->assertStringStartsWith('attachment; filename="', $h['Content-Disposition']);
+        $this->assertSame('nosniff', $h['X-Content-Type-Options']);
+        $this->assertSame('private, no-store', $h['Cache-Control']);
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $this->assertStringNotContainsString($blob->storage_key, json_encode($h).$dl->filename);
+    }
+
+    public function test_a_missing_or_tampered_object_is_never_delivered_and_is_recovered_not_regenerated(): void
+    {
+        $a = $this->generate($this->bind()['intent']->id)['artefact'];
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $path = StoredObject::path($blob->storage_key);
+        $original = Storage::disk('files')->get($path);
+
+        Storage::disk('files')->put($path, $original.'x');
+        $this->assertSame('artefact_unavailable', $this->refusal(fn () => app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id)));
+        $this->assertSame('corrupt', app(ReconcileDocumentArtefact::class)->execute($a->id, $this->user->id));
+        $this->assertSame('QUARANTINED', $blob->refresh()->health);
+
+        $wrong = fopen('php://temp', 'r+');
+        fwrite($wrong, 'not the original');
+        rewind($wrong);
+        $this->assertNotSame('', $this->refusal(fn () => app(RestoreDocumentArtefact::class)->execute($a->id, $wrong, 'restore from backup', $this->user->id)));
+
+        $good = fopen('php://temp', 'r+');
+        fwrite($good, $original);
+        rewind($good);
+        app(RestoreDocumentArtefact::class)->execute($a->id, $good, 'restore from backup', $this->user->id);
+        $this->assertSame('VERIFIED', $blob->refresh()->health);
+        $this->assertSame($original, Storage::disk('files')->get($path));
+        $this->assertSame(hash('sha256', stream_get_contents(app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id)->stream)), $a->sha256);
+
+        Storage::disk('files')->delete($path);
+        $this->assertSame('missing', app(ReconcileDocumentArtefact::class)->execute($a->id, $this->user->id));
+        $this->assertSame('artefact_unavailable', $this->refusal(fn () => app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id)));
+        $this->assertSame(1, DocumentArtefact::query()->count());
+    }
+
+    public function test_documents_adds_no_routes_or_permissions(): void
+    {
+        $this->assertDirectoryDoesNotExist(base_path('app/Modules/Documents/Http'));
+        $this->assertFileDoesNotExist(base_path('app/Modules/Documents/routes.php'));
+    }
+}
