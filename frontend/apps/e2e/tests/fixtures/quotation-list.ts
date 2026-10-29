@@ -37,13 +37,17 @@ function Fixture() {
     pageSize: 25,
   });
   const [sorting, onSortingChange] = useState([]);
-  const [stateFilter, onStateFilterChange] = useState<
-    "" | "DRAFT" | "CANCELLED_DRAFT"
-  >("");
+  const [filters, onFiltersChange] = useState({
+    state: "",
+    recipient: "",
+    currency: "",
+    owner: "",
+  });
   const fixture = new URLSearchParams(location.search);
   const props = {
     rows: readQuotationListSummaries(fixture.has("empty") ? [] : [row]),
     total: fixture.has("empty") ? 0 : 28,
+    isLoading: fixture.has("loading"),
     error: fixture.has("missing")
       ? Object.assign(new Error("SECRET_BACKEND"), { status: 404 })
       : undefined,
@@ -54,20 +58,29 @@ function Fixture() {
     onPaginationChange,
     sorting,
     onSortingChange,
-    mayReview: true,
-    stateFilter,
-    onStateFilterChange,
+    mayReview: !fixture.has("view-only"),
+    mayCreate: !fixture.has("view-only"),
+    onFiltersChange,
+    recipients: [{ value: "3", label: "Acme Trading" }],
+    currencies: [{ value: "4", label: "PKR" }],
+    owners: [{ value: "7", label: "Ayesha Khan" }],
+    ownerByRevision: { 12: "Ayesha Khan" },
   };
   return createElement(
     TooltipProvider,
     null,
     createElement(
       MemoryRouter,
-      null,
+      { initialEntries: [location.pathname + location.search] },
       new URLSearchParams(location.search).has("gated")
         ? createElement(QuotationListScreen, props)
         : createElement(QuotationListPresentation, props),
       createElement(PathProbe),
+      createElement(
+        "output",
+        { "data-testid": "filters" },
+        JSON.stringify(filters),
+      ),
     ),
   );
 }

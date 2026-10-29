@@ -74,7 +74,9 @@ test("mock presentation is keyboard accessible, shows safe rows and fits a phone
     content: readFileSync(new URL(css, assets), "utf8"),
   });
   await expect(page.getByRole("link", { name: "Revision #12" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Review" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Review quotation revision 12" }),
+  ).toBeVisible();
   await expect(page.locator("body")).not.toContainText("SECRET_COST");
   await expect(page.locator("body")).not.toContainText("SECRET_MARGIN");
   expect(
@@ -90,7 +92,16 @@ test("mock presentation is keyboard accessible, shows safe rows and fits a phone
   ).toEqual([]);
   await page.getByLabel("Status").selectOption("DRAFT");
   await expect(page.getByLabel("Status")).toHaveValue("DRAFT");
+  await page.getByLabel("Owner").selectOption("7");
+  await expect(page.getByTestId("filters")).toContainText('"owner":"7"');
+  await expect(page.getByRole("cell", { name: "Ayesha Khan" })).toBeVisible();
+  await page.getByLabel("Sort").selectOption("-updated_at");
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.getByTestId("filters")).toContainText('"owner":""');
+  await expect(page.getByLabel("Sort")).toHaveValue("-updated_at");
   const link = page.getByRole("link", { name: "Revision #12" });
+  await expect(page.getByRole("link", { name: "Create draft" })).toBeVisible();
+  await expect(link).toHaveAttribute("href", "/quotations/12?sort=-updated_at");
   await link.focus();
   await expect(link).toBeFocused();
   await page.keyboard.press("Enter");
@@ -109,4 +120,21 @@ test("mock empty result remains distinct from a non-disclosing load error", asyn
   await page.addScriptTag({ content: source });
   await expect(page.locator("body")).not.toContainText("SECRET_BACKEND");
   await expect(page.getByText("Couldn't load quotations.")).toBeVisible();
+});
+
+test("view-only fixture hides create and review actions", async ({ page }) => {
+  await mount(page, "?view-only=1");
+  await expect(page.getByRole("link", { name: "Create draft" })).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Review quotation revision 12" }),
+  ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Revision #12" })).toBeVisible();
+});
+
+test("loading state does not display empty or data rows", async ({ page }) => {
+  await mount(page, "?loading=1");
+  await expect(
+    page.getByText("No quotations match these filters."),
+  ).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Revision #12" })).toHaveCount(0);
 });

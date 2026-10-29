@@ -9,7 +9,7 @@ const summary = z.object({
   revision_id: id,
   family_id: id,
   revision_ordinal: id,
-  state: z.enum(["DRAFT", "CANCELLED_DRAFT"]),
+  state: z.enum(["DRAFT", "CANCELLED_DRAFT", "ISSUED"]),
   input_generation: z.number().int().nonnegative().safe(),
   recipient_party_id: nullableId,
   currency_id: id,
