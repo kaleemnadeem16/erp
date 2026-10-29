@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Modules\Documents;
 
 use App\Models\User;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Documents\Actions\BindDocumentManifest;
 use App\Modules\Documents\Actions\GenerateDocumentArtefact;
 use App\Modules\Documents\Actions\ReconcileDocumentArtefact;
@@ -14,9 +15,17 @@ use App\Modules\Documents\Models\DocumentArtefact;
 use App\Modules\Documents\Models\DocumentArtefactHead;
 use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Documents\Models\DocumentManifest;
+use App\Modules\Documents\Support\DocumentArtefactFileOwner;
 use App\Modules\Documents\Support\DocumentException;
+use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
+use App\Modules\Files\Actions\ReconcileFileBlob;
+use App\Modules\Files\Actions\RequestFileUpload;
+use App\Modules\Files\Actions\RestoreFileBlob;
+use App\Modules\Files\Actions\StageUploadedFile;
+use App\Modules\Files\Actions\VerifyStagedFile;
 use App\Modules\Files\Models\FileBlob;
+use App\Modules\Files\Support\FileException;
 use App\Modules\Files\Support\StoredObject;
 use Closure;
 use Illuminate\Database\QueryException;
@@ -39,13 +48,16 @@ class DocumentsArtefactTest extends TestCase
 
     private int $keys = 0;
 
+    private PurchaseOrderShapedAdapter $adapter;
+
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake('files');
         $this->user = User::factory()->create();
         $registry = new DocumentTypeRegistry;
-        $registry->register(new PurchaseOrderShapedAdapter(supportsLetter: true));
+        $this->adapter = new PurchaseOrderShapedAdapter(supportsLetter: true);
+        $registry->register($this->adapter);
         $this->app->instance(DocumentTypeRegistry::class, $registry);
     }
 
@@ -237,6 +249,133 @@ class DocumentsArtefactTest extends TestCase
         $this->assertSame('missing', app(ReconcileDocumentArtefact::class)->execute($a->id, $this->user->id));
         $this->assertSame('artefact_unavailable', $this->refusal(fn () => app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id)));
         $this->assertSame(1, DocumentArtefact::query()->count());
+    }
+
+    // ---- Files operations never bypass the document owner ---------------------------------------------------------------------------------------------
+
+    /** @return array<string, int> every table a Files or Documents write could touch */
+    private function writes(): array
+    {
+        $out = [];
+        foreach (['file_upload_intents', 'file_blobs', 'file_blob_events', 'file_operation_receipts', 'document_artefacts', 'document_artefact_heads', 'document_operation_receipts'] as $t) {
+            $out[$t] = DB::table($t)->count();
+        }
+
+        return $out;
+    }
+
+    private function fileRefusal(Closure $call): string
+    {
+        try {
+            $call();
+        } catch (FileException|DocumentException $e) {
+            return (string) $e->reasonCode;
+        }
+        $this->fail('Expected a refusal.');
+    }
+
+    private function stream(string $bytes)
+    {
+        $s = fopen('php://temp', 'r+');
+        fwrite($s, $bytes);
+        rewind($s);
+
+        return $s;
+    }
+
+    /** @return array{0: DocumentArtefact, 1: DocumentManifest} */
+    private function stored(): array
+    {
+        $b = $this->bind();
+        $a = $this->generate($b['intent']->id)['artefact'];
+
+        return [$a, $b['manifest']];
+    }
+
+    public function test_every_files_operation_asks_the_document_owner_for_the_current_actor_not_just_existence(): void
+    {
+        $this->adapter->rule = fn (DocumentOperationContext $c): bool => $c->actorId === $this->user->id;
+        [$a, $manifest] = $this->stored();
+        $asked = array_map(fn ($c) => $c->operation, $this->adapter->asked);
+        $this->assertContains('generate', $asked);
+        $this->assertGreaterThanOrEqual(4, count(array_keys($asked, 'generate', true)), 'the worker asks once, then request, stage and verify each ask again through the file owner');
+        $this->assertSame($manifest->purpose, $this->adapter->asked[array_key_last($this->adapter->asked)]->purpose);
+
+        $this->adapter->asked = [];
+        $this->assertSame('ok', app(ReconcileDocumentArtefact::class)->execute($a->id, $this->user->id));
+        $this->assertContains('reconcile_artefact', array_map(fn ($c) => $c->operation, $this->adapter->asked));
+    }
+
+    public function test_an_actor_the_owner_does_not_authorise_cannot_use_any_files_action_directly_and_nothing_is_written(): void
+    {
+        [$a, $manifest] = $this->stored();
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $stranger = User::factory()->create();
+        $this->adapter->rule = fn (DocumentOperationContext $c): bool => $c->actorId === $this->user->id;
+        $before = $this->writes();
+        $id = 'manifest:'.$manifest->id;
+        $purpose = DocumentArtefactFileOwner::PURPOSE;
+        $owner = DocumentArtefactFileOwner::OWNER;
+
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(RequestFileUpload::class)->execute($owner, $id, $purpose, 10, 'direct-1', $stranger->id)));
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(ReconcileFileBlob::class)->execute($blob->id, $owner, $purpose, $id, $stranger->id)));
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(RestoreFileBlob::class)->execute($blob->id, $this->stream('x'), $owner, $purpose, $id, 'because', $stranger->id)));
+        $this->assertSame('reconcile_access_denied', $this->fileRefusal(fn () => app(ReconcileDocumentArtefact::class)->execute($a->id, $stranger->id)));
+        $this->assertSame('restore_access_denied', $this->fileRefusal(fn () => app(RestoreDocumentArtefact::class)->execute($a->id, $this->stream('x'), 'because', $stranger->id)));
+        $this->assertSame($before, $this->writes());
+        $this->assertSame('VERIFIED', $blob->refresh()->health);
+    }
+
+    public function test_an_inactive_or_missing_actor_and_a_foreign_company_member_are_denied_for_every_files_operation(): void
+    {
+        [$a, $manifest] = $this->stored();
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $other = DB::table('companies')->insertGetId(['name' => 'Other Co', 'created_at' => now(), 'updated_at' => now()]);
+        $foreign = User::factory()->create();
+        DB::table('users')->where('id', $foreign->id)->update(['company_id' => $other]);
+        $suspended = User::factory()->create();
+        DB::table('users')->where('id', $suspended->id)->update(['status' => MemberStatus::Suspended->value]);
+        $before = $this->writes();
+        $id = 'manifest:'.$manifest->id;
+        $purpose = DocumentArtefactFileOwner::PURPOSE;
+        $owner = DocumentArtefactFileOwner::OWNER;
+
+        foreach ([$foreign->id, $suspended->id, null] as $actor) {
+            $label = (string) ($actor ?? 'none');
+            $this->assertSame('access_denied', $this->fileRefusal(fn () => app(RequestFileUpload::class)->execute($owner, $id, $purpose, 10, 'direct-'.$label, $actor ?? 0)), "upload {$label}");
+            $this->assertSame('access_denied', $this->fileRefusal(fn () => app(ReconcileFileBlob::class)->execute($blob->id, $owner, $purpose, $id, $actor)), "reconcile {$label}");
+            $this->assertSame('access_denied', $this->fileRefusal(fn () => app(RestoreFileBlob::class)->execute($blob->id, $this->stream('x'), $owner, $purpose, $id, 'because', $actor)), "restore {$label}");
+        }
+        $this->assertSame($before, $this->writes(), 'no intent, blob, event or receipt was written');
+        $this->assertSame('VERIFIED', $blob->refresh()->health);
+    }
+
+    public function test_direct_stage_and_verify_are_denied_once_the_actor_is_no_longer_authorised(): void
+    {
+        $b = $this->bind();
+        $request = app(RequestFileUpload::class)->execute(DocumentArtefactFileOwner::OWNER, 'manifest:'.$b['manifest']->id, DocumentArtefactFileOwner::PURPOSE, 12, 'direct-stage', $this->user->id);
+        $this->adapter->rule = fn (): bool => false;
+        $before = $this->writes();
+
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(StageUploadedFile::class)->execute($request['intent']->id, $this->stream('%PDF-1.4 test'), 'a.pdf', 'application/pdf', $this->user->id)));
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(VerifyStagedFile::class)->execute($request['intent']->id, $this->user->id)));
+        $this->assertSame($before, $this->writes());
+        $this->assertSame([], Storage::disk('files')->allFiles());
+    }
+
+    public function test_an_identity_of_another_document_never_authorises_work_on_this_file(): void
+    {
+        [$a, $manifest] = $this->stored();
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $otherManifest = $this->bind(subject: 'po:2', identity: 'other')['manifest'];
+        $before = $this->writes();
+
+        $this->assertSame('blob_not_found', $this->fileRefusal(fn () => app(ReconcileFileBlob::class)->execute($blob->id, DocumentArtefactFileOwner::OWNER, DocumentArtefactFileOwner::PURPOSE,
+            'manifest:'.$otherManifest->id, $this->user->id)));
+        $this->assertSame('blob_not_found', $this->fileRefusal(fn () => app(RestoreFileBlob::class)->execute($blob->id, $this->stream('x'), DocumentArtefactFileOwner::OWNER,
+            DocumentArtefactFileOwner::PURPOSE, 'manifest:'.$otherManifest->id, 'because', $this->user->id)));
+        $this->assertSame($before, $this->writes());
+        $this->assertSame('ok', app(ReconcileFileBlob::class)->execute($blob->id, DocumentArtefactFileOwner::OWNER, DocumentArtefactFileOwner::PURPOSE, 'manifest:'.$manifest->id, $this->user->id));
     }
 
     public function test_documents_adds_no_routes_or_permissions(): void

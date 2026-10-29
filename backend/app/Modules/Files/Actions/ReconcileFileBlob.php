@@ -6,6 +6,7 @@ namespace App\Modules\Files\Actions;
 
 use App\Modules\Files\Models\FileBlob;
 use App\Modules\Files\Models\FileBlobEvent;
+use App\Modules\Files\Models\FileUploadIntent;
 use App\Modules\Files\Support\FileAccessGate;
 use App\Modules\Files\Support\FileException;
 use App\Modules\Files\Support\FileOperationContext;
@@ -29,6 +30,7 @@ final class ReconcileFileBlob
         $adapter = $this->registry->get($ownerTypeKey);
         $this->registry->purpose($ownerTypeKey, $purposeKey);
         FileBlob::query()->find($blobId) ?? throw new FileException('The file was not found.', 'blob_id', 'blob_not_found');
+        $this->assertOwned($blobId, $ownerTypeKey, $purposeKey, $ownerBindingIdentity);
         if (! FileAccessGate::allows($adapter, new FileOperationContext($this->company->id(), $actorId, 'reconcile', $ownerTypeKey, $purposeKey, $ownerBindingIdentity))) {
             throw new FileException("The owner of '{$ownerTypeKey}' did not authorise this operation.", null, 'access_denied');
         }
@@ -53,5 +55,14 @@ final class ReconcileFileBlob
 
             return $missing ? 'missing' : 'corrupt';
         });
+    }
+
+    /** The owner asked about must be the owner of THIS file: an identity of another document never authorises work on this blob. */
+    private function assertOwned(int $blobId, string $ownerTypeKey, string $purposeKey, string $ownerBindingIdentity): void
+    {
+        $owned = FileUploadIntent::query()->where(['blob_id' => $blobId, 'owner_type_key' => $ownerTypeKey, 'purpose_key' => $purposeKey, 'owner_binding_identity' => $ownerBindingIdentity])->exists();
+        if (! $owned) {
+            throw new FileException('The file was not found.', 'blob_id', 'blob_not_found');
+        }
     }
 }

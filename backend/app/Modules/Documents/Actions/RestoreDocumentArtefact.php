@@ -23,7 +23,7 @@ final class RestoreDocumentArtefact
     {
         $artefact = DocumentArtefact::query()->find($artefactId) ?? throw new DocumentException('The document was not found.', 'artefact_id', 'artefact_not_found');
         try {
-            $this->restore->execute($artefact->blob_id, $stream, DocumentArtefactFileOwner::OWNER, DocumentArtefactFileOwner::PURPOSE, 'artefact:'.$artefact->id, $reason, $actorId);
+            $this->restore->execute($artefact->blob_id, $stream, DocumentArtefactFileOwner::OWNER, DocumentArtefactFileOwner::PURPOSE, 'manifest:'.$artefact->manifest_id, $reason, $actorId);
         } catch (FileException $e) {
             throw new DocumentException($e->getMessage(), $e->field, 'restore_'.$e->reasonCode);
         }
