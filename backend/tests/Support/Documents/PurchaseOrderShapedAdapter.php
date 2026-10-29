@@ -28,7 +28,7 @@ final class PurchaseOrderShapedAdapter implements ConstrainsDocumentLayout, Docu
     /** @var list<DocumentOperationContext> */
     public array $asked = [];
 
-    public function __construct(private readonly bool $allow = true, private readonly bool $supportsLetter = false) {}
+    public function __construct(private readonly bool $allow = true, private readonly bool $supportsLetter = false, private readonly bool $allowOriginals = true) {}
 
     /** Letter is a shared capability an adapter must opt into explicitly; without it this fixture is A4 only like any default type. */
     public function layoutConstraints(): LayoutConstraints
@@ -84,7 +84,8 @@ final class PurchaseOrderShapedAdapter implements ConstrainsDocumentLayout, Docu
     {
         $this->asked[] = $context;
 
-        return $this->allow;
+        // The owner decides admissibility: this fixture can be told that no ORIGINAL may be frozen yet (its source is not issued), while drafts stay allowed.
+        return $this->allow && ($this->allowOriginals || $context->operation !== 'bind_manifest_original');
     }
 
     /** @param array<string, mixed> $override */

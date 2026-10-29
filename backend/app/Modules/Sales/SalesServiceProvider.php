@@ -13,6 +13,7 @@ use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Numbering\LeadNumbering;
 use App\Modules\Sales\Numbering\OpportunityNumbering;
 use App\Modules\Sales\Numbering\QuotationNumbering;
+use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
 use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
@@ -34,7 +35,7 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDutyManifest::shipped());
+        $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDevPreview::manifest());
         // Issue asks two independent evidence questions. Until the Tax-owned FR3 determination (through a Sales adapter) and a configured control set exist, both answer "not yet".
         $this->app->bind(QuotationTaxProvider::class, UndeterminedQuotationTaxProvider::class);
         $this->app->bind(QuotationControlsProvider::class, UnconfiguredQuotationControlsProvider::class);

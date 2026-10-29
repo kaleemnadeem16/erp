@@ -9,11 +9,14 @@ use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
 use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Actions\ReadQuotationDraft;
+use App\Modules\Sales\Actions\ReadQuotationDraftForEdit;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
+use App\Modules\Sales\Http\Requests\Quotation\EditQuotationDraftRequest;
 use App\Modules\Sales\Http\Requests\Quotation\PreviewQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\ShowQuotationDraftRequest;
 use App\Modules\Sales\Http\Requests\Quotation\StoreQuotationDraftRequest;
 use App\Modules\Sales\Http\Requests\Quotation\UpdateQuotationDraftRequest;
+use App\Modules\Sales\Http\Resources\QuotationDraftEditableResource;
 use App\Modules\Sales\Http\Resources\QuotationDraftResource;
 use App\Modules\Sales\Http\Resources\QuotationDraftWriteResource;
 use App\Modules\Sales\Http\Resources\QuotationPreviewResource;
@@ -41,6 +44,12 @@ class QuotationController extends Controller
     public function show(ShowQuotationDraftRequest $request, int $revision, ReadQuotationDraft $read): QuotationDraftResource
     {
         return new QuotationDraftResource($read($request->user(), $this->revisionId($revision)));
+    }
+
+    /** The draft as a form needs it: header and lines in the shape the PATCH accepts, at the generation to send back. For preparers (`sales.quotation.prepare`), not viewers. */
+    public function editable(EditQuotationDraftRequest $request, int $revision, ReadQuotationDraftForEdit $edit): QuotationDraftEditableResource
+    {
+        return new QuotationDraftEditableResource($edit($request->user(), $this->revisionId($revision)));
     }
 
     public function preview(PreviewQuotationRequest $request, int $revision, PreviewQuotation $preview): QuotationPreviewResource

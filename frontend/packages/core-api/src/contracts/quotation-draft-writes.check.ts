@@ -1,7 +1,7 @@
-// Compile-time contract for the quotation draft write endpoints (QL1b-2). It is never imported or run: `tsc` checking it is the test. It fails if the
+// Compile-time contract for the quotation draft write endpoints (QL1b-2) and the editable read that feeds them (M1). It is never imported or run: `tsc` checking it is the test. It fails if the
 // OpenAPI source stops typing the create body, the line/header edit body, the replay metadata or the required Idempotency-Key header, so a regeneration
 // that "matches the commit" cannot quietly turn them back into untyped options.
-import { quotationsStore, quotationsUpdate } from "../generated/quotation/quotation";
+import { quotationsEditable, quotationsStore, quotationsUpdate } from "../generated/quotation/quotation";
 import type { StoreQuotationDraftRequest } from "../generated/models/storeQuotationDraftRequest";
 
 export async function quotationDraftWriteContract(): Promise<void> {
@@ -34,6 +34,18 @@ export async function quotationDraftWriteContract(): Promise<void> {
   if (updated.status === 409) {
     const code: string = updated.data.reason_code;
     void code;
+  }
+
+  // The editable read hands back exactly what the form writes: the generation to send as expected_generation and the writable line references.
+  const form = await quotationsEditable(1);
+  if (form.status === 200) {
+    const generation: number = form.data.data.input_generation;
+    for (const line of form.data.data.lines) {
+      const scope: string = line.scope_ref;
+      const quantity: string = line.offered_quantity;
+      void [scope, quantity];
+    }
+    void generation;
   }
 
   // @ts-expect-error the Idempotency-Key header is required on create
