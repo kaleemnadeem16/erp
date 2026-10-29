@@ -54,7 +54,7 @@ final class SalesDutyManifest
         }
 
         return new self(array_map(fn (SalesDuty $duty): SalesDuty => in_array($duty->name, $names, true)
-            ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate) : $duty, array_values($this->duties)));
+            ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate, $duty->scope) : $duty, array_values($this->duties)));
     }
 
     /** @return list<SalesDuty> */

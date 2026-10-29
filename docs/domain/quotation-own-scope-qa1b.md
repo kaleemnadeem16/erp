@@ -2,8 +2,9 @@
 
 # Quotation OWN scope foundation — QA1b
 
-This is a disabled scope foundation. The existing quotation view, prepare and assignment duties
-remain STAGED; no permission registration, grant, route, UI, assignment recipe or record-level
+This is a disabled scope foundation. The shipped quotation view, prepare and assignment duties remain STAGED; the existing separately
+gated local-only developer preview can enable view/prepare, not assignment. This slice adds no
+permission registration, grant, route, UI, assignment recipe or record-level
 read/write adapter is activated by this slice. QA1a owns family responsibility and its immutable
 events. QA1b does not alter creator, ownership Actions or historical baseline capture.
 

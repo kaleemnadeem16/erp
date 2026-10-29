@@ -83,6 +83,10 @@ class QuotationOwnScopeTest extends TestCase
             $this->assertSame(DutyScope::QuotationFamily, $manifest->find($duty)->scope);
         }
         $this->assertSame(DutyScope::CompanyWide, $manifest->find(PermissionVocabulary::PIPELINE_VIEW)->scope);
+        $preview = $manifest->withActivated([PermissionVocabulary::QUOTATION_VIEW]);
+        $this->assertSame(DutyScope::QuotationFamily, $preview->find(PermissionVocabulary::QUOTATION_VIEW)->scope);
+        $this->assertTrue($preview->isActive(PermissionVocabulary::QUOTATION_VIEW));
+        $this->assertFalse($manifest->isActive(PermissionVocabulary::QUOTATION_VIEW));
     }
 
     public function test_scope_rollback_refuses_to_delete_live_new_limits(): void
