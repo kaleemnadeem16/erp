@@ -7,6 +7,8 @@ namespace App\Modules\Documents;
 use App\Modules\Documents\Support\DocumentConfigurationUsage;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
 use App\Modules\Documents\Support\ManifestConfigurationUsage;
+use App\Modules\Documents\Support\Render\DocumentRenderer;
+use App\Modules\Documents\Support\Render\PdfDocumentRenderer;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -19,5 +21,7 @@ class DocumentsServiceProvider extends ServiceProvider
     {
         $this->app->singleton(DocumentTypeRegistry::class);
         $this->app->bind(DocumentConfigurationUsage::class, ManifestConfigurationUsage::class);
+        // The one renderer: pure PHP, deterministic, standard fonts. A manifest pins its contract, version and fonts when it is frozen (DF3).
+        $this->app->singleton(DocumentRenderer::class, PdfDocumentRenderer::class);
     }
 }

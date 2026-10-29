@@ -58,9 +58,8 @@ class DocumentManifest extends Model
     }
 
     /**
-     * A manifest that pins the UNASSIGNED renderer contract (DF2 scaffolding, before DF3 exists) cannot be rendered: DF3 must not render it with whichever renderer
-     * or fonts happen to be current, nor mutate it to fill the pins in (it is insert-only). A renderable freeze needs a real contract at an eligible future bind, or
-     * a separately governed successor.
+     * A manifest is renderable when it pinned a real renderer contract and its fonts. One that pinned none (the DF2 scaffolding, `UNASSIGNED`) must never be rendered with
+     * whichever renderer or fonts happen to be current, nor mutated to fill the pins in (it is insert-only); and the renderer that draws it must be the one it pinned.
      */
     public function isRenderable(): bool
     {
