@@ -458,7 +458,7 @@ class DocumentsManifestTest extends TestCase
         $this->assertRefused(fn () => DB::table('document_manifests')->update(['stable_generation_identity' => 'edited']), 'append-only');
         $this->assertRefused(fn () => DB::table('document_manifests')->update(['frozen_payload' => '{}']), 'append-only');
         $this->assertRefused(fn () => DB::table('document_manifests')->delete(), 'append-only');
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_access_events, document_artefact_heads, document_artefacts, document_manifests, document_generation_intents'), 'append-only');
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE quotation_document_deliveries, document_access_events, document_artefact_heads, document_artefacts, document_manifests, document_generation_intents'), 'append-only');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_generation_intents'), 'append-only|cannot truncate a table referenced');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_subject_bindings CASCADE'), 'append-only|cannot truncate');
         $this->assertSame(1, DB::table('document_manifests')->count());
@@ -559,6 +559,8 @@ class DocumentsManifestTest extends TestCase
     public function test_rollback_refuses_while_manifests_exist_and_works_when_empty(): void
     {
         // Artefacts reference manifests and intents, so they go first and come back last.
+        $deliveries = require base_path('database/migrations/2026_10_30_130000_create_quotation_document_deliveries.php');
+        $deliveries->down();
         $access = require base_path('database/migrations/2026_10_30_120000_create_document_access_events.php');
         $access->down();
         $artefacts = require base_path('database/migrations/2026_10_30_100000_create_document_artefacts.php');
@@ -572,6 +574,7 @@ class DocumentsManifestTest extends TestCase
         $migration->up();
         $artefacts->up();
         $access->up();
+        $deliveries->up();
         $this->assertTrue(Schema::hasTable('document_manifests'));
 
         $this->bind();

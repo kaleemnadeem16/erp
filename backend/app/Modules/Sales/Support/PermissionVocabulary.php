@@ -76,6 +76,21 @@ final class PermissionVocabulary
     public const DOCUMENT_GENERATE = 'sales.document.generate';
 
     /**
+     * The rest of the quotation document feature (DF3/DF4 + DOC2-DOC4). All STAGED: the guarded Actions exist, nobody holds them until a holder recipe is reviewed.
+     * `view` reads status and history, `download` hands the stored original out, `repair` is the operator recovery, `delivery.view|record` read and write the manual
+     * delivery evidence. None of them is customer receipt, consent or acceptance.
+     */
+    public const DOCUMENT_VIEW = 'sales.document.view';
+
+    public const DOCUMENT_DOWNLOAD = 'sales.document.download';
+
+    public const DOCUMENT_REPAIR = 'sales.document.repair';
+
+    public const DELIVERY_VIEW = 'sales.delivery.view';
+
+    public const DELIVERY_RECORD = 'sales.delivery.record';
+
+    /**
      * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified
      * in `Authority\SalesDutyManifest` and deliberately has no constant here until the slice that delivers it.
      *

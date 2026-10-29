@@ -251,6 +251,8 @@ class FilesStorageTest extends TestCase
     public function test_rollback_works_when_empty_and_refuses_while_any_row_exists(): void
     {
         // Documents artefacts reference blobs, so that owner's tables go first and come back last.
+        $deliveries = require base_path('database/migrations/2026_10_30_130000_create_quotation_document_deliveries.php');
+        $deliveries->down();
         $access = require base_path('database/migrations/2026_10_30_120000_create_document_access_events.php');
         $access->down();
         $artefacts = require base_path('database/migrations/2026_10_30_100000_create_document_artefacts.php');
@@ -264,6 +266,7 @@ class FilesStorageTest extends TestCase
         $migration->up();
         $artefacts->up();
         $access->up();
+        $deliveries->up();
         $this->assertTrue(Schema::hasTable('file_blobs'));
 
         $this->blob();

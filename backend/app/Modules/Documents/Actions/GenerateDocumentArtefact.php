@@ -94,6 +94,7 @@ final class GenerateDocumentArtefact
             $this->fail($intent->id, $fence, 'storage_'.$e->reasonCode);
             throw new DocumentException('The generated document could not be stored.', null, 'storage_failed');
         } catch (Throwable $e) {
+            report($e);
             $this->fail($intent->id, $fence, 'render_failed');
             throw new DocumentException('The document could not be generated.', null, 'render_failed');
         }
@@ -135,12 +136,12 @@ final class GenerateDocumentArtefact
             throw new DocumentException('A generation needs an actor on record to store its file under.', null, 'no_actor');
         }
 
-        return DocumentGenerationScope::run($manifest->id, $intentId, $fence, $actorId, function () use ($manifest, $rendered, $fence, $actorId): FileBlob {
+        return DocumentGenerationScope::run($manifest->id, $intentId, $fence, $actorId, function () use ($manifest, $rendered, $intentId, $fence, $actorId): FileBlob {
             $stream = fopen('php://temp', 'r+');
             fwrite($stream, $rendered->bytes);
             rewind($stream);
             $identity = 'manifest:'.$manifest->id;
-            $request = $this->uploads->execute(DocumentArtefactFileOwner::OWNER, $identity, DocumentArtefactFileOwner::PURPOSE, strlen($rendered->bytes), 'docgen:'.$manifest->id.':'.$fence, $actorId, $rendered->sha256);
+            $request = $this->uploads->execute(DocumentArtefactFileOwner::OWNER, $identity, DocumentArtefactFileOwner::PURPOSE, strlen($rendered->bytes), 'docgen:'.$manifest->id.':'.$intentId.':'.$fence, $actorId, $rendered->sha256);
             $staged = $this->stage->execute($request['intent']->id, $stream, 'document.pdf', 'application/pdf', $actorId);
             $verified = $this->verify->execute($request['intent']->id, $actorId)['blob'];
             if ($verified->health !== 'VERIFIED' || $staged['blob']->id !== $verified->id) {

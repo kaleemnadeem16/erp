@@ -68,8 +68,8 @@ class SalesDutyManifestTest extends TestCase
             $this->assertContains($duty->class, [DutyClass::NewOrdinary, DutyClass::Sensitive], $duty->name);
             $this->assertFalse($manifest->isActive($duty->name));
         }
-        $this->assertCount(40, $manifest->withStatus(DutyStatus::Specified));
-        $this->assertSame(['sales.quotation.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.issue', 'sales.financial.configure', 'sales.document.generate'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The staged duties: their Actions exist, the duties are disabled.');
+        $this->assertCount(35, $manifest->withStatus(DutyStatus::Specified));
+        $this->assertSame(['sales.quotation.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.issue', 'sales.financial.configure', 'sales.document.view', 'sales.document.generate', 'sales.document.repair', 'sales.document.download', 'sales.delivery.view', 'sales.delivery.record'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The staged duties: their Actions exist, the duties are disabled.');
         $this->assertFalse($manifest->isActive('sales.quotation.view'));
         $this->assertFalse($manifest->isActive('sales.quotation.prepare'));
         $this->assertFalse($manifest->isActive('sales.quotation.assign'));

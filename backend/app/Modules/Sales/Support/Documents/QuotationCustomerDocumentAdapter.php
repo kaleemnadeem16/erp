@@ -96,7 +96,31 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
             return true;
         }
 
-        return SalesAccess::may(User::query()->find($context->actorId), PermissionVocabulary::DOCUMENT_GENERATE);
+        // Each Documents operation is answered by its own duty, never by another's, and fails closed for any operation this owner has not named.
+        $duty = match ($context->operation) {
+            'request_generation', 'generate' => PermissionVocabulary::DOCUMENT_GENERATE,
+            'read_status', 'history' => PermissionVocabulary::DOCUMENT_VIEW,
+            'download' => PermissionVocabulary::DOCUMENT_DOWNLOAD,
+            'reconcile_artefact', 'restore_artefact' => PermissionVocabulary::DOCUMENT_REPAIR,
+            BindDocumentManifest::OPERATION, BindDocumentSubject::OPERATION => PermissionVocabulary::DOCUMENT_GENERATE,
+            default => null,
+        };
+        $actor = User::query()->find($context->actorId);
+        if ($duty === null || $actor === null || ActiveActor::current($actor) === null || ! SalesAccess::may($actor, $duty)) {
+            return false;
+        }
+        // Reading, handing out or repairing the stored document also needs the actor to be able to see that quotation, and the quotation must really be issued.
+        if (in_array($context->operation, ['read_status', 'history', 'download', 'reconcile_artefact', 'restore_artefact'], true)) {
+            return SalesAccess::may($actor, PermissionVocabulary::QUOTATION_VIEW) && $this->isIssued($context);
+        }
+
+        return true;
+    }
+
+    private function isIssued(DocumentOperationContext $context): bool
+    {
+        return $context->audience === self::AUDIENCE && preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) === 1
+            && QuotationRevision::query()->whereKey((int) $m[1])->where('state', 'ISSUED')->exists();
     }
 
     /**
