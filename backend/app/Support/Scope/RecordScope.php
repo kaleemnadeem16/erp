@@ -57,6 +57,11 @@ final class RecordScope
         if ($user === null || (int) $user->company_id !== app(CompanyContext::class)->id() || ! $adapters->supports($resource, $duty, 'ALL')) {
             return ResolvedScope::none();
         }
+        // Reload relations so a revoked grant and removed limit cannot widen a stale actor.
+        $user = User::withoutGlobalScopes()->whereKey($user->id)->where('company_id', $user->company_id)->first();
+        if ($user === null) {
+            return ResolvedScope::none();
+        }
         $grants = $this->conferringGrants($user, [$duty]);
         foreach ($grants as $grant) {
             if ($grant['scope'] === null) {
@@ -86,11 +91,6 @@ final class RecordScope
      */
     private function conferringGrants(User $user, array $wanted): array
     {
-        // A hydrated user may retain revoked role/direct-permission relations. Never let a removed limit plus stale grants widen scope.
-        $user = User::withoutGlobalScopes()->whereKey($user->id)->where('company_id', $user->company_id)->first();
-        if ($user === null) {
-            return [];
-        }
         $limits = DB::table('access_scope_limits')->where('company_id', $user->company_id)->where('user_id', $user->id)->get();
         $result = [];
         foreach ($user->roles()->with('permissions:id,name')->get() as $role) {

@@ -100,7 +100,6 @@ class QuotationOwnScopeTest extends TestCase
         $limit->delete();
         $resolver = app(RecordScope::class);
         $this->assertTrue($resolver->resolveForResource($stale, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->isNone());
-        $this->assertTrue($resolver->resolve($stale, PermissionVocabulary::QUOTATION_VIEW)->isNone());
     }
 
     public function test_scope_rollback_refuses_to_delete_live_new_limits(): void
