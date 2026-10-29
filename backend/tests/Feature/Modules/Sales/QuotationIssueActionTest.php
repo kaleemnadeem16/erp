@@ -21,8 +21,10 @@ use App\Modules\Sales\Support\Quotation\Issue\IssueBlocker;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
 use Tests\Support\Sales\FakeQuotationControlsProvider;
@@ -234,6 +236,40 @@ class QuotationIssueActionTest extends TestCase
             $this->issue($revision, key: 'k', by: $this->checker->fresh());
         } finally {
             $this->app->instance(SalesDutyManifest::class, SalesDutyManifest::shipped());
+        }
+    }
+
+    public function test_authority_is_judged_again_inside_the_transaction_before_a_replay_or_any_work(): void
+    {
+        $revision = $this->preparedDraft();
+        $this->issue($revision, key: 'k');
+        $numbers = $this->allocations();
+        $armed = true;
+        // The member is suspended in the gap between the first check and the operation's own transaction.
+        Event::listen(TransactionBeginning::class, function () use (&$armed): void {
+            if ($armed) {
+                $armed = false;
+                DB::table('users')->where('id', $this->checker->id)->update(['status' => MemberStatus::Suspended->value]);
+            }
+        });
+
+        try {
+            $this->issue($revision, key: 'k');
+            $this->fail('A member suspended before the transaction must not be served the receipt.');
+        } catch (AuthorizationException) {
+            $this->assertFalse($armed, 'the suspension did land after the outer check');
+        }
+        $this->assertSame($numbers, $this->allocations());
+
+        // And for fresh work: no number is allocated for a member who is no longer active.
+        $second = $this->preparedDraft();
+        DB::table('users')->where('id', $this->checker->id)->update(['status' => MemberStatus::Active->value]);
+        $armed = true;
+        try {
+            $this->issue($second, key: 'k2');
+            $this->fail('A member suspended before the transaction must not issue.');
+        } catch (AuthorizationException) {
+            $this->assertSame([$numbers, 'DRAFT'], [$this->allocations(), QuotationRevision::findOrFail($second->id)->state]);
         }
     }
 

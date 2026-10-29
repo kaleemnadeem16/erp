@@ -7,6 +7,7 @@ use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Numbering\Support\NumberingContext;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Models\QuotationDraftLine;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -98,6 +99,32 @@ class QuotationIssueCommitTest extends TestCase
         $this->expectExceptionMessage('has no issue record');
         DB::transaction(function () use ($revision): void {
             $allocation = app(NumberingService::class)->allocate(new NumberingContext('QUOTATION', CarbonImmutable::now(), documentId: $revision->id));
+            DB::table('quotation_revisions')->where('id', $revision->id)->update(['state' => 'ISSUED', 'official_number' => $allocation->number, 'numbering_allocation_id' => $allocation->allocationId,
+                'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth()]);
+        });
+    }
+    public function test_a_frozen_term_that_differs_from_its_draft_line_is_refused_by_the_real_commit_though_ids_and_totals_agree(): void
+    {
+        $revision = $this->preparedDraft();
+        $lines = QuotationDraftLine::query()->where('revision_id', $revision->id)->orderBy('id')->get();
+
+        $this->expectException(\PDOException::class);
+        $this->expectExceptionMessage('does not state what its draft line offered');
+        DB::transaction(function () use ($revision, $lines): void {
+            $allocation = app(NumberingService::class)->allocate(new NumberingContext('QUOTATION', CarbonImmutable::now(), documentId: $revision->id));
+            $issueId = DB::table('quotation_issues')->insertGetId(['company_id' => 1, 'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'reviewed_generation' => $revision->input_generation,
+                'revision_created_by' => $revision->created_by, 'issued_by' => $this->checker->id, 'issued_at' => now(), 'official_number' => $allocation->number, 'numbering_allocation_id' => $allocation->allocationId,
+                'policy_version' => 'ISSUE.1', 'unknown_payment_policy' => 'BLOCK', 'currency_id' => $revision->currency_id, 'pricing_date' => $revision->pricing_date->format('Y-m-d'), 'tax_estimate_date' => $revision->tax_estimate_date?->format('Y-m-d'),
+                'valid_through_local_date' => $revision->valid_through_local_date->format('Y-m-d'), 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth(), 'net_total' => '200.0000',
+                'optional_net_total' => '30.0000', 'controls_outcome' => 'PASS', 'financial_fingerprint' => str_repeat('c', 64)]);
+            foreach ($lines as $i => $line) {
+                $base = $line->membership === 'BASE';
+                DB::table('quotation_issued_lines')->insert(['company_id' => 1, 'issue_id' => $issueId, 'revision_id' => $revision->id, 'family_id' => $revision->family_id, 'source_line_id' => $line->id,
+                    'logical_scope_id' => $line->logical_scope_id, 'sort_order' => $line->sort_order, 'section_title' => null, 'description' => $i === 0 ? 'A different offer' : $line->description,
+                    'membership' => $line->membership, 'choice_group_id' => null, 'is_baseline' => false, 'counts_in_total' => $base, 'source_kind' => $line->source_kind, 'item_id' => null,
+                    'manual_measure' => $line->manual_measure, 'offered_quantity' => $line->offered_quantity, 'offered_uom_id' => null, 'unit_price' => $line->unit_price,
+                    'price_currency_id' => $revision->currency_id, 'fx_fingerprint' => $line->fx_fingerprint, 'net' => $base ? '200.0000' : '30.0000']);
+            }
             DB::table('quotation_revisions')->where('id', $revision->id)->update(['state' => 'ISSUED', 'official_number' => $allocation->number, 'numbering_allocation_id' => $allocation->allocationId,
                 'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth()]);
         });

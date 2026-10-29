@@ -241,6 +241,16 @@ BEGIN
    INTO line_count, counted, optional_sum, tax_sum, tax_unknown FROM quotation_issued_lines WHERE company_id = p_company AND issue_id = iss.id;
  SELECT count(*) INTO draft_count FROM quotation_draft_lines WHERE company_id = p_company AND revision_id = p_revision;
  IF line_count = 0 OR line_count <> draft_count THEN RAISE EXCEPTION 'The frozen lines are not exactly the draft lines' USING ERRCODE = '23514'; END IF;
+ -- Every frozen line states exactly what its own draft line offered: identity alone (the composite keys) cannot prove the terms. Only the derived money (net, tax, gross)
+ -- is the issue's own; it is held by the shape check, the totals below and the financial fingerprint.
+ IF EXISTS (
+  SELECT 1 FROM quotation_issued_lines l JOIN quotation_draft_lines d ON d.company_id = l.company_id AND d.revision_id = l.revision_id AND d.id = l.source_line_id
+   WHERE l.company_id = p_company AND l.issue_id = iss.id
+     AND ROW(l.family_id, l.logical_scope_id, l.sort_order, l.section_title, l.description, l.membership, l.choice_group_id, l.is_baseline, l.source_kind, l.item_id, l.manual_measure,
+             l.offered_quantity, l.offered_uom_id, l.unit_price, l.price_currency_id, l.fx_fingerprint)
+         IS DISTINCT FROM ROW(d.family_id, d.logical_scope_id, d.sort_order, d.section_title, d.description, d.membership, d.choice_group_id, d.is_baseline, d.source_kind, d.item_id, d.manual_measure,
+             d.offered_quantity, d.offered_uom_id, d.unit_price, COALESCE(d.price_currency_id, rev.currency_id), d.fx_fingerprint)
+ ) THEN RAISE EXCEPTION 'A frozen line does not state what its draft line offered' USING ERRCODE = '23514'; END IF;
  IF counted <> iss.net_total THEN RAISE EXCEPTION 'The issued net total is not the sum of the counted lines' USING ERRCODE = '23514'; END IF;
  IF iss.optional_net_total IS DISTINCT FROM (CASE WHEN EXISTS (SELECT 1 FROM quotation_issued_lines WHERE issue_id = iss.id AND membership = 'OPTIONAL') THEN optional_sum ELSE NULL END) THEN
   RAISE EXCEPTION 'The issued optional total is not the sum of the optional lines' USING ERRCODE = '23514';

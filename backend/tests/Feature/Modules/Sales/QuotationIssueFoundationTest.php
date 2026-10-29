@@ -96,7 +96,7 @@ class QuotationIssueFoundationTest extends TestCase
             $rows[] = ['company_id' => 1, 'revision_id' => $revision->id, 'family_id' => $revision->family_id, 'source_line_id' => $line->id, 'logical_scope_id' => $line->logical_scope_id, 'sort_order' => $line->sort_order,
                 'section_title' => null, 'description' => $line->description, 'membership' => $line->membership, 'choice_group_id' => null, 'is_baseline' => false, 'counts_in_total' => $counts, 'source_kind' => 'MANUAL',
                 'item_id' => null, 'manual_measure' => 'job', 'offered_quantity' => $line->offered_quantity, 'offered_uom_id' => null, 'unit_price' => $line->unit_price, 'price_currency_id' => $revision->currency_id,
-                'fx_fingerprint' => null, 'net' => $net, 'tax' => $taxed ? bcmul($net, '0.10', 4) : null, 'gross' => $taxed ? bcadd($net, bcmul($net, '0.10', 4), 4) : null,
+                'fx_fingerprint' => $line->fx_fingerprint, 'net' => $net, 'tax' => $taxed ? bcmul($net, '0.10', 4) : null, 'gross' => $taxed ? bcadd($net, bcmul($net, '0.10', 4), 4) : null,
                 'tax_disposition' => $taxed ? 'TAXABLE' : null, 'tax_evidence_reference' => $taxed ? str_repeat('a', 64) : null];
         }
         if ($lines !== null) {
@@ -166,6 +166,12 @@ class QuotationIssueFoundationTest extends TestCase
             'a tax total that is not the sum of the counted line taxes' => ['wrong-tax'],
             'a reviewed generation that is not the revision generation' => ['wrong-generation'],
             'an issue instant that differs from the revision' => ['wrong-instant'],
+            'a frozen description that is not the draft line\'s' => ['term-description'],
+            'a frozen quantity that is not the draft line\'s' => ['term-quantity'],
+            'a frozen unit price that is not the draft line\'s' => ['term-price'],
+            'a frozen membership that is not the draft line\'s' => ['term-membership'],
+            'a frozen source kind and measure that are not the draft line\'s' => ['term-source'],
+            'a frozen sort order that is not the draft line\'s' => ['term-order'],
         ];
     }
 
@@ -174,6 +180,9 @@ class QuotationIssueFoundationTest extends TestCase
     {
         $revision = $this->draft();
         $this->expectException(QueryException::class);
+        if (str_starts_with($case, 'term-')) {
+            $this->expectExceptionMessage('does not state what its draft line offered');
+        }
 
         match ($case) {
             'issue-only' => $this->issueRowOnly($revision),
@@ -184,6 +193,12 @@ class QuotationIssueFoundationTest extends TestCase
             'wrong-optional' => $this->writeIssue($revision, ['optional_net_total' => '31.0000']),
             'wrong-tax' => $this->writeIssue($revision, ['tax_total' => '21.0000', 'gross_total' => '221.0000']),
             'wrong-generation' => $this->writeIssue($revision, ['reviewed_generation' => 77]),
+            'term-description' => $this->writeIssue($revision, lines: fn (array $rows): array => [['description' => 'Something else'] + $rows[0], $rows[1]]),
+            'term-quantity' => $this->writeIssue($revision, lines: fn (array $rows): array => [['offered_quantity' => '3.0000'] + $rows[0], $rows[1]]),
+            'term-price' => $this->writeIssue($revision, lines: fn (array $rows): array => [['unit_price' => '90.0000'] + $rows[0], $rows[1]]),
+            'term-membership' => $this->writeIssue($revision, lines: fn (array $rows): array => [$rows[0], ['membership' => 'BASE', 'counts_in_total' => true] + $rows[1]], issue: ['net_total' => '230.0000', 'optional_net_total' => null, 'tax_total' => '23.0000', 'gross_total' => '253.0000']),
+            'term-source' => $this->writeIssue($revision, lines: fn (array $rows): array => [['manual_measure' => 'hour'] + $rows[0], $rows[1]]),
+            'term-order' => $this->writeIssue($revision, lines: fn (array $rows): array => [['sort_order' => 99] + $rows[0], $rows[1]]),
             'wrong-instant' => $this->writeIssue($revision, ['expires_at' => now()->addYear()], ['expires_at' => now()->addDay()]),
         };
     }

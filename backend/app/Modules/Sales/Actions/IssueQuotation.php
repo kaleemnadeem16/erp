@@ -54,20 +54,31 @@ final class IssueQuotation
 
     public function __invoke(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey): QuotationIssueOutcome
     {
-        ActiveActor::require($actor, 'issue a quotation');
-        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to issue a quotation.');
-        }
+        $this->authorise($actor);
         $context = SalesActorContext::forUser($actor, 'quotation.issue');
 
         $outcome = $this->operations->run(
             $context, 'quotation.issue', $requestKey, ['revision_id' => $revisionId, 'expected_generation' => $expectedGeneration],
-            fn (): QuotationRevision => QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
-                ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id'),
+            // Runs inside every attempt, before the receipt is read and before any work: a revocation or suspension that lands between a retry's attempts, or between the
+            // check above and the lock, refuses the replay and the mutation alike.
+            function () use ($actor, $revisionId): QuotationRevision {
+                $this->authorise($actor);
+
+                return QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
+                ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
+            },
             fn (QuotationRevision $revision): array => $this->issue($actor, $context, $revision, $expectedGeneration),
         );
 
         return QuotationIssueOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
+    }
+
+    private function authorise(User $actor): void
+    {
+        ActiveActor::require($actor, 'issue a quotation');
+        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW)) {
+            throw new AuthorizationException('You are not permitted to issue a quotation.');
+        }
     }
 
     /** @return array<string, mixed> */
