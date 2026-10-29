@@ -11,7 +11,6 @@ use App\Modules\Documents\Actions\BindDocumentManifest;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Sales\Actions\AssessQuotationIssueReadiness;
-use App\Modules\Sales\Support\Documents\QuotationCustomerProjection;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
@@ -20,12 +19,14 @@ use App\Modules\Sales\Models\QuotationIssuedLine;
 use App\Modules\Sales\Models\QuotationOperationReceipt;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
+use App\Modules\Sales\Support\Documents\QuotationCustomerProjection;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\IssueBlocker;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Events\TransactionBeginning;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -334,7 +335,7 @@ class QuotationIssueActionTest extends TestCase
         try {
             $this->issue($revision, key: 'x');
             $this->fail('The issue must fail with its freeze.');
-        } catch (\Illuminate\Database\QueryException) {
+        } catch (QueryException) {
             $this->assertSame([0, 0, 'DRAFT', 0], [$this->allocations(), QuotationIssue::query()->count(), QuotationRevision::findOrFail($revision->id)->state, DocumentManifest::query()->count()]);
         }
     }

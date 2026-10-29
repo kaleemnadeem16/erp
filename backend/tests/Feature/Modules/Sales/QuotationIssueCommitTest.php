@@ -6,8 +6,8 @@ use App\Exceptions\DomainInvariantException;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Numbering\Support\NumberingContext;
 use App\Modules\Sales\Actions\IssueQuotation;
-use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Models\QuotationDraftLine;
+use App\Modules\Sales\Models\QuotationRevision;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
@@ -103,6 +103,7 @@ class QuotationIssueCommitTest extends TestCase
                 'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth()]);
         });
     }
+
     public function test_a_frozen_term_that_differs_from_its_draft_line_is_refused_by_the_real_commit_though_ids_and_totals_agree(): void
     {
         $revision = $this->preparedDraft();
