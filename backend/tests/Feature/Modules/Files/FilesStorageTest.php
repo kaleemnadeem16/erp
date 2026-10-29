@@ -235,9 +235,11 @@ class FilesStorageTest extends TestCase
         DB::table('file_operation_receipts')->insert(['company_id' => 1, 'operation' => 'x', 'operation_key' => 'k', 'intent_digest' => str_repeat('a', 64), 'intent_id' => $intent, 'blob_id' => $blob, 'recorded_at' => now()]);
 
         $all = 'file_operation_receipts, file_upload_intents, file_blob_events, file_blobs';
-        foreach (['file_operation_receipts', 'file_blob_events', 'file_upload_intents, file_operation_receipts', $all] as $set) {
+        foreach (['file_operation_receipts', 'file_blob_events', 'file_upload_intents, file_operation_receipts'] as $set) {
             $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$set}"), 'append-only');
         }
+        // Owners' own tables (Documents artefacts) reference blobs, so a set with blobs is refused by PostgreSQL itself or by the guard; either way it is refused.
+        $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$all}"), 'append-only|cannot truncate a table referenced');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE users CASCADE'), 'append-only');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE file_blobs'), 'append-only|cannot truncate a table referenced');
         $guards = DB::select("select c.relname as tbl from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid
@@ -248,6 +250,9 @@ class FilesStorageTest extends TestCase
 
     public function test_rollback_works_when_empty_and_refuses_while_any_row_exists(): void
     {
+        // Documents artefacts reference blobs, so that owner's tables go first and come back last.
+        $artefacts = require base_path('database/migrations/2026_10_30_100000_create_document_artefacts.php');
+        $artefacts->down();
         $migration = require base_path('database/migrations/2026_10_29_100000_create_files_foundation.php');
         $migration->down();
         foreach (['file_blobs', 'file_blob_events', 'file_upload_intents', 'file_operation_receipts'] as $table) {
@@ -255,6 +260,7 @@ class FilesStorageTest extends TestCase
         }
         $this->assertSame(0, (int) DB::selectOne("select count(*) c from pg_proc where proname like 'files\\_%'")->c, 'every Files function was removed');
         $migration->up();
+        $artefacts->up();
         $this->assertTrue(Schema::hasTable('file_blobs'));
 
         $this->blob();

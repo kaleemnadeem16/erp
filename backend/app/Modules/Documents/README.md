@@ -22,7 +22,7 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
 - `Actions\BindDocumentSubject`: internal, idempotent, fails closed (missing adapter, wrong version/audience, denied or throwing access, invalid projection).
 - DF2 freeze and generation intents (issue #26): `document_manifests` (insert-only; per (binding, purpose `DRAFT_PREVIEW|ORIGINAL`, stable generation identity) the frozen
   typed payload and schema version, source generation, template and page policy **as resolved configuration** (a shipped default is pinned too) with their version ids
-  when they come from a row, brand `NOT_AVAILABLE`, empty asset/font lists, renderer `UNASSIGNED` until DF3, English/LTR formatting, an input digest and a pinned
+  when they come from a row, brand `NOT_AVAILABLE`, empty asset/font lists, renderer contract, version and fonts pinned from the renderer (below; `UNASSIGNED` only on rows frozen before DF3), English/LTR formatting, an input digest and a pinned
   digest, with the database clock as its time) and `document_generation_intents` (a mutable projection born PENDING at fence 0; the database guards its state machine
   and a monotone fencing generation; DF3 owns every transition after PENDING). `Actions\BindDocumentManifest` is the owner's snapshot event, called in the owner's own
   transaction: owner access (fail-closed, refusals logged as one structured line without content) → schema validation → resolution under shared locks that
@@ -36,6 +36,18 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
   choice that differs from the pinned one is `manifest_conflict` even under a fresh key. A manifest that pinned the `UNASSIGNED` renderer and no fonts
   (`DocumentManifest::isRenderable()` is false) must never be rendered by DF3 with whichever renderer is current, nor mutated: it is insert-only.
 
+- DF3 renderer, stored originals and secure delivery: `Support\Render\PdfDocumentRenderer` (contract `document-pdf/1`, pure PHP, deterministic, standard Helvetica fonts, no
+  active content or external reference) renders a manifest alone — its frozen payload, resolved template and page policy; a DRAFT_PREVIEW is marked on every page, an
+  ORIGINAL never. `document_artefacts` (insert-only; one per generation intent, tied to a VERIFIED Files blob with the same hash and size, and accepted by the database
+  only from the worker that holds the RUNNING intent at exactly that fence) and `document_artefact_heads` (an ORIGINAL head is written once and never moves; a DRAFT_PREVIEW
+  head advances one generation at a time). `Actions\GenerateDocumentArtefact` is the worker: owner access → short claim (PENDING or expired lease → RUNNING, new fence,
+  database-clock lease; a live lease is refused; VERIFIED replays) → render outside any transaction → store through Files (request, stage, verify) under the
+  `documents.artefact` file owner → fenced publish of artefact, head, VERIFIED intent and receipt. A failure while holding the fence marks the intent FAILED with a stable
+  code; a manifest that pinned no renderer is `manifest_not_renderable`, never rendered by whichever renderer is current. `StreamAuthorisedDocument` asks the owner
+  (`download`), requires a VERIFIED blob and a matching hash and returns a `DocumentDownload` (attachment, generated name, `nosniff`, `no-store`, no key or path).
+  `ReconcileDocumentArtefact` / `RestoreDocumentArtefact` mark a missing or corrupt object and bring it back **only from bytes with the recorded hash**; a regenerated
+  file is never a recovery of an original. No route, grant or duty.
+
 - Every history table also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on the same guard (row triggers never fire on TRUNCATE, and the runtime role is a
   superuser, so revoking the privilege would not help). A new Documents history table adds both triggers in its own migration.
 
@@ -46,7 +58,7 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
 - The owning module's own binding table holds the real FKs to a Documents binding and to its subject. Documents holds no subject FK.
 - Registration is not permission. Documents grants nothing.
 - Money/quantities are decimal strings, never floats.
-- Not here yet: Company brand and assets (a separate Company-owned task), renderer and archive (DF3), recovery and files (DF4), pilot (DF5).
+- Not here yet: Company brand and assets (a separate Company-owned task), archive and retention, a delivery route and Sales' quotation binding (DF4), pilot (DF5).
   The quotation binding and Sales snapshot tables are Sales-owned.
 - Purchasing and the existing PO Quick Print are untouched; the PO-shaped adapter lives under `tests/Support/Documents` and writes nothing.
 

@@ -22,8 +22,6 @@ final class PdfDocumentRenderer implements DocumentRenderer
 
     public const VERSION = '1.0.0';
 
-    private const PT_PER_MM = 72 / 25.4;
-
     public function contract(): string
     {
         return self::CONTRACT;

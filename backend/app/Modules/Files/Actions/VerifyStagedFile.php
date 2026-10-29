@@ -17,6 +17,7 @@ use App\Modules\Files\Support\ScanResult;
 use App\Modules\Files\Support\StoredObject;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Re-reads a staged object, recomputes its hash and size against the recorded identity, asks the scanner and settles the blob's health with evidence. A missing object or a

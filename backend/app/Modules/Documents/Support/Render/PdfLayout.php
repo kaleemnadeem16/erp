@@ -45,7 +45,10 @@ final class PdfLayout
 
     private float $contentBottom = 0.0;
 
-    /** @param array<string, mixed> $page @param array<string, mixed> $template */
+    /**
+     * @param  array<string, mixed>  $page
+     * @param  array<string, mixed>  $template
+     */
     public function __construct(private readonly RenderInput $input, private readonly array $page, private readonly array $template, bool $compact)
     {
         $this->width = round((float) $page['width_mm'] * self::MM, 2);
@@ -285,7 +288,10 @@ final class PdfLayout
         }
     }
 
-    /** @param list<array<string, mixed>> $columns @param list<list<string>> $widths */
+    /**
+     * @param  list<array<string, mixed>>  $columns
+     * @param  list<float>  $widths
+     */
     private function tableHeader(array $columns, array $widths): void
     {
         $this->ensure($this->leading + $this->pad * 2 + 24);
@@ -302,7 +308,11 @@ final class PdfLayout
         $this->y -= $height;
     }
 
-    /** @param list<array<string, mixed>> $columns @param list<float> $widths @param list<list<string>> $lines */
+    /**
+     * @param  list<array<string, mixed>>  $columns
+     * @param  list<float>  $widths
+     * @param  list<list<string>>  $lines
+     */
     private function tableRow(array $columns, array $widths, array $lines, int $count, float $rowHeight, bool $repeatHeader): void
     {
         $perPage = max(1, (int) floor(($this->contentTop - $this->contentBottom - $this->pad * 1.5) / $this->leading));
