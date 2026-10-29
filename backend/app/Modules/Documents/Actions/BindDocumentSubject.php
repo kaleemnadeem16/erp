@@ -6,13 +6,13 @@ namespace App\Modules\Documents\Actions;
 
 use App\Modules\Documents\Models\DocumentOperationReceipt;
 use App\Modules\Documents\Models\DocumentSubjectBinding;
+use App\Modules\Documents\Support\DocumentAccessGate;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentProjection;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
-use Throwable;
 
 /**
  * Binds one registered document type to one owner subject generation, idempotently. Fails closed: an unregistered or incompatible type, an audience the type
@@ -40,12 +40,7 @@ final class BindDocumentSubject
         }
         $companyId = $this->company->id();
         $context = new DocumentOperationContext($companyId, $actorId, self::OPERATION, $projection->typeKey, $audience, $ownerBindingIdentity);
-        try {
-            $allowed = $adapter->access()->authorise($context);
-        } catch (Throwable) {
-            $allowed = false;
-        }
-        if ($allowed !== true) {
+        if (! DocumentAccessGate::allows($adapter, $context)) {
             throw new DocumentException("The owner of '{$projection->typeKey}' did not authorise this operation.", null, 'access_denied');
         }
         $adapter->projectionSchema()->validate($projection->payload);

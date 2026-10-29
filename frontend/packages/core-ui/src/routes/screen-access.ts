@@ -1,3 +1,4 @@
+import { quotationAccess } from "../features/quotations/quotation-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -222,6 +223,12 @@ export function canAccessScreen(
   pathname: string,
   permissions: ReadonlySet<string>,
 ): boolean {
+  if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
+    const access = quotationAccess(permissions);
+    if (/^\/quotations\/[1-9]\d*\/review$/.test(pathname)) return access.review;
+    if (/^\/quotations\/[1-9]\d*$/.test(pathname)) return access.detail;
+    return false;
+  }
   // A view-only grant must not mount an edit form through a bookmarked URL.
   if (
     pathname === "/purchase-orders/new" ||

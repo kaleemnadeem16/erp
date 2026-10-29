@@ -39,6 +39,24 @@ final class SalesDutyManifest
         return new self(SalesDutyCatalogue::all());
     }
 
+    /**
+     * A copy of this manifest with the named STAGED duties switched to ACTIVE, for the local development preview only (`SalesDevPreview`). Only a staged duty may be
+     * activated this way: an unknown, specified, dormant or already active name is refused rather than silently ignored.
+     *
+     * @param  list<string>  $names
+     */
+    public function withActivated(array $names): self
+    {
+        foreach ($names as $name) {
+            if (($this->duties[$name] ?? null)?->status !== DutyStatus::Staged) {
+                throw new InvalidArgumentException("Sales duty [{$name}] is not a staged duty and cannot be activated.");
+            }
+        }
+
+        return new self(array_map(fn (SalesDuty $duty): SalesDuty => in_array($duty->name, $names, true)
+            ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate) : $duty, array_values($this->duties)));
+    }
+
     /** @return list<SalesDuty> */
     public function all(): array
     {

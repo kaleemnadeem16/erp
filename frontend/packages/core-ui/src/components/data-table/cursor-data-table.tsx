@@ -1,5 +1,14 @@
 import type { KeyboardEvent, ReactNode } from 'react';
-import { flexRender, getCoreRowModel, useReactTable, type ColumnDef, type OnChangeFn, type SortingState, type VisibilityState } from '@tanstack/react-table';
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  type ColumnDef,
+  type OnChangeFn,
+  type RowSelectionState,
+  type SortingState,
+  type VisibilityState,
+} from '@tanstack/react-table';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { cn } from '../../lib/utils';
@@ -8,6 +17,7 @@ import { Button } from '../ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { Skeleton } from '../ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { DataTableCards } from './data-table-cards';
 import { DataTableSortSelect } from './data-table-sort-select';
 import { DataTableViewOptions } from './data-table-view-options';
@@ -20,8 +30,11 @@ export interface CursorDataTableProps<TRow> {
   data: TRow[];
   sorting: SortingState;
   onSortingChange: OnChangeFn<SortingState>;
+  rowSelection?: RowSelectionState;
+  onRowSelectionChange?: OnChangeFn<RowSelectionState>;
   columnVisibility?: VisibilityState;
   onColumnVisibilityChange?: OnChangeFn<VisibilityState>;
+  getRowId?: (row: TRow) => string;
   onRowClick?: (row: TRow) => void;
   isLoading?: boolean;
   isError?: boolean;
@@ -63,8 +76,11 @@ export function CursorDataTable<TRow>({
   data,
   sorting,
   onSortingChange,
+  rowSelection = {},
+  onRowSelectionChange,
   columnVisibility,
   onColumnVisibilityChange,
+  getRowId,
   onRowClick,
   isLoading,
   isError,
@@ -87,12 +103,15 @@ export function CursorDataTable<TRow>({
   const table = useReactTable({
     data,
     columns,
-    state: { sorting, columnVisibility },
+    state: { sorting, columnVisibility, rowSelection },
     manualPagination: true,
     manualSorting: true,
     enableMultiSort: false,
+    enableRowSelection: !!onRowSelectionChange,
     onSortingChange,
+    onRowSelectionChange,
     onColumnVisibilityChange,
+    getRowId,
     getCoreRowModel: getCoreRowModel(),
   });
 
@@ -124,8 +143,11 @@ export function CursorDataTable<TRow>({
           columns={cardColumns}
           data={data}
           columnVisibility={columnVisibility}
+          getRowId={getRowId}
           onRowClick={onRowClick}
           rowActions={rowActions}
+          rowSelection={rowSelection}
+          onRowSelectionChange={onRowSelectionChange ? (next) => onRowSelectionChange(next) : undefined}
           isLoading={isLoading}
           isError={isError}
           errorMessage={errorMessage}
@@ -180,6 +202,7 @@ export function CursorDataTable<TRow>({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
+                  data-state={row.getIsSelected() && 'selected'}
                   // No role="button": see the identical comment in data-table.tsx —
                   // this row can carry a nested rowActions link/button, and
                   // overriding the role collapses both into one confusing stop.
@@ -210,7 +233,7 @@ export function CursorDataTable<TRow>({
       </div>
       )}
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="ui-list-pagination flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span className="text-sm text-muted-foreground">Rows per page</span>
           <Select value={String(perPage)} onValueChange={(value) => onPerPageChange(Number(value))}>
@@ -227,15 +250,39 @@ export function CursorDataTable<TRow>({
           </Select>
         </div>
 
-        <div className="flex items-center gap-1">
-          <Button variant="outline" size="sm" onClick={onPrevious} disabled={!hasPrevious} aria-label="Previous page">
-            <ChevronLeft className="h-4 w-4" />
-            Previous
-          </Button>
-          <Button variant="outline" size="sm" onClick={onNext} disabled={!hasNext} aria-label="Next page">
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+        <div className="flex items-center gap-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="!w-auto min-w-[5.5rem] h-9 gap-1.5 px-3"
+                onClick={onPrevious}
+                disabled={!hasPrevious}
+                aria-label="Previous page"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Previous page</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="!w-auto min-w-[5.5rem] h-9 gap-1.5 px-3"
+                onClick={onNext}
+                disabled={!hasNext}
+                aria-label="Next page"
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Next page</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>
