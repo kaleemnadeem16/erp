@@ -18,6 +18,8 @@ final class ControlRefusal
 
     public const FACTS_INVALID = 'NET_FACTS_INVALID';
 
+    public const CONTROL_KIND_NOT_SUPPORTED = 'CONTROL_KIND_NOT_SUPPORTED';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

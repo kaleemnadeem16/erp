@@ -6,6 +6,7 @@ namespace App\Modules\Sales;
 
 use App\Models\User;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
+use App\Modules\Estimating\Support\CostEvidenceAuthorities;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Modules\Sales\Models\QuotationDraftLine;
@@ -14,6 +15,9 @@ use App\Modules\Sales\Numbering\OpportunityNumbering;
 use App\Modules\Sales\Numbering\QuotationNumbering;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
+use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
+use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
+use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
@@ -34,6 +38,11 @@ class SalesServiceProvider extends ServiceProvider
         // Issue asks two independent evidence questions. Until the Tax-owned FR3 determination (through a Sales adapter) and a configured control set exist, both answer "not yet".
         $this->app->bind(QuotationTaxProvider::class, UndeterminedQuotationTaxProvider::class);
         $this->app->bind(QuotationControlsProvider::class, UnconfiguredQuotationControlsProvider::class);
+        $this->app->bind(AssemblyCostEvidenceProvider::class, EstimatingAssemblyCostEvidence::class);
+        // Estimating opens cost evidence only for the authority the owning workflow registers: this is Sales' (active member + preparer duty, judged now).
+        $this->app->afterResolving(CostEvidenceAuthorities::class, static function (CostEvidenceAuthorities $authorities): void {
+            $authorities->register(new QuotationControlEvaluationAuthority);
+        });
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });
