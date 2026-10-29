@@ -6,6 +6,7 @@ use App\Modules\Approvals\ApprovalsServiceProvider;
 use App\Modules\Company\CompanyServiceProvider;
 use App\Modules\Documents\DocumentsServiceProvider;
 use App\Modules\Estimating\EstimatingServiceProvider;
+use App\Modules\Files\FilesServiceProvider;
 use App\Modules\Imports\ImportsServiceProvider;
 use App\Modules\Inventory\InventoryServiceProvider;
 use App\Modules\Jobs\JobsServiceProvider;
@@ -36,6 +37,7 @@ return [
     ApprovalsServiceProvider::class,
     EstimatingServiceProvider::class,
     DocumentsServiceProvider::class,
+    FilesServiceProvider::class,
     JobsServiceProvider::class,
     TaxServiceProvider::class,
 ];

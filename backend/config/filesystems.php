@@ -38,6 +38,17 @@ return [
             'report' => false,
         ],
 
+        // The shared Files module's private store (ADR 0153, D2): never served, never public, no URLs or temporary URLs, and throwing so a failed write or read is never
+        // mistaken for success. A different provider (an S3-compatible bucket) is a change to this entry only.
+        'files' => [
+            'driver' => 'local',
+            'root' => env('FILES_DISK_ROOT') ?: storage_path('app/files'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
