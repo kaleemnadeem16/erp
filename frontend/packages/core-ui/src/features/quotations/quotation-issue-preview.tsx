@@ -6,9 +6,9 @@ import { Button } from "../../components/ui/button";
 import { usePermission } from "../../hooks/use-permission";
 import { AccessDenied } from "../../routes/permission-route";
 import type { IssueReadiness } from "./quotation-issue-contract";
+import { issuePreviewAccess } from "./quotation-issue-access";
 
 /** Preview only; no route, generated client, production data or issue mutation exists. */
-export const QUOTATION_ISSUE_PREVIEW_ENABLED = false;
 const descriptions: Record<string, string> = {
   RECIPIENT_REQUIRED: "Choose a recipient.",
   RECIPIENT_NOT_ACTIVE: "Choose an active recipient.",
@@ -37,7 +37,8 @@ const scopeLabels: Record<string, string> = {
 type Props = { assessment: IssueReadiness };
 export function QuotationReadinessScreen(props: Props) {
   const permitted = usePermission("sales.quotation.prepare");
-  return QUOTATION_ISSUE_PREVIEW_ENABLED && permitted ? (
+  return issuePreviewAccess({ prepare: permitted, issue: false, view: false })
+    .readiness ? (
     <QuotationReadinessPresentation {...props} />
   ) : (
     <AccessDenied />
@@ -45,7 +46,9 @@ export function QuotationReadinessScreen(props: Props) {
 }
 export function QuotationApprovalScreen(props: Props) {
   const permitted = usePermission("sales.quotation.issue");
-  return QUOTATION_ISSUE_PREVIEW_ENABLED && permitted ? (
+  const mayView = usePermission("sales.quotation.view");
+  return issuePreviewAccess({ prepare: false, issue: permitted, view: mayView })
+    .approval ? (
     <QuotationApprovalPresentation {...props} />
   ) : (
     <AccessDenied />
@@ -132,6 +135,10 @@ export function QuotationApprovalPresentation({ assessment }: Props) {
               : "The recorded checks have blockers. Resolve them before issue."}
           </p>
           <p>Approval and issue are not available in this preview.</p>
+          <p className="text-sm text-muted-foreground">
+            Issue requires both quotation view and issue authority and rechecks
+            the saved generation.
+          </p>
           <Button type="button" disabled>
             Issue quotation
           </Button>

@@ -3,6 +3,7 @@ import { buildSync } from "esbuild";
 import AxeBuilder from "@axe-core/playwright";
 import { readFileSync, readdirSync } from "node:fs";
 import { readIssueReadiness } from "../../../packages/core-ui/src/features/quotations/quotation-issue-contract";
+import { issuePreviewAccess } from "../../../packages/core-ui/src/features/quotations/quotation-issue-access";
 const fixture = buildSync({
   entryPoints: [
     new URL("./fixtures/quotation-issue-preview.ts", import.meta.url).pathname,
@@ -14,6 +15,21 @@ const fixture = buildSync({
   write: false,
   define: { "process.env.NODE_ENV": JSON.stringify("test") },
 }).outputFiles[0]!.text;
+test("issue preview independently requires view and issue duties", () => {
+  const both = { prepare: false, issue: true, view: true };
+  expect(issuePreviewAccess(both).approval).toBe(false);
+  expect(issuePreviewAccess(both, true).approval).toBe(true);
+  expect(issuePreviewAccess({ ...both, view: false }, true).approval).toBe(
+    false,
+  );
+  expect(issuePreviewAccess({ ...both, issue: false }, true).approval).toBe(
+    false,
+  );
+  expect(
+    issuePreviewAccess({ prepare: true, issue: false, view: false }, true)
+      .readiness,
+  ).toBe(true);
+});
 test("readiness refuses inconsistent and malformed results and strips private evidence", () => {
   const base = {
     revision_id: 12,
