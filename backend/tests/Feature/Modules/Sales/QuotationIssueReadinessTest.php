@@ -16,11 +16,10 @@ use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
 use App\Modules\Sales\Support\Authority\SalesDuty;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
-use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\Quotation\Issue\ControlsIssueCheck;
 use App\Modules\Sales\Support\Quotation\Issue\IssueBlocker;
-use App\Modules\Sales\Support\Quotation\Issue\TaxIssueCheck;
+use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
+use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use App\Support\RateType;
 use App\Support\Status;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -28,6 +27,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
+use Tests\Support\Sales\FakeQuotationControlsProvider;
+use Tests\Support\Sales\FakeQuotationTaxProvider;
 use Tests\TestCase;
 
 /**
@@ -103,15 +104,8 @@ class QuotationIssueReadinessTest extends TestCase
 
     private function evidenceReady(): void
     {
-        foreach ([TaxIssueCheck::class, ControlsIssueCheck::class] as $check) {
-            $this->app->instance($check, new class implements ControlsIssueCheck, TaxIssueCheck
-            {
-                public function blockers(SalesActorContext $actor, QuotationRevision $revision): array
-                {
-                    return [];
-                }
-            });
-        }
+        $this->app->instance(QuotationTaxProvider::class, new FakeQuotationTaxProvider);
+        $this->app->instance(QuotationControlsProvider::class, new FakeQuotationControlsProvider);
     }
 
     private function prepared(?array $lines = null): int
@@ -124,40 +118,50 @@ class QuotationIssueReadinessTest extends TestCase
         $result = $this->assess($this->draft());
 
         $this->assertFalse($result['issue_ready']);
-        $this->assertEqualsCanonicalizing(['RECIPIENT_REQUIRED', 'PRICING_DATE_REQUIRED', 'VALID_THROUGH_REQUIRED', 'NO_LINES', 'TAX_NOT_DETERMINED', 'CONTROLS_NOT_CONFIGURED', 'ISSUE_NOT_AVAILABLE'], $this->codes($result));
+        $this->assertEqualsCanonicalizing(['RECIPIENT_REQUIRED', 'PRICING_DATE_REQUIRED', 'VALID_THROUGH_REQUIRED', 'NO_LINES', 'TAX_NOT_DETERMINED', 'CONTROLS_NOT_CONFIGURED'], $this->codes($result));
     }
 
     public function test_a_fully_prepared_draft_is_blocked_only_by_the_evidence_not_yet_delivered(): void
     {
         $result = $this->assess($this->prepared());
 
-        $this->assertEqualsCanonicalizing(['TAX_NOT_DETERMINED', 'CONTROLS_NOT_CONFIGURED', 'ISSUE_NOT_AVAILABLE'], $this->codes($result));
+        $this->assertEqualsCanonicalizing(['TAX_NOT_DETERMINED', 'CONTROLS_NOT_CONFIGURED'], $this->codes($result));
         $this->assertFalse($result['issue_ready']);
     }
 
-    public function test_real_tax_and_controls_checks_plug_in_by_rebinding_and_only_the_missing_issue_action_remains(): void
+    public function test_real_tax_and_controls_providers_plug_in_by_rebinding_and_a_prepared_draft_is_then_ready(): void
     {
         $this->evidenceReady();
 
         $result = $this->assess($this->prepared());
 
-        $this->assertSame(['ISSUE_NOT_AVAILABLE'], $this->codes($result), 'The tax and control blockers come from the checks, nothing else adds them.');
+        $this->assertSame([], $this->codes($result), 'The tax and control blockers come from the providers; nothing else adds them.');
+        $this->assertTrue($result['issue_ready']);
     }
 
-    public function test_a_check_that_blocks_blocks_whatever_the_rest_says(): void
+    public function test_the_providers_are_asked_with_the_lines_settled_nets(): void
     {
-        $this->app->instance(TaxIssueCheck::class, new class implements TaxIssueCheck
-        {
-            public function blockers(SalesActorContext $actor, QuotationRevision $revision): array
-            {
-                return [new IssueBlocker('TAX_UNKNOWN_FOR_LINE', IssueBlocker::TAX, 7)];
-            }
-        });
+        $tax = new FakeQuotationTaxProvider;
+        $this->app->instance(QuotationTaxProvider::class, $tax);
+        $this->app->instance(QuotationControlsProvider::class, new FakeQuotationControlsProvider);
+        $revision = $this->prepared([$this->line('Priced'), $this->line('Unpriced', null)]);
+        $lines = QuotationRevision::findOrFail($revision)->lines()->orderBy('id')->get();
+
+        $result = $this->assess($revision);
+
+        $this->assertSame([$lines[0]->id => '200.0000', $lines[1]->id => null], $tax->calls[0], 'a known net is passed as text, an unknown one as null — never as zero');
+        $this->assertContains('TAX_NET_UNKNOWN@'.$lines[1]->id, $this->codes($result));
+        $this->assertFalse($result['issue_ready']);
+    }
+
+    public function test_a_provider_that_blocks_blocks_whatever_the_rest_says(): void
+    {
+        $this->app->instance(QuotationTaxProvider::class, new FakeQuotationTaxProvider(blockers: [new IssueBlocker('TAX_UNKNOWN_FOR_LINE', IssueBlocker::TAX, 7)]));
+        $this->app->instance(QuotationControlsProvider::class, new FakeQuotationControlsProvider(blockers: [new IssueBlocker('CONTROL_UNEVALUABLE', IssueBlocker::CONTROLS)]));
 
         $codes = $this->codes($this->assess($this->prepared()));
 
-        $this->assertContains('TAX_UNKNOWN_FOR_LINE@7', $codes);
-        $this->assertContains('CONTROLS_NOT_CONFIGURED', $codes);
+        $this->assertEqualsCanonicalizing(['TAX_UNKNOWN_FOR_LINE@7', 'CONTROL_UNEVALUABLE'], $codes);
     }
 
     public function test_a_line_without_a_price_is_blocked_by_line(): void
