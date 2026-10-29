@@ -10,6 +10,7 @@ import { DataTable, toTanStackColumns } from "../../components/data-table";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
 import { AccessDenied } from "../../routes/permission-route";
+import { usePermission } from "../../hooks/use-permission";
 import { formatDate } from "../../lib/format-date";
 import type { ListView } from "../../lib/use-view-preference";
 import type { QuotationListSummary } from "./quotation-list-contract";
@@ -31,7 +32,8 @@ type Props = {
   onStateFilterChange: (value: "" | "DRAFT" | "CANCELLED_DRAFT") => void;
 };
 export function QuotationListScreen(props: Props) {
-  return QUOTATION_LIST_PREVIEW_ENABLED ? (
+  const mayView = usePermission("sales.quotation.view");
+  return QUOTATION_LIST_PREVIEW_ENABLED && mayView ? (
     <QuotationListPresentation {...props} />
   ) : (
     <AccessDenied />
