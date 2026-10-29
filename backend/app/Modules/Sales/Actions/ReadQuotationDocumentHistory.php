@@ -7,7 +7,9 @@ namespace App\Modules\Sales\Actions;
 use App\Models\User;
 use App\Modules\Documents\Actions\ReadDocumentArtefactHistory;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /** The safe timeline of the official PDF (generated, handed out, lost/recovered). Needs `sales.document.view` and the right to see the quotation. */
@@ -18,7 +20,7 @@ final class ReadQuotationDocumentHistory
     /** @return list<array{at: string, event: string, detail: array<string, string|int|null>}> */
     public function __invoke(User $actor, int $revisionId): array
     {
-        if (! QuotationDocumentLocator::mayUse($actor, PermissionVocabulary::DOCUMENT_VIEW)) {
+        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_VIEW, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to see the quotation document history.');
         }
 

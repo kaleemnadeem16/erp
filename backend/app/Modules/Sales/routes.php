@@ -3,6 +3,7 @@
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationController;
+use App\Modules\Sales\Http\Controllers\Api\V1\QuotationDocumentController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesOwnerController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesStageController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quotations/{revision}/editable', [QuotationController::class, 'editable'])->whereNumber('revision')->name('quotations.editable');
     Route::patch('quotations/{revision}', [QuotationController::class, 'update'])->whereNumber('revision')->name('quotations.update');
     Route::get('quotations/{revision}/preview', [QuotationController::class, 'preview'])->whereNumber('revision')->name('quotations.preview');
+
+    Route::get('quotations/{revision}/document', [QuotationDocumentController::class, 'show'])->whereNumber('revision')->name('quotations.document.show');
+    Route::post('quotations/{revision}/document', [QuotationDocumentController::class, 'generate'])->whereNumber('revision')->name('quotations.document.generate');
+    Route::get('quotations/{revision}/document/download', [QuotationDocumentController::class, 'download'])->whereNumber('revision')->name('quotations.document.download');
+    Route::get('quotations/{revision}/document/history', [QuotationDocumentController::class, 'history'])->whereNumber('revision')->name('quotations.document.history');
+    Route::post('quotations/{revision}/document/check', [QuotationDocumentController::class, 'check'])->whereNumber('revision')->name('quotations.document.check');
+    Route::get('quotations/{revision}/deliveries', [QuotationDocumentController::class, 'deliveries'])->whereNumber('revision')->name('quotations.deliveries.index');
+    Route::post('quotations/{revision}/deliveries', [QuotationDocumentController::class, 'recordDelivery'])->whereNumber('revision')->name('quotations.deliveries.store');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');
     Route::get('sales-stages', [SalesStageController::class, 'index'])->name('sales-stages.index');

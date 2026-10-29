@@ -7,7 +7,9 @@ namespace App\Modules\Sales\Actions;
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /** The manual delivery history of one issued quotation: who recorded what, when, with corrections shown as such. Needs `sales.delivery.view` and the right to see the quotation. */
@@ -18,7 +20,7 @@ final class ReadQuotationDocumentDeliveries
     /** @return list<QuotationDocumentDelivery> */
     public function __invoke(User $actor, int $revisionId): array
     {
-        if (! QuotationDocumentLocator::mayUse($actor, PermissionVocabulary::DELIVERY_VIEW)) {
+        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DELIVERY_VIEW, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to see quotation deliveries.');
         }
         $this->locator->manifest($revisionId);

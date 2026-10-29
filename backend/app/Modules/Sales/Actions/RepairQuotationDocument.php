@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Modules\Documents\Actions\ReconcileDocumentArtefact;
 use App\Modules\Documents\Actions\RestoreDocumentArtefact;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /**
@@ -34,7 +36,7 @@ final class RepairQuotationDocument
 
     private function guarded(User $actor, int $revisionId): int
     {
-        if (! QuotationDocumentLocator::mayUse($actor, PermissionVocabulary::DOCUMENT_REPAIR)) {
+        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_REPAIR, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to repair the quotation document.');
         }
 

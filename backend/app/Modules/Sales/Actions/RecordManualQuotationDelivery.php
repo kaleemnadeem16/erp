@@ -8,7 +8,9 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +33,7 @@ final class RecordManualQuotationDelivery
      */
     public function __invoke(User $actor, int $revisionId, array $fields, string $operationKey, ?int $correctsId = null): array
     {
-        if (! QuotationDocumentLocator::mayUse($actor, PermissionVocabulary::DELIVERY_RECORD)) {
+        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DELIVERY_RECORD, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to record a quotation delivery.');
         }
         $operationKey = trim($operationKey);

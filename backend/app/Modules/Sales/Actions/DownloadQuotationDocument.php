@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Modules\Documents\Actions\StreamAuthorisedDocument;
 use App\Modules\Documents\Support\DocumentDownload;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /**
@@ -21,7 +23,7 @@ final class DownloadQuotationDocument
 
     public function __invoke(User $actor, int $revisionId, string $kind = 'DOWNLOAD'): DocumentDownload
     {
-        if (! QuotationDocumentLocator::mayUse($actor, PermissionVocabulary::DOCUMENT_DOWNLOAD)) {
+        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_DOWNLOAD, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to download the quotation document.');
         }
 

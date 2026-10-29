@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 169 schemas that export a runtime value use `export *`.
+ * only the 171 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1654,6 +1654,16 @@ export type * from "./qualityDispositionsPortionPreviewParams";
 export type * from "./qualityDispositionsShow200";
 export type * from "./qualityDispositionsShow403";
 export type * from "./qualityDispositionsStore201";
+export type * from "./quotationDeliveryResource";
+export type * from "./quotationDeliveryResourceCorrectsId";
+export type * from "./quotationDeliveryResourceNote";
+export type * from "./quotationDeliveryResourceRecipientDetail";
+export type * from "./quotationDocumentHistoryResource";
+export type * from "./quotationDocumentHistoryResourceDetail";
+export type * from "./quotationDocumentStatusResource";
+export type * from "./quotationDocumentStatusResourceArtefact";
+export type * from "./quotationDocumentStatusResourceArtefactAnyOf";
+export type * from "./quotationDocumentStatusResourceErrorCode";
 export type * from "./quotationDraftEditableResource";
 export type * from "./quotationDraftEditableResourceCurrentOpportunityId";
 export type * from "./quotationDraftEditableResourceLinesItem";
@@ -1670,6 +1680,20 @@ export type * from "./quotationDraftEditableResourceValidThroughLocalDate";
 export type * from "./quotationDraftResource";
 export type * from "./quotationDraftWriteResource";
 export type * from "./quotationPreviewResource";
+export type * from "./quotationsDeliveriesIndex200";
+export type * from "./quotationsDeliveriesStore200";
+export type * from "./quotationsDeliveriesStore201";
+export type * from "./quotationsDeliveriesStore409";
+export type * from "./quotationsDeliveriesStore409Errors";
+export type * from "./quotationsDeliveriesStoreHeaders";
+export type * from "./quotationsDocumentCheck200";
+export type * from "./quotationsDocumentCheck200Data";
+export * from "./quotationsDocumentDownloadIntent";
+export type * from "./quotationsDocumentDownloadParams";
+export type * from "./quotationsDocumentGenerate200";
+export type * from "./quotationsDocumentGenerateHeaders";
+export type * from "./quotationsDocumentHistory200";
+export type * from "./quotationsDocumentShow200";
 export type * from "./quotationsEditable200";
 export type * from "./quotationsPreview200";
 export type * from "./quotationsShow200";
@@ -1794,6 +1818,11 @@ export type * from "./recordPhysicalCountCompositionRequestCompositionItemCount"
 export type * from "./recordPhysicalCountCompositionRequestCompositionItemPackagingId";
 export type * from "./recordPhysicalCountCompositionRequestCompositionItemQuantity";
 export type * from "./recordPhysicalCountLineRequest";
+export type * from "./recordQuotationDeliveryRequest";
+export * from "./recordQuotationDeliveryRequestChannel";
+export type * from "./recordQuotationDeliveryRequestCorrectsId";
+export type * from "./recordQuotationDeliveryRequestNote";
+export type * from "./recordQuotationDeliveryRequestRecipientDetail";
 export type * from "./rejectedStockShow200";
 export type * from "./rejectedStockShow200Data";
 export type * from "./rejectedStockShow200DataAnyOf";

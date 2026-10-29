@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Documents;
 
 use App\Exceptions\DomainInvariantException;
-use App\Models\User;
 use App\Modules\Documents\Models\DocumentArtefact;
 use App\Modules\Documents\Models\DocumentArtefactHead;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Models\DocumentSubjectBinding;
 use App\Modules\Sales\Models\QuotationRevision;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
-use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
 
 /**
  * Finds the official document of an issued quotation revision: its subject binding (by Sales' owner identity), the one ORIGINAL manifest frozen at issue and, once
@@ -21,12 +17,6 @@ use App\Modules\Sales\Support\SalesAccess;
  */
 final class QuotationDocumentLocator
 {
-    /** A currently active member who holds the duty AND may see quotations; each judged by its own scope, none standing in for another. */
-    public static function mayUse(User $actor, string $duty): bool
-    {
-        return ActiveActor::current($actor) !== null && SalesAccess::mayAll($actor, $duty, PermissionVocabulary::QUOTATION_VIEW);
-    }
-
     public function notFound(): DomainInvariantException
     {
         return new DomainInvariantException('The quotation document was not found.', 'revision_id', 'DOCUMENT_NOT_FOUND');

@@ -10,7 +10,9 @@ use App\Modules\Documents\Actions\RequestDocumentGeneration;
 use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 
 /**
@@ -30,7 +32,7 @@ final class RequestQuotationDocument
     /** @return array{revision_id: int, state: string, error_code: string|null, artefact: array{id: int, pages: int, size_bytes: int, media_type: string, created_at: string, available: bool}|null} */
     public function __invoke(User $actor, int $revisionId, string $operationKey): array
     {
-        if (! QuotationDocumentLocator::mayUse($actor, PermissionVocabulary::DOCUMENT_GENERATE)) {
+        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_GENERATE, PermissionVocabulary::QUOTATION_VIEW)) {
             throw new AuthorizationException('You are not permitted to generate the quotation document.');
         }
         $manifest = $this->locator->manifest($revisionId);
