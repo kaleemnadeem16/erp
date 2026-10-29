@@ -45,6 +45,18 @@ final class QuotationRefusal
 
     public const OPPORTUNITY_PARTY_MISMATCH = 'OPPORTUNITY_PARTY_MISMATCH';
 
+    public const QUOTATION_OWNERSHIP_STALE = 'QUOTATION_OWNERSHIP_STALE';
+
+    public const QUOTATION_OWNERSHIP_UNRESOLVED = 'QUOTATION_OWNERSHIP_UNRESOLVED';
+
+    public const ACCESS_UNIT_NOT_FOUND = 'ACCESS_UNIT_NOT_FOUND';
+
+    public const BASELINE_NOT_APPLICABLE = 'BASELINE_NOT_APPLICABLE';
+
+    public const BASELINE_CONFLICT = 'BASELINE_CONFLICT';
+
+    public const REASON_REQUIRED = 'REASON_REQUIRED';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

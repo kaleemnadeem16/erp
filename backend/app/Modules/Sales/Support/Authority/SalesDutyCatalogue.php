@@ -33,6 +33,7 @@ final class SalesDutyCatalogue
             new SalesDuty(PermissionVocabulary::QUOTATION_VIEW, DutyClass::NewOrdinary, DutyStatus::Staged, 'Quotation list/detail safe metadata', 'Quote-min', 'QL1'),
             new SalesDuty('sales.quotation.commercial.view', DutyClass::Sensitive, DutyStatus::Specified, 'General chosen-commercial figures', 'Commercial', 'QL1/FR5'),
             new SalesDuty(PermissionVocabulary::QUOTATION_PREPARE, DutyClass::NewOrdinary, DutyStatus::Staged, 'Draft/revise/cancel-draft/preview/ordinary submit', 'Commercial-workflow', 'QL1/2 + PR/FR'),
+            new SalesDuty(PermissionVocabulary::QUOTATION_ASSIGN, DutyClass::Sensitive, DutyStatus::Staged, 'Reassign quotation owner / change access unit / internal baseline capture (independent view)', 'Ownership', 'QA1a; scoped policy QA1b'),
             new SalesDuty('sales.quotation.issue', DutyClass::NewOrdinary, DutyStatus::Specified, 'Official issue', 'Commercial-workflow', 'QL3'),
             new SalesDuty('sales.quotation.withdraw', DutyClass::Sensitive, DutyStatus::Specified, 'Eligible unaccepted withdrawal/replacement disposition', 'Commercial-workflow', 'QL4/5; partial remains gated'),
             new SalesDuty('sales.quotation.history.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Quote lifecycle history', 'Quote-min + independent fields', 'QL1–6'),
