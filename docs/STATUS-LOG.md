@@ -1045,3 +1045,15 @@ Integrated from source 03e1450bfab150bff51a51e9e4d8ef57d583395a (owner approval 
 ## 2026-10-29 — Phase 4 quotation ownership and evidence (branch agent-b/quotation-ownership, #59)
 
 Integrated from source e575a8ab645a801443f1af951864ea31ece28613 (owner approval 2026-10-29); migration `2026_10_27_100000_add_quotation_ownership_and_evidence`.
+
+## 2026-10-29 — Phase 4 batch integration: #37, #26, M1 (#61), pricing/financial milestone (#29), #54, #65, #67
+
+Integrated on the owner's direct instruction, each from its exact approved SHA, pushed together with one develop CI run on the combined head.
+- #37 cost-blind Assembly evaluator (`580e1e05`); no migration.
+- #26 Documents DF2 manifests and intents (`4cd983d5`); migration `2026_10_28_100000_create_document_manifests_and_intents`.
+- M1 local-development quotation switch and editable read (`fd1a164f`, #61); the switch stays local-only (`SALES_DEV_QUOTATION_DUTIES=false` by default, honoured only with `APP_ENV=local`); no migration.
+- Pricing/financial milestone: SIMPLE price and BASIC tax calculation prerequisites (`a969a4ed`, #29); no migration.
+- #54 quotation draft screens (`f07b3cec`); `frontend/package-lock.json` changed.
+- #65 FR3 T1/T2 tax determination and BASIC calculation, disabled (`4f9c6ec8`); migration `2026_10_29_090000_create_tax_quotation_declarations`.
+- #67 UI standards pass 1, Stock ledger (`c718987d`); frontend only.
+Conflicts (documentation or additive wiring only) were resolved by merge commit keeping both sides: Sales README and `SalesServiceProvider` (M1), Sales README (milestone), Tax README (#65).
