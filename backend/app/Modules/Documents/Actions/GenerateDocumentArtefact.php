@@ -14,6 +14,7 @@ use App\Modules\Documents\Support\DocumentArtefactFileOwner;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
+use App\Modules\Documents\Support\ProjectionSchema;
 use App\Modules\Documents\Support\Render\DocumentRenderer;
 use App\Modules\Documents\Support\Render\RenderedDocument;
 use App\Modules\Documents\Support\Render\RenderInput;
@@ -118,7 +119,7 @@ final class GenerateDocumentArtefact
         });
     }
 
-    private function render(DocumentManifest $manifest, \App\Modules\Documents\Support\ProjectionSchema $schema, string $typeKey): RenderedDocument
+    private function render(DocumentManifest $manifest, ProjectionSchema $schema, string $typeKey): RenderedDocument
     {
         $parts = explode('.', $typeKey);
         $title = ucfirst(str_replace('-', ' ', $parts[1] ?? $parts[0]));

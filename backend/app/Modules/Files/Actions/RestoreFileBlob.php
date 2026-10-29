@@ -69,18 +69,18 @@ final class RestoreFileBlob
         }
 
         return DB::transaction(function () use ($blobId, $actorId, $reason): FileBlob {
-                $locked = FileBlob::query()->whereKey($blobId)->lockForUpdate()->firstOrFail();
-                if (! in_array($locked->health, ['MISSING', 'QUARANTINED'], true)) {
-                    return $locked;
-                }
-                $from = $locked->health;
-                $locked->update(['health' => 'VERIFIED']);
-                FileBlobEvent::create([
-                    'blob_id' => $locked->id, 'event' => 'RESTORED', 'from_health' => $from, 'to_health' => 'VERIFIED', 'expected_sha256' => $locked->sha256, 'observed_sha256' => $locked->sha256,
-                    'actor_id' => $actorId, 'service' => $actorId === null ? 'files.restore' : null, 'reason' => $reason, 'evidence' => ['size' => $locked->size_bytes], 'occurred_at' => now(),
-                ]);
+            $locked = FileBlob::query()->whereKey($blobId)->lockForUpdate()->firstOrFail();
+            if (! in_array($locked->health, ['MISSING', 'QUARANTINED'], true)) {
+                return $locked;
+            }
+            $from = $locked->health;
+            $locked->update(['health' => 'VERIFIED']);
+            FileBlobEvent::create([
+                'blob_id' => $locked->id, 'event' => 'RESTORED', 'from_health' => $from, 'to_health' => 'VERIFIED', 'expected_sha256' => $locked->sha256, 'observed_sha256' => $locked->sha256,
+                'actor_id' => $actorId, 'service' => $actorId === null ? 'files.restore' : null, 'reason' => $reason, 'evidence' => ['size' => $locked->size_bytes], 'occurred_at' => now(),
+            ]);
 
-                return $locked->refresh();
+            return $locked->refresh();
         });
     }
 }

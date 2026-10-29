@@ -10,6 +10,7 @@ use App\Modules\Files\Support\FileAccess;
 use App\Modules\Files\Support\FileOperationContext;
 use App\Modules\Files\Support\FileOwnerAdapter;
 use App\Modules\Files\Support\FilePurpose;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Documents as an owner of files in the shared Files store (ADR 0153): its only purpose is the generated PDF, produced inside the company by the renderer (never supplied
@@ -52,7 +53,7 @@ final class DocumentArtefactFileOwner implements FileAccess, FileOwnerAdapter
         };
     }
 
-    /** @param class-string<\Illuminate\Database\Eloquent\Model> $model */
+    /** @param class-string<Model> $model */
     private function exists(string $model, string $prefix, string $identity): bool
     {
         if (preg_match('/^'.preg_quote($prefix, '/').'([1-9]\d{0,17})$/', $identity, $m) !== 1) {
