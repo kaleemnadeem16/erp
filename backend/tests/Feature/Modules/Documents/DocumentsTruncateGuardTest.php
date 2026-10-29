@@ -19,13 +19,14 @@ class DocumentsTruncateGuardTest extends TestCase
     private const TABLES = [
         'document_subject_bindings', 'document_operation_receipts', 'document_template_versions',
         'document_page_policy_versions', 'document_default_activations', 'document_company_defaults', 'document_manifests', 'document_generation_intents',
+        'document_artefacts', 'document_artefact_heads',
     ];
 
     /** Sales' quotation_document_bindings references document_subject_bindings, so it has to ride along in any set that truncates the latter. */
     private const REFERENCING = 'quotation_document_bindings';
 
     /** Everything that references document_subject_bindings or a configuration version (manifests) or a manifest (intents) must be truncated with them. */
-    private const WITH_BINDINGS = 'document_manifests, document_generation_intents, '.self::REFERENCING;
+    private const WITH_BINDINGS = 'document_artefact_heads, document_artefacts, document_manifests, document_generation_intents, '.self::REFERENCING;
 
     /** A table another table references is also refused by PostgreSQL itself unless truncated together with it; the guard is what refuses that case. */
     private function assertRefused(Closure $statement, bool $guardMustBeTheReason = true): void
@@ -57,7 +58,7 @@ class DocumentsTruncateGuardTest extends TestCase
         }
         // Truncated together, no foreign key stands in the way; only the guard does.
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE '.implode(', ', [...self::TABLES, self::REFERENCING])));
-        foreach (['document_operation_receipts, document_subject_bindings, '.self::WITH_BINDINGS, 'document_default_activations, document_company_defaults, document_template_versions, document_page_policy_versions, document_manifests, document_generation_intents'] as $set) {
+        foreach (['document_operation_receipts, document_subject_bindings, '.self::WITH_BINDINGS, 'document_default_activations, document_company_defaults, document_template_versions, document_page_policy_versions, document_artefact_heads, document_artefacts, document_manifests, document_generation_intents'] as $set) {
             $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$set}"));
         }
     }

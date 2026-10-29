@@ -28,6 +28,9 @@ final class PurchaseOrderShapedAdapter implements ConstrainsDocumentLayout, Docu
     /** @var list<DocumentOperationContext> */
     public array $asked = [];
 
+    /** When set, decides every access question instead of the constructor flags (lets a test deny one actor or one operation). */
+    public ?\Closure $rule = null;
+
     public function __construct(private readonly bool $allow = true, private readonly bool $supportsLetter = false, private readonly bool $allowOriginals = true) {}
 
     /** Letter is a shared capability an adapter must opt into explicitly; without it this fixture is A4 only like any default type. */
@@ -83,6 +86,9 @@ final class PurchaseOrderShapedAdapter implements ConstrainsDocumentLayout, Docu
     public function authorise(DocumentOperationContext $context): bool
     {
         $this->asked[] = $context;
+        if ($this->rule !== null) {
+            return ($this->rule)($context) === true;
+        }
 
         // The owner decides admissibility: this fixture can be told that no ORIGINAL may be frozen yet (its source is not issued), while drafts stay allowed.
         return $this->allow && ($this->allowOriginals || $context->operation !== 'bind_manifest_original');

@@ -147,8 +147,9 @@ class DocumentsManifestTest extends TestCase
         $this->assertSame(['SHIPPED', null], [$manifest->resolved_page_policy['source'], $manifest->page_policy_version_id]);
         $this->assertArrayHasKey('layout_id', $manifest->resolved_template['configuration']);
         $this->assertArrayHasKey('compatible_layouts', $manifest->resolved_page_policy['configuration']);
-        $this->assertSame(['NOT_AVAILABLE', [], [], 'UNASSIGNED', '0', ['locale' => 'en', 'direction' => 'LTR']],
-            [$manifest->brand_state, $manifest->asset_manifest, $manifest->fonts, $manifest->renderer_contract, $manifest->renderer_version, $manifest->locale_formatting]);
+        $this->assertSame(['NOT_AVAILABLE', [], 'document-pdf/1', '1.0.0', ['locale' => 'en', 'direction' => 'LTR']],
+            [$manifest->brand_state, $manifest->asset_manifest, $manifest->renderer_contract, $manifest->renderer_version, $manifest->locale_formatting]);
+        $this->assertSame([['Helvetica', 'regular', false], ['Helvetica', 'bold', false]], array_map(fn ($f) => [$f['family'], $f['style'], $f['embedded']], $manifest->fonts), 'the fonts are pinned too');
         $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $manifest->input_digest);
         $this->assertMatchesRegularExpression('/^[0-9a-f]{64}$/', $manifest->pinned_manifest_digest);
         $this->assertNotSame($manifest->input_digest, $manifest->pinned_manifest_digest);
@@ -349,11 +350,17 @@ class DocumentsManifestTest extends TestCase
         $this->assertFalse($this->bind(identity: 'draft-3', purpose: DocumentManifest::DRAFT_PREVIEW)['replayed']);
     }
 
-    public function test_a_manifest_with_the_unassigned_renderer_is_not_renderable(): void
+    public function test_only_a_manifest_that_pinned_a_real_renderer_is_renderable(): void
     {
         $manifest = $this->bind()['manifest'];
-        $this->assertSame(['UNASSIGNED', '0', []], [$manifest->renderer_contract, $manifest->renderer_version, $manifest->fonts]);
-        $this->assertFalse($manifest->isRenderable(), 'DF3 must not render a freeze that pinned no renderer or fonts, nor mutate it (it is insert-only)');
+        $this->assertTrue($manifest->isRenderable(), 'a freeze pins the renderer contract, version and fonts of the renderer bound at that moment');
+        // A scaffolding manifest from before the renderer existed (raw row) pinned none and must stay unrenderable, not be mutated or rendered with the current renderer.
+        $row = (array) DB::table('document_manifests')->find($manifest->id);
+        unset($row['id']);
+        $legacy = DocumentManifest::query()->findOrFail(DB::table('document_manifests')->insertGetId([...$row, 'purpose' => 'DRAFT_PREVIEW', 'stable_generation_identity' => 'legacy', 'renderer_contract' => 'UNASSIGNED', 'renderer_version' => '0',
+            'fonts' => '[]', 'frozen_payload' => json_encode($manifest->frozen_payload), 'resolved_template' => json_encode($manifest->resolved_template), 'resolved_page_policy' => json_encode($manifest->resolved_page_policy),
+            'asset_manifest' => '[]', 'locale_formatting' => json_encode($manifest->locale_formatting)]));
+        $this->assertFalse($legacy->isRenderable());
     }
 
     // ---- intents -------------------------------------------------------------------------------------------------------------------------------------
@@ -451,8 +458,8 @@ class DocumentsManifestTest extends TestCase
         $this->assertRefused(fn () => DB::table('document_manifests')->update(['stable_generation_identity' => 'edited']), 'append-only');
         $this->assertRefused(fn () => DB::table('document_manifests')->update(['frozen_payload' => '{}']), 'append-only');
         $this->assertRefused(fn () => DB::table('document_manifests')->delete(), 'append-only');
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_manifests, document_generation_intents'), 'append-only');
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_generation_intents'), 'append-only');
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_artefact_heads, document_artefacts, document_manifests, document_generation_intents'), 'append-only');
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_generation_intents'), 'append-only|cannot truncate a table referenced');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_subject_bindings CASCADE'), 'append-only|cannot truncate');
         $this->assertSame(1, DB::table('document_manifests')->count());
 
@@ -551,6 +558,9 @@ class DocumentsManifestTest extends TestCase
 
     public function test_rollback_refuses_while_manifests_exist_and_works_when_empty(): void
     {
+        // Artefacts reference manifests and intents, so they go first and come back last.
+        $artefacts = require base_path('database/migrations/2026_10_30_100000_create_document_artefacts.php');
+        $artefacts->down();
         $migration = require base_path('database/migrations/2026_10_28_100000_create_document_manifests_and_intents.php');
         $migration->down();
         $this->assertFalse(Schema::hasTable('document_manifests'));
@@ -558,6 +568,7 @@ class DocumentsManifestTest extends TestCase
         $this->assertSame(0, (int) DB::selectOne("select count(*) c from pg_trigger where tgname = 'document_default_activation_chain_guard'")->c);
         $this->assertTrue(Schema::hasTable('document_subject_bindings'), 'DF0/DF1a objects are untouched');
         $migration->up();
+        $artefacts->up();
         $this->assertTrue(Schema::hasTable('document_manifests'));
 
         $this->bind();
