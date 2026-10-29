@@ -61,10 +61,23 @@ final class PreviewQuotation
     public function __invoke(User $actor, int $revisionId): array
     {
         SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'preview a quotation');
-        $context = SalesActorContext::forUser($actor, 'quotation.preview');
-
         $revision = QuotationRevision::query()->find($revisionId)
             ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
+
+        return $this->forRevision($actor, $revision);
+    }
+
+    /**
+     * The preview of an already-found draft, without the preparer duty check: for the Actions that carry their own guard (issue readiness, issue itself). Nothing else
+     * may call it; it checks neither a duty nor an active membership.
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function forRevision(User $actor, QuotationRevision $revision): array
+    {
+        $context = SalesActorContext::forUser($actor, 'quotation.preview');
         if (! $revision->isDraft()) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_EDITABLE, 'Only a draft quotation can be previewed.', 'revision_id');
         }
