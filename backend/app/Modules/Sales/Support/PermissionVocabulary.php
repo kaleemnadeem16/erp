@@ -63,6 +63,13 @@ final class PermissionVocabulary
     public const QUOTATION_ASSIGN = 'sales.quotation.assign';
 
     /**
+     * Official issue of a quotation revision (QL3, ADR 0123). STAGED like the other quotation duties: `IssueQuotation` exists and is guarded, but `SalesAccess` refuses every caller
+     * until the manifest activates it with a reviewed holder recipe. It is the checker half of the routine maker/checker split — a smaller group than the preparers, never implied by
+     * `sales.quotation.prepare` — and is not in `all()`, so nothing registers or grants it.
+     */
+    public const QUOTATION_ISSUE = 'sales.quotation.issue';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */
