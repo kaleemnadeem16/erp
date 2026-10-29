@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Estimating;
 
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Estimating\Support\CostEvidenceAuthorities;
 use App\Modules\Estimating\Support\MaterialVarianceApprovalSubject;
 use App\Modules\Estimating\Support\PermissionVocabulary;
 use App\Modules\Estimating\Support\StockMixApprovalSubject;
@@ -16,6 +17,8 @@ class EstimatingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Cost evidence is opened only through the authority the owning workflow registers here (default-deny when none).
+        $this->app->singleton(CostEvidenceAuthorities::class);
         $this->app->afterResolving(ApprovalSubjectRegistry::class, static function (ApprovalSubjectRegistry $registry): void {
             $registry->register(new MaterialVarianceApprovalSubject);
             $registry->register(new StockMixApprovalSubject);

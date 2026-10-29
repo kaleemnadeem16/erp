@@ -1021,3 +1021,19 @@ Integrated from source 6e246ad897422f745977efe410a4cd729e58eb05 (owner approval 
 ## 2026-10-27 — Phase 5 J1-F1 disabled Job lifecycle database foundation (branch phase5/j1-f1-lifecycle-foundation, #46)
 
 Integrated from source bc17dd61a98e34a83cd98cdac49723af5996d424 (owner approval 2026-10-27); migration `2026_10_26_090000_create_job_lifecycle_foundation`, Jobs models and tests; disabled foundation. Detail: `backend/app/Modules/Jobs/README.md`.
+
+## 2026-10-28 — UI standards pass 1: Stock ledger screens (branch antigravity/ui-standards, #67)
+
+Integrated from source 66fa5f3566861f6359ccb34a533d788051fd5e70 (owner approval 2026-10-28); frontend only, no migration: `frontend/packages/core-ui/src/features/stock-ledger/` screens and columns, with the `stock-moves-columns` unit spec.
+
+## 2026-10-28 — Phase 4 QL1b-2 quotation draft write adapters (branch phase4/ql1b-2-write-adapters, #53)
+
+Integrated from source 7dbc8c326e4bbdc11a56042962333a06ea3fd8ae (owner approval 2026-10-28): POST create and PATCH update adapters, refusal-status map and generated client; no migration. Detail: `backend/app/Modules/Sales/README.md`.
+
+## 2026-10-28 — Files superseding ADR for ADR 0137 and decision package D1-D12 (branch agent-b/files-adr, #48)
+
+Integrated from source fc83d8271b6d4ea949d941b515be3f984a0df656 (owner approval 2026-10-28); docs only: ADR 0153 (own shared file storage in a dedicated Files module) and the decisions README.
+
+## 2026-10-28 — Sales quotation record-level access design (branch agent-c/quotation-access-design, #45)
+
+Integrated from source 21ffa475bbe04d7238e16b6a020f4c41344de174 (owner approval 2026-10-28); planning only, docs only: `docs/domain/quotation-record-access-design.md`, `-storage.md`, `-comparison.md`, `docs/phases/phase-4-quotation-record-access-slices.md`.

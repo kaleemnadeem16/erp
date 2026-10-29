@@ -12,7 +12,7 @@ No new permission is registered, no grant is made, no holder is assigned, no rou
 |---|---|---|
 | Existing CRM duties | 8 | **ACTIVE**, registered exactly as before: same strings, same holders, same read and scope meaning; `sales.opportunity.attribution.correct` stays excluded from automatic grants (ADR 0114) |
 | Sales duties specified, no consumer yet | 41 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
-| Sales duties staged (Action delivered, disabled) | 4 | **STAGED**: `sales.financial.configure` (FR4/PX6 policy foundation); `sales.quotation.view` / `sales.quotation.prepare` (QL1a draft Actions `ReadQuotationDraft`, `CreateQuotationDraft`, `UpdateQuotationDraft`, `PreviewQuotation`); and `sales.document.generate` (the internal `BindQuotationDocument` and the quotation document adapter's access callback) — each guarded Action exists but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
+| Sales duties staged (Action delivered, disabled) | 5 | **STAGED**: `sales.quotation.assign` (QA1a ownership Actions `ReassignQuotationOwner`, `ChangeQuotationAccessUnit` and the internal `CaptureQuotationAccessBaseline`, owner-authorised on #59 outside the 78-row matrix); `sales.financial.configure` (FR4/PX6 policy foundation); `sales.quotation.view` / `sales.quotation.prepare` (QL1a draft Actions `ReadQuotationDraft`, `CreateQuotationDraft`, `UpdateQuotationDraft`, `PreviewQuotation`); and `sales.document.generate` (the internal `BindQuotationDocument` and the quotation document adapter's access callback) — each guarded Action exists but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
 | Sales duties reserved by design | 5 | **DORMANT** (D-S): `sales.delivery.send`, `sales.delivery.reconcile`, `sales.pricing.exception.approve`, `sales.pricing.agreement.depart`, `sales.customer-decision.claim-release` — need their own approved and delivered contract before they may even become SPECIFIED |
 | Other modules' duties in the 78-row matrix | 20 | Not Sales' to register (below); 6 are not registered anywhere yet (Tax 2, Documents 4) |
 
@@ -65,6 +65,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.pricing.eligibility.manage` | Sensitive | SPECIFIED | Dated Party pricing memberships | Party eligibility | PR2 |
 | `sales.pricing.agreement.manage` | Sensitive | SPECIFIED | Contractual pricing versions | Confidential terms | PR2/3; cannot depart accepted terms |
 | `sales.pricing.terms.view` | Sensitive | SPECIFIED | Read otherwise protected term choices | Confidential terms | PR2/3 |
+| `sales.quotation.assign` | Sensitive | STAGED | Reassign quotation owner / change access unit / internal baseline capture (independent view) | Ownership | QA1a; scoped policy QA1b |
 | `sales.financial.configure` | Sensitive | STAGED | Sales FX/rounding policy | Config | FR1/4 |
 | `sales.customer-decision.view` | New ordinary | SPECIFIED | Decision/case safe detail/history | Decision-min | CA1 |
 | `sales.customer-decision.evidence.record` | New ordinary | SPECIFIED | Shared intake/append observations | Evidence-write | CA1; file requires secure DF |

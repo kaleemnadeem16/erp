@@ -18,6 +18,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int|null $current_opportunity_id
  * @property int $association_generation
  * @property int $created_by
+ * @property int|null $responsible_owner_id
+ * @property int|null $access_unit_id
+ * @property int $ownership_generation
+ * @property int $access_generation
+ * @property string $access_baseline_state
  */
 class QuotationFamily extends Model
 {
@@ -37,6 +42,12 @@ class QuotationFamily extends Model
     public function associationEvents(): HasMany
     {
         return $this->hasMany(QuotationFamilyAssociationEvent::class, 'family_id')->orderBy('generation');
+    }
+
+    /** @return HasMany<QuotationOwnershipEvent, $this> */
+    public function ownershipEvents(): HasMany
+    {
+        return $this->hasMany(QuotationOwnershipEvent::class, 'family_id')->orderBy('generation');
     }
 
     /** @return BelongsTo<Opportunity, $this> */

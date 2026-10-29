@@ -167,8 +167,9 @@ in the same commit.
 | [0150](0150-unify-job-cost-reporting-through-source-owned-attribution.md) | Unify Job cost reporting through source-owned attribution | accepted | 2026-10-16 |
 | [0151](0151-reconcile-source-obligations-and-govern-post-close-evidence.md) | Reconcile source obligations and govern post-close evidence | accepted | 2026-10-16 |
 | [0152](0152-own-job-document-content-and-reuse-shared-formal-output.md) | Own Job document content and reuse shared formal output | accepted | 2026-10-16 |
+| [0153](0153-own-shared-file-storage-in-a-dedicated-files-module.md) | Own shared file storage in a dedicated Files module | proposed (owner acceptance pending); supersedes 0137 for shared blob/storage ownership only | 2026-10-27 |
 
-**Next number: 0153**
+**Next number: 0154**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
@@ -215,3 +216,5 @@ Replaced with a dedicated, flat Assembly Group concept, and `OVERHEAD` was moved
 `assembly_components.kind` entirely (computed from the resolved policy, never a stored row).
 
 `0050` → partly **`0142`** — the conversion lookup, item-owned factors, no-chaining and no-dimension-inference rules stand; only increment validation and representability are replaced (increments must be representable at the four-place ledger, factors are evidence, unrepresentable results are refused).
+
+`0137` → partly **`0153`** (proposed) — Documents infrastructure, adapters, templates, manifests, originals and every business guarantee stand; only shared blob/storage ownership moves to a dedicated Files module. 0137's status line and index row are updated when 0153 is accepted.
