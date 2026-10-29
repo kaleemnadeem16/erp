@@ -118,14 +118,14 @@ class QuotationIssueReadinessTest extends TestCase
         $result = $this->assess($this->draft());
 
         $this->assertFalse($result['issue_ready']);
-        $this->assertEqualsCanonicalizing(['RECIPIENT_REQUIRED', 'PRICING_DATE_REQUIRED', 'VALID_THROUGH_REQUIRED', 'NO_LINES', 'TAX_NOT_DETERMINED', 'CONTROLS_NOT_CONFIGURED'], $this->codes($result));
+        $this->assertEqualsCanonicalizing(['RECIPIENT_REQUIRED', 'PRICING_DATE_REQUIRED', 'VALID_THROUGH_REQUIRED', 'NO_LINES', 'TAX_ESTIMATE_DATE_REQUIRED', 'CONTROLS_NOT_CONFIGURED'], $this->codes($result));
     }
 
     public function test_a_fully_prepared_draft_is_blocked_only_by_the_evidence_not_yet_delivered(): void
     {
         $result = $this->assess($this->prepared());
 
-        $this->assertEqualsCanonicalizing(['TAX_NOT_DETERMINED', 'CONTROLS_NOT_CONFIGURED'], $this->codes($result));
+        $this->assertEqualsCanonicalizing(['TAX_ESTIMATE_DATE_REQUIRED', 'CONTROLS_NOT_CONFIGURED'], $this->codes($result));
         $this->assertFalse($result['issue_ready']);
     }
 

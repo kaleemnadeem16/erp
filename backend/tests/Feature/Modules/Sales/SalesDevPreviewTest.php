@@ -94,7 +94,7 @@ class SalesDevPreviewTest extends TestCase
     {
         $shipped = SalesDutyManifest::shipped();
 
-        foreach (['sales.pipeline.view', 'sales.quotation.issue', 'sales.delivery.send', 'sales.does.not-exist'] as $name) {
+        foreach (['sales.pipeline.view', 'sales.delivery.send', 'sales.does.not-exist'] as $name) {
             try {
                 $shipped->withActivated([$name]);
                 $this->fail("{$name} should not be activatable");

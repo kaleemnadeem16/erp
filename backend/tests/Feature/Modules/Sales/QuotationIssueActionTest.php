@@ -159,10 +159,10 @@ class QuotationIssueActionTest extends TestCase
 
         try {
             $this->issue($revision);
-            $this->fail('Without a real tax and controls provider nothing can be issued.');
+            $this->fail('Without a real jurisdiction/classification source and a control set nothing can be issued.');
         } catch (DomainInvariantException $refusal) {
             $this->assertSame('QUOTATION_NOT_ISSUABLE', $refusal->reasonCode);
-            $this->assertStringContainsString('TAX_NOT_DETERMINED', $refusal->getMessage());
+            $this->assertStringContainsString('TAX_JURISDICTION_UNKNOWN', $refusal->getMessage());
             $this->assertStringContainsString('CONTROLS_NOT_CONFIGURED', $refusal->getMessage());
         }
         $this->assertSame(0, $this->allocations());

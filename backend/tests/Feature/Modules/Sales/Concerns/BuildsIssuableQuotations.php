@@ -68,9 +68,9 @@ trait BuildsIssuableQuotations
     }
 
     /** A prepared draft: a BASE line (2 x 100.0000 = 200.0000 net) and an OPTIONAL one (1 x 30.0000), valid for a month. */
-    protected function preparedDraft(?string $validThrough = null): QuotationRevision
+    protected function preparedDraft(?string $validThrough = null, ?string $taxDate = null): QuotationRevision
     {
-        $created = app(CreateQuotationDraft::class)($this->maker, $this->issueKey(), ['recipient_party_id' => $this->customer->id, 'pricing_date' => $this->today(), 'tax_estimate_date' => $this->today(),
+        $created = app(CreateQuotationDraft::class)($this->maker, $this->issueKey(), ['recipient_party_id' => $this->customer->id, 'pricing_date' => $this->today(), 'tax_estimate_date' => $taxDate ?? $this->today(),
             'valid_through_local_date' => $validThrough ?? now()->addMonth()->format('Y-m-d')]);
         app(UpdateQuotationDraft::class)($this->maker, $created->revisionId, $created->inputGeneration, $this->issueKey(), ['add_lines' => [
             ['source_kind' => 'MANUAL', 'description' => 'Survey', 'manual_measure' => 'job', 'offered_quantity' => '2', 'unit_price' => '100.0000'],
