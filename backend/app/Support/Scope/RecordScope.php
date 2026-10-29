@@ -86,6 +86,11 @@ final class RecordScope
      */
     private function conferringGrants(User $user, array $wanted): array
     {
+        // A hydrated user may retain revoked role/direct-permission relations. Never let a removed limit plus stale grants widen scope.
+        $user = User::withoutGlobalScopes()->whereKey($user->id)->where('company_id', $user->company_id)->first();
+        if ($user === null) {
+            return [];
+        }
         $limits = DB::table('access_scope_limits')->where('company_id', $user->company_id)->where('user_id', $user->id)->get();
         $result = [];
         foreach ($user->roles()->with('permissions:id,name')->get() as $role) {

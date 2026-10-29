@@ -89,6 +89,20 @@ class QuotationOwnScopeTest extends TestCase
         $this->assertFalse($manifest->isActive(PermissionVocabulary::QUOTATION_VIEW));
     }
 
+    public function test_revoked_grant_and_removed_limit_do_not_widen_a_stale_hydrated_actor(): void
+    {
+        $user = User::factory()->create();
+        $user->givePermissionTo(PermissionVocabulary::QUOTATION_VIEW);
+        $limit = AccessScopeLimit::create(['user_id' => $user->id, 'permission' => PermissionVocabulary::QUOTATION_VIEW, 'scope' => 'OWN']);
+        $user->load('permissions', 'roles');
+        $stale = clone $user;
+        $user->revokePermissionTo(PermissionVocabulary::QUOTATION_VIEW);
+        $limit->delete();
+        $resolver = app(RecordScope::class);
+        $this->assertTrue($resolver->resolveForResource($stale, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->isNone());
+        $this->assertTrue($resolver->resolve($stale, PermissionVocabulary::QUOTATION_VIEW)->isNone());
+    }
+
     public function test_scope_rollback_refuses_to_delete_live_new_limits(): void
     {
         AccessScopeLimit::create(['user_id' => $this->preparer->id, 'permission' => PermissionVocabulary::QUOTATION_VIEW, 'scope' => 'OWN']);
