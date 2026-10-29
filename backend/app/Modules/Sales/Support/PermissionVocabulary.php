@@ -56,6 +56,13 @@ final class PermissionVocabulary
     public const QUOTATION_PREPARE = 'sales.quotation.prepare';
 
     /**
+     * Quotation ownership (QA1a). STAGED like the other quotation duties: `ReassignQuotationOwner`, `ChangeQuotationAccessUnit` and the internal
+     * `CaptureQuotationAccessBaseline` exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates it with a reviewed holder recipe.
+     * It is sensitive (it changes who is accountable), never part of an automatic grant, and absent from `all()`.
+     */
+    public const QUOTATION_ASSIGN = 'sales.quotation.assign';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */
