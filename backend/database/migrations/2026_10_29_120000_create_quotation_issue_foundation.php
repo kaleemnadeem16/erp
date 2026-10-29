@@ -82,6 +82,7 @@ return new class extends Migration
             $t->unique(['company_id', 'id'], 'quotation_issues_company_id_unique');
             $t->unique(['company_id', 'revision_id'], 'quotation_issues_revision_unique');
             $t->unique(['company_id', 'id', 'revision_id'], 'quotation_issues_revision_key_unique');
+            $t->unique(['company_id', 'id', 'revision_id', 'family_id'], 'quotation_issues_parent_key_unique');
             $t->unique(['company_id', 'official_number'], 'quotation_issues_number_unique');
             $t->foreign(['company_id', 'family_id'], 'quotation_issues_family_fk')->references(['company_id', 'id'])->on('quotation_families');
             $t->foreign(['company_id', 'family_id', 'revision_id'], 'quotation_issues_revision_fk')->references(['company_id', 'family_id', 'id'])->on('quotation_revisions');
@@ -98,6 +99,10 @@ return new class extends Migration
             AND ((tax_total IS NULL) = (tax_evidence_fingerprint IS NULL AND tax_calculation_version IS NULL AND tax_generation IS NULL))
         )");
 
+        // The parent key an issued line is tied to: its source line, in that very revision and scope (a draft line's scope is already bound to its family).
+        Schema::table('quotation_draft_lines', function (Blueprint $t): void {
+            $t->unique(['company_id', 'revision_id', 'id', 'logical_scope_id'], 'quotation_draft_lines_parent_key_unique');
+        });
         Schema::create('quotation_issued_lines', function (Blueprint $t): void {
             $t->id();
             $t->foreignId('company_id')->constrained();
@@ -128,8 +133,8 @@ return new class extends Migration
             $t->string('tax_evidence_reference', 64)->nullable();
             $t->unique(['company_id', 'id'], 'quotation_issued_lines_company_id_unique');
             $t->unique(['company_id', 'issue_id', 'source_line_id'], 'quotation_issued_lines_source_unique');
-            $t->foreign(['company_id', 'issue_id', 'revision_id'], 'quotation_issued_lines_issue_fk')->references(['company_id', 'id', 'revision_id'])->on('quotation_issues');
-            $t->foreign(['company_id', 'source_line_id'], 'quotation_issued_lines_source_fk')->references(['company_id', 'id'])->on('quotation_draft_lines');
+            $t->foreign(['company_id', 'issue_id', 'revision_id', 'family_id'], 'quotation_issued_lines_issue_fk')->references(['company_id', 'id', 'revision_id', 'family_id'])->on('quotation_issues');
+            $t->foreign(['company_id', 'revision_id', 'source_line_id', 'logical_scope_id'], 'quotation_issued_lines_source_fk')->references(['company_id', 'revision_id', 'id', 'logical_scope_id'])->on('quotation_draft_lines');
             $t->foreign(['company_id', 'family_id', 'logical_scope_id'], 'quotation_issued_lines_scope_fk')->references(['company_id', 'family_id', 'id'])->on('quotation_logical_scopes');
         });
         DB::statement("ALTER TABLE quotation_issued_lines ADD CONSTRAINT quotation_issued_lines_shape CHECK (
@@ -275,6 +280,7 @@ DROP TRIGGER IF EXISTS quotation_issues_issue_check ON quotation_issues;
 DROP TRIGGER IF EXISTS quotation_issued_lines_issue_check ON quotation_issued_lines;
 SQL);
         Schema::dropIfExists('quotation_issued_lines');
+        Schema::table('quotation_draft_lines', fn (Blueprint $t) => $t->dropUnique('quotation_draft_lines_parent_key_unique'));
         Schema::dropIfExists('quotation_issues');
         DB::unprepared(<<<'SQL'
 DROP FUNCTION IF EXISTS quotation_issue_consistency_trigger();

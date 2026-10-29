@@ -283,6 +283,21 @@ class QuotationIssueFoundationTest extends TestCase
         $this->assertDbRefuses(fn () => $this->writeIssue($revision, ['gross_total' => '1.0000']), 'quotation_issues_shape');
     }
 
+    public function test_an_issued_line_is_tied_to_its_own_source_line_revision_scope_and_family(): void
+    {
+        $revision = $this->draft();
+        $other = $this->draft();
+        $foreign = QuotationDraftLine::query()->where('revision_id', $other->id)->orderBy('id')->first();
+        $mine = QuotationDraftLine::query()->where('revision_id', $revision->id)->orderBy('id')->get();
+
+        // A line of another revision cannot be named as the source, even with this revision's own scope/family written beside it.
+        $this->assertDbRefuses(fn () => $this->writeIssue($revision, lines: fn (array $rows) => [['source_line_id' => $foreign->id] + $rows[0]] + $rows), 'quotation_issued_lines_source_fk');
+        // Nor can the source's own line carry another scope than the one it belongs to.
+        $this->assertDbRefuses(fn () => $this->writeIssue($revision, lines: fn (array $rows) => [['logical_scope_id' => $mine[1]->logical_scope_id] + $rows[0]] + $rows), 'quotation_issued_lines_source_fk');
+        // Nor can the frozen line claim another family than the issue it belongs to.
+        $this->assertDbRefuses(fn () => $this->writeIssue($revision, lines: fn (array $rows) => [['family_id' => $other->family_id] + $rows[0]] + $rows), 'quotation_issued_lines_');
+    }
+
     public function test_every_cross_company_reference_is_refused(): void
     {
         $revision = $this->draft();
