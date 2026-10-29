@@ -9,7 +9,11 @@ use App\Models\User;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Numbering\Support\NumberingContext;
 use App\Modules\Sales\Models\QuotationDraftLine;
+use App\Modules\Documents\Actions\BindDocumentManifest;
+use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Sales\Models\QuotationIssue;
+use App\Modules\Sales\Support\Documents\QuotationCustomerDocumentAdapter;
+use App\Modules\Sales\Support\Documents\QuotationCustomerProjection;
 use App\Modules\Sales\Models\QuotationIssuedLine;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Numbering\QuotationNumbering;
@@ -50,6 +54,7 @@ final class IssueQuotation
         private readonly QuotationIssueAssessor $assessor,
         private readonly NumberingService $numbering,
         private readonly CompanyContext $company,
+        private readonly BindDocumentManifest $documents,
     ) {}
 
     public function __invoke(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey): QuotationIssueOutcome
@@ -124,6 +129,12 @@ final class IssueQuotation
             'issued_timezone' => $company->timezone, 'expires_at' => $expiresAt,
         ]);
         $revision->refresh();
+        // D7: the customer-safe original is frozen in this very transaction, from the frozen issue only, so a failure here takes the whole issue back with it. The owner's access
+        // (the adapter) accepts it only for this issuer, this issue, its reviewed generation and its financial fingerprint.
+        $this->documents->execute(
+            QuotationCustomerProjection::forIssue($issue->refresh(), $revision), QuotationCustomerDocumentAdapter::AUDIENCE, QuotationCustomerProjection::ownerBindingIdentity($revision->id),
+            $issue->reviewed_generation, DocumentManifest::ORIGINAL, QuotationCustomerProjection::stableGenerationIdentity($issue->id), 'quotation.issue:'.$issue->id, $actor->id, $issue->financial_fingerprint,
+        );
 
         return QuotationIssueOutcome::result($revision->family_id, $revision->id, $issue->id, $allocation->number, $revision->issued_at?->toIso8601String() ?? $now->toIso8601String());
     }

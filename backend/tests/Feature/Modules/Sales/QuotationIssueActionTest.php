@@ -7,7 +7,11 @@ use App\Models\Company;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Support\MemberStatus;
+use App\Modules\Documents\Actions\BindDocumentManifest;
+use App\Modules\Documents\Models\DocumentManifest;
+use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Sales\Actions\AssessQuotationIssueReadiness;
+use App\Modules\Sales\Support\Documents\QuotationCustomerProjection;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
@@ -270,6 +274,68 @@ class QuotationIssueActionTest extends TestCase
             $this->fail('A member suspended before the transaction must not issue.');
         } catch (AuthorizationException) {
             $this->assertSame([$numbers, 'DRAFT'], [$this->allocations(), QuotationRevision::findOrFail($second->id)->state]);
+        }
+    }
+
+    public function test_issuing_freezes_one_customer_safe_original_manifest_from_the_frozen_issue(): void
+    {
+        $revision = $this->preparedDraft();
+        $outcome = $this->issue($revision, key: 'm1');
+        $issue = QuotationIssue::query()->findOrFail($outcome->issueId);
+
+        $manifest = DocumentManifest::query()->where('purpose', DocumentManifest::ORIGINAL)->sole();
+        $payload = $manifest->frozen_payload;
+        $this->assertSame([$issue->financial_fingerprint, $issue->reviewed_generation, 'issue:'.$issue->id], [$manifest->source_snapshot_reference, $manifest->source_generation, $manifest->stable_generation_identity]);
+        $this->assertSame([$outcome->officialNumber, (string) $issue->net_total], [$payload['header']['quotation_number'], $payload['header']['net_total']]);
+        $this->assertCount(2, $payload['sections']['lines']);
+        $this->assertSame(['PKR', 'Customer Ltd'], [$payload['header']['currency_code'], $payload['header']['recipient_name']]);
+        $this->assertDoesNotMatchRegularExpression('/cost|margin|control|evidence|fingerprint|approval/i', json_encode($payload, JSON_THROW_ON_ERROR));
+
+        // A replay freezes nothing more; a different key on the issued revision is refused and freezes nothing.
+        $this->issue($revision, key: 'm1');
+        try {
+            $this->issue($revision, key: 'm2');
+        } catch (DomainInvariantException) {
+        }
+        $this->assertSame(1, DocumentManifest::query()->count());
+    }
+
+    public function test_the_document_owner_refuses_to_freeze_an_original_for_anyone_but_the_issuer_of_that_issue(): void
+    {
+        $revision = $this->preparedDraft();
+        $outcome = $this->issue($revision, key: 'm1');
+        $issue = QuotationIssue::query()->findOrFail($outcome->issueId);
+        $projection = QuotationCustomerProjection::forIssue($issue, QuotationRevision::findOrFail($revision->id));
+        $bind = fn (User $by, string $identity, string $fingerprint, int $generation, string $key) => app(BindDocumentManifest::class)->execute($projection, 'CUSTOMER',
+            QuotationCustomerProjection::ownerBindingIdentity($revision->id), $generation, DocumentManifest::ORIGINAL, $identity, $key, $by->id, $fingerprint);
+
+        foreach ([
+            'the maker, who is not the issuer' => [$this->maker, 'issue:'.$issue->id, $issue->financial_fingerprint, $issue->reviewed_generation],
+            'another issue identity' => [$this->checker, 'issue:'.($issue->id + 1), $issue->financial_fingerprint, $issue->reviewed_generation],
+            'a different snapshot fingerprint' => [$this->checker, 'issue:'.$issue->id, str_repeat('f', 64), $issue->reviewed_generation],
+            'another source generation' => [$this->checker, 'issue:'.$issue->id, $issue->financial_fingerprint, $issue->reviewed_generation + 1],
+        ] as $name => [$by, $identity, $fingerprint, $generation]) {
+            try {
+                $bind($by, $identity, $fingerprint, $generation, 'forge-'.md5($name));
+                $this->fail("{$name} must be refused.");
+            } catch (DocumentException $refusal) {
+                $this->assertSame('access_denied', $refusal->reasonCode, $name);
+            }
+        }
+        $this->assertSame(1, DocumentManifest::query()->count());
+    }
+
+    public function test_a_failing_freeze_takes_the_whole_issue_back(): void
+    {
+        $revision = $this->preparedDraft();
+        DB::unprepared("CREATE FUNCTION test_refuse_manifest() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN RAISE EXCEPTION 'document store down' USING ERRCODE = '23514'; END \$\$;
+            CREATE TRIGGER test_refuse_manifest BEFORE INSERT ON document_manifests FOR EACH ROW EXECUTE FUNCTION test_refuse_manifest();");
+
+        try {
+            $this->issue($revision, key: 'x');
+            $this->fail('The issue must fail with its freeze.');
+        } catch (\Illuminate\Database\QueryException) {
+            $this->assertSame([0, 0, 'DRAFT', 0], [$this->allocations(), QuotationIssue::query()->count(), QuotationRevision::findOrFail($revision->id)->state, DocumentManifest::query()->count()]);
         }
     }
 
