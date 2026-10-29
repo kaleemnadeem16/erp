@@ -240,9 +240,16 @@ class JobsFoundationTest extends TestCase
         $this->assertNotEmpty($files);
         foreach ($files as $file) {
             $code = (string) file_get_contents($file);
+            if (basename($file) === 'JobAccess.php') {
+                // J-AU0's reviewed capability predicate necessarily calls ->can(); it must still register, route and gate nothing (JobAccessFoundationTest covers its behaviour).
+                $this->assertDoesNotMatchRegularExpression('/authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, 'JobAccess must not gate, route or register anything');
+
+                continue;
+            }
             $this->assertDoesNotMatchRegularExpression('/->can\(|authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, basename($file).' must not guard, route or register anything');
         }
-        $this->assertDirectoryDoesNotExist(base_path('app/Modules/Jobs/Actions'));
+        // The four lifecycle Actions (issue #62) are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
+        $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ResolveJobHold.php', 'StartJob.php'])));
         $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
     }
 
