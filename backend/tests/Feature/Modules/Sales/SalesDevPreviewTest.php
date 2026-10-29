@@ -78,7 +78,7 @@ class SalesDevPreviewTest extends TestCase
         $this->assertTrue(SalesDevPreview::enabled());
         $this->assertTrue($manifest->isActive(self::VIEW));
         $this->assertTrue($manifest->isActive(self::PREPARE));
-        foreach ([PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::DOCUMENT_GENERATE, 'sales.quotation.issue'] as $other) {
+        foreach ([PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::DOCUMENT_REPAIR, 'sales.quotation.issue', 'sales.quotation.assign'] as $other) {
             $this->assertFalse($manifest->isActive($other), "{$other} stays off");
         }
         $this->assertFalse(SalesDutyManifest::shipped()->isActive(self::VIEW), 'The shipped manifest is untouched.');
@@ -116,7 +116,7 @@ class SalesDevPreviewTest extends TestCase
         $this->assertSame([], $user->fresh()->getAllPermissions()->pluck('name')->all());
     }
 
-    public function test_the_grant_command_grants_only_view_and_prepare_to_the_named_login_and_can_revoke(): void
+    public function test_the_grant_command_grants_only_the_preview_duties_to_the_named_login_and_can_revoke(): void
     {
         $this->environment('local', true);
         $user = User::factory()->create();
@@ -124,7 +124,7 @@ class SalesDevPreviewTest extends TestCase
 
         $this->artisan('sales:dev-grant-quotation', ['email' => $user->email])->assertSuccessful();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
-        $this->assertEqualsCanonicalizing([self::VIEW, self::PREPARE], $user->fresh()->getAllPermissions()->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(SalesDevPreview::all(), $user->fresh()->getAllPermissions()->pluck('name')->all());
         $this->assertSame([], $other->fresh()->getAllPermissions()->pluck('name')->all());
         $this->assertTrue(SalesAccess::may($user->fresh(), self::PREPARE));
 

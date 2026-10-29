@@ -550,7 +550,8 @@ class DocumentsManifestTest extends TestCase
     public function test_there_is_no_way_in_and_nothing_is_registered(): void
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#(^|/)(documents?|document-manifests?|document-generations?)(/|$)#', $u) === 1)->values()->all());
+        // Documents itself has no route; the only document routes are Sales' guarded, default-deny ones for an issued quotation's own PDF.
+        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#(^|/)(documents?|document-manifests?|document-generations?)(/|$)#', $u) === 1 && ! str_starts_with($u, 'api/v1/quotations/{revision}/document'))->values()->all());
         $this->assertSame([], array_values(array_filter(app(PermissionRegistry::class)->all(), fn ($p) => str_starts_with($p, 'documents.') || str_contains($p, 'manifest'))));
         $this->assertDirectoryDoesNotExist(base_path('app/Modules/Documents/Http'));
         $this->assertFileDoesNotExist(base_path('app/Modules/Documents/routes.php'));

@@ -19,6 +19,23 @@ final class SalesDevPreview
     /** @var list<string> */
     public const DUTIES = [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE];
 
+    /**
+     * The quotation document feature, so the dev admin can generate, download and record delivery of an issued quotation's PDF on a developer's machine. Never the
+     * sensitive operator duty `sales.document.repair`, and never anything that issues, assigns or sends.
+     *
+     * @var list<string>
+     */
+    public const DOCUMENT_DUTIES = [
+        PermissionVocabulary::DOCUMENT_GENERATE, PermissionVocabulary::DOCUMENT_VIEW, PermissionVocabulary::DOCUMENT_DOWNLOAD,
+        PermissionVocabulary::DELIVERY_VIEW, PermissionVocabulary::DELIVERY_RECORD,
+    ];
+
+    /** @return list<string> every duty the local preview turns on */
+    public static function all(): array
+    {
+        return [...self::DUTIES, ...self::DOCUMENT_DUTIES];
+    }
+
     public static function requested(): bool
     {
         return (bool) config('sales.dev_preview.quotation_duties');
@@ -42,6 +59,6 @@ final class SalesDevPreview
             return $shipped;
         }
 
-        return $shipped->withActivated(self::DUTIES);
+        return $shipped->withActivated(self::all());
     }
 }
