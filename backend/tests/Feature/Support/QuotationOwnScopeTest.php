@@ -13,6 +13,7 @@ use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
 use App\Support\Scope\RecordScope;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsQuotationOwnership;
 use Tests\TestCase;
@@ -82,6 +83,14 @@ class QuotationOwnScopeTest extends TestCase
             $this->assertSame(DutyScope::QuotationFamily, $manifest->find($duty)->scope);
         }
         $this->assertSame(DutyScope::CompanyWide, $manifest->find(PermissionVocabulary::PIPELINE_VIEW)->scope);
+    }
+
+    public function test_scope_rollback_refuses_to_delete_live_new_limits(): void
+    {
+        AccessScopeLimit::create(['user_id' => $this->preparer->id, 'permission' => PermissionVocabulary::QUOTATION_VIEW, 'scope' => 'OWN']);
+        $migration = require database_path('migrations/2026_10_30_110000_extend_access_scope_limits_for_quotation_own.php');
+        $this->assertThrows(fn () => DB::transaction(fn () => $migration->down()), \RuntimeException::class);
+        $this->assertDatabaseHas('access_scope_limits', ['user_id' => $this->preparer->id, 'permission' => PermissionVocabulary::QUOTATION_VIEW, 'scope' => 'OWN']);
     }
 
     public function test_mixed_role_own_is_refused_instead_of_widening_other_duties(): void
