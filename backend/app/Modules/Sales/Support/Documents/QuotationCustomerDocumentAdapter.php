@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Documents;
 
 use App\Models\User;
+use App\Modules\Documents\Actions\BindDocumentManifest;
+use App\Modules\Documents\Actions\BindDocumentSubject;
+use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Support\DocumentAccess;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentTypeAdapter;
@@ -12,6 +15,9 @@ use App\Modules\Documents\Support\FieldSpec;
 use App\Modules\Documents\Support\FieldType;
 use App\Modules\Documents\Support\ProjectionSchema;
 use App\Modules\Documents\Support\SectionSchema;
+use App\Modules\Sales\Models\QuotationIssue;
+use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 
@@ -82,6 +88,46 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
             return false;
         }
 
+        if ($context->operation === BindDocumentManifest::OPERATION_ORIGINAL) {
+            return $this->mayFreezeOriginal($context);
+        }
+        // The subject binding that precedes a freeze carries no purpose; the issuer of that very issued revision may open it (the freeze itself is then judged above).
+        if ($context->operation === BindDocumentSubject::OPERATION && $this->isIssuerOfIssuedRevision($context)) {
+            return true;
+        }
+
         return SalesAccess::may(User::query()->find($context->actorId), PermissionVocabulary::DOCUMENT_GENERATE);
+    }
+
+    /**
+     * An ORIGINAL is the customer-facing record of an issue that really happened: the issuer, still an active holder of the issue duties, freezing exactly the issued revision's
+     * one issue (identified by its number-bearing record and its financial fingerprint) at its reviewed generation, and nothing else. Documents infers none of this; Sales decides it.
+     */
+    private function mayFreezeOriginal(DocumentOperationContext $context): bool
+    {
+        $issue = $context->purpose === DocumentManifest::ORIGINAL ? $this->issuedByActor($context) : null;
+
+        return $issue !== null && $context->stableGenerationIdentity === QuotationCustomerProjection::stableGenerationIdentity($issue->id)
+            && $context->sourceGeneration === $issue->reviewed_generation && $context->sourceSnapshotReference === $issue->financial_fingerprint;
+    }
+
+    private function isIssuerOfIssuedRevision(DocumentOperationContext $context): bool
+    {
+        return $this->issuedByActor($context) !== null;
+    }
+
+    /** The one issue of the ISSUED revision this binding names, when the actor is an active holder of the issue duties and is the issuer. */
+    private function issuedByActor(DocumentOperationContext $context): ?QuotationIssue
+    {
+        $actor = User::query()->find($context->actorId);
+        if ($actor === null || $context->audience !== self::AUDIENCE || ! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW)
+            || ActiveActor::current($actor) === null) {
+            return null;
+        }
+        $revision = preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) === 1
+            ? QuotationRevision::query()->whereKey((int) $m[1])->where('state', 'ISSUED')->first() : null;
+        $issue = $revision === null ? null : QuotationIssue::query()->where('revision_id', $revision->id)->first();
+
+        return $issue !== null && $issue->issued_by === $actor->id ? $issue : null;
     }
 }

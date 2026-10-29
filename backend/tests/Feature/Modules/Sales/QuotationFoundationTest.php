@@ -476,20 +476,18 @@ class QuotationFoundationTest extends TestCase
         $this->assertSame($scope->id, QuotationDraftLine::query()->findOrFail($line->id)->logical_scope_id);
     }
 
-    public function test_the_revision_state_cannot_be_issued_and_no_number_or_posting_exists(): void
+    public function test_a_draft_cannot_become_issued_without_its_issue_record_and_no_later_slice_or_posting_exists(): void
     {
         $family = $this->family();
         $revision = $this->revision($family);
         $this->line($revision, $this->scope($family, 'n'));
         $before = [DB::table('stock_moves')->count(), DB::table('stock_valuation_entries')->count(), DB::table('numbering_counters')->count(), DB::table('numbering_allocations')->count()];
 
+        // QL3 made ISSUED reachable, but only as a whole issue (QuotationIssueFoundationTest): a bare state change, or an insert that begins issued, is still refused.
         $this->assertDbRefuses(fn () => DB::table('quotation_revisions')->where('id', $revision->id)->update(['state' => 'ISSUED']));
         $this->assertDbRefuses(fn () => DB::table('quotation_revisions')->insert(['company_id' => 1, 'family_id' => $family->id, 'state' => 'ISSUED', 'currency_id' => $this->pkr->id, 'created_by' => $this->user->id,
             'created_at' => now(), 'updated_at' => now()]));
-        foreach (['official_number', 'numbering_allocation_id', 'issued_at'] as $column) {
-            $this->assertFalse(DB::getSchemaBuilder()->hasColumn('quotation_revisions', $column), "{$column} belongs to the issue slice");
-        }
-        foreach (['quotation_candidates', 'quotation_issues', 'quotation_adoptions', 'quotation_operation_receipts', 'quotation_offer_events'] as $later) {
+        foreach (['quotation_candidates', 'quotation_adoptions', 'quotation_operation_receipts', 'quotation_offer_events'] as $later) {
             $this->assertFalse(DB::getSchemaBuilder()->hasTable($later), "{$later} belongs to a later slice");
         }
         // QL1a added the entered unit price with its dual-money evidence; a computed net, cost and tax still have no column on a draft line.
