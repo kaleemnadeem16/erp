@@ -18,6 +18,10 @@ use App\Modules\Jobs\Support\Authority\JobDutyStatus;
 use App\Modules\Jobs\Support\Execution\JobExecutionContextVerifier;
 use App\Modules\Jobs\Support\Lifecycle\JobLifecycleIntent;
 use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Database\Events\TransactionRolledBack;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -143,6 +147,36 @@ class JobLifecycleActionCommitTest extends TestCase
         }
         // The Job is untouched and still serves the same request.
         $this->assertSame(2, app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, $this->key(), $this->cmd())->generation);
+    }
+
+    public function test_a_retry_judges_authority_again_so_a_revocation_between_attempts_applies(): void
+    {
+        $job = $this->released();
+        $before = $this->counts();
+        $failed = false;
+        // The first attempt dies with a retryable failure after its writes; between it and the next attempt the actor's duty is revoked.
+        JobEvent::created(function () use (&$failed): void {
+            if (! $failed) {
+                $failed = true;
+                throw new UniqueConstraintViolationException('testing', 'insert into job_events', [], new \PDOException('forced race'));
+            }
+        });
+        Event::listen(TransactionRolledBack::class, function (): void {
+            if (DB::transactionLevel() === 0 && $this->user->hasPermissionTo('job.assign')) {
+                $this->user->revokePermissionTo('job.assign');
+                app(PermissionRegistrar::class)->forgetCachedPermissions();
+            }
+        });
+        try {
+            app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, $this->key(), $this->cmd());
+            $this->fail('The retry must not run on authority that was revoked.');
+        } catch (AuthorizationException) {
+            $this->addToAssertionCount(1);
+        } finally {
+            JobEvent::getEventDispatcher()->forget('eloquent.created: '.JobEvent::class);
+        }
+        $this->assertTrue($failed, 'the first attempt really failed and was retried');
+        $this->assertSame($before, $this->counts(), 'the revoked retry wrote nothing');
     }
 
     public function test_an_outer_transaction_returns_no_durable_success_before_its_own_commit(): void

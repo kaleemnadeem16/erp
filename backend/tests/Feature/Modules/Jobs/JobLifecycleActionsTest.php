@@ -400,24 +400,46 @@ class JobLifecycleActionsTest extends TestCase
 
     // ---- the source verifier -------------------------------------------------------------------------------------------------------------------------
 
-    public function test_the_delivered_verifier_proves_nothing_so_new_work_refuses_but_a_valid_replay_does_not_need_it(): void
+    public function test_the_delivered_verifier_proves_nothing_so_neither_new_work_nor_a_replay_is_served_and_nothing_is_written(): void
     {
         $job = $this->newJob();
-        $first = $this->assign($job, key: 'k-assign', cmd: '6f1d2c3e-1111-4222-8333-444455556666');
+        $this->assign($job, key: 'k-assign', cmd: '6f1d2c3e-1111-4222-8333-444455556666');
         $this->app->instance(JobExecutionContextVerifier::class, new UnavailableJobExecutionContextVerifier);
         $this->assertInstanceOf(UnavailableJobExecutionContextVerifier::class, app(JobExecutionContextVerifier::class));
         $before = $this->snapshot();
 
         $this->assertSame('SOURCE_CONTEXT_UNAVAILABLE', $this->refusal(fn () => $this->hold($job)));
         $this->assertSame('SOURCE_CONTEXT_UNAVAILABLE', $this->refusal(fn () => $this->assign($job, $this->user->id)));
+        // Current safe record eligibility is required before ANY replay: the original key is not answered without a verifier either.
+        $this->assertSame('SOURCE_CONTEXT_UNAVAILABLE', $this->refusal(fn () => app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, 'k-assign', '6f1d2c3e-1111-4222-8333-444455556666')));
         $this->assertEquals($before, $this->snapshot(), 'nothing was written');
-        // The original key still replays the original event, without the verifier.
-        $replay = app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, 'k-assign', '6f1d2c3e-1111-4222-8333-444455556666');
-        $this->assertTrue($replay->replayed);
-        $this->assertSame($first->eventId, $replay->eventId);
         // The default binding of a fresh application is the fail-closed one.
         $this->app->forgetInstance(JobExecutionContextVerifier::class);
         $this->assertInstanceOf(UnavailableJobExecutionContextVerifier::class, $this->app->make(JobExecutionContextVerifier::class));
+    }
+
+    public function test_an_ineligible_record_gets_no_replay_for_the_own_key_or_another_actor_and_no_receipt_changes(): void
+    {
+        $job = $this->newJob();
+        $cmd = $this->cmd();
+        $first = $this->assign($job, key: 'k1', cmd: $cmd, generation: 1);
+        $second = User::factory()->create();
+        $this->grant($second, ...self::DUTIES);
+        $before = $this->snapshot();
+
+        $this->verifier->recordEligible = false;
+        // Own key: the original event is not returned.
+        $this->assertSame('JOB_NOT_FOUND', $this->refusal(fn () => app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, 'k1', $cmd)));
+        // Same command through a fresh key, and another actor: no receipt is written for either.
+        $this->assertSame('JOB_NOT_FOUND', $this->refusal(fn () => app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, 'k2', $cmd)));
+        $this->assertSame('JOB_NOT_FOUND', $this->refusal(fn () => app(AssignJobResponsibility::class)->execute($second, $job, $this->worker->id, 1, 'k3', $cmd)));
+        $this->assertEquals($before, $this->snapshot(), 'no event and no receipt');
+
+        // Eligibility restored: the same requests replay the original event (and only then write the receipts).
+        $this->verifier->recordEligible = true;
+        $again = app(AssignJobResponsibility::class)->execute($second, $job, $this->worker->id, 1, 'k3', $cmd);
+        $this->assertTrue($again->replayed);
+        $this->assertSame($first->eventId, $again->eventId);
     }
 
     public function test_an_ineligible_record_is_not_found_and_the_source_is_entered_first_inside_the_transaction(): void

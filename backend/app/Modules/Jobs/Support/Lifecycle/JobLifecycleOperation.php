@@ -25,11 +25,12 @@ use Throwable;
 /**
  * The one transactional orchestration every Job lifecycle command shares, so the four Actions differ only in their duties, preconditions and child row.
  *
- * Order: (1) authority — the exact duties, each by its own ALL scope, for a currently active member, before the Job is looked up; (2) the Job, company-scoped, with one
- * non-disclosing refusal for absent or foreign; (3) REPLAY before any freshness: the actor's own key resolves its original event (a different request under it
- * conflicts), and a stable command identity already applied resolves the same event for any key or actor when the semantic intent is identical (another actor gets
- * only its own receipt, never a new event) — a head that has moved on never invalidates a valid replay; (4) NEW work only: the source verifier is entered FIRST (source
- * fences before the Job lock, same transaction), then the Job head is locked, the declared expected versions are compared, the operation's preconditions run, and the
+ * Order: (1) authority — the exact duties, each by its own ALL scope, for a currently active member, before the Job is looked up (and again at the start of EVERY
+ * whole-operation attempt, so a revocation during a retry applies); (2) the Job, company-scoped, with one non-disclosing refusal for absent or foreign; (3) in each
+ * attempt the source verifier is entered FIRST (source fences before the Job lock, same transaction) and must prove current safe RECORD ELIGIBILITY — distinct from
+ * readiness for fresh work, which only new work needs — before any receipt or event is read or written; (4) REPLAY before any freshness: the actor's own key resolves
+ * its original event (a different request under it conflicts), and a stable command identity already applied resolves the same event for any key or actor when the
+ * semantic intent is identical (another actor gets only its own receipt, never a new event) — a head that has moved on never invalidates a valid replay; (5) NEW work only: the Job head is locked, the declared expected versions are compared, the operation's preconditions run, and the
  * event, its exact child, the head advance and the actor's receipt are written together. The deferred database checks run at the real COMMIT; this class never returns
  * durable success before it, and inside a caller's outer transaction it cannot be retried (a failed outer transaction is aborted), so it refuses instead.
  */
@@ -66,7 +67,7 @@ final class JobLifecycleOperation
 
         for ($attempt = 1; ; $attempt++) {
             try {
-                return DB::transaction(fn (): JobLifecycleOutcome => $this->attempt($actor, $job, $intent, $requestKey, $toState, $precheck, $writeChild));
+                return DB::transaction(fn (): JobLifecycleOutcome => $this->attempt($actor, $duties, $job, $intent, $requestKey, $toState, $precheck, $writeChild));
             } catch (UniqueConstraintViolationException|QueryException $e) {
                 // A lost race on a unique key, a deadlock or a serialisation failure: restart the WHOLE operation (authority, replay, fences, locks, checks) — never
                 // continue in an aborted transaction. Only possible when this is the outermost transaction; inside a caller's it is refused for the caller to retry.
@@ -87,8 +88,18 @@ final class JobLifecycleOperation
         return $e instanceof UniqueConstraintViolationException || in_array($state, ['40P01', '40001'], true);
     }
 
-    private function attempt(User $actor, ServiceJob $job, JobLifecycleIntent $intent, string $requestKey, ?string $toState, Closure $precheck, Closure $writeChild): JobLifecycleOutcome
+    /** @param list<string> $duties */
+    private function attempt(User $actor, array $duties, ServiceJob $job, JobLifecycleIntent $intent, string $requestKey, ?string $toState, Closure $precheck, Closure $writeChild): JobLifecycleOutcome
     {
+        // Every attempt starts from the beginning: authority is judged again from the database (a revocation between a retryable failure and the next attempt
+        // takes effect), and so is current safe record eligibility — BEFORE any receipt or event is read or written, so a replay never outlives either.
+        if (! JobAccess::mayAll($actor, ...$duties)) {
+            throw new AuthorizationException('You are not permitted to change this Job.');
+        }
+        $context = $this->verifier->enter($actor, $job, $intent->operation);
+        if (! $context->recordEligible) {
+            throw JobLifecycleRefusal::make(JobLifecycleRefusal::JOB_NOT_FOUND, 'The Job was not found.', 'job_id');
+        }
         $requestHash = $intent->requestHash($actor->id, $requestKey);
         $semanticHash = $intent->semanticHash();
 
@@ -96,11 +107,7 @@ final class JobLifecycleOperation
             return $replay;
         }
 
-        // New work. Source fences first, on this connection and inside this transaction, before the Job row is held.
-        $context = $this->verifier->enter($actor, $job, $intent->operation);
-        if (! $context->recordEligible) {
-            throw JobLifecycleRefusal::make(JobLifecycleRefusal::JOB_NOT_FOUND, 'The Job was not found.', 'job_id');
-        }
+        // New work: the source fences were taken above, before the Job row is held.
         $locked = ServiceJob::query()->whereKey($job->id)->lockForUpdate()->first() ?? throw JobLifecycleRefusal::make(JobLifecycleRefusal::JOB_NOT_FOUND, 'The Job was not found.', 'job_id');
         // The head lock is the serialisation point: a competing identical request may have committed while we waited for it, and a valid replay must win over a
         // freshness check that its own success has just made stale. Looked up again, after the lock, in a new statement.
