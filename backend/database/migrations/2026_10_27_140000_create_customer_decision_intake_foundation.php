@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  *  - `customer_decision_components`: the unit a decision will later be about — a case's intent identity tied to an ORIGINAL logical quotation scope. The scope is context only;
  *    it proves nothing about what was officially offered.
  *  - `customer_decision_evidence`: an append-only observation chain (source, truthful occurrence precision, representative, authority-verification basis, factual description).
- *    An observation is never consent; unknown stays unknown (NULL / UNKNOWN), never defaulted.
+ *    An observation is never consent; unknown stays unknown (NULL / UNKNOWN), never defaulted. A predecessor must already exist and be strictly earlier, so a chain can never be a cycle.
  *
  * Deliberately absent: any acceptance, claim, entitlement, amount, target id, receipt, attachment / protected object / digest (they wait for the shared file foundation), and any
  * issued-revision key (an issued source does not exist yet). Tenancy is company-composite keys throughout; the database also refuses to rewrite a case's identity, to delete a
@@ -116,6 +116,19 @@ CREATE TRIGGER customer_decision_cases_stamp BEFORE INSERT ON customer_decision_
 CREATE TRIGGER customer_decision_components_stamp BEFORE INSERT ON customer_decision_components FOR EACH ROW EXECUTE FUNCTION customer_decision_stamp_recorded_at();
 CREATE TRIGGER customer_decision_evidence_stamp BEFORE INSERT ON customer_decision_evidence FOR EACH ROW EXECUTE FUNCTION customer_decision_stamp_recorded_at();
 
+-- A version chain only ever points at an observation that already exists and is strictly earlier (a lower id), so it can never be a cycle: not a row that names itself,
+-- not rows that name each other in one INSERT (the foreign key alone is satisfied by both, and the sibling does not exist yet when the first row is checked here).
+CREATE OR REPLACE FUNCTION customer_decision_evidence_chain_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.predecessor_id IS NOT NULL THEN
+  IF NEW.predecessor_id >= NEW.id OR NOT EXISTS (SELECT 1 FROM customer_decision_evidence p WHERE p.company_id = NEW.company_id AND p.case_id = NEW.case_id AND p.id = NEW.predecessor_id AND p.id < NEW.id) THEN
+   RAISE EXCEPTION 'An evidence predecessor must already exist as an earlier observation of the same case' USING ERRCODE = '23514';
+  END IF;
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER customer_decision_evidence_chain BEFORE INSERT ON customer_decision_evidence FOR EACH ROW EXECUTE FUNCTION customer_decision_evidence_chain_guard();
+
 -- Components and evidence are facts: never updated, never deleted, never truncated. A case is never deleted or truncated, and its identity never changes.
 CREATE OR REPLACE FUNCTION customer_decision_append_only_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
@@ -160,6 +173,7 @@ SQL);
         Schema::dropIfExists('customer_decision_components');
         Schema::dropIfExists('customer_decision_cases');
         DB::unprepared(<<<'SQL'
+DROP FUNCTION IF EXISTS customer_decision_evidence_chain_guard();
 DROP FUNCTION IF EXISTS customer_decision_case_truncate_guard();
 DROP FUNCTION IF EXISTS customer_decision_case_guard();
 DROP FUNCTION IF EXISTS customer_decision_append_only_guard();

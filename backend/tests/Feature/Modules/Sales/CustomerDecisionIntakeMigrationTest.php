@@ -26,7 +26,7 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
 
     private const TABLES = ['customer_decision_cases', 'customer_decision_components', 'customer_decision_evidence'];
 
-    private const FUNCTIONS = ['customer_decision_append_only_guard', 'customer_decision_case_guard', 'customer_decision_case_truncate_guard', 'customer_decision_stamp_recorded_at'];
+    private const FUNCTIONS = ['customer_decision_append_only_guard', 'customer_decision_case_guard', 'customer_decision_case_truncate_guard', 'customer_decision_evidence_chain_guard', 'customer_decision_stamp_recorded_at'];
 
     private User $user;
 
@@ -62,7 +62,7 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
             $this->assertTrue(Schema::hasTable($table), $table);
         }
         $this->assertSame(self::FUNCTIONS, $this->ourFunctions());
-        $this->assertSame(9, (int) DB::selectOne("select count(*) c from pg_trigger t join pg_class c on c.oid = t.tgrelid where not t.tgisinternal and c.relname like 'customer\\_decision\\_%'")->c, 'stamp x3, append-only row+truncate x2, case guard + truncate guard');
+        $this->assertSame(10, (int) DB::selectOne("select count(*) c from pg_trigger t join pg_class c on c.oid = t.tgrelid where not t.tgisinternal and c.relname like 'customer\\_decision\\_%'")->c, 'stamp x3, chain guard, append-only row+truncate x2, case guard + truncate guard');
     }
 
     private function assertUninstalled(): void

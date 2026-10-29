@@ -214,10 +214,38 @@ class CustomerDecisionIntakeFoundationTest extends TestCase
         $this->assertSame($first->id, $second->predecessor_id);
         $this->assertDbRefuses(fn () => $this->newEvidence($case, ['predecessor_id' => $first->id]), 'customer_decision_evidence_successor_unique');
         $unextended = $this->newEvidence($case);
-        $this->assertDbRefuses(fn () => $this->newEvidence($other, ['predecessor_id' => $unextended->id]), 'customer_decision_evidence_predecessor_fk');
+        $this->assertDbRefuses(fn () => $this->newEvidence($other, ['predecessor_id' => $unextended->id]), 'same case');
         $this->assertDbRefuses(fn () => DB::table('customer_decision_evidence')->insert($this->rawEvidence($case->id, $this->otherCompany, $this->otherUser, ['predecessor_id' => $first->id])));
         $this->assertSame(3, CustomerDecisionEvidence::query()->where('case_id', $case->id)->count(), 'a chain of two and one more independent root; the refused inserts left nothing');
         $this->assertNotNull($this->newEvidence($case)->id, 'another independent root in the same case is allowed');
+    }
+
+    public function test_an_evidence_chain_can_never_be_a_cycle(): void
+    {
+        $case = $this->newCase();
+        $root = $this->newEvidence($case);
+        $next = (int) DB::table('customer_decision_evidence')->max('id') + 100;
+        $row = fn (int $id, ?int $predecessor): array => $this->rawEvidence($case->id, 1, $this->user->id, ['id' => $id, 'predecessor_id' => $predecessor]);
+
+        // A row that names itself.
+        $this->assertDbRefuses(fn () => DB::table('customer_decision_evidence')->insert($row($next, $next)), 'earlier observation');
+        // Two rows that name each other in one INSERT (each satisfies the foreign key against its sibling).
+        $this->assertDbRefuses(fn () => DB::table('customer_decision_evidence')->insert([$row($next + 1, $next + 2), $row($next + 2, $next + 1)]), 'earlier observation');
+        // A longer ring in one INSERT.
+        $this->assertDbRefuses(fn () => DB::table('customer_decision_evidence')->insert([$row($next + 3, $next + 5), $row($next + 4, $next + 3), $row($next + 5, $next + 4)]), 'earlier observation');
+        // A predecessor that comes LATER (a higher id), even though it already exists.
+        $later = DB::table('customer_decision_evidence')->insertGetId($row($next + 10, null));
+        $this->assertDbRefuses(fn () => DB::table('customer_decision_evidence')->insert($row($next + 9, $later)), 'earlier observation');
+        // A predecessor in another case is still refused by the foreign key; a nonexistent one by the guard or the key.
+        $this->assertDbRefuses(fn () => DB::table('customer_decision_evidence')->insert($row($next + 20, $next + 999)));
+        $this->assertSame(0, DB::table('customer_decision_evidence')->whereIn('id', [$next, $next + 1, $next + 2, $next + 3, $next + 4, $next + 5, $next + 9, $next + 20])->count(), 'no cyclic or misordered row was stored');
+
+        // Honest chains and independent roots are untouched.
+        $second = $this->newEvidence($case, ['predecessor_id' => $root->id]);
+        $this->assertSame($root->id, $second->predecessor_id);
+        $this->assertGreaterThan($root->id, $second->id);
+        $this->assertNull($this->newEvidence($case)->predecessor_id);
+        $this->assertSame($second->id, $this->newEvidence($case, ['predecessor_id' => $second->id])->predecessor_id, 'a chain of three');
     }
 
     /** @return array<string, array{0: array<string, mixed>, 1: string}> */
