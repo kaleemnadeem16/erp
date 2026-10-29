@@ -22,5 +22,9 @@ class AccessScopeLimit extends Model
 
     public const MY_UNITS = 'MY_UNITS';
 
+    public const OWN = 'OWN';
+
+    public const OWN_OR_DELEGATED = 'OWN_OR_DELEGATED';
+
     protected $guarded = ['id'];
 }

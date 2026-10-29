@@ -15,10 +15,12 @@ use App\Modules\Sales\Numbering\QuotationNumbering;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;
+use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +28,9 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(ResourceScopeAdapters::class, static function (ResourceScopeAdapters $adapters): void {
+            $adapters->register(QuotationFamilyScopeAdapter::RESOURCE, new QuotationFamilyScopeAdapter);
+        });
         $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDutyManifest::shipped());
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);

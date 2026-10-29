@@ -26,39 +26,83 @@ use Spatie\Permission\Models\Role;
  */
 final class RecordScope
 {
-    /** @param  string|list<string>  $permissions  any one of them confers the access */
+    /** @param string|list<string> $permissions any one of them confers access */
     public function resolve(?User $user, string|array $permissions): ResolvedScope
     {
         if ($user === null) {
             return ResolvedScope::none();
         }
-        $wanted = (array) $permissions;
-        $limits = DB::table('access_scope_limits')->where('company_id', $user->company_id)->where('user_id', $user->id)->get();
-        $limitedRoles = $limits->whereNotNull('role_id')->pluck('role_id')->map(fn ($id): int => (int) $id)->all();
-        $limitedPermissions = $limits->whereNotNull('permission')->pluck('permission')->all();
-
-        $confers = false;
-        foreach ($user->roles()->with('permissions:id,name')->get() as $role) {
-            /** @var Role $role */
-            if (array_intersect($wanted, $role->permissions->pluck('name')->all()) === []) {
-                continue;
-            }
-            $confers = true;
-            if (! in_array($role->id, $limitedRoles, true)) {
+        $grants = $this->conferringGrants($user, (array) $permissions);
+        foreach ($grants as $grant) {
+            if ($grant['scope'] === null) {
                 return ResolvedScope::all();
             }
+        }
+        if ($grants === []) {
+            return ResolvedScope::none();
+        }
+        foreach ($grants as $grant) {
+            if ($grant['scope'] !== 'MY_UNITS') {
+                return ResolvedScope::none();
+            }
+        }
+
+        return ResolvedScope::units($this->memberUnitIds($user));
+    }
+
+    /** Exact-duty resource resolution. Unsupported limited variants never widen to units or company-wide. */
+    public function resolveForResource(?User $user, string $duty, string $resource): ResolvedScope
+    {
+        $adapters = app(ResourceScopeAdapters::class);
+        if ($user === null || (int) $user->company_id !== app(CompanyContext::class)->id() || ! $adapters->supports($resource, $duty, 'ALL')) {
+            return ResolvedScope::none();
+        }
+        $grants = $this->conferringGrants($user, [$duty]);
+        foreach ($grants as $grant) {
+            if ($grant['scope'] === null) {
+                return ResolvedScope::all();
+            }
+        }
+        if ($grants === []) {
+            return ResolvedScope::none();
+        }
+        foreach ($grants as $grant) {
+            if ($grant['scope'] !== 'OWN' || ! $adapters->supports($resource, $duty, 'OWN')) {
+                return ResolvedScope::none();
+            }
+            foreach ($grant['permissions'] as $permission) {
+                if (! $adapters->supports($resource, $permission, 'OWN')) {
+                    return ResolvedScope::none();
+                }
+            }
+        }
+
+        return ResolvedScope::own();
+    }
+
+    /** @param list<string> $wanted @return list<array{scope: ?string, permissions: list<string>}> */
+    private function conferringGrants(User $user, array $wanted): array
+    {
+        $limits = DB::table('access_scope_limits')->where('company_id', $user->company_id)->where('user_id', $user->id)->get();
+        $result = [];
+        foreach ($user->roles()->with('permissions:id,name')->get() as $role) {
+            /** @var Role $role */
+            $permissions = $role->permissions->pluck('name')->all();
+            if (array_intersect($wanted, $permissions) === []) {
+                continue;
+            }
+            $limit = $limits->first(fn ($row): bool => $row->role_id !== null && (int) $row->role_id === (int) $role->id);
+            $result[] = ['scope' => $limit?->scope, 'permissions' => $permissions];
         }
         foreach ($user->getDirectPermissions()->pluck('name') as $permission) {
             if (! in_array($permission, $wanted, true)) {
                 continue;
             }
-            $confers = true;
-            if (! in_array($permission, $limitedPermissions, true)) {
-                return ResolvedScope::all();
-            }
+            $limit = $limits->first(fn ($row): bool => $row->role_id === null && $row->permission === $permission);
+            $result[] = ['scope' => $limit?->scope, 'permissions' => [$permission]];
         }
 
-        return $confers ? ResolvedScope::units($this->memberUnitIds($user)) : ResolvedScope::none();
+        return $result;
     }
 
     /**
