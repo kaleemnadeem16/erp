@@ -16,6 +16,7 @@ use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
+use Database\Seeders\Demo\Documents\DocumentConfigurationDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -84,6 +85,8 @@ final class DemoDatabaseSeeder extends Seeder
                 // After SalesCrmDemoSeeder (a draft links to its deal) and the currency rates; a no-op unless the staged quotation duties are locally activated.
                 QuotationDraftsDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
+                // Configuration only; independent of the other seeders (needs the demo login).
+                DocumentConfigurationDemoSeeder::class,
             ]);
         });
     }
