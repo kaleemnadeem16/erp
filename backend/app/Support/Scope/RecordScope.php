@@ -80,7 +80,10 @@ final class RecordScope
         return ResolvedScope::own();
     }
 
-    /** @param list<string> $wanted @return list<array{scope: ?string, permissions: list<string>}> */
+    /**
+     * @param  list<string>  $wanted
+     * @return list<array{scope: ?string, permissions: list<string>}>
+     */
     private function conferringGrants(User $user, array $wanted): array
     {
         $limits = DB::table('access_scope_limits')->where('company_id', $user->company_id)->where('user_id', $user->id)->get();

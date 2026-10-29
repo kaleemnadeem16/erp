@@ -18,6 +18,7 @@ final readonly class SalesDuty
         public string $operation,
         public string $projection,
         public string $deliveryGate,
+        DutyScope $scope = DutyScope::CompanyWide,
     ) {
         if (! preg_match('/^sales(?:\.[a-z][a-z0-9-]*)+$/', $name)) {
             throw new InvalidArgumentException("[{$name}] is not an exact Sales duty name (no wildcards, one owning module).");
@@ -31,7 +32,10 @@ final readonly class SalesDuty
         if ($status === DutyStatus::Dormant && $class !== DutyClass::DormantSensitive) {
             throw new InvalidArgumentException("Only a dormant-sensitive duty [{$name}] can be dormant.");
         }
-        $this->scope = DutyScope::CompanyWide;
+        if ($scope === DutyScope::QuotationFamily && ! in_array($name, ['sales.quotation.view', 'sales.quotation.prepare', 'sales.quotation.assign'], true)) {
+            throw new InvalidArgumentException("Quotation family scope is not supported for [{$name}].");
+        }
+        $this->scope = $scope;
     }
 
     public function isActive(): bool

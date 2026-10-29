@@ -7,6 +7,7 @@ namespace App\Modules\Sales\Support\Quotation;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Support\CompanyContext;
 use App\Support\Scope\ResolvedScope;
 use App\Support\Scope\ResourceScopeAdapter;
 use Illuminate\Database\Eloquent\Builder;
@@ -22,9 +23,13 @@ final class QuotationFamilyScopeAdapter implements ResourceScopeAdapter
             && in_array($scope, ['ALL', AccessScopeLimit::OWN], true);
     }
 
-    /** @param Builder<QuotationFamily> $query @return Builder<QuotationFamily> */
+    /**
+     * @param  Builder<QuotationFamily>  $query
+     * @return Builder<QuotationFamily>
+     */
     public function apply(Builder $query, ResolvedScope $scope, int $actorId): Builder
     {
+        $query->where('quotation_families.company_id', app(CompanyContext::class)->id());
         if ($scope->isAll()) {
             return $query;
         }

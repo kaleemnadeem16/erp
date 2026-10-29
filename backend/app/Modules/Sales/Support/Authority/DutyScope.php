@@ -11,4 +11,6 @@ namespace App\Modules\Sales\Support\Authority;
 enum DutyScope: string
 {
     case CompanyWide = 'COMPANY_WIDE';
+
+    case QuotationFamily = 'QUOTATION_FAMILY';
 }

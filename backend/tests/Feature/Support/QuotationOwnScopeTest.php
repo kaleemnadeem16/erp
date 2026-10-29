@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Sales\Actions\ReassignQuotationOwner;
 use App\Modules\Sales\Models\QuotationFamily;
+use App\Modules\Sales\Support\Authority\DutyScope;
+use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
 use App\Support\Scope\RecordScope;
@@ -58,6 +60,28 @@ class QuotationOwnScopeTest extends TestCase
         $this->assertTrue($resolver->resolveForResource($user, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->isAll());
         $this->assertTrue($resolver->resolveForResource($user, PermissionVocabulary::QUOTATION_VIEW, 'unknown')->isNone());
         $this->assertTrue($resolver->resolveForResource($user, PermissionVocabulary::QUOTATION_ASSIGN, 'quotation_family')->isNone());
+    }
+
+    public function test_all_and_own_adapter_queries_keep_the_company_boundary_even_without_model_scopes(): void
+    {
+        $family = $this->nativeFamily();
+        $foreign = $this->foreignFamilyId();
+        $adapter = app(QuotationFamilyScopeAdapter::class);
+        $all = app(RecordScope::class)->resolveForResource($this->preparer, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family');
+        $this->assertSame([$family->id], $adapter->apply(QuotationFamily::withoutGlobalScopes(), $all, $this->preparer->id)->pluck('id')->all());
+        $this->assertFalse($adapter->apply(QuotationFamily::withoutGlobalScopes(), $all, $this->preparer->id)->whereKey($foreign)->exists());
+        $foreignUser = User::withoutGlobalScopes()->findOrFail($this->otherUser);
+        $this->assertTrue(app(RecordScope::class)->resolveForResource($foreignUser, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->isNone());
+    }
+
+    public function test_shipped_quotation_scope_metadata_remains_staged(): void
+    {
+        $manifest = SalesDutyManifest::shipped();
+        foreach ([PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_ASSIGN] as $duty) {
+            $this->assertFalse($manifest->isActive($duty));
+            $this->assertSame(DutyScope::QuotationFamily, $manifest->find($duty)->scope);
+        }
+        $this->assertSame(DutyScope::CompanyWide, $manifest->find(PermissionVocabulary::PIPELINE_VIEW)->scope);
     }
 
     public function test_mixed_role_own_is_refused_instead_of_widening_other_duties(): void
