@@ -38,6 +38,13 @@ final class QuotationRefusalStatus
         QuotationRefusal::OPPORTUNITY_NOT_FOUND => self::UNPROCESSABLE,
         QuotationRefusal::OPPORTUNITY_NOT_OPEN => self::UNPROCESSABLE,
         QuotationRefusal::OPPORTUNITY_PARTY_MISMATCH => self::UNPROCESSABLE,
+        // QA1a ownership refusals: reachable only from the internal ownership Actions today (no route), each a business rule, hence 422 if a surface ever exposes them.
+        QuotationRefusal::QUOTATION_OWNERSHIP_STALE => self::UNPROCESSABLE,
+        QuotationRefusal::QUOTATION_OWNERSHIP_UNRESOLVED => self::UNPROCESSABLE,
+        QuotationRefusal::ACCESS_UNIT_NOT_FOUND => self::UNPROCESSABLE,
+        QuotationRefusal::BASELINE_NOT_APPLICABLE => self::UNPROCESSABLE,
+        QuotationRefusal::BASELINE_CONFLICT => self::UNPROCESSABLE,
+        QuotationRefusal::REASON_REQUIRED => self::UNPROCESSABLE,
     ];
 
     public static function for(?string $reasonCode): int
