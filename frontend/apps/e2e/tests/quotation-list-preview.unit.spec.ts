@@ -88,6 +88,8 @@ test("mock presentation is keyboard accessible, shows safe rows and fits a phone
       (v) => v.impact === "serious" || v.impact === "critical",
     ),
   ).toEqual([]);
+  await page.getByLabel("Status").selectOption("DRAFT");
+  await expect(page.getByLabel("Status")).toHaveValue("DRAFT");
   const link = page.getByRole("link", { name: "Revision #12" });
   await link.focus();
   await expect(link).toBeFocused();

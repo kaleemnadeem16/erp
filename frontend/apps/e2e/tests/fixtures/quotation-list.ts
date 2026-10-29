@@ -37,6 +37,9 @@ function Fixture() {
     pageSize: 25,
   });
   const [sorting, onSortingChange] = useState([]);
+  const [stateFilter, onStateFilterChange] = useState<
+    "" | "DRAFT" | "CANCELLED_DRAFT"
+  >("");
   const props = {
     rows: readQuotationListSummaries([row]),
     total: 28,
@@ -45,6 +48,8 @@ function Fixture() {
     sorting,
     onSortingChange,
     mayReview: true,
+    stateFilter,
+    onStateFilterChange,
   };
   return createElement(
     TooltipProvider,

@@ -27,6 +27,8 @@ type Props = {
   error?: unknown;
   onRetry?: () => void;
   mayReview: boolean;
+  stateFilter: "" | "DRAFT" | "CANCELLED_DRAFT";
+  onStateFilterChange: (value: "" | "DRAFT" | "CANCELLED_DRAFT") => void;
 };
 export function QuotationListScreen(props: Props) {
   return QUOTATION_LIST_PREVIEW_ENABLED ? (
@@ -48,6 +50,8 @@ export function QuotationListPresentation({
   error,
   onRetry,
   mayReview,
+  stateFilter,
+  onStateFilterChange,
 }: Props) {
   const [view, setView] = useState<ListView>("table");
   const columns = useMemo<DataColumn<QuotationListSummary>[]>(
@@ -108,6 +112,23 @@ export function QuotationListPresentation({
         title="Quotations"
         description="Quotation drafts available to you."
       />
+      <div className="flex flex-wrap items-center gap-3">
+        <label htmlFor="quotation-state-filter" className="text-sm font-medium">
+          Status
+        </label>
+        <select
+          id="quotation-state-filter"
+          className="h-10 rounded-md border bg-background px-3"
+          value={stateFilter}
+          onChange={(event) =>
+            onStateFilterChange(event.target.value as Props["stateFilter"])
+          }
+        >
+          <option value="">All statuses</option>
+          <option value="DRAFT">Draft</option>
+          <option value="CANCELLED_DRAFT">Cancelled draft</option>
+        </select>
+      </div>
       <DataTable
         columns={tableColumns}
         data={rows}
