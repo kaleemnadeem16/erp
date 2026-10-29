@@ -18,11 +18,14 @@ class DocumentsTruncateGuardTest extends TestCase
 
     private const TABLES = [
         'document_subject_bindings', 'document_operation_receipts', 'document_template_versions',
-        'document_page_policy_versions', 'document_default_activations', 'document_company_defaults',
+        'document_page_policy_versions', 'document_default_activations', 'document_company_defaults', 'document_manifests', 'document_generation_intents',
     ];
 
     /** Sales' quotation_document_bindings references document_subject_bindings, so it has to ride along in any set that truncates the latter. */
     private const REFERENCING = 'quotation_document_bindings';
+
+    /** Everything that references document_subject_bindings or a configuration version (manifests) or a manifest (intents) must be truncated with them. */
+    private const WITH_BINDINGS = 'document_manifests, document_generation_intents, '.self::REFERENCING;
 
     /** A table another table references is also refused by PostgreSQL itself unless truncated together with it; the guard is what refuses that case. */
     private function assertRefused(Closure $statement, bool $guardMustBeTheReason = true): void
@@ -54,7 +57,7 @@ class DocumentsTruncateGuardTest extends TestCase
         }
         // Truncated together, no foreign key stands in the way; only the guard does.
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE '.implode(', ', [...self::TABLES, self::REFERENCING])));
-        foreach (['document_operation_receipts, document_subject_bindings, '.self::REFERENCING, 'document_default_activations, document_company_defaults, document_template_versions, document_page_policy_versions'] as $set) {
+        foreach (['document_operation_receipts, document_subject_bindings, '.self::WITH_BINDINGS, 'document_default_activations, document_company_defaults, document_template_versions, document_page_policy_versions, document_manifests, document_generation_intents'] as $set) {
             $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$set}"));
         }
     }
@@ -63,7 +66,7 @@ class DocumentsTruncateGuardTest extends TestCase
     {
         DB::table('document_subject_bindings')->insert(['company_id' => 1, 'type_key' => 'a.b', 'schema_version' => 1, 'audience' => 'X', 'owner_binding_identity' => 'i', 'source_generation' => 1, 'bound_at' => now()]);
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_subject_bindings'), guardMustBeTheReason: false);
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_subject_bindings, document_operation_receipts, '.self::REFERENCING));
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE document_subject_bindings, document_operation_receipts, '.self::WITH_BINDINGS));
         $this->assertSame(1, DB::table('document_subject_bindings')->count());
     }
 

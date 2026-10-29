@@ -386,7 +386,7 @@ class DocumentsConfigurationTest extends TestCase
         $this->activate(self::PO, $t->id, $p->id, 0);
         $this->assertDbRefuses(fn () => DB::table('document_company_defaults')->update(['generation' => 3]), 'exactly one generation');
         $this->assertDbRefuses(fn () => DB::table('document_company_defaults')->update(['type_key' => self::QUOTE, 'generation' => 2]), 'keeps its company and type');
-        $this->assertDbRefuses(fn () => DB::table('document_default_activations')->insert(['company_id' => 1, 'type_key' => self::PO, 'generation' => 2, 'template_version_id' => $t->id, 'is_downgrade' => true, 'activated_at' => now()]), 'document_default_activations_shape');
+        $this->assertDbRefuses(fn () => DB::table('document_default_activations')->insert(['company_id' => 1, 'type_key' => self::PO, 'generation' => 2, 'template_version_id' => $t->id, 'is_downgrade' => true, 'activated_at' => now()]), 'must name the versions the previous activation left active');
     }
 
     private function assertCommitRefuses(Closure $write, string $contains): void
