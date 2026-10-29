@@ -26,9 +26,9 @@ final class StreamAuthorisedDocument
 
     public function execute(int $artefactId, ?int $actorId = null): DocumentDownload
     {
-        $artefact = DocumentArtefact::query()->with('manifest.binding')->find($artefactId) ?? throw new DocumentException('The document was not found.', 'artefact_id', 'artefact_not_found');
+        $artefact = DocumentArtefact::query()->find($artefactId) ?? throw new DocumentException('The document was not found.', 'artefact_id', 'artefact_not_found');
         $manifest = $artefact->manifest;
-        $binding = $manifest->binding;
+        $binding = $manifest->binding()->firstOrFail();
         $adapter = $this->registry->get($binding->type_key, $binding->schema_version);
         if (! DocumentAccessGate::allows($adapter, new DocumentOperationContext($this->company->id(), $actorId, 'download', $binding->type_key, $binding->audience, $binding->owner_binding_identity,
             $manifest->purpose, $manifest->source_generation, $manifest->source_snapshot_reference, $manifest->stable_generation_identity))) {
