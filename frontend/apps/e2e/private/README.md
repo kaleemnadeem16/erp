@@ -1,0 +1,5 @@
+# Private quotation journey
+
+Do not run this against the shared `erp` database or the backend on port 8090. Wait for the coordinator to confirm that the `localhost:8091` backend uses `erp_testing_agent_d_quotes_ui_m1`, enables the local quotation preview, and has a suitable demo login. The Vite server on `localhost:5178` must use `http://localhost:8091/api`. The test cannot independently establish which database the server uses; the environment value is an operator acknowledgement, not verification.
+
+From `frontend/apps/e2e`, set `ERP_PRIVATE_QUOTATION_DB=erp_testing_agent_d_quotes_ui_m1`, `E2E_USER_EMAIL` and `E2E_USER_PASSWORD`, then run `npx playwright test --config playwright.quotation-private.config.ts`. Without all three values the test skips without accessing a server. The separate configuration has no shared-stack auth setup or teardown. Its request guard aborts browser requests outside localhost ports 5178 and 8091; it does not start services, activate permissions, delete data, or use the shared backend. The test writes a synthetic header and manual line to the coordinator-confirmed private database.
