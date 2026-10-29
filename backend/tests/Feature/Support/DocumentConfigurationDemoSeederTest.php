@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Support;
 
+use App\Modules\Documents\Actions\ActivateDocumentConfiguration;
 use App\Modules\Documents\Models\DocumentCompanyDefault;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Models\DocumentPagePolicyVersion;
 use App\Modules\Documents\Models\DocumentTemplateVersion;
+use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Files\Models\FileBlob;
 use App\Modules\Sales\Support\Documents\QuotationCustomerDocumentAdapter;
 use Database\Seeders\Demo\Documents\DocumentConfigurationDemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use App\Modules\Documents\Actions\ActivateDocumentConfiguration;
-use App\Modules\Documents\Support\DocumentException;
 use Tests\TestCase;
 
 /** DocumentConfigurationDemoSeeder: templates and page policies exist once, the quotation default is active at generation 1, a rerun adds nothing and no binding/file exists. */

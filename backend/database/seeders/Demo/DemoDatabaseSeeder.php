@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders\Demo;
 
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
+use Database\Seeders\Demo\Documents\DocumentConfigurationDemoSeeder;
 use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssemblyVersionsDemoSeeder;
@@ -16,7 +17,6 @@ use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
-use Database\Seeders\Demo\Documents\DocumentConfigurationDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;

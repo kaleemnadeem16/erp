@@ -17,6 +17,7 @@ use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -47,7 +48,7 @@ final class QuotationDraftsDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
         if (! app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_PREPARE)) {
-            $this->command?->getOutput()->writeln('  Quotation drafts skipped: sales.quotation.prepare is STAGED here (local preview: APP_ENV=local and SALES_DEV_QUOTATION_DUTIES=true).');
+            Log::info('Quotation drafts skipped: sales.quotation.prepare is STAGED here (local preview: APP_ENV=local and SALES_DEV_QUOTATION_DUTIES=true).');
 
             return;
         }
