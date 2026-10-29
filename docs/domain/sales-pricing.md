@@ -146,6 +146,106 @@ No forecasting, acceptance, reservation, Inventory posting, invoice or job is im
 cannot be counted twice; current Opportunity expected amount remains unreviewed assumption (0101/0102).
 C1d remains separately gated; existing C2/CRM delivery and Supplier Return/Scrap remain untouched.
 
+## Local quotation navigation — M1 preparation
+
+The Quotations workspace is an entry by revision number, not a list or search API.
+It links entitled users to metadata (`sales.quotation.view`) or read-only review
+(`sales.quotation.prepare`); opening requires a positive safe whole revision number.
+Empty, zero, fractional and unsafe input stays on the page with an associated text error.
+The shared shell's navigation and the direct workspace URL use the same access policy.
+Prepare holders can create a header-only draft and then add or edit lines, or open an existing draft by revision number for editing. The editable read is independent of metadata-view permission.
+
+The frontend exposure opt-in is `VITE_QUOTATION_UI_ENABLED=1` in the main app's local
+Vite environment (or its process environment). Restart that local Vite process after
+changing its environment. No opt-in is committed as an active default. Bootstrap
+requires Vite's built-in `DEV` plus the exact flag value and a loopback hostname
+(`localhost`, `127.0.0.1` or IPv6 loopback). Production builds and remote/LAN hosts
+remain denied even if the flag is accidentally set. Local storage and URL query
+parameters cannot enable the app's gate. Actual duties remain required, and this
+flag never registers/grants a permission or changes server authorisation.
+
+Integration prerequisites: #54 slice 1, the corrected #53 write contract and Agent A’s M1 editable-read contract must land before this dependent branch can be submitted for integration.
+The shared gate uses this dev policy while its production rollout constant stays false. The independent dev policy tests cover default-off,
+production refusal, loopback/remote/opt-in combinations, reconfiguration and the
+shared screen rule with/without duties. Mounted shell/workspace fixtures cover absent
+navigation and direct denial in production/default-off/no-duty/remote-host cases,
+keyboard validation/opening a revision, and the phone More menu. Their destination is a
+fixture route; these tests do not prove the real detail/preview screens or an enabled
+backend journey. Run a local frontend build first, then
+`docker/frontend/run-e2e.sh --project=unit`; no running application or database is used.
+Agent A owns the separately reviewed local-only backend mechanism. No real backend
+permission activation or database operation is performed by this frontend preparation.
+## Quotation draft create/edit — M1
+
+The create page saves a header, then opens the editable draft; adding lines is a separate PATCH. The edit page hydrates only from the generated editable read and retains the input generation. Header changes, direct Item or manual lines, optional/choice grouping and removal with undo are reviewed before saving. Unit prices and quantities remain exact strings and no financial totals are calculated in the browser. The server remains authoritative for source eligibility, pricing precision, currency locking and evidence. An optional Opportunity picker is offered only with pipeline view access.
+
+Each new attempt gets a distinct key via the generated client’s required typed `Idempotency-Key` parameter. PATCH includes the baseline `expected_generation`. An uncertain response retains the exact key and payload in the per-user tab session; retrying sends those same bytes of intent, including after a reload. A definitive 409 permits a newly reviewed attempt; 404 is non-disclosing; stale 422 preserves unfinished input and requires a fresh baseline. None of these controls grants backend access.
+
+The isolated form tests mount the real forms against intercepted responses and cover default denial, minimal changes, uncertain retries across reload, 404, 409, stale 422, decimal refusal and a 390px accessibility/overflow check. A mounted production-bundle test verifies that a quotation-duty holder still sees access denied and issues no quotation request; it also passed locally when the production build was made with `VITE_QUOTATION_UI_ENABLED=1`. A separate 5178 Vite smoke check loaded both actual screens with all API requests intercepted; neither proves a live backend journey. Real backend verification waits for the write and editable-read contracts, an explicitly enabled local preview and the agreed isolated test data.
+
+## Quotation detail/review UI — #54 slice 1
+
+Owner-approved scope is a deep-link page (no list exists): `/quotations/:revision`
+for safe metadata and `/quotations/:revision/review` for financial preview. This page
+exception is intentional: there is no parent list behind a record sheet. Users inspect
+draft identity, readiness and uncertain amounts; no submission or lifecycle action exists.
+The shared display components are reusable by the subsequent create/edit form.
+
+`QUOTATION_UI_ENABLED` remains false. In the slice-1 baseline navigation has no quotation entry, direct
+routes default-deny, and the screen guards itself before mounting queries. The separate M1 branch adds the strictly local opt-in above. Future activation needs separate owner approval and server
+rollout. Metadata requires `sales.quotation.view`; preview independently requires
+`sales.quotation.prepare`. A prepare-only holder must never trigger the metadata GET,
+and view alone never triggers preview. Backend Request/Action guards remain authoritative;
+company/record scope is not inferred by the client. No permissions or grants are changed.
+
+| Contract element | UI destination | Coverage and acceptance |
+|---|---|---|
+| Safe identity, revision/family, state, generation, line count | Details | Generated show hook; no commercial data fetched |
+| Recipient, currency, opportunity, creator | Labelled references | Temporary numeric-reference fallback: these projections contain IDs only; no inferred names or permission-expanding lookup calls. Human labels need a separately reviewed projection/lookup contract before activation |
+| Pricing, tax-estimate, local validity dates | Details | Shared date formatting; absent dates show placeholder |
+| Preview identity, generation, pricing date, authority | Review heading/summary | Independent preview GET; explicitly read-only, never adopted as authority |
+| Lines: scope/baseline/choice, description/section, source, offered/priced/stock units and quantities | Responsive line cards | Quantities remain distinct; no page-wide horizontal table; empty lines explicit |
+| Entered/base unit prices, settled line net, optional/base totals | Line cards/totals | Decimal strings only; zero is known, UNKNOWN never zero, PARTIAL shows the known lower bound as “at least”; currency reference always visible |
+| Settlement computed amount/fraction/residual, FX freshness | Line evidence | Server evidence only; opaque FX fingerprints/routes/ratios remain internal metadata, not operator controls |
+| Rounding policy and stale-policy revalidation | Review sections | Policy basis/scale/mode; review reasons and affected line references |
+| Tax, total including tax, controls, issue readiness/blockers/issues | Review summary | Unknown tax, unconfigured controls and unavailable issue remain explicit; no issue button |
+| Loading, 403, non-disclosing 404, 422, network/server/malformed response | Shared failure/loading components | 404 never repeats response details; 422 preserves the server message; Refresh review is offered only for QUOTATION_DRAFT_CHANGED. Other 422s need input/state correction; transient request failures offer retry |
+| Filters, sorts, pagination, bulk, print/export, history | Deferred/not applicable | No list endpoint (#55), no history projection or output adapter in this slice; do not fabricate |
+| POST/PATCH, 409 request-key reuse, Idempotency-Key, expected_generation | Slice 2 | No mutations here; dependent on #53 integration and a fresh branch |
+
+Automated evidence is deliberately split:
+
+- Policy and server-render checks cover independent capability combinations and denial
+  despite supplied grants while the production gate stays false. They do not activate routes.
+- A standalone browser fixture mounts the real internal `QuotationRecord` renderer with
+  React Query, MemoryRouter and intercepted generated-client requests. The stale-preview
+  test tabs through the actual links/button, presses Enter on Refresh review, asserts a
+  second preview GET, then asserts the review replaces the error. `/quotations/abc` is
+  mounted and checked for zero API requests. Metadata requests no financial preview;
+  review navigation retains the query string. Nonrecoverable recipient/noneditable 422s
+  offer no refresh; malformed previews render the safe unsupported-response error.
+- Static display-boundary fixtures check complete zero/partial/unknown values, empty/manual
+  lines, missing conversion/base-price evidence and rejection of negative unit prices;
+  protected extra cost/margin fields nested on preview lines and totals are not rendered.
+  The 404 fixture checks non-disclosing text, not a live hidden-record lookup.
+- Separate 390px light/dark fixtures inspect static display markup with the production CSS:
+  long descriptions, no horizontal page overflow and no serious/critical axe findings.
+  These are layout checks, not an enabled production-route user journey.
+
+These isolated tests use no running application or database. From the worktree, first run
+`cd frontend/apps/main && npx vite build`, then from the repository root run
+`docker/frontend/run-e2e.sh --project=unit`. The isolated project contains both pure-function
+checks and browser fixtures; it needs Chromium and the built CSS. The renderer fixture seam
+is not exported through the UI package barrel; production entry remains the guarded screen.
+
+Before activation: independently verify the live enabled routes, backend entitlement/scope
+and real hidden/missing-record 404 parity after QA1–QA3; supply entitled human labels for
+Party/currency/unit/creator references; apply the separately reviewed holder/activation plan.
+This slice does not claim those checks. Current non-negative monetary parsing follows
+QL1a's `StorageAmount` contract (negative amounts refused); signed settlement residuals are
+separate evidence and remain signed strings. Credits would require a new server/UI contract.
+The work-area link provides a safe fallback with no invented list.
+
 ## Related
 
 - [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)

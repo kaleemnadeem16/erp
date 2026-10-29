@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { configureCoreApi, setAuthToken } from '@erp/core-api';
-import { AppearanceProvider, createAppQueryClient } from '@erp/core-ui';
+import { AppearanceProvider, createAppQueryClient, configureQuotationDevMode } from '@erp/core-ui';
 
 import { AppRouter } from './router';
 import './index.css';
@@ -23,6 +23,13 @@ configureCoreApi({
     setAuthToken(null);
     window.location.replace('/login');
   },
+});
+
+// Development-only exposure: an env value alone can never enable a production build.
+configureQuotationDevMode({
+  development: import.meta.env.DEV,
+  flag: import.meta.env.VITE_QUOTATION_UI_ENABLED,
+  hostname: window.location.hostname,
 });
 
 // Retry rules and "refresh what is on screen after any saved change" live in createAppQueryClient.

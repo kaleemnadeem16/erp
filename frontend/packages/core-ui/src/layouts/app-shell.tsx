@@ -124,6 +124,8 @@ const navGroups: NavGroup[] = [
     label: "Sales",
     items: [
       { to: "/opportunities", label: "Opportunities", icon: Handshake },
+      // The shared screen gate hides this everywhere unless localhost dev opt-in and the exact duty allow it.
+      { to: "/quotations", label: "Quotations", icon: FileText },
       { to: "/leads", label: "Enquiries", icon: Inbox },
       { to: "/sales-stages", label: "Pipeline Stages", icon: ListOrdered },
     ],

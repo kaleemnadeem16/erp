@@ -87,3 +87,5 @@ export * from "./generated/lead/lead";
 export * from "./generated/opportunity/opportunity";
 export * from "./generated/sales-stage/sales-stage";
 export * from "./generated/sales-owner/sales-owner";
+
+export * from "./generated/quotation/quotation";

@@ -257,11 +257,12 @@ class SalesDutyRegistrationTest extends TestCase
     {
         $dormant = array_map(fn (SalesDuty $duty): string => $duty->name, array_filter(SalesDutyManifest::shipped()->all(), fn (SalesDuty $duty): bool => ! $duty->isActive()));
 
-        // The only quotation routes are the QL1b adapters: two reads and the two draft writes. Their duties are STAGED, so they refuse everyone
+        // The only quotation routes are the QL1b adapters: three reads and the two draft writes. Their duties are STAGED, so they refuse everyone
         // (QuotationDraftReviewApiTest, QuotationDraftWriteApiTest). Each URI may only carry the methods listed here.
         $adapters = [
             'api/v1/quotations' => ['POST'],
             'api/v1/quotations/{revision}' => ['GET', 'HEAD', 'PATCH'],
+            'api/v1/quotations/{revision}/editable' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/preview' => ['GET', 'HEAD'],
         ];
 
