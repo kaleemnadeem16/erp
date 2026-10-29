@@ -54,6 +54,18 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
   Delivery hashes while copying to a private stream and hands on that copy; restore locks the blob row before it writes the object.
   No route, grant or duty.
 
+- DF4 manual-delivery pilot foundation (issue #78, disabled): `document_access_events` (insert-only, database clock, composite-FK tenancy) records every authorised hand-off
+  of a stored document (`StreamAuthorisedDocument`, kind `DOWNLOAD` or `PRINT`, outcome `DELIVERED`, or `UNAVAILABLE` when the object failed its check). If the event
+  cannot be recorded nothing is handed over. **A hand-off is never evidence that the customer received, read or accepted anything**; that stays Sales' separate manual
+  delivery evidence. `ReconcileDocumentArtefacts` is the bounded, resumable sweep (limit and `after_id` cursor, owner-gated per artefact, counts only; reports generation
+  files no artefact owns once they are older than a cutoff, never deletes or regenerates). `ReadDocumentArtefactHistory` gives the owner (`history`) a safe timeline:
+  generated, handed out, missing/quarantined/restored, with no key, path, hash or payload.
+  Operator runbook: run the sweep on a schedule you own (nothing here schedules it); a `MISSING` or `QUARANTINED` original is restored only with `RestoreDocumentArtefact`
+  from a backup copy whose bytes have exactly the recorded hash (a regenerated PDF is not a recovery and is refused); reported orphans are removed by Files' own
+  reconciliation slice, never by hand; restore a database backup together with its object store, then run the sweep and expect `ok` for every artefact.
+  Still not here: routes, grants and duties (`sales.document.*` stay SPECIFIED), UI, email, portal, public or signed URLs, Sales' quotation binding and its manual
+  delivery record, labelled-rendition repair, retention and holds.
+
 - Every history table also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on the same guard (row triggers never fire on TRUNCATE, and the runtime role is a
   superuser, so revoking the privilege would not help). A new Documents history table adds both triggers in its own migration.
 
