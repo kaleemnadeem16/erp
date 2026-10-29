@@ -1065,3 +1065,7 @@ Integrated from source 4d27f5917ace98e40a90a2dd96036deb8025cce5 (owner approval 
 ## 2026-10-29 — Phase 5 Jobs J-AU0 access API and J1 runtime Actions, disabled (branch phase5/jobs-access-and-actions, #62 + #63)
 
 Integrated from source 27028d44110c4283e5e54f80d98d450932d9edf9 (owner approval 2026-10-29, after Agent A acknowledged the Sales/R7 finding fixed at this SHA); no migration, no permission registration, no activation: the shipped verifier still refuses every new command.
+
+## 2026-10-30 — Documents DF3 stored PDF originals, worker, delivery and recovery (branch agent-b/documents-df3-pdf, #72)
+
+Integrated from source ff01fb2cd8533f8f89dc76abd362d09c3e52ce1b (owner approval 2026-10-29); migration `2026_10_30_100000_create_document_artefacts`, applied to the dev database; depends on #26 and #49.
