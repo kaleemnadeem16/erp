@@ -131,12 +131,16 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
         $this->assertSame($before, ['cases' => DB::table('customer_decision_cases')->count(), 'components' => DB::table('customer_decision_components')->count(), 'evidence' => DB::table('customer_decision_evidence')->count()]);
     }
 
-    public function test_the_migration_is_stamped_after_the_newest_existing_one(): void
+    public function test_the_migration_stamp_is_unique_and_sorts_after_everything_it_depends_on(): void
     {
         $names = collect(glob(base_path('database/migrations/*.php')))->map(fn (string $path): string => basename($path))->sort()->values();
-        $ours = $names->search('2026_10_27_140000_create_customer_decision_intake_foundation.php');
+        $ours = '2026_10_27_140000_create_customer_decision_intake_foundation.php';
+        $stamps = $names->map(fn (string $name): string => substr($name, 0, 17));
 
-        $this->assertIsInt($ours);
-        $this->assertSame('2026_10_26_090000_create_job_lifecycle_foundation.php', $names[$ours - 1] ?? null, 'it sorts directly after develop\'s previous newest migration (later work may add after it, never before)');
+        $this->assertTrue($names->contains($ours));
+        $this->assertSame(1, $stamps->filter(fn (string $stamp): bool => $stamp === '2026_10_27_140000')->count(), 'no other migration shares the stamp');
+        foreach (['2026_10_16_120000_create_quotation_foundation.php', '2026_10_22_140000_create_tax_party_profiles.php', '2026_10_26_090000_create_job_lifecycle_foundation.php'] as $dependency) {
+            $this->assertLessThan($names->search($ours), $names->search($dependency), "{$dependency} (parties, users, quotation families and scopes) must run first");
+        }
     }
 }
