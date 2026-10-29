@@ -18,6 +18,9 @@ class FileBlob extends Model
 
     protected $guarded = ['id'];
 
+    /** Where the object lives is private to the storage code: it never appears in an array, JSON or API form of the model. Trusted code still reads the attributes. */
+    protected $hidden = ['storage_disk', 'storage_key'];
+
     /** @return array<string, string> */
     protected function casts(): array
     {

@@ -18,6 +18,7 @@ use App\Modules\Files\Support\FileValidator;
 use App\Modules\Files\Support\NotConfiguredScanner;
 use App\Modules\Files\Support\ScanResult;
 use App\Support\PermissionRegistry;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -302,8 +303,8 @@ class FilesKernelTest extends TestCase
         try {
             $this->stage($intent, TestFiles::png());
             $this->fail('The failure must surface.');
-        } catch (\RuntimeException) {
-            $this->addToAssertionCount(1);
+        } catch (FileException $e) {
+            $this->assertSame('record_failed', $e->reasonCode);
         } finally {
             // Only the listener this test added goes: flushing every FileBlob listener would also drop the model's company scoping for the rest of the run.
             FileBlob::getEventDispatcher()->forget('eloquent.creating: '.FileBlob::class);
@@ -312,6 +313,42 @@ class FilesKernelTest extends TestCase
         $this->assertSame([], $this->objects());
         $this->assertSame([0, 0], [DB::table('file_blobs')->count(), DB::table('file_blob_events')->count()]);
         $this->assertSame('PENDING', $intent->refresh()->state, 'the request can still be served');
+    }
+
+    public function test_results_never_serialise_the_disk_key_or_path(): void
+    {
+        $staged = $this->stage($this->request()['intent'], TestFiles::png());
+        $verified = app(VerifyStagedFile::class)->execute($staged['intent']->id, $this->user->id);
+
+        foreach ([$staged['blob'], $verified['blob']] as $blob) {
+            $key = $blob->storage_key;
+            $this->assertNotSame('', $key);
+            $out = json_encode($blob->toArray()).$blob->toJson().json_encode([$staged, $verified]);
+            foreach ([$key, substr($key, 0, 2).'/'.$key, 'storage_key', 'storage_disk'] as $secret) {
+                $this->assertStringNotContainsString($secret, $out);
+            }
+        }
+        $this->assertSame('files', $verified['blob']->storage_disk, 'trusted code keeps its access');
+    }
+
+    public function test_a_storage_failure_is_a_fixed_safe_error_with_no_cause_or_path(): void
+    {
+        $intent = $this->request()['intent'];
+        $disk = \Mockery::mock(Filesystem::class);
+        $disk->shouldReceive('writeStream')->andThrow(new \RuntimeException('cannot write /srv/private/ab/abcdef0123 to bucket'));
+        $disk->shouldReceive('delete')->andReturn(true);
+        Storage::shouldReceive('disk')->with('files')->andReturn($disk);
+
+        try {
+            $this->stage($intent, TestFiles::png());
+            $this->fail('Expected a refusal.');
+        } catch (FileException $e) {
+            $this->assertSame('storage_failed', $e->reasonCode);
+            $this->assertNull($e->getPrevious());
+            $this->assertStringNotContainsString('/srv', $e->getMessage());
+            $this->assertStringNotContainsString('bucket', $e->getMessage());
+        }
+        $this->assertSame('PENDING', $intent->refresh()->state);
     }
 
     public function test_name_sanitising_never_yields_a_path_or_control_characters(): void
