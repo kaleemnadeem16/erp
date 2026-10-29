@@ -1061,3 +1061,7 @@ Conflicts (documentation or additive wiring only) were resolved by merge commit 
 ## 2026-10-29 — Files F0: disabled shared file storage kernel (branch agent-b/files-f0-kernel, #49)
 
 Integrated from source 4d27f5917ace98e40a90a2dd96036deb8025cce5 (owner approval 2026-10-29); migration `2026_10_29_100000_create_files_foundation`; disabled kernel (ADR 0153), no entry point.
+
+## 2026-10-29 — Phase 5 Jobs J-AU0 access API and J1 runtime Actions, disabled (branch phase5/jobs-access-and-actions, #62 + #63)
+
+Integrated from source 27028d44110c4283e5e54f80d98d450932d9edf9 (owner approval 2026-10-29, after Agent A acknowledged the Sales/R7 finding fixed at this SHA); no migration, no permission registration, no activation: the shipped verifier still refuses every new command.
