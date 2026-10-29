@@ -38,17 +38,43 @@ final class StreamAuthorisedDocument
         if ($blob === null || $blob->health !== 'VERIFIED' || $blob->sha256 !== $artefact->sha256 || $blob->size_bytes !== $artefact->size_bytes) {
             throw new DocumentException('This document is not available.', 'artefact_id', 'artefact_unavailable');
         }
-        $path = StoredObject::path($blob->storage_key);
-        $observed = StoredObject::observe($blob->storage_disk, $path);
-        if ($observed === null || $observed['sha256'] !== $artefact->sha256 || $observed['size'] !== $artefact->size_bytes) {
-            throw new DocumentException('This document is not available.', 'artefact_id', 'artefact_unavailable');
-        }
-        $stream = Storage::disk($blob->storage_disk)->readStream($path);
-        if ($stream === null) {
-            throw new DocumentException('This document is not available.', 'artefact_id', 'artefact_unavailable');
-        }
+        // Read the object ONCE: the bytes are hashed while they are copied to a private temporary stream, and that copy is what is handed on, so what was checked is what
+        // is delivered (a second open of the object could see different bytes).
+        $copy = $this->snapshot($blob->storage_disk, StoredObject::path($blob->storage_key), $artefact);
         $name = strtolower($manifest->purpose === 'ORIGINAL' ? 'document' : 'draft').'-'.$artefact->id.'.pdf';
 
-        return new DocumentDownload($stream, $name, 'application/pdf', $artefact->size_bytes, $artefact->sha256);
+        return new DocumentDownload($copy, $name, 'application/pdf', $artefact->size_bytes, $artefact->sha256);
+    }
+
+    /** @return resource */
+    private function snapshot(string $disk, string $path, DocumentArtefact $artefact)
+    {
+        $unavailable = fn (): DocumentException => new DocumentException('This document is not available.', 'artefact_id', 'artefact_unavailable');
+        try {
+            $source = Storage::disk($disk)->readStream($path);
+        } catch (\Throwable) {
+            throw $unavailable();
+        }
+        if ($source === null) {
+            throw $unavailable();
+        }
+        $copy = fopen('php://temp/maxmemory:1048576', 'r+');
+        $hash = hash_init('sha256');
+        $size = 0;
+        while (! feof($source)) {
+            $chunk = fread($source, 65536);
+            if ($chunk === false || ($size += strlen($chunk)) > $artefact->size_bytes) {
+                throw $unavailable();
+            }
+            hash_update($hash, $chunk);
+            fwrite($copy, $chunk);
+        }
+        fclose($source);
+        if ($size !== $artefact->size_bytes || ! hash_equals($artefact->sha256, hash_final($hash))) {
+            throw $unavailable();
+        }
+        rewind($copy);
+
+        return $copy;
     }
 }

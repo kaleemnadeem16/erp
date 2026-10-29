@@ -48,7 +48,10 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
   `ReconcileDocumentArtefact` / `RestoreDocumentArtefact` mark a missing or corrupt object and bring it back **only from bytes with the recorded hash**; a regenerated
   file is never a recovery of an original. The `documents.artefact` file owner authorises every Files operation (upload, stage, verify, reconcile, restore) only for a
   currently active member of this company, for a manifest of this company, and only when the document owner's own adapter says yes to the matching operation
-  (`generate`, `reconcile_artefact`, `restore_artefact`); existence alone never authorises, and reconcile/restore refuse a blob that is not the asserted owner's own.
+  (`generate`, `reconcile_artefact`, `restore_artefact`); existence alone never authorises, and reconcile/restore refuse a blob that is not the asserted owner's own. The producer operations (upload, stage, verify) additionally
+  require the `DocumentGenerationScope` capability, open only inside the running generation worker and bound to its manifest, intent, actor and fencing generation (the
+  database must still show that intent RUNNING at that fence with a live lease): holding `generate` alone never lets a caller put bytes into Files as a generated document.
+  Delivery hashes while copying to a private stream and hands on that copy; restore locks the blob row before it writes the object.
   No route, grant or duty.
 
 - Every history table also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on the same guard (row triggers never fire on TRUNCATE, and the runtime role is a

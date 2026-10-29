@@ -17,6 +17,7 @@ use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Support\DocumentArtefactFileOwner;
 use App\Modules\Documents\Support\DocumentException;
+use App\Modules\Documents\Support\DocumentGenerationScope;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
 use App\Modules\Files\Actions\ReconcileFileBlob;
@@ -26,6 +27,7 @@ use App\Modules\Files\Actions\StageUploadedFile;
 use App\Modules\Files\Actions\VerifyStagedFile;
 use App\Modules\Files\Models\FileBlob;
 use App\Modules\Files\Support\FileException;
+use App\Modules\Files\Support\FileOperationContext;
 use App\Modules\Files\Support\StoredObject;
 use Closure;
 use Illuminate\Database\QueryException;
@@ -264,6 +266,16 @@ class DocumentsArtefactTest extends TestCase
         return $out;
     }
 
+    /** Runs a closure the way the worker would: the intent really claimed (RUNNING at its fence, live lease) and the capability open for it. */
+    private function withinGeneration(array $b, Closure $work): mixed
+    {
+        DB::table('document_generation_intents')->where('id', $b['intent']->id)->update(['state' => 'RUNNING', 'fencing_generation' => 1, 'lease_expiry' => DB::raw("clock_timestamp() + interval '5 minutes'")]);
+        $result = DocumentGenerationScope::run($b['manifest']->id, $b['intent']->id, 1, $this->user->id, $work);
+        DB::table('document_generation_intents')->where('id', $b['intent']->id)->update(['lease_expiry' => DB::raw("clock_timestamp() - interval '1 second'")]);
+
+        return $result;
+    }
+
     private function fileRefusal(Closure $call): string
     {
         try {
@@ -353,7 +365,8 @@ class DocumentsArtefactTest extends TestCase
     public function test_direct_stage_and_verify_are_denied_once_the_actor_is_no_longer_authorised(): void
     {
         $b = $this->bind();
-        $request = app(RequestFileUpload::class)->execute(DocumentArtefactFileOwner::OWNER, 'manifest:'.$b['manifest']->id, DocumentArtefactFileOwner::PURPOSE, 12, 'direct-stage', $this->user->id);
+        $request = $this->withinGeneration($b, fn () => app(RequestFileUpload::class)->execute(DocumentArtefactFileOwner::OWNER, 'manifest:'.$b['manifest']->id,
+            DocumentArtefactFileOwner::PURPOSE, 12, 'direct-stage', $this->user->id));
         $this->adapter->rule = fn (): bool => false;
         $before = $this->writes();
 
@@ -376,6 +389,73 @@ class DocumentsArtefactTest extends TestCase
             DocumentArtefactFileOwner::PURPOSE, 'manifest:'.$otherManifest->id, 'because', $this->user->id)));
         $this->assertSame($before, $this->writes());
         $this->assertSame('ok', app(ReconcileFileBlob::class)->execute($blob->id, DocumentArtefactFileOwner::OWNER, DocumentArtefactFileOwner::PURPOSE, 'manifest:'.$manifest->id, $this->user->id));
+    }
+
+    public function test_an_actor_who_holds_generate_cannot_put_their_own_bytes_into_files_as_a_generated_document(): void
+    {
+        $b = $this->bind();
+        $before = $this->writes();
+        $bytes = "%PDF-1.4\n% caller controlled\n";
+        $id = 'manifest:'.$b['manifest']->id;
+
+        // The ordinary authorisation is fully granted (the fixture says yes to everything) — and still no producer operation works outside the generation worker.
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(RequestFileUpload::class)->execute(DocumentArtefactFileOwner::OWNER, $id, DocumentArtefactFileOwner::PURPOSE,
+            strlen($bytes), 'mine-1', $this->user->id, hash('sha256', $bytes))));
+        $this->assertSame($before, $this->writes());
+        $this->assertSame([], Storage::disk('files')->allFiles());
+
+        // A pre-existing request (as an earlier, legitimate one would be) cannot be staged or verified by the caller either.
+        $request = $this->withinGeneration($b, fn () => app(RequestFileUpload::class)->execute(DocumentArtefactFileOwner::OWNER, $id,
+            DocumentArtefactFileOwner::PURPOSE, strlen($bytes), 'mine-2', $this->user->id, hash('sha256', $bytes)));
+        $after = $this->writes();
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(StageUploadedFile::class)->execute($request['intent']->id, $this->stream($bytes), 'a.pdf', 'application/pdf', $this->user->id)));
+        $this->assertSame('access_denied', $this->fileRefusal(fn () => app(VerifyStagedFile::class)->execute($request['intent']->id, $this->user->id)));
+        $this->assertSame($after, $this->writes());
+        $this->assertSame([], Storage::disk('files')->allFiles());
+    }
+
+    public function test_the_generation_capability_is_bound_to_manifest_intent_worker_fence_and_a_live_lease(): void
+    {
+        $b = $this->bind();
+        $other = $this->bind(subject: 'po:2', identity: 'g-other');
+        $owner = fn (int $manifest, int $actor) => (new DocumentArtefactFileOwner)->authorise(new FileOperationContext(
+            (int) $b['manifest']->company_id, $actor, 'upload', DocumentArtefactFileOwner::OWNER, DocumentArtefactFileOwner::PURPOSE, 'manifest:'.$manifest));
+        $intent = $b['intent']->id;
+        DB::table('document_generation_intents')->where('id', $intent)->update(['state' => 'RUNNING', 'fencing_generation' => 3, 'lease_expiry' => DB::raw("clock_timestamp() + interval '5 minutes'")]);
+
+        $in = fn (int $manifest, int $fence, int $actor, int $m) => DocumentGenerationScope::run($manifest, $intent, $fence, $actor, fn () => $owner($m, $this->user->id));
+        $this->assertFalse($owner($b['manifest']->id, $this->user->id), 'outside the worker');
+        $this->assertTrue($in($b['manifest']->id, 3, $this->user->id, $b['manifest']->id), 'the right worker, manifest, intent and fence');
+        $this->assertFalse($in($b['manifest']->id, 2, $this->user->id, $b['manifest']->id), 'a stale fence');
+        $this->assertFalse(DocumentGenerationScope::run($b['manifest']->id, $intent, 3, $this->user->id + 999, fn () => $owner($b['manifest']->id, $this->user->id)), 'another worker');
+        $this->assertFalse(DocumentGenerationScope::run($b['manifest']->id, $intent, 3, $this->user->id, fn () => $owner($other['manifest']->id, $this->user->id)), 'another document');
+        DB::table('document_generation_intents')->where('id', $intent)->update(['lease_expiry' => DB::raw("clock_timestamp() - interval '1 second'")]);
+        $this->assertFalse($in($b['manifest']->id, 3, $this->user->id, $b['manifest']->id), 'an expired lease');
+    }
+
+    public function test_restoring_checks_health_again_under_the_row_lock(): void
+    {
+        [$a] = $this->stored();
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $path = StoredObject::path($blob->storage_key);
+        $bytes = Storage::disk('files')->get($path);
+
+        // A file that is healthy again (restored by someone else) is not rewritten or re-evented.
+        $events = DB::table('file_blob_events')->count();
+        $this->assertSame('restore_restore_not_applicable', $this->fileRefusal(fn () => app(RestoreDocumentArtefact::class)->execute($a->id, $this->stream($bytes), 'again', $this->user->id)));
+        $this->assertSame($events, DB::table('file_blob_events')->count());
+    }
+
+    public function test_delivery_hands_on_the_bytes_it_checked_not_a_second_read_of_the_object(): void
+    {
+        [$a] = $this->stored();
+        $blob = FileBlob::query()->findOrFail($a->blob_id);
+        $path = StoredObject::path($blob->storage_key);
+        $download = app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id);
+
+        // The object changes after the check: what is streamed is still exactly the checked copy.
+        Storage::disk('files')->put($path, 'tampered after the check');
+        $this->assertSame($a->sha256, hash('sha256', stream_get_contents($download->stream)));
     }
 
     public function test_documents_adds_no_routes_or_permissions(): void

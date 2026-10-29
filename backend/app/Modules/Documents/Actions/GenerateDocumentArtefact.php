@@ -12,6 +12,7 @@ use App\Modules\Documents\Models\DocumentOperationReceipt;
 use App\Modules\Documents\Support\DocumentAccessGate;
 use App\Modules\Documents\Support\DocumentArtefactFileOwner;
 use App\Modules\Documents\Support\DocumentException;
+use App\Modules\Documents\Support\DocumentGenerationScope;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
 use App\Modules\Documents\Support\ProjectionSchema;
@@ -83,7 +84,7 @@ final class GenerateDocumentArtefact
 
         try {
             $rendered = $this->render($manifest, $adapter->projectionSchema(), $binding->type_key);
-            $blob = $this->store($manifest, $rendered, $fence, $actorId ?? $manifest->initiator_id);
+            $blob = $this->store($manifest, $rendered, $intent->id, $fence, $actorId ?? $manifest->initiator_id);
 
             return DB::transaction(fn (): array => $this->publish($intent->id, $manifest, $blob, $rendered, $fence));
         } catch (DocumentException $e) {
@@ -128,23 +129,26 @@ final class GenerateDocumentArtefact
             $manifest->recorded_at, $manifest->pinned_manifest_digest));
     }
 
-    private function store(DocumentManifest $manifest, RenderedDocument $rendered, int $fence, ?int $actorId): FileBlob
+    private function store(DocumentManifest $manifest, RenderedDocument $rendered, int $intentId, int $fence, ?int $actorId): FileBlob
     {
         if ($actorId === null) {
             throw new DocumentException('A generation needs an actor on record to store its file under.', null, 'no_actor');
         }
-        $stream = fopen('php://temp', 'r+');
-        fwrite($stream, $rendered->bytes);
-        rewind($stream);
-        $identity = 'manifest:'.$manifest->id;
-        $request = $this->uploads->execute(DocumentArtefactFileOwner::OWNER, $identity, DocumentArtefactFileOwner::PURPOSE, strlen($rendered->bytes), 'docgen:'.$manifest->id.':'.$fence, $actorId, $rendered->sha256);
-        $staged = $this->stage->execute($request['intent']->id, $stream, 'document.pdf', 'application/pdf', $actorId);
-        $verified = $this->verify->execute($request['intent']->id, $actorId)['blob'];
-        if ($verified->health !== 'VERIFIED' || $staged['blob']->id !== $verified->id) {
-            throw new DocumentException('The generated file did not verify.', null, 'storage_unverified');
-        }
 
-        return $verified;
+        return DocumentGenerationScope::run($manifest->id, $intentId, $fence, $actorId, function () use ($manifest, $rendered, $fence, $actorId): FileBlob {
+            $stream = fopen('php://temp', 'r+');
+            fwrite($stream, $rendered->bytes);
+            rewind($stream);
+            $identity = 'manifest:'.$manifest->id;
+            $request = $this->uploads->execute(DocumentArtefactFileOwner::OWNER, $identity, DocumentArtefactFileOwner::PURPOSE, strlen($rendered->bytes), 'docgen:'.$manifest->id.':'.$fence, $actorId, $rendered->sha256);
+            $staged = $this->stage->execute($request['intent']->id, $stream, 'document.pdf', 'application/pdf', $actorId);
+            $verified = $this->verify->execute($request['intent']->id, $actorId)['blob'];
+            if ($verified->health !== 'VERIFIED' || $staged['blob']->id !== $verified->id) {
+                throw new DocumentException('The generated file did not verify.', null, 'storage_unverified');
+            }
+
+            return $verified;
+        });
     }
 
     /** @return array{artefact: DocumentArtefact, replayed: bool} */

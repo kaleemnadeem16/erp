@@ -68,6 +68,10 @@ final class DocumentArtefactFileOwner implements FileAccess, FileOwnerAdapter
         if ($manifest === null || $binding === null || $manifest->company_id !== $context->companyId) {
             return false;
         }
+        // Producing the file is not the caller's `generate` permission: only the running generation worker, for this manifest, intent and fence, may put bytes in.
+        if (in_array($context->operation, ['upload', 'stage', 'verify'], true) && ! DocumentGenerationScope::permits($manifest->id, $context->actorId)) {
+            return false;
+        }
         $adapter = app(DocumentTypeRegistry::class)->get($binding->type_key, $binding->schema_version);
 
         return DocumentAccessGate::allows($adapter, new DocumentOperationContext($context->companyId, $context->actorId, $operation, $binding->type_key, $binding->audience,

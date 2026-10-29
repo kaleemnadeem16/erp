@@ -67,16 +67,18 @@ final class RestoreFileBlob
         }
         rewind($temp);
         $path = StoredObject::path($blob->storage_key);
-        Storage::disk($blob->storage_disk)->writeStream($path, $temp);
-        $observed = StoredObject::observe($blob->storage_disk, $path);
-        if ($observed === null || $observed['sha256'] !== $blob->sha256 || $observed['size'] !== $blob->size_bytes) {
-            throw new FileException('The restored object could not be verified.', null, 'restore_unverified');
-        }
 
-        return DB::transaction(function () use ($blobId, $actorId, $reason): FileBlob {
+        // The row is locked BEFORE the object is touched, and health is judged again under the lock: a reconcile or a second restore cannot interleave with the write, and
+        // a file that is no longer MISSING or QUARANTINED is left exactly as it is. The bytes were already proven identical to the recorded hash, so the write is idempotent.
+        return DB::transaction(function () use ($blobId, $actorId, $reason, $temp, $path): FileBlob {
             $locked = FileBlob::query()->whereKey($blobId)->lockForUpdate()->firstOrFail();
-            if (! in_array($locked->health, ['MISSING', 'QUARANTINED'], true)) {
-                return $locked;
+            if (! in_array($locked->health, ['MISSING', 'QUARANTINED'], true) || $locked->scan_state === 'INFECTED') {
+                throw new FileException('Only a missing or corrupt, not infected, file can be restored.', 'blob_id', 'restore_not_applicable');
+            }
+            Storage::disk($locked->storage_disk)->writeStream($path, $temp);
+            $observed = StoredObject::observe($locked->storage_disk, $path);
+            if ($observed === null || $observed['sha256'] !== $locked->sha256 || $observed['size'] !== $locked->size_bytes) {
+                throw new FileException('The restored object could not be verified.', null, 'restore_unverified');
             }
             $from = $locked->health;
             $locked->update(['health' => 'VERIFIED']);
