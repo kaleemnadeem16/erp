@@ -383,19 +383,24 @@ class QuotationDraftActionsTest extends TestCase
         $this->assertNull(DB::table('quotation_draft_lines')->value('manual_measure'));
     }
 
-    public function test_only_direct_item_and_manual_sources_are_authorised_and_each_is_proven(): void
+    public function test_only_direct_item_service_item_and_manual_sources_are_authorised_and_each_is_proven(): void
     {
         $draft = $this->create();
         $service = Item::create(['code' => 'INSPECT', 'name' => 'Inspection', 'type' => ItemType::Service, 'stock_uom_id' => $this->hour->id, 'category_id' => $this->pigment->category_id, 'is_sellable' => true]);
         $line = fn (array $over) => $this->update($draft, ['add_lines' => [array_replace(['source_kind' => 'DIRECT_ITEM', 'item_id' => $this->pigment->id, 'offered_quantity' => '1'], $over)]]);
 
-        $this->assertSame('SOURCE_KIND_NOT_AUTHORISED', $this->refusal(fn () => $this->update($draft, ['add_lines' => [['source_kind' => 'SERVICE_ITEM', 'item_id' => $service->id, 'offered_quantity' => '1']]])));
+        // D1: a service Item is authorised, proven to be a service in its own unit, and its cost is never invented.
+        $this->update($draft, ['add_lines' => [['source_kind' => 'SERVICE_ITEM', 'item_id' => $service->id, 'offered_quantity' => '2', 'unit_price' => '50.0000']]]);
+        $saved = QuotationDraftLine::query()->where('revision_id', $draft->revisionId)->where('source_kind', 'SERVICE_ITEM')->sole();
+        $this->assertSame([$service->id, $this->hour->id, 'Inspection'], [$saved->item_id, $saved->offered_uom_id, str_contains($saved->description, 'Inspection') ? 'Inspection' : $saved->description]);
+        $this->assertSame('SOURCE_INCOMPATIBLE', $this->refusal(fn () => $this->update($draft, ['add_lines' => [['source_kind' => 'SERVICE_ITEM', 'item_id' => $this->pigment->id, 'offered_quantity' => '1']]])), 'a stocked material is not a service');
+        $this->assertSame('INVALID_INPUT', $this->refusal(fn () => $this->update($draft, ['add_lines' => [['source_kind' => 'SERVICE_ITEM', 'offered_quantity' => '1']]])));
         $this->assertSame('SOURCE_KIND_NOT_AUTHORISED', $this->refusal(fn () => $this->update($draft, ['add_lines' => [['source_kind' => 'ASSEMBLY_WORK', 'offered_quantity' => '1']]])));
         $this->assertSame('SOURCE_INCOMPATIBLE', $this->refusal(fn () => $this->update($draft, ['add_lines' => [['source_kind' => 'DIRECT_ITEM', 'item_id' => $service->id, 'offered_quantity' => '1']]])));
         $this->assertSame('SOURCE_NOT_FOUND', $this->refusal(fn () => $line(['item_id' => 987654])));
         $this->assertSame('SELLING_UNIT_UNSUPPORTED', $this->refusal(fn () => $line(['offered_uom_id' => $this->hour->id])), 'A package or alternate unit has no conversion evidence yet.');
         $this->assertStringContainsString('QUANTITY', $this->refusal(fn () => $line(['offered_quantity' => '1.23456'])));
-        $this->assertSame(0, QuotationDraftLine::query()->count());
+        $this->assertSame(1, QuotationDraftLine::query()->count()); // only the authorised service line; every refusal saved nothing
         $this->assertNotNull(Assembly::class);
     }
 
