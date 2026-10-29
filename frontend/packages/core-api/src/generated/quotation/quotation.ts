@@ -23,6 +23,7 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  QuotationsEditable200,
   QuotationsPreview200,
   QuotationsShow200,
   QuotationsStore200,
@@ -573,6 +574,233 @@ export const useQuotationsUpdate = <
 
   return useMutation(mutationOptions, queryClient);
 };
+/**
+ * @summary The draft as a form needs it: header and lines in the shape the PATCH accepts, at the generation to send back. For preparers (`sales.quotation.prepare`), not viewers
+ */
+export type quotationsEditableResponse200 = {
+  data: QuotationsEditable200;
+  status: 200;
+};
+
+export type quotationsEditableResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsEditableResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsEditableResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsEditableResponseSuccess =
+  quotationsEditableResponse200 & {
+    headers: Headers;
+  };
+export type quotationsEditableResponseError = (
+  | quotationsEditableResponse401
+  | quotationsEditableResponse403
+  | quotationsEditableResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsEditableResponse =
+  quotationsEditableResponseSuccess | quotationsEditableResponseError;
+
+export const getQuotationsEditableUrl = (revision: number) => {
+  return `/v1/quotations/${revision}/editable`;
+};
+
+export const quotationsEditable = async (
+  revision: number,
+  options?: RequestInit,
+): Promise<quotationsEditableResponse> => {
+  return fetchClient<quotationsEditableResponse>(
+    getQuotationsEditableUrl(revision),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getQuotationsEditableQueryKey = (revision?: number) => {
+  return [`/v1/quotations/${revision}/editable`] as const;
+};
+
+export const getQuotationsEditableQueryOptions = <
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getQuotationsEditableQueryKey(revision);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof quotationsEditable>>
+  > = () => quotationsEditable(revision, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!revision,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof quotationsEditable>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QuotationsEditableQueryResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsEditable>>
+>;
+export type QuotationsEditableQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsEditable>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsEditable>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsEditable>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsEditable>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary The draft as a form needs it: header and lines in the shape the PATCH accepts, at the generation to send back. For preparers (`sales.quotation.prepare`), not viewers
+ */
+
+export function useQuotationsEditable<
+  TData = Awaited<ReturnType<typeof quotationsEditable>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsEditable>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQuotationsEditableQueryOptions(revision, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export type quotationsPreviewResponse200 = {
   data: QuotationsPreview200;
   status: 200;

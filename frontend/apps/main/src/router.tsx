@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
+  QuotationDetailScreen,
   AcceptInvitationScreen,
   ApplicationRateCreateScreen,
   ApplicationRateEditScreen,
@@ -149,6 +150,14 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route
+          path="/quotations/:revision"
+          element={<ProtectedRoute><AppShell><QuotationDetailScreen /></AppShell></ProtectedRoute>}
+        />
+        <Route
+          path="/quotations/:revision/review"
+          element={<ProtectedRoute><AppShell><QuotationDetailScreen review /></AppShell></ProtectedRoute>}
+        />
         <Route path="/login" element={<LoginScreen />} />
         <Route
           path="/change-password"
