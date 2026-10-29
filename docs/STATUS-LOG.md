@@ -1057,3 +1057,7 @@ Integrated on the owner's direct instruction, each from its exact approved SHA, 
 - #65 FR3 T1/T2 tax determination and BASIC calculation, disabled (`4f9c6ec8`); migration `2026_10_29_090000_create_tax_quotation_declarations`.
 - #67 UI standards pass 1, Stock ledger (`c718987d`); frontend only.
 Conflicts (documentation or additive wiring only) were resolved by merge commit keeping both sides: Sales README and `SalesServiceProvider` (M1), Sales README (milestone), Tax README (#65).
+
+## 2026-10-29 — Files F0: disabled shared file storage kernel (branch agent-b/files-f0-kernel, #49)
+
+Integrated from source 4d27f5917ace98e40a90a2dd96036deb8025cce5 (owner approval 2026-10-29); migration `2026_10_29_100000_create_files_foundation`; disabled kernel (ADR 0153), no entry point.
