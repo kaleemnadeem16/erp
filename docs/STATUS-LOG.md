@@ -1037,3 +1037,11 @@ Integrated from source fc83d8271b6d4ea949d941b515be3f984a0df656 (owner approval 
 ## 2026-10-28 — Sales quotation record-level access design (branch agent-c/quotation-access-design, #45)
 
 Integrated from source 21ffa475bbe04d7238e16b6a020f4c41344de174 (owner approval 2026-10-28); planning only, docs only: `docs/domain/quotation-record-access-design.md`, `-storage.md`, `-comparison.md`, `docs/phases/phase-4-quotation-record-access-slices.md`.
+
+## 2026-10-29 — Phase 4 cost-basis estimating seam (branch phase4/cba-estimating-seam, #36)
+
+Integrated from source 03e1450bfab150bff51a51e9e4d8ef57d583395a (owner approval 2026-10-29), merge commit dd52bd74; no migration.
+
+## 2026-10-29 — Phase 4 quotation ownership and evidence (branch agent-b/quotation-ownership, #59)
+
+Integrated from source e575a8ab645a801443f1af951864ea31ece28613 (owner approval 2026-10-29); migration `2026_10_27_100000_add_quotation_ownership_and_evidence`.
