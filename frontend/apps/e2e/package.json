@@ -11,6 +11,7 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@playwright/test": "^1.49.1",
+    "esbuild": "^0.25.12",
     "typescript": "^5.7.3"
   }
 }
