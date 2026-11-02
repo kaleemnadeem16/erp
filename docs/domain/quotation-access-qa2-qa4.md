@@ -76,3 +76,24 @@ Related: [QA1b scope](quotation-own-scope-qa1b.md),
   the owner needs measurements, not a claim: set a `lock_timeout` for the barrier statements and for protected readers, measure the write and read latency and the lock-wait
   distribution under a realistic mixed load (logins, member/role edits, drafts, lists, issues), and confirm that a security write in one tenant does not breach the other
   tenants' latency budget. If it does, the next step is a per-company barrier with a proven ordering rule, not a longer timeout.
+
+## Integration baseline decisions (final integration onto develop)
+
+Recorded for the owner; each follows the QA3 rule above (OWN = the current responsible owner acts on their own records, ALL explicit, an
+unrelated duty never widens, anything else default-deny).
+
+- **Document and delivery routes use this policy.** Each document Action requires its exact document duty company-wide (document duties have no
+  family scope, so a limited grant is refused), then the independent quotation view through `QuotationAccess` (OWN/ALL) under the fence. The
+  Documents owner gate (`QuotationCustomerDocumentAdapter`) asks the same policy. Hidden, foreign, unknown and unissued revisions are one 404.
+- **Sales → Tax context authority** judges prepare or issue for the exact revision through `QuotationAccess`, so an OWN preparer gets Tax
+  determinations for their own draft.
+- **Control evaluation.** `EvaluateAssemblyLineControls` takes the revision it evaluates for and requires prepare for that revision; the
+  cost-evidence authority (a person-level callback with no revision) accepts a prepare grant whose scope the policy supports (OWN or ALL) and
+  refuses any other.
+- **Issue HTTP surface.** `GET …/issue-readiness` (prepare + view), `POST …/issue` (issue + view; required `Idempotency-Key`,
+  `expected_generation` in the body), `GET …/issued` (view). The issued record carries the official number, instant, maker/checker and frozen
+  header terms; settled totals only for a caller who also holds prepare or issue for that revision. Never cost, margin, controls outcome,
+  fingerprints, tax evidence or numbering references.
+- **List summary.** Adds `valid_through_local_date` and `responsible_owner_id`. Recipient name and net amount are NOT in the list: a Party read
+  and the commercial view are separate rights (the commercial view duty is still SPECIFIED) — a follow-up once those can be judged per row.
+- **Fence reads are pure SELECTs.** `CompanyAccessFence::lock()` inserts a company's barrier row only when it is missing.

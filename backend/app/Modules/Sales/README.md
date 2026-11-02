@@ -62,6 +62,14 @@ Internal only — no route, table, permission, grant or UI; nothing here is reac
 
 A guarded Action must check its own duty and scope before calling the kernel and project the result with `PricingResult::forReader`.
 
+## Quotation issue and document HTTP surface (default-deny, STAGED)
+
+- Issue: `GET /api/v1/quotations/{revision}/issue-readiness`, `POST …/issue` (required `Idempotency-Key`, `expected_generation`), `GET …/issued`
+  (`QuotationController`, Actions `AssessQuotationIssueReadiness`, `IssueQuotation`, `ReadIssuedQuotation`). Tests: `QuotationIssueApiTest`.
+- Documents: `…/document`, `…/document/download`, `…/document/history`, `…/document/check`, `…/deliveries` (`QuotationDocumentController`).
+  Every Action requires its exact duty, then `QuotationAccess` for the view (OWN/ALL). Tests: `QuotationDocumentApiTest`.
+- Access rules and the decisions behind them: [quotation-access-qa2-qa4.md](../../../../docs/domain/quotation-access-qa2-qa4.md).
+
 ## Non-obvious
 
 - **Access.** `SalesAccess` is the one guard: the capability *and* "not limited to my units". Own/assigned/unit visibility is not built, so a limited person is **refused (403)**, never shown a filtered list (ADR 0106). Ownership grants nothing.
