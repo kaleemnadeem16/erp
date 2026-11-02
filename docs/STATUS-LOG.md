@@ -1073,3 +1073,7 @@ Integrated from source ff01fb2cd8533f8f89dc76abd362d09c3e52ce1b (owner approval 
 ## 2026-10-30 — Customer decision intake foundation G-A0, disabled storage (branch phase4/ga0-customer-decision-intake, #57)
 
 Integrated from source 8800a0d08681b2c91177d76aeaf429b2e5cd8039 (owner approval 2026-10-29); migration `2026_10_27_140000_create_customer_decision_intake_foundation` (sorts before newer migrations, applied additively to the dev database); conflict in Sales README resolved by merge commit keeping both sides.
+
+## 2026-11-02 — Quotation OWN scope (#60), demo data (#79), quotation UI M1 (#75)
+
+Integrated from sources 5877c54c74c529712b5b221bb78eef4f44884c45 (#60; migration `2026_10_30_110000_extend_access_scope_limits_for_quotation_own`, applied additively to the dev database), cb98d538e78f23d7683dcca5a91841f0f90b6387 (#79; demo seeders only, not run) and ae748380a2b8bac8ab2b73d83b18cb77c7cf4f2a (#75; quotation screens behind the off-by-default gate; Agent B review: no blocking finding), owner approval 2026-11-02, one combined develop CI run.
