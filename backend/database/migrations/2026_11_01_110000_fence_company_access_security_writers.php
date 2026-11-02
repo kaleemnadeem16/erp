@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\DB;
  */
 return new class extends Migration
 {
+    /** Fenced on every write. `users` is fenced separately and column-aware (below): a sign-in timestamp or a profile edit must not serialise every tenant. */
     private const TABLES = [
-        'users', 'roles', 'permissions', 'model_has_roles', 'model_has_permissions',
+        'roles', 'permissions', 'model_has_roles', 'model_has_permissions',
         'role_has_permissions', 'access_scope_limits', 'organisation_units',
         'organisation_unit_members', 'organisation_unit_resources',
     ];
@@ -48,6 +49,12 @@ BEGIN
  RETURN NULL;
 END $$;
 SQL);
+        // A user row changes a decision only when its membership, status or authorization generation changes (or the row appears, goes or is truncated). The column list
+        // fires on any statement that SETS one of these columns; `last_login_at`, remember tokens, names and passwords never fence.
+        DB::unprepared(<<<'SQL'
+CREATE TRIGGER company_access_security_barrier BEFORE INSERT OR DELETE OR TRUNCATE ON users FOR EACH STATEMENT EXECUTE FUNCTION company_access_security_writer_barrier();
+CREATE TRIGGER company_access_security_barrier_columns BEFORE UPDATE OF company_id, status, authorization_generation ON users FOR EACH STATEMENT EXECUTE FUNCTION company_access_security_writer_barrier();
+SQL);
         foreach (self::TABLES as $table) {
             DB::statement("CREATE TRIGGER company_access_security_barrier BEFORE INSERT OR UPDATE OR DELETE OR TRUNCATE ON {$table} FOR EACH STATEMENT EXECUTE FUNCTION company_access_security_writer_barrier()");
         }
@@ -59,6 +66,8 @@ SQL);
         if (DB::table('company_access_generations')->where('generation', '<>', 0)->exists()) {
             throw new RuntimeException('Access generations are in use; disabling the security barrier requires a separately approved backout.');
         }
+        DB::statement('DROP TRIGGER IF EXISTS company_access_security_barrier ON users');
+        DB::statement('DROP TRIGGER IF EXISTS company_access_security_barrier_columns ON users');
         foreach (self::TABLES as $table) {
             DB::statement("DROP TRIGGER IF EXISTS company_access_security_barrier ON {$table}");
         }

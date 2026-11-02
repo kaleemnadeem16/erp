@@ -58,3 +58,21 @@ is not legal Tax configuration.
 Related: [QA1b scope](quotation-own-scope-qa1b.md),
 [record access design](quotation-record-access-design.md), and
 [storage and locking proposal](quotation-record-access-storage.md).
+
+## Barrier scope, retry, rollback and the activation gate (Agent B review follow-up)
+
+- **Column-aware `users` barrier.** The `users` table is fenced on INSERT, DELETE and TRUNCATE and on an UPDATE that SETS `company_id`, `status` or
+  `authorization_generation` (`BEFORE UPDATE OF …`). A sign-in (`last_login_at`), remember token, name or password write never takes the all-company lock and never
+  advances a generation, so a login in one tenant cannot queue behind, or stall, another tenant's protected read or issue. Every other fenced table is still fenced on
+  any write. Tests: a sign-in neither bumps nor waits (two sessions, with a mutation's `lockAll` and a reader's `lock` open); a status or membership change still does.
+- **Deadlock / serialisation victims.** `QuotationOperation::run` restarts the WHOLE operation (fence, authority in the subject lock, receipt look-up, work) up to
+  `DEADLOCK_RETRIES` times on SQLSTATE 40P01 / 40001, only as the outermost transaction; inside a caller's transaction the failure returns to the caller.
+- **New writers.** An architecture-style test in `CompanyAccessFenceTest` fails when a table with a foreign key to roles, permissions, organisation units or scope limits
+  is neither behind the barrier nor named in its exempt list with the reason it cannot change a quotation access decision.
+- **Rollback is one-way once used.** Every fenced write advances a generation, so after the first real security write the barrier migrations refuse `down()`
+  ("requires a separately approved backout"). That is deliberate: dropping the barrier while evidence of its use exists would hide invalidations. A backout needs its own
+  approved plan (disable activation first, then remove the triggers under an exclusive lock).
+- **Pre-activation gate (before any holder recipe activates quotation duties).** The barrier serialises security and family writes across ALL companies. Before activation
+  the owner needs measurements, not a claim: set a `lock_timeout` for the barrier statements and for protected readers, measure the write and read latency and the lock-wait
+  distribution under a realistic mixed load (logins, member/role edits, drafts, lists, issues), and confirm that a security write in one tenant does not breach the other
+  tenants' latency budget. If it does, the next step is a per-company barrier with a proven ordering rule, not a longer timeout.

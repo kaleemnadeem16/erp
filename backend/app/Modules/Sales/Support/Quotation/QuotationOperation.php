@@ -8,8 +8,11 @@ use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Support\Scope\CompanyAccessFence;
 use Closure;
+use Illuminate\Database\DeadlockException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use PDOException;
+use Throwable;
 
 /**
  * Runs one governed quotation operation exactly once per (company, actor, key), following the CRM convention (`CrmOperation`): the same key with the same
@@ -19,6 +22,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class QuotationOperation
 {
+    /** Whole-operation restarts after a deadlock or serialisation failure victim (the outermost transaction only). */
+    public const DEADLOCK_RETRIES = 2;
+
     public const KEY_MAX = 85;
 
     public function __construct(private readonly QuotationOperationReceipts $receipts, private readonly CompanyAccessFence $accessFence) {}
@@ -64,7 +70,26 @@ final class QuotationOperation
                 if ($attempt >= 1 || ! str_contains($race->getMessage(), 'sales_quotation_receipts_key_unique')) {
                     throw $race;
                 }
+            } catch (PDOException $failure) {
+                // A deadlock or serialisation failure aborted this attempt (PostgreSQL chose it as the victim). Restart the WHOLE operation — the fence, the authority check in
+                // lockSubject, the receipt look-up and the work all run again from the start — but only as the outermost transaction: inside a caller's, the aborted transaction
+                // cannot continue, so the failure goes back to the caller.
+                if (! self::isConcurrencyVictim($failure) || $attempt >= self::DEADLOCK_RETRIES || DB::transactionLevel() > 0) {
+                    throw $failure;
+                }
             }
         }
+    }
+
+    /** A deadlock (40P01) or serialisation failure (40001), also when Laravel has wrapped it in a DeadlockException on leaving a nested transaction. */
+    private static function isConcurrencyVictim(Throwable $failure): bool
+    {
+        for ($cause = $failure; $cause !== null; $cause = $cause->getPrevious()) {
+            if ($cause instanceof PDOException && in_array((string) ($cause->errorInfo[0] ?? ''), ['40P01', '40001'], true)) {
+                return true;
+            }
+        }
+
+        return $failure instanceof DeadlockException;
     }
 }
