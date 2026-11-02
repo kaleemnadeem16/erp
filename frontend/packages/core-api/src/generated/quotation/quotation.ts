@@ -23,9 +23,17 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  IssueQuotationRequest,
   QuotationsEditable200,
   QuotationsIndex200,
   QuotationsIndexParams,
+  QuotationsIssue200,
+  QuotationsIssue201,
+  QuotationsIssue404,
+  QuotationsIssue409,
+  QuotationsIssueHeaders,
+  QuotationsIssueReadiness200,
+  QuotationsIssued200,
   QuotationsPreview200,
   QuotationsShow200,
   QuotationsStore200,
@@ -1241,6 +1249,649 @@ export function useQuotationsPreview<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getQuotationsPreviewQueryOptions(revision, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Whether the draft could be issued now: named blockers only (codes and scope, never an amount). Needs prepare with the independent view; both STAGED
+ */
+export type quotationsIssueReadinessResponse200 = {
+  data: QuotationsIssueReadiness200;
+  status: 200;
+};
+
+export type quotationsIssueReadinessResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsIssueReadinessResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsIssueReadinessResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsIssueReadinessResponseSuccess =
+  quotationsIssueReadinessResponse200 & {
+    headers: Headers;
+  };
+export type quotationsIssueReadinessResponseError = (
+  | quotationsIssueReadinessResponse401
+  | quotationsIssueReadinessResponse403
+  | quotationsIssueReadinessResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsIssueReadinessResponse =
+  | quotationsIssueReadinessResponseSuccess
+  | quotationsIssueReadinessResponseError;
+
+export const getQuotationsIssueReadinessUrl = (revision: number) => {
+  return `/v1/quotations/${revision}/issue-readiness`;
+};
+
+export const quotationsIssueReadiness = async (
+  revision: number,
+  options?: RequestInit,
+): Promise<quotationsIssueReadinessResponse> => {
+  return fetchClient<quotationsIssueReadinessResponse>(
+    getQuotationsIssueReadinessUrl(revision),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getQuotationsIssueReadinessQueryKey = (revision?: number) => {
+  return [`/v1/quotations/${revision}/issue-readiness`] as const;
+};
+
+export const getQuotationsIssueReadinessQueryOptions = <
+  TData = Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getQuotationsIssueReadinessQueryKey(revision);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof quotationsIssueReadiness>>
+  > = () => quotationsIssueReadiness(revision, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!revision,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QuotationsIssueReadinessQueryResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsIssueReadiness>>
+>;
+export type QuotationsIssueReadinessQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQuotationsIssueReadiness<
+  TData = Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsIssueReadiness>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsIssueReadiness<
+  TData = Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsIssueReadiness>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsIssueReadiness<
+  TData = Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary Whether the draft could be issued now: named blockers only (codes and scope, never an amount). Needs prepare with the independent view; both STAGED
+ */
+
+export function useQuotationsIssueReadiness<
+  TData = Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssueReadiness>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQuotationsIssueReadinessQueryOptions(
+    revision,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Issues the draft the caller reviewed at `expected_generation`: the official number is allocated and the terms are frozen. Needs issue with the independent view;
+both STAGED. An exact retry with the same Idempotency-Key replays the original outcome (200, header Idempotency-Replayed: true); a first success is 201
+ */
+export type quotationsIssueResponse200 = {
+  data: QuotationsIssue200;
+  status: 200;
+};
+
+export type quotationsIssueResponse201 = {
+  data: QuotationsIssue201;
+  status: 201;
+};
+
+export type quotationsIssueResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsIssueResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsIssueResponse404 = {
+  data: QuotationsIssue404;
+  status: 404;
+};
+
+export type quotationsIssueResponse409 = {
+  data: QuotationsIssue409;
+  status: 409;
+};
+
+export type quotationsIssueResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsIssueResponseSuccess = (
+  quotationsIssueResponse200 | quotationsIssueResponse201
+) & {
+  headers: Headers;
+};
+export type quotationsIssueResponseError = (
+  | quotationsIssueResponse401
+  | quotationsIssueResponse403
+  | quotationsIssueResponse404
+  | quotationsIssueResponse409
+  | quotationsIssueResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsIssueResponse =
+  quotationsIssueResponseSuccess | quotationsIssueResponseError;
+
+export const getQuotationsIssueUrl = (revision: number) => {
+  return `/v1/quotations/${revision}/issue`;
+};
+
+export const quotationsIssue = async (
+  revision: number,
+  issueQuotationRequest: IssueQuotationRequest,
+  headers: QuotationsIssueHeaders,
+  options?: RequestInit,
+): Promise<quotationsIssueResponse> => {
+  return fetchClient<quotationsIssueResponse>(getQuotationsIssueUrl(revision), {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...headers,
+      ...options?.headers,
+    },
+    body: JSON.stringify(issueQuotationRequest),
+  });
+};
+
+export const getQuotationsIssueMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsIssue404
+    | QuotationsIssue409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof quotationsIssue>>,
+    TError,
+    {
+      revision: number;
+      data: IssueQuotationRequest;
+      headers: QuotationsIssueHeaders;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof quotationsIssue>>,
+  TError,
+  {
+    revision: number;
+    data: IssueQuotationRequest;
+    headers: QuotationsIssueHeaders;
+  },
+  TContext
+> => {
+  const mutationKey = ["quotationsIssue"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof quotationsIssue>>,
+    {
+      revision: number;
+      data: IssueQuotationRequest;
+      headers: QuotationsIssueHeaders;
+    }
+  > = (props) => {
+    const { revision, data, headers } = props ?? {};
+
+    return quotationsIssue(revision, data, headers, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QuotationsIssueMutationResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsIssue>>
+>;
+export type QuotationsIssueMutationBody = IssueQuotationRequest;
+export type QuotationsIssueMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | QuotationsIssue404
+  | QuotationsIssue409
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Issues the draft the caller reviewed at `expected_generation`: the official number is allocated and the terms are frozen. Needs issue with the independent view;
+both STAGED. An exact retry with the same Idempotency-Key replays the original outcome (200, header Idempotency-Replayed: true); a first success is 201
+ */
+export const useQuotationsIssue = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsIssue404
+    | QuotationsIssue409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof quotationsIssue>>,
+      TError,
+      {
+        revision: number;
+        data: IssueQuotationRequest;
+        headers: QuotationsIssueHeaders;
+      },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof quotationsIssue>>,
+  TError,
+  {
+    revision: number;
+    data: IssueQuotationRequest;
+    headers: QuotationsIssueHeaders;
+  },
+  TContext
+> => {
+  const mutationOptions = getQuotationsIssueMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary The issued quotation's official number and frozen header terms; totals only for holders of prepare or issue on that revision. A draft is not found here
+ */
+export type quotationsIssuedResponse200 = {
+  data: QuotationsIssued200;
+  status: 200;
+};
+
+export type quotationsIssuedResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsIssuedResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsIssuedResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsIssuedResponseSuccess = quotationsIssuedResponse200 & {
+  headers: Headers;
+};
+export type quotationsIssuedResponseError = (
+  | quotationsIssuedResponse401
+  | quotationsIssuedResponse403
+  | quotationsIssuedResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsIssuedResponse =
+  quotationsIssuedResponseSuccess | quotationsIssuedResponseError;
+
+export const getQuotationsIssuedUrl = (revision: number) => {
+  return `/v1/quotations/${revision}/issued`;
+};
+
+export const quotationsIssued = async (
+  revision: number,
+  options?: RequestInit,
+): Promise<quotationsIssuedResponse> => {
+  return fetchClient<quotationsIssuedResponse>(
+    getQuotationsIssuedUrl(revision),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getQuotationsIssuedQueryKey = (revision?: number) => {
+  return [`/v1/quotations/${revision}/issued`] as const;
+};
+
+export const getQuotationsIssuedQueryOptions = <
+  TData = Awaited<ReturnType<typeof quotationsIssued>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssued>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getQuotationsIssuedQueryKey(revision);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof quotationsIssued>>
+  > = () => quotationsIssued(revision, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!revision,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof quotationsIssued>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QuotationsIssuedQueryResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsIssued>>
+>;
+export type QuotationsIssuedQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQuotationsIssued<
+  TData = Awaited<ReturnType<typeof quotationsIssued>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssued>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsIssued>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsIssued>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsIssued<
+  TData = Awaited<ReturnType<typeof quotationsIssued>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssued>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsIssued>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsIssued>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsIssued<
+  TData = Awaited<ReturnType<typeof quotationsIssued>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssued>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary The issued quotation's official number and frozen header terms; totals only for holders of prepare or issue on that revision. A draft is not found here
+ */
+
+export function useQuotationsIssued<
+  TData = Awaited<ReturnType<typeof quotationsIssued>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIssued>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQuotationsIssuedQueryOptions(revision, options);
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

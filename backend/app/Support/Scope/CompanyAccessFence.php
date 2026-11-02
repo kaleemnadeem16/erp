@@ -33,9 +33,13 @@ final class CompanyAccessFence
         }
 
         $company = app(CompanyContext::class)->id();
-        DB::table('company_access_generations')->insertOrIgnore(['company_id' => $company]);
-        $query = DB::table('company_access_generations')->where('company_id', $company);
-        $row = ($exclusive ? $query->lockForUpdate() : $query->sharedLock())->firstOrFail();
+        $query = fn () => DB::table('company_access_generations')->where('company_id', $company);
+        $row = ($exclusive ? $query()->lockForUpdate() : $query()->sharedLock())->first();
+        if ($row === null) {
+            // Only the first protected read of a company creates its barrier row; every later read is a pure locking SELECT, never a write statement.
+            DB::table('company_access_generations')->insertOrIgnore(['company_id' => $company]);
+            $row = ($exclusive ? $query()->lockForUpdate() : $query()->sharedLock())->firstOrFail();
+        }
 
         return (object) ['generation' => (int) $row->generation, 'organisation_generation' => (int) $row->organisation_generation,
             'capability_generation' => (int) $row->capability_generation];

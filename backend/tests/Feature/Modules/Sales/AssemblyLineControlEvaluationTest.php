@@ -24,6 +24,8 @@ use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\AvcoPoolStatus;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Sales\Actions\EvaluateAssemblyLineControls;
+use App\Modules\Sales\Models\QuotationFamily;
+use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
 use App\Modules\Sales\Support\Authority\SalesDuty;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
@@ -32,6 +34,7 @@ use App\Modules\Sales\Support\Financial\Controls\ControlMode;
 use App\Modules\Sales\Support\Financial\Controls\NetControl;
 use App\Modules\Sales\Support\Financial\Controls\NetControlKind;
 use App\Modules\Sales\Support\Financial\Controls\NetControlSet;
+use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\Financial\Controls\UnavailableAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\FinancialResult;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
@@ -77,6 +80,9 @@ class AssemblyLineControlEvaluationTest extends TestCase
 
     private User $seller;
 
+    /** A quotation revision the evaluation is for (a legacy, unresolved family: reachable by an ALL holder only). */
+    private int $revision;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -97,6 +103,12 @@ class AssemblyLineControlEvaluationTest extends TestCase
         $this->seller = User::factory()->create();
         $this->seller->givePermissionTo(self::PREPARE);
         $this->activate();
+        $this->revision = $this->revisionOf(QuotationFamily::create(['created_by' => $this->seller->id]));
+    }
+
+    private function revisionOf(QuotationFamily $family): int
+    {
+        return (int) QuotationRevision::create(['family_id' => $family->id, 'currency_id' => $this->pkr->id, 'created_by' => $family->created_by])->id;
     }
 
     private function activate(): void
@@ -144,11 +156,11 @@ class AssemblyLineControlEvaluationTest extends TestCase
     }
 
     /** @return array{outcome: string, blocks_issue: bool, requires_review: bool, controls: list<array{ref: string, outcome: string, blocks_issue: bool}>} */
-    private function evaluate(NetControlSet $set, ?int $versionId = null, string $quantity = '3', string $net = '4000.0000', ?User $by = null, ?int $currencyId = null): array
+    private function evaluate(NetControlSet $set, ?int $versionId = null, string $quantity = '3', string $net = '4000.0000', ?User $by = null, ?int $currencyId = null, ?int $revision = null): array
     {
         $versionId ??= $this->costedVersion()->id;
 
-        return app(EvaluateAssemblyLineControls::class)($by ?? $this->seller, $versionId, $quantity, $net, $currencyId ?? $this->pkr->id, $this->today(), $set)->toArray();
+        return app(EvaluateAssemblyLineControls::class)($by ?? $this->seller, $revision ?? $this->revision, $versionId, $quantity, $net, $currencyId ?? $this->pkr->id, $this->today(), $set)->toArray();
     }
 
     /** @return array<string, string> ref => outcome */
@@ -280,6 +292,48 @@ class AssemblyLineControlEvaluationTest extends TestCase
         }
     }
 
+    public function test_an_own_preparer_evaluates_only_for_the_quotations_they_are_responsible_for(): void
+    {
+        // QA3: OWN = the current responsible owner may act on their own records. A family the OWN preparer owns (NATIVE baseline) is reached; the
+        // legacy unresolved family and a family someone else owns are refused, exactly like an unknown revision.
+        $version = $this->costedVersion()->id;
+        $own = User::factory()->create();
+        $own->givePermissionTo(self::PREPARE);
+        AccessScopeLimit::create(['user_id' => $own->id, 'permission' => self::PREPARE, 'scope' => 'OWN']);
+        $owned = $this->revisionOf(QuotationFamily::create(['created_by' => $own->id, 'responsible_owner_id' => $own->id, 'access_baseline_state' => 'NATIVE', 'ownership_generation' => 1]));
+        $others = $this->revisionOf(QuotationFamily::create(['created_by' => $this->seller->id, 'responsible_owner_id' => $this->seller->id, 'access_baseline_state' => 'NATIVE', 'ownership_generation' => 1]));
+        $set = $this->set($this->control('c', NetControlKind::Floor, '1'));
+
+        $this->assertSame('PASS', $this->evaluate($set, $version, by: $own, revision: $owned)['outcome']);
+        foreach ([$others, $this->revision, 999999] as $notTheirs) {
+            $this->expectRefusalOf(fn () => $this->evaluate($set, $version, by: $own, revision: $notTheirs));
+        }
+        // The unrestricted (ALL) seller reaches every family of the company, including the unresolved one and one someone else owns.
+        foreach ([$owned, $others, $this->revision] as $any) {
+            $this->assertSame('PASS', $this->evaluate($set, $version, revision: $any)['outcome']);
+        }
+        // The cost-evidence authority asks the same policy for the person: OWN and ALL holders reach the workflow, a limited-to-units one does not.
+        $authority = new QuotationControlEvaluationAuthority;
+        $units = User::factory()->create();
+        $units->givePermissionTo(self::PREPARE);
+        AccessScopeLimit::create(['user_id' => $units->id, 'permission' => self::PREPARE, 'scope' => 'MY_UNITS']);
+        $this->assertTrue($authority->permits($own));
+        $this->assertTrue($authority->permits($this->seller));
+        $this->assertFalse($authority->permits($units));
+    }
+
+    private function expectRefusalOf(\Closure $call): void
+    {
+        try {
+            $call();
+        } catch (AuthorizationException|DomainInvariantException) {
+            $this->addToAssertionCount(1);
+
+            return;
+        }
+        $this->fail('Expected the evaluation to be refused.');
+    }
+
     public function test_a_preparer_limited_to_my_units_is_refused(): void
     {
         $version = $this->costedVersion()->id;
@@ -330,9 +384,11 @@ class AssemblyLineControlEvaluationTest extends TestCase
         $outsider->givePermissionTo(Permission::findOrCreate(self::PREPARE, 'web'));
         $set = new NetControlSet($company, 1, [new NetControl('x-margin', 1, NetControlKind::MinMarginAmount, ControlMode::Mandatory, '1', $this->pkr->id)]);
         $this->activate();
+        // The outsider evaluates for a quotation of their OWN company (created under the switched context); only the Assembly version is foreign.
+        $ownRevision = $this->revisionOf(QuotationFamily::create(['created_by' => $outsider->id]));
 
-        $foreign = app(EvaluateAssemblyLineControls::class)($outsider, $version, '3', '4000.0000', $this->pkr->id, $this->today(), $set)->toArray();
-        $missing = app(EvaluateAssemblyLineControls::class)($outsider, 999999, '3', '4000.0000', $this->pkr->id, $this->today(), $set)->toArray();
+        $foreign = app(EvaluateAssemblyLineControls::class)($outsider, $ownRevision, $version, '3', '4000.0000', $this->pkr->id, $this->today(), $set)->toArray();
+        $missing = app(EvaluateAssemblyLineControls::class)($outsider, $ownRevision, 999999, '3', '4000.0000', $this->pkr->id, $this->today(), $set)->toArray();
 
         $this->assertSame($missing, $foreign);
         $this->assertSame(['x-margin' => 'UNEVALUABLE'], $this->outcomes($foreign));
@@ -353,7 +409,7 @@ class AssemblyLineControlEvaluationTest extends TestCase
         $usd = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'Dollar', 'symbol' => '$', 'decimal_places' => 2]);
         $fail = new NetControlSet(1, 1, [new NetControl('usd-margin', 1, NetControlKind::MinMarginAmount, ControlMode::Mandatory, '10', $usd->id)]);
         $pass = new NetControlSet(1, 1, [new NetControl('usd-margin', 1, NetControlKind::MinMarginAmount, ControlMode::Mandatory, '8', $usd->id)]);
-        $run = fn (NetControlSet $set): array => app(EvaluateAssemblyLineControls::class)($this->seller, $version, '3', '20.0000', $usd->id, $this->today(), $set)->toArray();
+        $run = fn (NetControlSet $set): array => app(EvaluateAssemblyLineControls::class)($this->seller, $this->revision, $version, '3', '20.0000', $usd->id, $this->today(), $set)->toArray();
 
         $without = $run($fail);
         // The rate master stores foreign -> company base: 1 USD = 200 PKR, so the 2348.3331 PKR cost is about 11.74 USD against a 20 USD net (margin about 8.26 USD).
