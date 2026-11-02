@@ -15,6 +15,7 @@ use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\OpportunityOutcome;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\DraftHeader;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationAssociation;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
@@ -22,6 +23,8 @@ use App\Modules\Sales\Support\Quotation\QuotationOwnership;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyContext;
+use App\Support\Scope\CompanyAccessFence;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Starts a quotation: a new family with its first DRAFT revision. Nothing is priced, numbered or issued, and a draft may be incomplete — the recipient Party,
@@ -36,7 +39,17 @@ final class CreateQuotationDraft
     /** @param  array<string, mixed>  $input  recipient_party_id, currency_id, pricing_date, tax_estimate_date, valid_through_local_date, opportunity_id */
     public function __invoke(User $actor, ?string $requestKey, array $input): QuotationDraftOutcome
     {
-        SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'prepare a quotation');
+        return DB::transaction(function () use ($actor, $requestKey, $input): QuotationDraftOutcome {
+            app(CompanyAccessFence::class)->lockAll();
+
+            return $this->create($actor, $requestKey, $input);
+        });
+    }
+
+    /** @param array<string, mixed> $input */
+    private function create(User $actor, ?string $requestKey, array $input): QuotationDraftOutcome
+    {
+        DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_PREPARE]));
         $context = SalesActorContext::forUser($actor, 'quotation.create_draft');
 
         $header = DraftHeader::parse($input, ['opportunity_id']);
@@ -58,7 +71,11 @@ final class CreateQuotationDraft
 
         $outcome = $this->operations->run(
             $context, 'quotation.create_draft', $requestKey, ['header' => $header, 'opportunity_id' => $opportunityId],
-            static fn () => null,
+            function () use ($actor): null {
+                app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_PREPARE]);
+
+                return null;
+            },
             function () use ($actor, $header, $opportunityId): array {
                 // The creator is the family's first owner (a suspended creator cannot be), recorded as its INITIAL ownership event in this same transaction.
                 $owner = QuotationOwnership::eligibleOwner($actor->id);
@@ -76,6 +93,7 @@ final class CreateQuotationDraft
 
                 return QuotationDraftOutcome::result($family->id, $revision->id, $revision->input_generation);
             },
+            fn (array $result) => app(QuotationAccess::class)->requireFamily($actor, (int) $result['family_id'], [PermissionVocabulary::QUOTATION_PREPARE]),
         );
 
         return QuotationDraftOutcome::fromReceipt($outcome['result'], $outcome['replayed']);

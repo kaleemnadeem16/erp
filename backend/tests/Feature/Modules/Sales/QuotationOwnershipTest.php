@@ -103,7 +103,7 @@ class QuotationOwnershipTest extends TestCase
         $this->leaver->givePermissionTo([self::PREPARE]);
         $before = $this->snapshot();
 
-        $this->assertSame('OWNER_NOT_ELIGIBLE', $this->refusal(fn () => app(CreateQuotationDraft::class)($this->leaver, $this->key(), ['recipient_party_id' => $this->prospect->id, 'pricing_date' => $this->today])));
+        $this->assertThrows(fn () => app(CreateQuotationDraft::class)($this->leaver, $this->key(), ['recipient_party_id' => $this->prospect->id, 'pricing_date' => $this->today]), AuthorizationException::class);
         $this->assertEquals($before, $this->snapshot());
         $this->assertSame(0, DB::table('quotation_families')->count());
     }

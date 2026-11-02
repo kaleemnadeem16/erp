@@ -30,7 +30,7 @@ final class ChangeQuotationAccessUnit
         $outcome = $this->operations->run(
             $context, 'quotation.change_access_unit', $requestKey,
             ['family_id' => $familyId, 'access_unit_id' => $unitId, 'expected_ownership_generation' => $expectedOwnershipGeneration, 'expected_access_generation' => $expectedAccessGeneration, 'reason' => $reason],
-            fn (): QuotationFamily => QuotationOwnership::lockFamily($familyId),
+            fn (): QuotationFamily => QuotationOwnership::lockFamily($familyId, $actor),
             function (QuotationFamily $family) use ($actor, $unitId, $expectedOwnershipGeneration, $expectedAccessGeneration, $reason): array {
                 QuotationOwnership::requireResolved($family);
                 QuotationOwnership::requireGenerations($family, $expectedOwnershipGeneration, $expectedAccessGeneration);

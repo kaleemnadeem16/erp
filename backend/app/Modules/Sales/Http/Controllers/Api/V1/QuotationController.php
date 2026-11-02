@@ -7,11 +7,13 @@ namespace App\Modules\Sales\Http\Controllers\Api\V1;
 use App\Exceptions\DomainInvariantException;
 use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
+use App\Modules\Sales\Actions\ListQuotations;
 use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Actions\ReadQuotationDraft;
 use App\Modules\Sales\Actions\ReadQuotationDraftForEdit;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
 use App\Modules\Sales\Http\Requests\Quotation\EditQuotationDraftRequest;
+use App\Modules\Sales\Http\Requests\Quotation\IndexQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\PreviewQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\ShowQuotationDraftRequest;
 use App\Modules\Sales\Http\Requests\Quotation\StoreQuotationDraftRequest;
@@ -20,6 +22,7 @@ use App\Modules\Sales\Http\Resources\QuotationDraftEditableResource;
 use App\Modules\Sales\Http\Resources\QuotationDraftResource;
 use App\Modules\Sales\Http\Resources\QuotationDraftWriteResource;
 use App\Modules\Sales\Http\Resources\QuotationPreviewResource;
+use App\Modules\Sales\Http\Resources\QuotationSummaryResource;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationRefusalStatus;
@@ -29,32 +32,30 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class QuotationController extends Controller
 {
-    /**
-     * A quotation that is not in the caller's company is indistinguishable from one that does not exist: 404, never a refusal that says it is there. The lookup
-     * runs after the Request's capability guard, so an unauthorised caller learns nothing from it, and the company scope on the model does the filtering.
-     */
-    private function revisionId(int $revision): int
+    /** List safe quotation identities visible to the current view holder. */
+    public function index(IndexQuotationRequest $request, ListQuotations $list): AnonymousResourceCollection
     {
-        return QuotationRevision::query()->findOrFail($revision)->id;
+        return QuotationSummaryResource::collection($list($request->user(), $request->validated()));
     }
 
     public function show(ShowQuotationDraftRequest $request, int $revision, ReadQuotationDraft $read): QuotationDraftResource
     {
-        return new QuotationDraftResource($read($request->user(), $this->revisionId($revision)));
+        return new QuotationDraftResource($this->refusing(fn () => $read($request->user(), $revision)));
     }
 
     /** The draft as a form needs it: header and lines in the shape the PATCH accepts, at the generation to send back. For preparers (`sales.quotation.prepare`), not viewers. */
     public function editable(EditQuotationDraftRequest $request, int $revision, ReadQuotationDraftForEdit $edit): QuotationDraftEditableResource
     {
-        return new QuotationDraftEditableResource($edit($request->user(), $this->revisionId($revision)));
+        return new QuotationDraftEditableResource($this->refusing(fn () => $edit($request->user(), $revision)));
     }
 
     public function preview(PreviewQuotationRequest $request, int $revision, PreviewQuotation $preview): QuotationPreviewResource
     {
-        return new QuotationPreviewResource($preview($request->user(), $this->revisionId($revision)));
+        return new QuotationPreviewResource($this->refusing(fn () => $preview($request->user(), $revision)));
     }
 
     /**
@@ -80,7 +81,7 @@ class QuotationController extends Controller
     #[Response(409, 'The Idempotency-Key was already used for a different request (reason_code REQUEST_KEY_REUSED).', type: 'array{message: string, reason_code: string, errors: array<string, list<string>>}')]
     public function update(UpdateQuotationDraftRequest $request, int $revision, UpdateQuotationDraft $update): JsonResponse
     {
-        $id = $this->revisionId($revision);
+        $id = $revision;
         $changes = $request->json()->all();
         unset($changes['expected_generation']);
         $outcome = $this->refusing(fn (): QuotationDraftOutcome => $update($request->user(), $id, $request->integer('expected_generation'), $request->header('Idempotency-Key'), $changes));
@@ -92,9 +93,12 @@ class QuotationController extends Controller
      * Gives a refusal its documented status (QuotationRefusalStatus): 404 when the quotation is not there, 409 when the key belongs to a different request. Every other
      * refusal is rethrown to the global 422 renderer, which already carries the `reason_code`.
      *
-     * @param  Closure(): QuotationDraftOutcome  $work
+     * @template T
+     *
+     * @param  Closure(): T  $work
+     * @return T
      */
-    private function refusing(Closure $work): QuotationDraftOutcome
+    private function refusing(Closure $work): mixed
     {
         try {
             return $work();

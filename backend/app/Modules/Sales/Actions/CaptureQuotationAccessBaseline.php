@@ -35,7 +35,7 @@ final class CaptureQuotationAccessBaseline
         $outcome = $this->operations->run(
             $context, 'quotation.capture_access_baseline', $requestKey,
             ['family_id' => $familyId, 'owner_id' => $ownerId, 'access_unit_id' => $unitId, 'source' => $source, 'approval' => $approval, 'reason' => $reason],
-            fn (): QuotationFamily => QuotationOwnership::lockFamily($familyId),
+            fn (): QuotationFamily => QuotationOwnership::lockFamily($familyId, $actor),
             function (QuotationFamily $family) use ($actor, $ownerId, $unitId, $source, $approval, $reason): array {
                 if ($family->access_baseline_state === 'NATIVE') {
                     throw QuotationRefusal::make(QuotationRefusal::BASELINE_NOT_APPLICABLE, 'This quotation was created with its owner on record; there is no legacy baseline to capture.', 'family_id');

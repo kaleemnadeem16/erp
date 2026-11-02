@@ -94,17 +94,17 @@ class QuotationDraftReviewApiTest extends TestCase
         $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertForbidden();
     }
 
-    public function test_a_prepare_holder_previews_without_cost_and_never_issue_ready(): void
+    public function test_a_view_and_prepare_holder_previews_without_cost_and_never_issue_ready(): void
     {
         $this->activate([self::VIEW, self::PREPARE]);
         $preparer = User::factory()->create();
-        $preparer->givePermissionTo(self::PREPARE);
+        $preparer->givePermissionTo([self::PREPARE, self::VIEW]);
         Sanctum::actingAs($preparer);
 
         $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertOk()
             ->assertJsonPath('data.authority', 'PREVIEW_ONLY')->assertJsonPath('data.issue_ready', false)->assertJsonPath('data.tax.certainty', 'UNKNOWN')
             ->assertJsonPath('data.controls.evaluated', 0);
-        $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertForbidden();
+        $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertOk();
     }
 
     public function test_an_unknown_revision_is_not_found(): void
@@ -117,7 +117,7 @@ class QuotationDraftReviewApiTest extends TestCase
         $this->getJson('/api/v1/quotations/abc')->assertNotFound();
     }
 
-    public function test_another_companys_quotation_is_not_found(): void
+    public function test_an_actor_from_another_company_is_refused_before_lookup(): void
     {
         $this->activate([self::VIEW, self::PREPARE]);
         Sanctum::actingAs($this->preparer);
@@ -133,10 +133,9 @@ class QuotationDraftReviewApiTest extends TestCase
         });
 
         config(['app.debug' => false]);
-        // The refusal is the framework's own not-found, identical to an unknown id apart from the id the caller sent; nothing says the quotation exists elsewhere.
-        $unknown = $this->getJson('/api/v1/quotations/999999')->assertNotFound()->json('message');
-        $other = $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertNotFound()->json('message');
-        $this->assertSame($unknown, str_replace((string) $this->revisionId, '999999', $other));
-        $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertNotFound();
+        // The actor does not belong to this company, so both IDs fail at the capability boundary.
+        $this->getJson('/api/v1/quotations/999999')->assertForbidden();
+        $this->getJson("/api/v1/quotations/{$this->revisionId}")->assertForbidden();
+        $this->getJson("/api/v1/quotations/{$this->revisionId}/preview")->assertForbidden();
     }
 }

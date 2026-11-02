@@ -6,6 +6,7 @@ namespace Database\Seeders\Demo\Sales;
 
 use App\Models\Currency;
 use App\Models\User;
+use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
@@ -59,6 +60,13 @@ final class QuotationDraftsDemoSeeder extends Seeder
         }
         $preparer = $this->demoMember(self::PREPARER, 'Demo Quotation Preparer');
         $preparer->givePermissionTo([Sales::QUOTATION_PREPARE, Sales::QUOTATION_VIEW, Sales::PIPELINE_VIEW]);
+        // The dedicated demo persona exercises OWN, while the local admin remains unrestricted.
+        foreach ([Sales::QUOTATION_PREPARE, Sales::QUOTATION_VIEW] as $duty) {
+            AccessScopeLimit::query()->firstOrCreate(
+                ['user_id' => $preparer->id, 'role_id' => null, 'permission' => $duty],
+                ['scope' => AccessScopeLimit::OWN],
+            );
+        }
 
         DB::transaction(function () use ($preparer): void {
             $alpha = Party::query()->where('code', 'cus-alpha')->firstOrFail();
