@@ -7,14 +7,20 @@ use App\Models\User;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Numbering\Support\NumberingContext;
 use App\Modules\Sales\Actions\IssueQuotation;
+use App\Modules\Sales\Actions\PublishQuotationControlSet;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Authority\DutyStatus;
+use App\Modules\Sales\Support\Authority\SalesDuty;
+use App\Modules\Sales\Support\Authority\SalesDutyManifest;
+use App\Modules\Sales\Support\PermissionVocabulary;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
 use Tests\TestCase;
 
@@ -247,5 +253,54 @@ class QuotationIssueCommitTest extends TestCase
         $this->assertSame([0, 'DRAFT'], [DB::table('quotation_issues')->count(), DB::table('quotation_revisions')->where('id', $revision->id)->value('state')]);
         // With the writer gone, the same request issues.
         $this->assertSame('QTN-00001', app(IssueQuotation::class)($this->checker, $revision->id, $generation, 'fenced-key')->officialNumber);
+    }
+
+    public function test_issue_holds_the_financial_policy_fence_so_a_control_set_or_rounding_writer_cannot_slip_in(): void
+    {
+        $revision = $this->preparedDraft();
+        $generation = QuotationRevision::findOrFail($revision->id)->input_generation;
+
+        // A policy writer (it takes the company row exclusively) holds it in a second real session: the issue waits at the fence and writes nothing.
+        $other = DB::connection('session_b');
+        $other->statement('BEGIN');
+        $other->select('select id from companies where id = 1 for update');
+        DB::statement("SET lock_timeout = '300ms'");
+        try {
+            app(IssueQuotation::class)($this->checker, $revision->id, $generation, 'policy-key');
+            $this->fail('Issue must wait on the financial policy fence.');
+        } catch (QueryException $e) {
+            $this->assertSame('55P03', $e->errorInfo[0]);
+        } finally {
+            $other->statement('ROLLBACK');
+            DB::statement('RESET lock_timeout');
+        }
+        $this->assertSame(0, DB::table('quotation_issues')->count());
+
+        // And the other way: while an issue holds the fence (shared) a real control-set publication cannot commit underneath it.
+        $other->statement('BEGIN');
+        $other->select('select id from companies where id = 1 for share');
+        DB::statement("SET lock_timeout = '300ms'");
+        try {
+            app(PublishQuotationControlSet::class)($this->admin(), [['ref' => 'c', 'kind' => 'FLOOR', 'mode' => 'MANDATORY', 'limit' => '1', 'currency_id' => $revision->currency_id]], 'Changed during issue');
+            $this->fail('A control-set publication must wait for an issue in progress.');
+        } catch (QueryException $e) {
+            $this->assertSame('55P03', $e->errorInfo[0]);
+        } finally {
+            $other->statement('ROLLBACK');
+            DB::statement('RESET lock_timeout');
+        }
+    }
+
+    private function admin(): User
+    {
+        $admin = User::factory()->create();
+        Permission::findOrCreate(PermissionVocabulary::FINANCIAL_CONFIGURE, 'web');
+        $admin->givePermissionTo(PermissionVocabulary::FINANCIAL_CONFIGURE);
+        $duties = array_map(fn (SalesDuty $d): SalesDuty => $d->name === PermissionVocabulary::FINANCIAL_CONFIGURE
+            ? new SalesDuty($d->name, $d->class, DutyStatus::Active, $d->operation, $d->projection, $d->deliveryGate) : $d,
+            app(SalesDutyManifest::class)->all());
+        $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest($duties));
+
+        return $admin;
     }
 }

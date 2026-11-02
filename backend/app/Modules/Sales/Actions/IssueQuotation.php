@@ -88,6 +88,18 @@ final class IssueQuotation
         }
     }
 
+    /**
+     * The issue itself, for a caller that already holds the operation transaction, the revision lock and has judged the issuer's authority (the whole replacement).
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function issueLocked(User $actor, SalesActorContext $context, QuotationRevision $revision, int $expectedGeneration): array
+    {
+        return $this->issue($actor, $context, $revision, $expectedGeneration);
+    }
+
     /** @return array<string, mixed> */
     private function issue(User $actor, SalesActorContext $context, QuotationRevision $revision, int $expectedGeneration): array
     {
@@ -100,6 +112,9 @@ final class IssueQuotation
         if ($revision->input_generation !== $expectedGeneration) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_DRAFT_STALE, "The draft is at generation {$revision->input_generation}, not {$expectedGeneration}; review it again before issuing.", 'expected_generation');
         }
+        // The company row is the fence every Sales financial-policy writer takes exclusively (rounding policy, control set): holding it shared until this issue commits means the
+        // controls and policies judged below cannot be replaced between that judgement and the issue becoming official. Taken after the revision lock, before any policy read.
+        Company::query()->whereKey($this->company->id())->sharedLock()->firstOrFail();
         // Tax's writers serialise on this row until this issue commits: the tax judged below is the tax in force when the issue becomes official, not a second read that a
         // committing evidence writer could overtake. Taken after the revision lock and before any Tax read (Agent C's contract).
         $this->taxFence->lock();

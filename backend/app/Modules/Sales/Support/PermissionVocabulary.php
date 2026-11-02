@@ -70,6 +70,12 @@ final class PermissionVocabulary
     public const QUOTATION_ISSUE = 'sales.quotation.issue';
 
     /**
+     * Withdrawal of an issued, unaccepted quotation, and its whole replacement by a later revision (QL4/QL5). STAGED: `WithdrawQuotationOffer` and `IssueQuotationReplacement` exist
+     * and are guarded, but `SalesAccess` refuses every caller until the manifest activates it. Sensitive; not in `all()`.
+     */
+    public const QUOTATION_WITHDRAW = 'sales.quotation.withdraw';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */
