@@ -42,7 +42,10 @@ final class QuotationDemoSeeder extends Seeder
         $admin->givePermissionTo(self::DUTIES);
 
         $shipped = app(SalesDutyManifest::class);
-        app()->instance(SalesDutyManifest::class, $shipped->withActivated(self::DUTIES));
+        // Only what is still STAGED is switched on for the seed: with the local dev preview on, view and prepare are already ACTIVE and
+        // withActivated() rightly refuses to "activate" a non-staged duty (it used to abort the whole demo seed).
+        $staged = array_values(array_filter(self::DUTIES, fn (string $duty): bool => ! $shipped->isActive($duty)));
+        app()->instance(SalesDutyManifest::class, $staged === [] ? $shipped : $shipped->withActivated($staged));
         try {
             DB::transaction(fn () => $this->seed($admin));
         } finally {
