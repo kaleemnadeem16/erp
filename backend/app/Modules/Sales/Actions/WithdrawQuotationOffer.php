@@ -11,11 +11,10 @@ use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAcceptanceState;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationAvailability;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
 
 /**
  * The seller withdraws an issued, still available, unaccepted quotation revision (QL4), with a reason. It appends one disposition and edits nothing: the issue, its snapshot and its
@@ -39,12 +38,7 @@ final class WithdrawQuotationOffer
 
         $outcome = $this->operations->run(
             $context, 'quotation.withdraw', $requestKey, ['revision_id' => $revisionId, 'reason' => $reason],
-            function () use ($actor, $revisionId): QuotationRevision {
-                $this->authorise($actor);
-
-                return QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
-                    ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
-            },
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_WITHDRAW, PermissionVocabulary::QUOTATION_VIEW], true),
             function (QuotationRevision $revision) use ($actor, $reason): array {
                 $this->assertWithdrawable($revision);
                 QuotationDisposition::create(['family_id' => $revision->family_id, 'revision_id' => $revision->id, 'kind' => QuotationDisposition::WITHDRAWN, 'reason' => $reason, 'actor_id' => $actor->id]);
@@ -69,9 +63,7 @@ final class WithdrawQuotationOffer
 
     private function authorise(User $actor): void
     {
-        ActiveActor::require($actor, 'withdraw a quotation');
-        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_WITHDRAW, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to withdraw a quotation.');
-        }
+        // Capability and record access are judged inside the operation by QuotationAccess, under the company access fence; this is only the early refusal of a non-member.
+        ActiveActor::require($actor, 'use quotations');
     }
 }

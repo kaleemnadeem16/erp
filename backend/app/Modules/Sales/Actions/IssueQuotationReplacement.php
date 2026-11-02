@@ -10,11 +10,10 @@ use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationIssueOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
 
 /**
  * Issues a successor draft as the WHOLE replacement of its issued, available, unaccepted predecessor (QL5), in one transaction: the successor is issued exactly as `IssueQuotation`
@@ -40,11 +39,20 @@ final class IssueQuotationReplacement
             $context, 'quotation.issue_replacement', $requestKey,
             ['predecessor_revision_id' => $predecessorRevisionId, 'revision_id' => $revisionId, 'expected_generation' => $expectedGeneration, 'reason' => $reason],
             function () use ($actor, $predecessorRevisionId, $revisionId): QuotationRevision {
-                $this->authorise($actor);
-                // Both rows, in id order, so two replacements, a withdrawal and an issue can never wait on each other in a cycle.
-                $locked = QuotationRevision::query()->whereIn('id', [$predecessorRevisionId, $revisionId])->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+                // Both revisions, in id order, each through the exact duties and the record policy, so two replacements, a withdrawal and an issue can never wait on each other in a cycle.
+                $duties = [PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_WITHDRAW, PermissionVocabulary::QUOTATION_VIEW];
+                $locked = [];
+                foreach (array_unique([$predecessorRevisionId, $revisionId]) as $id) {
+                    $locked[$id] = $id;
+                }
+                ksort($locked);
+                $subject = null;
+                foreach ($locked as $id) {
+                    $row = app(QuotationAccess::class)->requireRevision($actor, $id, $duties, true);
+                    $subject = $id === $revisionId ? $row : $subject;
+                }
 
-                return $locked->get($revisionId) ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
+                return $subject;
             },
             function (QuotationRevision $revision) use ($actor, $context, $predecessorRevisionId, $expectedGeneration, $reason): array {
                 $predecessor = QuotationRevision::query()->find($predecessorRevisionId);
@@ -67,9 +75,7 @@ final class IssueQuotationReplacement
 
     private function authorise(User $actor): void
     {
-        ActiveActor::require($actor, 'replace a quotation');
-        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_WITHDRAW, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to replace a quotation.');
-        }
+        // Capability and record access are judged inside the operation by QuotationAccess, under the company access fence; this is only the early refusal of a non-member.
+        ActiveActor::require($actor, 'use quotations');
     }
 }

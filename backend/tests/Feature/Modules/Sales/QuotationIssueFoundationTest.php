@@ -45,12 +45,13 @@ class QuotationIssueFoundationTest extends TestCase
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate(PermissionVocabulary::QUOTATION_PREPARE, 'web');
+        Permission::findOrCreate(PermissionVocabulary::QUOTATION_VIEW, 'web');
         $pkr = Currency::firstOrCreate(['code' => 'PKR'], ['name' => 'Rupee', 'symbol' => 'Rs', 'decimal_places' => 2]);
         Company::findOrFail(1)->update(['base_currency_id' => $pkr->id]);
         $this->user = User::factory()->create();
-        $this->user->givePermissionTo(PermissionVocabulary::QUOTATION_PREPARE);
+        $this->user->givePermissionTo([PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW]);
         $this->party = Party::create(['code' => 'CUSTOMER', 'name' => 'Customer Ltd']);
-        $duties = array_map(fn (SalesDuty $duty): SalesDuty => $duty->name === PermissionVocabulary::QUOTATION_PREPARE
+        $duties = array_map(fn (SalesDuty $duty): SalesDuty => in_array($duty->name, [PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW], true)
             ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate) : $duty, SalesDutyManifest::shipped()->all());
         $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest($duties));
     }

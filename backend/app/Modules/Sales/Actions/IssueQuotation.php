@@ -22,15 +22,14 @@ use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\IssueAssessment;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationIssueAssessor;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationIssueOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Tax\Support\Quotation\QuotationTaxGenerationFence;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -68,12 +67,8 @@ final class IssueQuotation
             $context, 'quotation.issue', $requestKey, ['revision_id' => $revisionId, 'expected_generation' => $expectedGeneration],
             // Runs inside every attempt, before the receipt is read and before any work: a revocation or suspension that lands between a retry's attempts, or between the
             // check above and the lock, refuses the replay and the mutation alike.
-            function () use ($actor, $revisionId): QuotationRevision {
-                $this->authorise($actor);
-
-                return QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
-                ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
-            },
+            // Inside every attempt, after the company access fence and before the receipt is read: the exact duties and the record policy of THIS revision, 404 when it is not visible.
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW], true),
             fn (QuotationRevision $revision): array => $this->issue($actor, $context, $revision, $expectedGeneration),
         );
 
@@ -82,10 +77,8 @@ final class IssueQuotation
 
     private function authorise(User $actor): void
     {
-        ActiveActor::require($actor, 'issue a quotation');
-        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to issue a quotation.');
-        }
+        // Capability and record access are judged inside the operation by QuotationAccess, under the company access fence; this is only the early refusal of a non-member.
+        ActiveActor::require($actor, 'use quotations');
     }
 
     /**

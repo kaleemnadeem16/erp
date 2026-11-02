@@ -16,9 +16,8 @@ use App\Modules\Documents\Support\FieldType;
 use App\Modules\Documents\Support\ProjectionSchema;
 use App\Modules\Documents\Support\SectionSchema;
 use App\Modules\Sales\Models\QuotationIssue;
-use App\Modules\Sales\Models\QuotationRevision;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\SalesAccess;
 
 /**
@@ -120,13 +119,17 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
     private function issuedByActor(DocumentOperationContext $context): ?QuotationIssue
     {
         $actor = User::query()->find($context->actorId);
-        if ($actor === null || $context->audience !== self::AUDIENCE || ! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW)
-            || ActiveActor::current($actor) === null) {
+        if ($actor === null || $context->audience !== self::AUDIENCE || preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) !== 1) {
             return null;
         }
-        $revision = preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) === 1
-            ? QuotationRevision::query()->whereKey((int) $m[1])->where('state', 'ISSUED')->first() : null;
-        $issue = $revision === null ? null : QuotationIssue::query()->where('revision_id', $revision->id)->first();
+        // The same exact duties and record policy as the issue itself, under the company access fence it already holds (the freeze runs inside the issue transaction); anything
+        // else, including a call outside a transaction, is a denial.
+        try {
+            $revision = app(QuotationAccess::class)->requireRevision($actor, (int) $m[1], [PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW]);
+        } catch (\Throwable) {
+            return null;
+        }
+        $issue = $revision->state === 'ISSUED' ? QuotationIssue::query()->where('revision_id', $revision->id)->first() : null;
 
         return $issue !== null && $issue->issued_by === $actor->id ? $issue : null;
     }

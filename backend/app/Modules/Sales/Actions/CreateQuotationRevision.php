@@ -10,11 +10,11 @@ use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationAvailability;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
 
 /**
  * Starts a successor DRAFT of an issued revision (QL5): same family, the issued revision named as its explicit predecessor, and the offered scope carried over as inputs — the
@@ -33,12 +33,7 @@ final class CreateQuotationRevision
 
         $outcome = $this->operations->run(
             $context, 'quotation.create_revision', $requestKey, ['predecessor_revision_id' => $predecessorRevisionId],
-            function () use ($actor, $predecessorRevisionId): QuotationRevision {
-                $this->authorise($actor);
-
-                return QuotationRevision::query()->whereKey($predecessorRevisionId)->lockForUpdate()->first()
-                    ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'predecessor_revision_id');
-            },
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $predecessorRevisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE], true),
             fn (QuotationRevision $predecessor): array => $this->create($actor, $predecessor),
         );
 
@@ -74,7 +69,7 @@ final class CreateQuotationRevision
 
     private function authorise(User $actor): void
     {
-        ActiveActor::require($actor, 'revise a quotation');
-        SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'revise a quotation');
+        // Capability and record access are judged inside the operation by QuotationAccess, under the company access fence; this is only the early refusal of a non-member.
+        ActiveActor::require($actor, 'use quotations');
     }
 }

@@ -16,6 +16,7 @@ use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use Carbon\CarbonImmutable;
 use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -302,5 +303,50 @@ class QuotationIssueCommitTest extends TestCase
         $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest($duties));
 
         return $admin;
+    }
+
+    /** Runs one statement on the second real session with a short lock timeout and reports whether the database made it wait (lock_not_available) or let it through. */
+    private function otherSessionWaits(string $sql, array $bindings = []): bool
+    {
+        $other = DB::connection('session_b');
+        $other->statement("SET lock_timeout = '300ms'");
+        try {
+            $other->statement($sql, $bindings);
+
+            return false;
+        } catch (QueryException $e) {
+            return $e->errorInfo[0] === '55P03';
+        } finally {
+            $other->statement('RESET lock_timeout');
+        }
+    }
+
+    public function test_a_revocation_or_an_ownership_change_cannot_land_while_an_issue_is_in_flight_and_a_replay_after_revocation_is_refused(): void
+    {
+        $revision = $this->preparedDraft();
+        $generation = QuotationRevision::findOrFail($revision->id)->input_generation;
+        $permissionId = (int) DB::table('permissions')->where('name', PermissionVocabulary::QUOTATION_ISSUE)->value('id');
+        $family = $revision->family_id;
+        $checkerId = $this->checker->id;
+        $inFlight = null;
+        // The issue's own timing query runs after its fences are taken and its assessment is done, i.e. while it is in flight.
+        DB::listen(function ($query) use (&$inFlight, $permissionId, $family, $checkerId): void {
+            if ($inFlight === null && str_contains($query->sql, 'select now() as now')) {
+                $inFlight = [
+                    'revocation' => $this->otherSessionWaits('delete from model_has_permissions where model_id = ? and permission_id = ?', [$checkerId, $permissionId]),
+                    'ownership' => $this->otherSessionWaits('update quotation_families set responsible_owner_id = responsible_owner_id where id = ?', [$family]),
+                ];
+            }
+        });
+
+        $outcome = app(IssueQuotation::class)($this->checker, $revision->id, $generation, 'fence-key');
+
+        $this->assertSame(['revocation' => true, 'ownership' => true], $inFlight, 'both writers were held at the company access fence while the issue was in flight');
+        $this->assertSame('QTN-00001', $outcome->officialNumber);
+
+        // Once the issue has committed the revocation goes through, and the issuer can no longer retrieve the protected replay result.
+        $this->checker->revokePermissionTo(PermissionVocabulary::QUOTATION_ISSUE);
+        $this->expectException(AuthorizationException::class);
+        app(IssueQuotation::class)(User::query()->findOrFail($checkerId), $revision->id, $generation, 'fence-key');
     }
 }

@@ -9,10 +9,10 @@ use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
 
 /**
  * Abandons a draft quotation revision with a reason (QL4): the revision becomes CANCELLED_DRAFT, terminal and immutable, and never held an official number. It touches nothing
@@ -34,12 +34,7 @@ final class CancelQuotationDraft
 
         $outcome = $this->operations->run(
             $context, 'quotation.cancel_draft', $requestKey, ['revision_id' => $revisionId, 'expected_generation' => $expectedGeneration, 'reason' => $reason],
-            function () use ($actor, $revisionId): QuotationRevision {
-                $this->authorise($actor);
-
-                return QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
-                    ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
-            },
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE], true),
             function (QuotationRevision $revision) use ($actor, $expectedGeneration, $reason): array {
                 if (! $revision->isDraft()) {
                     throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_EDITABLE, 'Only a draft quotation can be cancelled.', 'revision_id');
@@ -58,7 +53,7 @@ final class CancelQuotationDraft
 
     private function authorise(User $actor): void
     {
-        ActiveActor::require($actor, 'cancel a quotation draft');
-        SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'cancel a quotation draft');
+        // Capability and record access are judged inside the operation by QuotationAccess, under the company access fence; this is only the early refusal of a non-member.
+        ActiveActor::require($actor, 'use quotations');
     }
 }

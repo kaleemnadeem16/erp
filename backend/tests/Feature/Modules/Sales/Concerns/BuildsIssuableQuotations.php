@@ -42,7 +42,7 @@ trait BuildsIssuableQuotations
         Company::findOrFail(1)->update(['base_currency_id' => $pkr->id]);
         $this->customer = Party::create(['code' => 'CUSTOMER', 'name' => 'Customer Ltd']);
         $this->maker = User::factory()->create();
-        $this->maker->givePermissionTo(PermissionVocabulary::QUOTATION_PREPARE);
+        $this->maker->givePermissionTo([PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW]);
         $this->checker = User::factory()->create();
         $this->checker->givePermissionTo([PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW]);
         $this->activateIssuing();

@@ -19,7 +19,7 @@ final class QuotationFamilyScopeAdapter implements ResourceScopeAdapter
 
     public function supports(string $duty, string $scope): bool
     {
-        return in_array($duty, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_ASSIGN], true)
+        return in_array($duty, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_WITHDRAW], true)
             && in_array($scope, ['ALL', AccessScopeLimit::OWN], true);
     }
 
