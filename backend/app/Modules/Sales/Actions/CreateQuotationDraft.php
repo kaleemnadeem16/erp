@@ -23,6 +23,7 @@ use App\Modules\Sales\Support\Quotation\QuotationOwnership;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyContext;
+use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,6 +38,16 @@ final class CreateQuotationDraft
 
     /** @param  array<string, mixed>  $input  recipient_party_id, currency_id, pricing_date, tax_estimate_date, valid_through_local_date, opportunity_id */
     public function __invoke(User $actor, ?string $requestKey, array $input): QuotationDraftOutcome
+    {
+        return DB::transaction(function () use ($actor, $requestKey, $input): QuotationDraftOutcome {
+            app(CompanyAccessFence::class)->lockAll();
+
+            return $this->create($actor, $requestKey, $input);
+        });
+    }
+
+    /** @param array<string, mixed> $input */
+    private function create(User $actor, ?string $requestKey, array $input): QuotationDraftOutcome
     {
         DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_PREPARE]));
         $context = SalesActorContext::forUser($actor, 'quotation.create_draft');

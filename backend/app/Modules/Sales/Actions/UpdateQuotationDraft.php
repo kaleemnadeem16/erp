@@ -25,6 +25,7 @@ use App\Modules\Sales\Support\Quotation\QuotationMoney;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use App\Modules\Sales\Support\SalesAccess;
+use App\Support\Scope\CompanyAccessFence;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -49,6 +50,16 @@ final class UpdateQuotationDraft
 
     /** @param  array<string, mixed>  $input  header fields plus add_lines, update_lines, remove_lines */
     public function __invoke(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey, array $input): QuotationDraftOutcome
+    {
+        return DB::transaction(function () use ($actor, $revisionId, $expectedGeneration, $requestKey, $input): QuotationDraftOutcome {
+            app(CompanyAccessFence::class)->lockAll();
+
+            return $this->update($actor, $revisionId, $expectedGeneration, $requestKey, $input);
+        });
+    }
+
+    /** @param array<string, mixed> $input */
+    private function update(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey, array $input): QuotationDraftOutcome
     {
         DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]));
         $context = SalesActorContext::forUser($actor, 'quotation.update_draft');
