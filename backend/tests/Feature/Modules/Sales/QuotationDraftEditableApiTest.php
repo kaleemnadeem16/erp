@@ -54,7 +54,7 @@ class QuotationDraftEditableApiTest extends TestCase
         $this->today = now(Company::findOrFail(1)->timezone)->format('Y-m-d');
         $this->party = Party::create(['code' => 'PROSPECT', 'name' => 'Prospect Ltd']);
         $this->preparer = User::factory()->create();
-        $this->preparer->givePermissionTo(self::PREPARE);
+        $this->preparer->givePermissionTo([self::PREPARE, self::VIEW]);
     }
 
     private function activate(): void
@@ -98,7 +98,7 @@ class QuotationDraftEditableApiTest extends TestCase
         $this->getJson('/api/v1/quotations/1/editable')->assertUnauthorized();
     }
 
-    public function test_it_is_the_preparers_duty_and_independent_of_view(): void
+    public function test_edit_requires_both_view_and_prepare(): void
     {
         $this->activate();
         Sanctum::actingAs($this->preparer);
@@ -107,7 +107,7 @@ class QuotationDraftEditableApiTest extends TestCase
         $viewer->givePermissionTo(self::VIEW);
 
         $this->getJson("/api/v1/quotations/{$revision}/editable")->assertOk();
-        $this->getJson("/api/v1/quotations/{$revision}")->assertForbidden();
+        $this->getJson("/api/v1/quotations/{$revision}")->assertOk();
         Sanctum::actingAs($viewer);
         $this->getJson("/api/v1/quotations/{$revision}/editable")->assertForbidden();
     }
@@ -175,7 +175,7 @@ class QuotationDraftEditableApiTest extends TestCase
         $this->getJson("/api/v1/quotations/{$revision}/editable")->assertStatus(422)->assertJsonPath('reason_code', 'QUOTATION_NOT_EDITABLE');
     }
 
-    public function test_an_unknown_or_foreign_revision_is_a_non_disclosing_404(): void
+    public function test_an_actor_from_another_company_is_refused_before_lookup(): void
     {
         $this->activate();
         Sanctum::actingAs($this->preparer);
@@ -192,9 +192,9 @@ class QuotationDraftEditableApiTest extends TestCase
             }
         });
 
-        $unknown = $this->getJson('/api/v1/quotations/999999/editable')->assertNotFound()->json('message');
-        $foreign = $this->getJson("/api/v1/quotations/{$revision}/editable")->assertNotFound()->json('message');
-        $this->assertSame($unknown, str_replace((string) $revision, '999999', $foreign));
+        // This actor belongs to the original company and cannot act in the substituted company.
+        $this->getJson('/api/v1/quotations/999999/editable')->assertForbidden();
+        $this->getJson("/api/v1/quotations/{$revision}/editable")->assertForbidden();
     }
 
     public function test_a_preparer_limited_to_my_units_is_refused(): void

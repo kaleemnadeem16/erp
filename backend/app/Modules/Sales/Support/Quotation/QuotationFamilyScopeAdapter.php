@@ -34,7 +34,7 @@ final class QuotationFamilyScopeAdapter implements ResourceScopeAdapter
             return $query;
         }
         if ($scope->ownsRecords()) {
-            return $query->where('responsible_owner_id', $actorId)->where('access_baseline_state', '<>', 'UNRESOLVED');
+            return $query->where('quotation_families.responsible_owner_id', $actorId)->where('quotation_families.access_baseline_state', '<>', 'UNRESOLVED');
         }
 
         return $query->whereRaw('1 = 0');

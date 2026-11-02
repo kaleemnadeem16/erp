@@ -59,7 +59,7 @@ class QuotationDraftWriteApiTest extends TestCase
         $this->today = now(Company::findOrFail(1)->timezone)->format('Y-m-d');
         $this->party = Party::create(['code' => 'PROSPECT', 'name' => 'Prospect Ltd']);
         $this->preparer = User::factory()->create();
-        $this->preparer->givePermissionTo([self::PREPARE]);
+        $this->preparer->givePermissionTo([self::PREPARE, self::VIEW]);
     }
 
     private function activate(): void
@@ -261,7 +261,7 @@ class QuotationDraftWriteApiTest extends TestCase
         $this->update($revision, ['add_lines' => [$this->line()]], null, 1)->assertStatus(422)->assertJsonPath('reason_code', 'QUOTATION_NOT_EDITABLE');
     }
 
-    public function test_an_unknown_or_foreign_revision_is_a_non_disclosing_404(): void
+    public function test_an_actor_from_another_company_is_refused_before_lookup(): void
     {
         $this->activate();
         Sanctum::actingAs($this->preparer);
@@ -278,9 +278,9 @@ class QuotationDraftWriteApiTest extends TestCase
             }
         });
 
-        $unknown = $this->update(999999, ['add_lines' => [$this->line()]], null, 1)->assertNotFound()->json('message');
-        $foreign = $this->update($revision, ['add_lines' => [$this->line()]], null, 1)->assertNotFound()->json('message');
-        $this->assertSame($unknown, str_replace((string) $revision, '999999', $foreign));
+        // This actor belongs to the original company and cannot act in the substituted company.
+        $this->update(999999, ['add_lines' => [$this->line()]], null, 1)->assertForbidden();
+        $this->update($revision, ['add_lines' => [$this->line()]], null, 1)->assertForbidden();
     }
 
     /**

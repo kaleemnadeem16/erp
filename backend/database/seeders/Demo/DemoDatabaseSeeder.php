@@ -35,6 +35,7 @@ final class DemoDatabaseSeeder extends Seeder
                 AccountingDemoSeeder::class,
                 PartiesDemoSeeder::class,
                 InventoryDemoSeeder::class,
+                QuotationTaxFactsDemoSeeder::class,
                 // Before Purchasing: some item-supplier rows buy in a pack unit.
                 PackConversionsDemoSeeder::class,
                 PurchasingDemoSeeder::class,

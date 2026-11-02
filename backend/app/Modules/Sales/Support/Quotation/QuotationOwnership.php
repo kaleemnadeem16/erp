@@ -6,14 +6,14 @@ namespace App\Modules\Sales\Support\Quotation;
 
 use App\Models\User;
 use App\Modules\Administration\Models\OrganisationUnit;
-use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Models\QuotationOwnershipEvent;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\SalesRecords;
-use App\Support\CompanyContext;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The one writer of quotation ownership: the locked family projection and its event are always written together, so the database's commit-time check (the family
@@ -30,21 +30,19 @@ final class QuotationOwnership
     /** Checked before the family is looked up, so capability absence is the same refusal whether or not the family exists. */
     public static function requireAuthority(?User $actor): void
     {
-        // SalesAccess judges capabilities and scope, not membership: an actor who has since been suspended (or never belonged to this company) must not change ownership,
-        // and the object in hand may be stale, so the member is read again, in this company, before anything else is asked.
-        $current = $actor === null ? null : User::query()->where('company_id', app(CompanyContext::class)->id())->whereKey($actor->id)->first();
-        if ($current === null || $current->status !== MemberStatus::Active) {
+        if ($actor === null) {
             throw new AuthorizationException('You are not permitted to change who is responsible for a quotation.');
         }
-        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to change who is responsible for a quotation.');
-        }
+        DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW]));
     }
 
-    public static function lockFamily(int $familyId): QuotationFamily
+    public static function lockFamily(int $familyId, User $actor): QuotationFamily
     {
-        return QuotationFamily::query()->whereKey($familyId)->lockForUpdate()->first()
-            ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'family_id');
+        try {
+            return app(QuotationAccess::class)->requireFamily($actor, $familyId, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW], true);
+        } catch (ModelNotFoundException) {
+            throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'family_id');
+        }
     }
 
     public static function requireResolved(QuotationFamily $family): void

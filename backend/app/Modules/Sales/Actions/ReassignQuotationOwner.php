@@ -32,7 +32,7 @@ final class ReassignQuotationOwner
         $outcome = $this->operations->run(
             $context, 'quotation.reassign_owner', $requestKey,
             ['family_id' => $familyId, 'owner_id' => $newOwnerId, 'expected_ownership_generation' => $expectedOwnershipGeneration, 'expected_access_generation' => $expectedAccessGeneration, 'reason' => $reason],
-            fn (): QuotationFamily => QuotationOwnership::lockFamily($familyId),
+            fn (): QuotationFamily => QuotationOwnership::lockFamily($familyId, $actor),
             function (QuotationFamily $family) use ($actor, $newOwnerId, $expectedOwnershipGeneration, $expectedAccessGeneration, $reason): array {
                 QuotationOwnership::requireResolved($family);
                 QuotationOwnership::requireGenerations($family, $expectedOwnershipGeneration, $expectedAccessGeneration);
