@@ -98,6 +98,7 @@ const rules: readonly Rule[] = [
   { path: "/stock-moves", anyOf: ["inventory.movement.view"] },
   { path: "/physical-counts", anyOf: physicalCount },
   { path: "/opportunities", anyOf: salesRead },
+  { path: "/quotations", anyOf: ["sales.quotation.view", "sales.quotation.prepare"] },
   { path: "/leads", anyOf: salesRead },
   { path: "/sales-stages", anyOf: [...salesRead, "sales.stage.manage"] },
   { path: "/supplier-returns", anyOf: supplierReturn },
@@ -225,6 +226,8 @@ export function canAccessScreen(
 ): boolean {
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
+    if (pathname === "/quotations") return access.detail || access.review;
+    if (pathname === "/quotations/new" || /^\/quotations\/[1-9]\d*\/edit$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*\/review$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*$/.test(pathname)) return access.detail;
     return false;

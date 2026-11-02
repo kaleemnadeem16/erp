@@ -27,11 +27,13 @@ use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use App\Modules\Sales\Support\Quotation\Issue\SalesQuotationTaxContextAuthorizer;
 use App\Modules\Sales\Support\Quotation\Issue\UnavailableQuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\Issue\UnconfiguredQuotationControlsProvider;
+use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Tax\Support\Quotation\QuotationTaxContextAuthorizer;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;
+use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,6 +41,9 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(ResourceScopeAdapters::class, static function (ResourceScopeAdapters $adapters): void {
+            $adapters->register(QuotationFamilyScopeAdapter::RESOURCE, new QuotationFamilyScopeAdapter);
+        });
         $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDevPreview::manifest());
         // Issue asks two independent evidence questions. Until the Tax-owned FR3 determination (through a Sales adapter) and a configured control set exist, both answer "not yet".
         $this->app->bind(QuotationTaxProvider::class, Fr3QuotationTaxProvider::class);
