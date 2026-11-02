@@ -10,6 +10,7 @@ use App\Support\OpenApi\CustomFieldsRuleTransformer;
 use App\Support\OpenApi\DecimalAsStringRuleTransformer;
 use App\Support\Performance\QueryTimings;
 use App\Support\PermissionRegistry;
+use App\Support\Scope\ResourceScopeAdapters;
 use Dedoc\Scramble\Scramble;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\QueryExecuted;
@@ -33,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(CompanyContext::class);
         $this->app->singleton(PermissionRegistry::class);
+        $this->app->singleton(ResourceScopeAdapters::class);
         $this->app->singleton(FinancialActivity::class);
         $this->app->singleton(QueryTimings::class);
         $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
