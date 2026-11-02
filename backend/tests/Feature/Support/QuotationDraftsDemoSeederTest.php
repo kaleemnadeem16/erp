@@ -7,6 +7,7 @@ namespace Tests\Feature\Support;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
+use App\Modules\Sales\Actions\ListQuotations;
 use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationFamily;
@@ -61,6 +62,7 @@ final class QuotationDraftsDemoSeederTest extends TestCase
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         $preparer = User::query()->where('email', QuotationDraftsDemoSeeder::PREPARER)->firstOrFail();
         $this->assertSame(2, AccessScopeLimit::query()->where('user_id', $preparer->id)->where('scope', 'OWN')->count());
+        $this->assertSame(5, app(ListQuotations::class)($preparer, [])->total());
         $revisions = QuotationRevision::query()->orderBy('id')->get();
         [$simple, $deal, $incomplete, $choices, $usd] = $revisions->all();
 

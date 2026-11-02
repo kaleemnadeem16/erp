@@ -7,11 +7,13 @@ namespace App\Modules\Sales\Http\Controllers\Api\V1;
 use App\Exceptions\DomainInvariantException;
 use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
+use App\Modules\Sales\Actions\ListQuotations;
 use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Actions\ReadQuotationDraft;
 use App\Modules\Sales\Actions\ReadQuotationDraftForEdit;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
 use App\Modules\Sales\Http\Requests\Quotation\EditQuotationDraftRequest;
+use App\Modules\Sales\Http\Requests\Quotation\IndexQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\PreviewQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\ShowQuotationDraftRequest;
 use App\Modules\Sales\Http\Requests\Quotation\StoreQuotationDraftRequest;
@@ -20,6 +22,7 @@ use App\Modules\Sales\Http\Resources\QuotationDraftEditableResource;
 use App\Modules\Sales\Http\Resources\QuotationDraftResource;
 use App\Modules\Sales\Http\Resources\QuotationDraftWriteResource;
 use App\Modules\Sales\Http\Resources\QuotationPreviewResource;
+use App\Modules\Sales\Http\Resources\QuotationSummaryResource;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationRefusalStatus;
@@ -29,9 +32,16 @@ use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class QuotationController extends Controller
 {
+    /** List safe quotation identities visible to the current view holder. */
+    public function index(IndexQuotationRequest $request, ListQuotations $list): AnonymousResourceCollection
+    {
+        return QuotationSummaryResource::collection($list($request->user(), $request->validated()));
+    }
+
     public function show(ShowQuotationDraftRequest $request, int $revision, ReadQuotationDraft $read): QuotationDraftResource
     {
         return new QuotationDraftResource($this->refusing(fn () => $read($request->user(), $revision)));

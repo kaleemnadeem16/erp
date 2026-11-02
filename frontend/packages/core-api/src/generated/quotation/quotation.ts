@@ -24,6 +24,8 @@ import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   QuotationsEditable200,
+  QuotationsIndex200,
+  QuotationsIndexParams,
   QuotationsPreview200,
   QuotationsShow200,
   QuotationsStore200,
@@ -42,6 +44,235 @@ import type {
 import { fetchClient } from "../../mutator/fetch-client";
 
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
+
+/**
+ * @summary List safe quotation identities visible to the current view holder
+ */
+export type quotationsIndexResponse200 = {
+  data: QuotationsIndex200;
+  status: 200;
+};
+
+export type quotationsIndexResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsIndexResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsIndexResponseSuccess = quotationsIndexResponse200 & {
+  headers: Headers;
+};
+export type quotationsIndexResponseError = (
+  | quotationsIndexResponse401
+  | quotationsIndexResponse403
+  | quotationsIndexResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsIndexResponse =
+  quotationsIndexResponseSuccess | quotationsIndexResponseError;
+
+export const getQuotationsIndexUrl = (params?: QuotationsIndexParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/v1/quotations?${stringifiedParams}`
+    : `/v1/quotations`;
+};
+
+export const quotationsIndex = async (
+  params?: QuotationsIndexParams,
+  options?: RequestInit,
+): Promise<quotationsIndexResponse> => {
+  return fetchClient<quotationsIndexResponse>(getQuotationsIndexUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getQuotationsIndexQueryKey = (params?: QuotationsIndexParams) => {
+  return [`/v1/quotations`, ...(params ? [params] : [])] as const;
+};
+
+export const getQuotationsIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof quotationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: QuotationsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getQuotationsIndexQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof quotationsIndex>>
+  > = () => quotationsIndex(params, requestOptions);
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof quotationsIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QuotationsIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsIndex>>
+>;
+export type QuotationsIndexQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQuotationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params: undefined | QuotationsIndexParams,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsIndex>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: QuotationsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsIndex>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: QuotationsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary List safe quotation identities visible to the current view holder
+ */
+
+export function useQuotationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  params?: QuotationsIndexParams,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQuotationsIndexQueryOptions(params, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
 
 /**
  * @summary Starts a draft. The Idempotency-Key header is the Action's request key: an exact retry replays the stored result (200), a first success is 201
