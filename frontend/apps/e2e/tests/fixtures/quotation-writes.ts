@@ -96,6 +96,14 @@ const issueGateway: QuotationIssueGateway = {
       issued_at: "2026-10-30T10:15:00Z",
       replayed: false,
     })),
+  // Default: no issued record (a cancelled draft or a hidden revision answers 404 here).
+  issued: (revisionId) =>
+    call("issued", { revisionId }, () => {
+      throw Object.assign(new Error("HTTP 404"), {
+        status: 404,
+        body: { message: "Not found." },
+      });
+    }),
 };
 const documentGateway: QuotationDocumentGateway = {
   status: (revisionId) => call("status", { revisionId }, () => mockStatus()),

@@ -287,6 +287,7 @@ export { DecimalText, MoneyText } from "./components/ui/decimal-text";
 
 export { configureQuotationDevMode } from "./lib/quotation-dev-mode";
 export { QuotationsWorkspaceScreen } from "./features/quotations/quotations-workspace-screen";
+export { QuotationListRoute, QuotationIssueRoute, QuotationDocumentRoute } from "./features/quotations/quotation-milestone-routes";
 export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
 
 export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";

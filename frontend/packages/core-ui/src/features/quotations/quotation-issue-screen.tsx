@@ -23,13 +23,13 @@ import {
   shouldRetryQuery,
 } from "../../lib/api-errors";
 import { IntentKey } from "./request-key";
+import { liveIssueGateway } from "./quotation-live-gateways";
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { QuotationFailure } from "./quotation-display";
 import {
   groupBlockers,
   ISSUE_REFUSALS,
-  pendingIssueGateway,
   type IssuedTerms,
   type IssueOutcome,
   type IssueReadiness,
@@ -82,6 +82,7 @@ export function QuotationReadinessView({
         <div className="col-span-full flex flex-wrap gap-3">
           {onRecheck && (
             <Button
+              className="min-h-11"
               type="button"
               variant="outline"
               onClick={onRecheck}
@@ -92,6 +93,7 @@ export function QuotationReadinessView({
           )}
           {mayIssue && (
             <Button
+              className="min-h-11"
               type="button"
               onClick={onIssue}
               disabled={!readiness.issue_ready}
@@ -160,6 +162,7 @@ export function IssueConfirmDialog({
         )}
         <DialogFooter>
           <Button
+            className="min-h-11"
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -167,7 +170,12 @@ export function IssueConfirmDialog({
           >
             Cancel
           </Button>
-          <Button type="button" onClick={onConfirm} disabled={pending}>
+          <Button
+            className="min-h-11"
+            type="button"
+            onClick={onConfirm}
+            disabled={pending}
+          >
             {pending ? "Issuing…" : "Issue quotation"}
           </Button>
         </DialogFooter>
@@ -180,7 +188,7 @@ function money(value: string | null, currency: number) {
   return value === null ? "None" : `${value} · Currency reference #${currency}`;
 }
 
-/** Issued state with the frozen terms, read only. CONTRACT PENDING: no screen renders it until a backend read of the issued terms exists (see `issuedTermsSchema`). */
+/** The issued record with its frozen terms, read only (GET .../issued); totals only when the server includes them for this person. */
 export function QuotationIssuedView({ terms }: { terms: IssuedTerms }) {
   const same = terms.prepared_by === terms.issued_by;
   return (
@@ -221,21 +229,26 @@ export function QuotationIssuedView({ terms }: { terms: IssuedTerms }) {
         <DetailField label="Expires">
           {formatDateTime(terms.expires_at)}
         </DetailField>
-        <DetailField label="Net total">
-          {money(terms.net_total, terms.currency_id)}
-        </DetailField>
-        <DetailField label="Optional net total">
-          {money(terms.optional_net_total, terms.currency_id)}
-        </DetailField>
-        <DetailField label="Tax">
-          {money(terms.tax_total, terms.currency_id)}
-        </DetailField>
-        <DetailField label="Total including tax">
-          {money(terms.gross_total, terms.currency_id)}
-        </DetailField>
-        <DetailField label="Financial controls">
-          {terms.controls_outcome.toLowerCase().replaceAll("_", " ")}
-        </DetailField>
+        {terms.totals === null ? (
+          <p className="col-span-full text-sm" role="note">
+            Totals are shown to people who prepare or issue this quotation.
+          </p>
+        ) : (
+          <>
+            <DetailField label="Net total">
+              {money(terms.totals.net_total, terms.currency_id)}
+            </DetailField>
+            <DetailField label="Optional net total">
+              {money(terms.totals.optional_net_total, terms.currency_id)}
+            </DetailField>
+            <DetailField label="Tax">
+              {money(terms.totals.tax_total, terms.currency_id)}
+            </DetailField>
+            <DetailField label="Total including tax">
+              {money(terms.totals.gross_total, terms.currency_id)}
+            </DetailField>
+          </>
+        )}
       </DetailSection>
     </DetailPageLayout>
   );
@@ -247,7 +260,7 @@ export function QuotationIssuedView({ terms }: { terms: IssuedTerms }) {
  */
 export function QuotationIssueScreen({
   revisionId,
-  gateway = pendingIssueGateway,
+  gateway = liveIssueGateway,
 }: {
   revisionId: number;
   gateway?: QuotationIssueGateway;
@@ -308,19 +321,31 @@ function GatedIssue({
     },
     onError: (error) => keys.current.settle(error),
   });
-  if (outcome !== null) return <QuotationIssueOutcomeView outcome={outcome} />;
-  if (!mayReadiness)
-    return (
-      <p className="p-4 text-sm">
-        Issuing needs the readiness result, which your access does not include.
-      </p>
-    );
-  // Not a draft any more (issued, or a cancelled draft): readiness cannot say which, so the screen says neither.
-  if (getApiReasonCode(readiness.error) === "QUOTATION_NOT_EDITABLE")
+  // Not a draft any more: issued, or a cancelled draft. Only the issued-record read can tell (a cancelled draft is a 404 there).
+  const notDraft =
+    getApiReasonCode(readiness.error) === "QUOTATION_NOT_EDITABLE";
+  const record = useQuery({
+    queryKey: ["quotation-issued", revisionId],
+    queryFn: () => gateway.issued(revisionId),
+    enabled: outcome !== null || notDraft,
+    retry: shouldRetryQuery,
+  });
+  if (outcome !== null || notDraft) {
+    if (record.data) return <QuotationIssuedView terms={record.data} />;
+    if (outcome !== null)
+      return <QuotationIssueOutcomeView outcome={outcome} />;
+    if (record.isPending) return <Loading />;
     return (
       <p role="status" className="p-4 text-sm">
         Only a draft quotation can be issued. This quotation is no longer a
         draft.
+      </p>
+    );
+  }
+  if (!mayReadiness)
+    return (
+      <p className="p-4 text-sm">
+        Issuing needs the readiness result, which your access does not include.
       </p>
     );
   if (readiness.isError)

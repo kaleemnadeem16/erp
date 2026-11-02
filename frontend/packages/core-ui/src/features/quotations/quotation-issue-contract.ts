@@ -1,11 +1,9 @@
 import { z } from "zod";
 
 /**
- * CONTRACT PENDING. phase4/ql3-issue-quotation (402dc945) ships the Actions
- * AssessQuotationIssueReadiness and IssueQuotation but NO HTTP routes and no generated
- * client. These types mirror the Actions' documented inputs and outputs so the screens can
- * be built and tested; when routes exist, only `QuotationIssueGateway`'s implementation
- * changes. Nothing here is called by a registered route.
+ * CONTRACT for the QL3 issue routes (generated client: quotationsIssueReadiness,
+ * quotationsIssue, quotationsIssued; the live gateway is in quotation-live-gateways.ts).
+ * These schemas parse and strip every response; the screens depend only on them.
  *
  * Action facts mirrored:
  *  - readiness: needs prepare; returns {revision_id, input_generation, issue_ready,
@@ -45,13 +43,13 @@ export const issueOutcomeSchema = z.object({
 });
 const decimal = z.string().regex(/^-?\d+(?:\.\d+)?$/);
 /**
- * CONTRACT PENDING — NOT CALLED BY ANY SCREEN. No backend read of an issued revision's frozen terms exists
- * (phase4/ql3-issue-quotation has no such route; `IssueQuotation` returns only the outcome above). This shape
- * and `QuotationIssuedView` stay for the design; the issue screen shows only the real outcome until a read
- * contract exists and these fields are re-verified against it.
+ * The issued record, mirroring `QuotationIssuedResource` (GET /api/v1/quotations/{revision}/issued): official number, issue
+ * instant, maker/checker and frozen header terms. `totals` is null unless the caller also holds prepare or issue for this
+ * revision. The server never sends cost, margin, controls outcome, fingerprints or tax evidence; any extra is stripped.
  */
 export const issuedTermsSchema = z.object({
   revision_id: id,
+  family_id: id,
   official_number: z.string().min(1),
   issued_at: z.string(),
   /** The maker: who prepared (created) the draft. */
@@ -59,14 +57,17 @@ export const issuedTermsSchema = z.object({
   /** The checker: who issued it. May equal the maker; separation is by duty. */
   issued_by: id,
   currency_id: id,
-  pricing_date: z.string().nullable(),
-  valid_through_local_date: z.string().nullable(),
-  expires_at: z.string().nullable(),
-  net_total: decimal,
-  optional_net_total: decimal.nullable(),
-  tax_total: decimal,
-  gross_total: decimal,
-  controls_outcome: z.string(),
+  pricing_date: z.string(),
+  valid_through_local_date: z.string(),
+  expires_at: z.string(),
+  totals: z
+    .object({
+      net_total: decimal,
+      optional_net_total: decimal.nullable(),
+      tax_total: decimal.nullable(),
+      gross_total: decimal.nullable(),
+    })
+    .nullable(),
 });
 export type IssueBlocker = z.infer<typeof blockerSchema>;
 export type IssueReadiness = z.infer<typeof readinessSchema>;
@@ -87,6 +88,8 @@ export interface QuotationIssueGateway {
     expectedGeneration: number;
     requestKey: string;
   }): Promise<IssueOutcome>;
+  /** The issued record; a draft, cancelled draft, hidden or unknown revision is a 404. */
+  issued(revisionId: number): Promise<IssuedTerms>;
 }
 
 const pending = async (): Promise<never> => {
@@ -96,6 +99,7 @@ const pending = async (): Promise<never> => {
 export const pendingIssueGateway: QuotationIssueGateway = {
   readiness: pending,
   issue: pending,
+  issued: pending,
 };
 
 /** Named groups the screen shows, in this order. */
@@ -287,6 +291,7 @@ export function mockIssuedTerms(
 ): IssuedTerms {
   return {
     revision_id: 12,
+    family_id: 8,
     official_number: "QUO-2026-0007",
     issued_at: "2026-10-30T10:15:00Z",
     prepared_by: 5,
@@ -295,11 +300,12 @@ export function mockIssuedTerms(
     pricing_date: "2026-10-27",
     valid_through_local_date: "2026-11-30",
     expires_at: "2026-12-01T00:00:00Z",
-    net_total: "1000.00",
-    optional_net_total: null,
-    tax_total: "150.00",
-    gross_total: "1150.00",
-    controls_outcome: "PASSED",
+    totals: {
+      net_total: "1000.00",
+      optional_net_total: null,
+      tax_total: "150.00",
+      gross_total: "1150.00",
+    },
     ...overrides,
   };
 }

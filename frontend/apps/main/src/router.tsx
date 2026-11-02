@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
   QuotationsWorkspaceScreen,
+  QuotationListRoute,
+  QuotationIssueRoute,
+  QuotationDocumentRoute,
   QuotationCreateScreen,
   QuotationEditScreen,
   QuotationDetailScreen,
@@ -156,6 +159,10 @@ export function AppRouter() {
         <Route path="/quotations/new" element={<ProtectedRoute><AppShell><QuotationCreateScreen /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/edit" element={<ProtectedRoute><AppShell><QuotationEditScreen /></AppShell></ProtectedRoute>} />
         <Route path="/quotations" element={<ProtectedRoute><AppShell><QuotationsWorkspaceScreen /></AppShell></ProtectedRoute>} />
+        {/* Gated: every screen below denies before any request while QUOTATION_UI_ENABLED is false (production); only the local dev override opens them. */}
+        <Route path="/quotations/all" element={<ProtectedRoute><AppShell><QuotationListRoute /></AppShell></ProtectedRoute>} />
+        <Route path="/quotations/:revision/issue" element={<ProtectedRoute><AppShell><QuotationIssueRoute /></AppShell></ProtectedRoute>} />
+        <Route path="/quotations/:revision/document" element={<ProtectedRoute><AppShell><QuotationDocumentRoute /></AppShell></ProtectedRoute>} />
         <Route
           path="/quotations/:revision"
           element={<ProtectedRoute><AppShell><QuotationDetailScreen /></AppShell></ProtectedRoute>}

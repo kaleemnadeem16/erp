@@ -145,12 +145,13 @@ test("Issue sends the reviewed generation and replays the same key after an unce
   expect(issues.map((c) => c.args.expectedGeneration)).toEqual([4, 4, 4]);
   expect(new Set(issues.map(key)).size).toBe(1);
   expect(key(issues[0]!)).toMatch(/^[\w-]{8,}$/);
-  // Issued: readiness is not asked again and no invented issued-terms read exists.
+  // Issued: readiness is not asked again; the real issued record is read once (404 here, so the confirmed outcome stays).
   expect((await calls(page)).map((c) => c.op)).toEqual([
     "readiness",
     "issue",
     "issue",
     "issue",
+    "issued",
   ]);
 });
 
@@ -248,7 +249,37 @@ test("a revision that is no longer a draft is not presented as issued", async ({
     page.getByText("This quotation is no longer a draft"),
   ).toBeVisible();
   await expect(page.getByText("Issued", { exact: true })).toHaveCount(0);
-  expect((await calls(page)).map((c) => c.op)).toEqual(["readiness"]);
+  // The issued-record read answered 404 (a cancelled draft): nothing claims it was issued.
+  expect((await calls(page)).map((c) => c.op)).toEqual(["readiness", "issued"]);
+});
+
+test("an issued revision shows its real issued record; totals only when the server sends them", async ({
+  page,
+}) => {
+  const record = {
+    revision_id: 12,
+    family_id: 8,
+    official_number: "QUO-2026-0042",
+    issued_at: "2026-10-30T10:15:00Z",
+    prepared_by: 5,
+    issued_by: 9,
+    currency_id: 3,
+    pricing_date: "2026-10-27",
+    valid_through_local_date: "2026-11-30",
+    expires_at: "2026-12-01T00:00:00Z",
+    totals: null,
+    controls_outcome: "SECRET_CONTROL",
+  };
+  await mount(page, "issue", {
+    readiness: [{ status: 422, reason_code: "QUOTATION_NOT_EDITABLE" }],
+    issued: [{ ok: record }],
+  });
+  await expect(page.getByText("QUO-2026-0042")).toBeVisible();
+  await expect(
+    page.getByText("Totals are shown to people who prepare or issue"),
+  ).toBeVisible();
+  await expect(page.getByText("SECRET_CONTROL")).toHaveCount(0);
+  expect((await calls(page)).map((c) => c.op)).toEqual(["readiness", "issued"]);
 });
 
 const pending = {
@@ -337,4 +368,39 @@ test("Record delivery: retry replays, edited details get a new key, success clea
   const fourth = (await calls(page, "recordDelivery"))[3]!;
   expect(key(fourth)).not.toBe(key(records[2]!));
   expect((await calls(page, "deliveries")).length).toBeGreaterThanOrEqual(2);
+});
+
+test("the list, issue and document routes are denied in production even holding every duty, and open only in the dev build", async () => {
+  const { canAccessScreen } =
+    await import("../../../packages/core-ui/src/routes/screen-access");
+  const { configureQuotationDevMode } =
+    await import("../../../packages/core-ui/src/lib/quotation-dev-mode");
+  const all = new Set(EVERY_DUTY);
+  const paths = [
+    "/quotations/all",
+    "/quotations/12/issue",
+    "/quotations/12/document",
+  ];
+  configureQuotationDevMode({
+    development: false,
+    flag: "1",
+    hostname: "localhost",
+  });
+  for (const path of paths) expect(canAccessScreen(path, all)).toBe(false);
+  configureQuotationDevMode({
+    development: true,
+    flag: "1",
+    hostname: "localhost",
+  });
+  try {
+    for (const path of paths) expect(canAccessScreen(path, all)).toBe(true);
+    expect(canAccessScreen("/quotations/12/issue", new Set())).toBe(false);
+    expect(canAccessScreen("/quotations/abc/issue", all)).toBe(false);
+  } finally {
+    configureQuotationDevMode({
+      development: false,
+      flag: undefined,
+      hostname: "localhost",
+    });
+  }
 });

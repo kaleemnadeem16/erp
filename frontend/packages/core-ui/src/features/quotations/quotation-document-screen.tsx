@@ -28,6 +28,7 @@ import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { QuotationFailure } from "./quotation-display";
 import { IntentKey } from "./request-key";
+import { liveDocumentGateway } from "./quotation-live-gateways";
 import {
   CHANNEL_LABELS,
   CHECK_LABELS,
@@ -36,7 +37,6 @@ import {
   documentStateLabel,
   formatBytes,
   historyLabel,
-  pendingDocumentGateway,
   type Delivery,
   type DeliveryChannel,
   type DeliveryInput,
@@ -122,13 +122,19 @@ export function QuotationDocumentStatusView({
       )}
       <div className="col-span-full flex flex-wrap gap-3">
         {access.generate && !ready && (
-          <Button type="button" onClick={onGenerate} disabled={busy}>
+          <Button
+            className="min-h-11"
+            type="button"
+            onClick={onGenerate}
+            disabled={busy}
+          >
             {failed ? "Try again" : "Generate document"}
           </Button>
         )}
         {access.download && available && (
           <>
             <Button
+              className="min-h-11"
               type="button"
               onClick={() => onDownload("download")}
               disabled={busy}
@@ -136,6 +142,7 @@ export function QuotationDocumentStatusView({
               Download PDF
             </Button>
             <Button
+              className="min-h-11"
               type="button"
               variant="outline"
               onClick={() => onDownload("print")}
@@ -147,6 +154,7 @@ export function QuotationDocumentStatusView({
         )}
         {access.check && ready && (
           <Button
+            className="min-h-11"
             type="button"
             variant="outline"
             onClick={onCheck}
@@ -280,7 +288,7 @@ export function DeliveryForm({
             value={channel}
             onValueChange={(v) => setChannel(v as DeliveryChannel)}
           >
-            <SelectTrigger id="delivery-channel">
+            <SelectTrigger id="delivery-channel" className="min-h-11">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -295,6 +303,7 @@ export function DeliveryForm({
         <div className="space-y-2">
           <Label htmlFor="delivery-date">Delivered on</Label>
           <Input
+            className="min-h-11"
             id="delivery-date"
             type="date"
             value={deliveredOn}
@@ -305,6 +314,7 @@ export function DeliveryForm({
         <div className="space-y-2">
           <Label htmlFor="delivery-name">Received by</Label>
           <Input
+            className="min-h-11"
             id="delivery-name"
             maxLength={200}
             value={name}
@@ -315,6 +325,7 @@ export function DeliveryForm({
         <div className="space-y-2">
           <Label htmlFor="delivery-detail">Contact detail (optional)</Label>
           <Input
+            className="min-h-11"
             id="delivery-detail"
             maxLength={200}
             value={detail}
@@ -336,7 +347,7 @@ export function DeliveryForm({
           </p>
         )}
         <div className="sm:col-span-2">
-          <Button type="submit" disabled={pending}>
+          <Button className="min-h-11" type="submit" disabled={pending}>
             {pending ? "Recording…" : "Record delivery"}
           </Button>
         </div>
@@ -364,7 +375,7 @@ export function saveBlob(blob: Blob, name: string) {
 /** Unregistered in Phase 1; contract pending, so the default gateway fails closed. */
 export function QuotationDocumentScreen({
   revisionId,
-  gateway = pendingDocumentGateway,
+  gateway = liveDocumentGateway,
 }: {
   revisionId: number;
   gateway?: QuotationDocumentGateway;

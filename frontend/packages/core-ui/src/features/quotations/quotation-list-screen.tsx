@@ -30,7 +30,6 @@ import { useAuthStore } from "../../stores/auth-store";
 import { quotationMilestoneAccess } from "./quotation-milestone-access";
 import { QuotationStatus } from "./quotation-display";
 import {
-  fetchQuotationList,
   isListSort,
   isListState,
   type QuotationListGateway,
@@ -40,6 +39,7 @@ import {
   type QuotationSummary,
 } from "./quotation-list-contract";
 import { QuotationListPanel } from "./quotation-list-panel";
+import { liveListGateway } from "./quotation-live-gateways";
 
 const ALL = "ALL";
 const STATE_LABELS: Record<QuotationListState, string> = {
@@ -142,7 +142,10 @@ export function QuotationListView(props: QuotationListViewProps) {
               props.onStateChange(isListState(value) ? value : undefined)
             }
           >
-            <SelectTrigger id="quotation-filter-state" className="w-48">
+            <SelectTrigger
+              id="quotation-filter-state"
+              className="min-h-11 w-48"
+            >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -155,7 +158,11 @@ export function QuotationListView(props: QuotationListViewProps) {
             </SelectContent>
           </Select>
         </div>
-        <FilterToggle pressed={props.mine} onPressedChange={props.onMineChange}>
+        <FilterToggle
+          className="min-h-11"
+          pressed={props.mine}
+          onPressedChange={props.onMineChange}
+        >
           Mine
         </FilterToggle>
       </div>
@@ -200,7 +207,7 @@ export function QuotationListView(props: QuotationListViewProps) {
  * any query mounts, so a denied person (and every production build) issues no request.
  */
 export function QuotationListScreen({
-  gateway = fetchQuotationList,
+  gateway = liveListGateway,
 }: {
   gateway?: QuotationListGateway;
 }) {
