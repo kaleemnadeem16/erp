@@ -58,14 +58,15 @@ class QuotationIssueReadinessTest extends TestCase
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate(self::PREPARE, 'web');
+        Permission::findOrCreate(PermissionVocabulary::QUOTATION_VIEW, 'web');
         $this->pkr = Currency::firstOrCreate(['code' => 'PKR'], ['name' => 'Rupee', 'symbol' => 'Rs', 'decimal_places' => 2]);
         $this->usd = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'Dollar', 'symbol' => '$', 'decimal_places' => 2]);
         Company::findOrFail(1)->update(['base_currency_id' => $this->pkr->id]);
         $this->today = now(Company::findOrFail(1)->timezone)->format('Y-m-d');
         $this->party = Party::create(['code' => 'PROSPECT', 'name' => 'Prospect Ltd']);
         $this->preparer = User::factory()->create();
-        $this->preparer->givePermissionTo(self::PREPARE);
-        $duties = array_map(fn (SalesDuty $duty): SalesDuty => $duty->name === self::PREPARE
+        $this->preparer->givePermissionTo([self::PREPARE, PermissionVocabulary::QUOTATION_VIEW]);
+        $duties = array_map(fn (SalesDuty $duty): SalesDuty => in_array($duty->name, [self::PREPARE, PermissionVocabulary::QUOTATION_VIEW], true)
             ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate) : $duty, SalesDutyManifest::shipped()->all());
         $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest($duties));
     }
@@ -222,7 +223,8 @@ class QuotationIssueReadinessTest extends TestCase
         $revision = $this->prepared();
         $writes = [];
         DB::listen(function ($query) use (&$writes): void {
-            if (preg_match('/^\s*(insert|update|delete|truncate|alter|drop|create)\b/i', $query->sql) === 1) {
+            // The access fence's idempotent `insert ... on conflict do nothing` of the company's barrier row is the only write a read takes (it changes nothing).
+            if (preg_match('/^\s*(insert|update|delete|truncate|alter|drop|create)\b/i', $query->sql) === 1 && ! str_contains($query->sql, 'company_access_generations')) {
                 $writes[] = $query->sql;
             }
         });
@@ -239,7 +241,7 @@ class QuotationIssueReadinessTest extends TestCase
         $revision = $this->prepared();
         $nobody = User::factory()->create();
         $limited = User::factory()->create();
-        $limited->givePermissionTo(self::PREPARE);
+        $limited->givePermissionTo([self::PREPARE, PermissionVocabulary::QUOTATION_VIEW]);
         AccessScopeLimit::create(['user_id' => $limited->id, 'permission' => self::PREPARE, 'scope' => 'MY_UNITS']);
 
         foreach ([$nobody, $limited] as $refused) {

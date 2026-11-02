@@ -35,11 +35,12 @@ final class DraftSource
     {
         $source = match ($kind) {
             PricingSourceKind::DirectItem => PricingSource::directItem($itemId ?? throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'A direct Item line names its Item.', 'item_id')),
+            PricingSourceKind::ServiceItem => PricingSource::serviceItem($itemId ?? throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'A service Item line names its Item.', 'item_id')),
             PricingSourceKind::Manual => PricingSource::manual((string) $description, (string) $manualMeasure),
-            default => throw QuotationRefusal::make(QuotationRefusal::SOURCE_KIND_NOT_AUTHORISED, "A {$kind->value} line cannot be prepared yet: only direct Item and manual lines are authorised.", 'source_kind'),
+            default => throw QuotationRefusal::make(QuotationRefusal::SOURCE_KIND_NOT_AUTHORISED, "A {$kind->value} line cannot be prepared yet: only direct Item, service Item and manual lines are authorised.", 'source_kind'),
         };
         // An Item is sold in its own stock unit; naming it is optional, and naming any other unit is the kernel's SELLING_UNIT_UNSUPPORTED refusal.
-        if ($kind === PricingSourceKind::DirectItem && $uomId === null) {
+        if (in_array($kind, [PricingSourceKind::DirectItem, PricingSourceKind::ServiceItem], true) && $uomId === null) {
             $uomId = Item::query()->whereKey($itemId)->value('stock_uom_id');
         }
         // The adapters prove the source and quantity; they never settle or read the Party, so a draft without a recipient can still be checked. Preview verifies the Party.

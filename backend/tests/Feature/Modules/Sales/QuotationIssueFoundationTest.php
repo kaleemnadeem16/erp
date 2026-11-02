@@ -45,14 +45,21 @@ class QuotationIssueFoundationTest extends TestCase
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
         Permission::findOrCreate(PermissionVocabulary::QUOTATION_PREPARE, 'web');
+        Permission::findOrCreate(PermissionVocabulary::QUOTATION_VIEW, 'web');
         $pkr = Currency::firstOrCreate(['code' => 'PKR'], ['name' => 'Rupee', 'symbol' => 'Rs', 'decimal_places' => 2]);
         Company::findOrFail(1)->update(['base_currency_id' => $pkr->id]);
         $this->user = User::factory()->create();
-        $this->user->givePermissionTo(PermissionVocabulary::QUOTATION_PREPARE);
+        $this->user->givePermissionTo([PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW]);
         $this->party = Party::create(['code' => 'CUSTOMER', 'name' => 'Customer Ltd']);
-        $duties = array_map(fn (SalesDuty $duty): SalesDuty => $duty->name === PermissionVocabulary::QUOTATION_PREPARE
+        $duties = array_map(fn (SalesDuty $duty): SalesDuty => in_array($duty->name, [PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW], true)
             ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate) : $duty, SalesDutyManifest::shipped()->all());
         $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest($duties));
+    }
+
+    /** The first instant after a valid-through day in the captured zone, as the database computes it. */
+    private function expiryOf(string $date): string
+    {
+        return CarbonImmutable::parse($date, 'Asia/Karachi')->addDay()->startOfDay()->toIso8601String();
     }
 
     private function key(): string
@@ -105,7 +112,7 @@ class QuotationIssueFoundationTest extends TestCase
         $issueRow = $issue + ['company_id' => 1, 'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'reviewed_generation' => $revision->input_generation, 'revision_created_by' => $revision->created_by,
             'issued_by' => $this->user->id, 'issued_at' => now(), 'official_number' => $number, 'numbering_allocation_id' => $allocation->allocationId, 'policy_version' => 'ISSUE.1', 'unknown_payment_policy' => 'BLOCK',
             'currency_id' => $revision->currency_id, 'pricing_date' => $revision->pricing_date->format('Y-m-d'), 'tax_estimate_date' => $revision->tax_estimate_date?->format('Y-m-d'),
-            'valid_through_local_date' => $revision->valid_through_local_date->format('Y-m-d'), 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth(),
+            'valid_through_local_date' => $revision->valid_through_local_date->format('Y-m-d'), 'issued_timezone' => 'Asia/Karachi', 'expires_at' => $this->expiryOf($revision->valid_through_local_date->format('Y-m-d')),
             'net_total' => '200.0000', 'optional_net_total' => '30.0000', 'tax_total' => $taxed ? '20.0000' : null, 'gross_total' => $taxed ? '220.0000' : null, 'rounding_policy_fingerprint' => null,
             'rounding_policy_version_no' => null, 'tax_calculation_version' => $taxed ? 'FR3.1' : null, 'tax_generation' => $taxed ? 1 : null, 'tax_evidence_fingerprint' => $taxed ? str_repeat('b', 64) : null,
             'controls_outcome' => 'PASS', 'controls_fingerprint' => null, 'financial_fingerprint' => str_repeat('c', 64)];
@@ -166,6 +173,7 @@ class QuotationIssueFoundationTest extends TestCase
             'a tax total that is not the sum of the counted line taxes' => ['wrong-tax'],
             'a reviewed generation that is not the revision generation' => ['wrong-generation'],
             'an issue instant that differs from the revision' => ['wrong-instant'],
+            'an expiry that is not the end of the valid-through day in the captured zone' => ['wrong-expiry'],
             'a frozen description that is not the draft line\'s' => ['term-description'],
             'a frozen quantity that is not the draft line\'s' => ['term-quantity'],
             'a frozen unit price that is not the draft line\'s' => ['term-price'],
@@ -183,6 +191,9 @@ class QuotationIssueFoundationTest extends TestCase
         if (str_starts_with($case, 'term-')) {
             $this->expectExceptionMessage('does not state what its draft line offered');
         }
+        if ($case === 'wrong-expiry') {
+            $this->expectExceptionMessage('The expiry is not the end of the valid-through day');
+        }
 
         match ($case) {
             'issue-only' => $this->issueRowOnly($revision),
@@ -199,6 +210,7 @@ class QuotationIssueFoundationTest extends TestCase
             'term-membership' => $this->writeIssue($revision, lines: fn (array $rows): array => [$rows[0], ['membership' => 'BASE', 'counts_in_total' => true] + $rows[1]], issue: ['net_total' => '230.0000', 'optional_net_total' => null, 'tax_total' => '23.0000', 'gross_total' => '253.0000']),
             'term-source' => $this->writeIssue($revision, lines: fn (array $rows): array => [['manual_measure' => 'hour'] + $rows[0], $rows[1]]),
             'term-order' => $this->writeIssue($revision, lines: fn (array $rows): array => [['sort_order' => 99] + $rows[0], $rows[1]]),
+            'wrong-expiry' => $this->writeIssue($revision, ['expires_at' => now()->addYear()], ['expires_at' => now()->addYear()]),
             'wrong-instant' => $this->writeIssue($revision, ['expires_at' => now()->addYear()], ['expires_at' => now()->addDay()]),
         };
     }

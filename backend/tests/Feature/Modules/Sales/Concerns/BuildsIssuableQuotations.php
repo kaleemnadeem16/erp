@@ -15,6 +15,7 @@ use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
+use Carbon\CarbonImmutable;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\Sales\FakeQuotationControlsProvider;
@@ -41,7 +42,7 @@ trait BuildsIssuableQuotations
         Company::findOrFail(1)->update(['base_currency_id' => $pkr->id]);
         $this->customer = Party::create(['code' => 'CUSTOMER', 'name' => 'Customer Ltd']);
         $this->maker = User::factory()->create();
-        $this->maker->givePermissionTo(PermissionVocabulary::QUOTATION_PREPARE);
+        $this->maker->givePermissionTo([PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW]);
         $this->checker = User::factory()->create();
         $this->checker->givePermissionTo([PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW]);
         $this->activateIssuing();
@@ -55,6 +56,12 @@ trait BuildsIssuableQuotations
         $duties = array_map(fn (SalesDuty $duty): SalesDuty => in_array($duty->name, $names, true)
             ? new SalesDuty($duty->name, $duty->class, DutyStatus::Active, $duty->operation, $duty->projection, $duty->deliveryGate) : $duty, SalesDutyManifest::shipped()->all());
         $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest($duties));
+    }
+
+    /** The first instant after a valid-through day in the captured zone, as the database computes it. */
+    protected function expiryOf(string $date): string
+    {
+        return CarbonImmutable::parse($date, 'Asia/Karachi')->addDay()->startOfDay()->toIso8601String();
     }
 
     protected function issueKey(): string

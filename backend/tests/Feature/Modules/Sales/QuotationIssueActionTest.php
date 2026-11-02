@@ -340,6 +340,32 @@ class QuotationIssueActionTest extends TestCase
         }
     }
 
+    public function test_an_issuer_limited_to_their_own_quotations_cannot_see_or_issue_anyone_elses_and_an_unrestricted_one_can(): void
+    {
+        $theirs = $this->preparedDraft();
+        // The issuer also prepares one of their own: a family belongs to its creator.
+        $this->checker->givePermissionTo(PermissionVocabulary::QUOTATION_PREPARE);
+        $created = app(CreateQuotationDraft::class)($this->checker, $this->issueKey(), ['recipient_party_id' => $this->customer->id, 'pricing_date' => $this->today(), 'tax_estimate_date' => $this->today(),
+            'valid_through_local_date' => now()->addMonth()->format('Y-m-d')]);
+        app(UpdateQuotationDraft::class)($this->checker, $created->revisionId, $created->inputGeneration, $this->issueKey(), ['add_lines' => [
+            ['source_kind' => 'MANUAL', 'description' => 'Survey', 'manual_measure' => 'job', 'offered_quantity' => '2', 'unit_price' => '100.0000'],
+        ]]);
+        $mine = QuotationRevision::findOrFail($created->revisionId);
+        foreach ([PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW] as $duty) {
+            AccessScopeLimit::create(['user_id' => $this->checker->id, 'permission' => $duty, 'scope' => 'OWN']);
+        }
+
+        // Someone else's quotation does not exist for an OWN-limited issuer: the same code as an unknown id, and nothing is allocated.
+        $this->assertSame('QUOTATION_NOT_FOUND', $this->refusalCode(fn () => $this->issue($theirs)));
+        $this->assertSame('QUOTATION_NOT_FOUND', $this->refusalCode(fn () => app(IssueQuotation::class)($this->checker, 987654, 1, $this->issueKey())));
+        $this->assertSame(0, $this->allocations());
+        $this->assertSame('QTN-00001', $this->issue($mine)->officialNumber);
+
+        // An unrestricted issuer (the administrator case) issues anyone's.
+        AccessScopeLimit::query()->where('user_id', $this->checker->id)->delete();
+        $this->assertSame('QTN-00002', $this->issue($theirs)->officialNumber);
+    }
+
     public function test_a_staged_duty_refuses_every_caller(): void
     {
         $revision = $this->preparedDraft();

@@ -22,14 +22,14 @@ use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\IssueAssessment;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationIssueAssessor;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationIssueOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
+use App\Modules\Tax\Support\Quotation\QuotationTaxGenerationFence;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Carbon\CarbonImmutable;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -55,6 +55,7 @@ final class IssueQuotation
         private readonly NumberingService $numbering,
         private readonly CompanyContext $company,
         private readonly BindDocumentManifest $documents,
+        private readonly QuotationTaxGenerationFence $taxFence,
     ) {}
 
     public function __invoke(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey): QuotationIssueOutcome
@@ -66,12 +67,8 @@ final class IssueQuotation
             $context, 'quotation.issue', $requestKey, ['revision_id' => $revisionId, 'expected_generation' => $expectedGeneration],
             // Runs inside every attempt, before the receipt is read and before any work: a revocation or suspension that lands between a retry's attempts, or between the
             // check above and the lock, refuses the replay and the mutation alike.
-            function () use ($actor, $revisionId): QuotationRevision {
-                $this->authorise($actor);
-
-                return QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
-                ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
-            },
+            // Inside every attempt, after the company access fence and before the receipt is read: the exact duties and the record policy of THIS revision, 404 when it is not visible.
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW], true),
             fn (QuotationRevision $revision): array => $this->issue($actor, $context, $revision, $expectedGeneration),
         );
 
@@ -80,10 +77,20 @@ final class IssueQuotation
 
     private function authorise(User $actor): void
     {
-        ActiveActor::require($actor, 'issue a quotation');
-        if (! SalesAccess::mayAll($actor, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to issue a quotation.');
-        }
+        // Capability and record access are judged inside the operation by QuotationAccess, under the company access fence; this is only the early refusal of a non-member.
+        ActiveActor::require($actor, 'use quotations');
+    }
+
+    /**
+     * The issue itself, for a caller that already holds the operation transaction, the revision lock and has judged the issuer's authority (the whole replacement).
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function issueLocked(User $actor, SalesActorContext $context, QuotationRevision $revision, int $expectedGeneration): array
+    {
+        return $this->issue($actor, $context, $revision, $expectedGeneration);
     }
 
     /** @return array<string, mixed> */
@@ -98,6 +105,12 @@ final class IssueQuotation
         if ($revision->input_generation !== $expectedGeneration) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_DRAFT_STALE, "The draft is at generation {$revision->input_generation}, not {$expectedGeneration}; review it again before issuing.", 'expected_generation');
         }
+        // The company row is the fence every Sales financial-policy writer takes exclusively (rounding policy, control set): holding it shared until this issue commits means the
+        // controls and policies judged below cannot be replaced between that judgement and the issue becoming official. Taken after the revision lock, before any policy read.
+        Company::query()->whereKey($this->company->id())->sharedLock()->firstOrFail();
+        // Tax's writers serialise on this row until this issue commits: the tax judged below is the tax in force when the issue becomes official, not a second read that a
+        // committing evidence writer could overtake. Taken after the revision lock and before any Tax read (Agent C's contract).
+        $this->taxFence->lock();
         $assessment = $this->assessor->assess($actor, $context, $revision);
         if (! $assessment->ready() || $assessment->preview === null || $assessment->tax === null || ! $assessment->tax->complete || $assessment->controls === null || ! $assessment->controls->passed) {
             $codes = implode(', ', array_map(fn ($blocker): string => $blocker->code.($blocker->lineId === null ? '' : '@'.$blocker->lineId), $assessment->blockers));
