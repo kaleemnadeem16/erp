@@ -161,18 +161,18 @@ class DocumentsDeliveryTest extends TestCase
         Storage::disk('files')->put($this->path($corrupt), 'tampered');
         Storage::disk('files')->delete($this->path($missing));
 
-        $first = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, 0, 2);
-        $this->assertSame([2, 1, 1, $corrupt->id], [$first['checked'], $first['ok'], $first['corrupt'], $first['next_after_id']]);
-        $second = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, $first['next_after_id'], 2);
-        $this->assertSame([1, 1, null], [$second['checked'], $second['missing'], $second['next_after_id']]);
+        $first = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, null, 2);
+        $this->assertSame([2, 1, 1, true], [$first['checked'], $first['ok'], $first['corrupt'], is_string($first['next_cursor'])]);
+        $second = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, $first['next_cursor'], 2);
+        $this->assertSame([1, 1, null], [$second['checked'], $second['missing'], $second['next_cursor']]);
         $this->assertSame(['VERIFIED', 'QUARANTINED', 'MISSING'], [FileBlob::query()->find($ok->blob_id)->health, FileBlob::query()->find($corrupt->blob_id)->health, FileBlob::query()->find($missing->blob_id)->health]);
         $this->assertSame(3, DocumentArtefact::query()->count(), 'nothing is deleted or regenerated');
 
         // A second pass has nothing left to change.
-        $again = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, 0, 10);
+        $again = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, null, 10);
         $this->assertSame([3, 1, 2], [$again['checked'], $again['ok'], $again['unchanged']]);
-        foreach ([[0, 0], [1, 501], [-1, 5]] as [$after, $limit]) {
-            $this->assertSame('sweep_invalid', $this->refusal(fn () => app(ReconcileDocumentArtefacts::class)->execute($this->user->id, $after, $limit)));
+        foreach ([[null, 0], [null, 501], ['not-a-cursor', 5]] as [$cursor, $limit]) {
+            $this->assertSame('sweep_invalid', $this->refusal(fn () => app(ReconcileDocumentArtefacts::class)->execute($this->user->id, $cursor, $limit)));
         }
     }
 
@@ -214,7 +214,46 @@ class DocumentsDeliveryTest extends TestCase
         $r = app(ReconcileDocumentArtefacts::class)->execute($this->user->id);
         $this->assertSame([1, 1, 0], [$r['checked'], $r['missing'], $r['ok']], 'the blocked document is neither examined nor counted');
         $this->assertSame(['MISSING', 'VERIFIED'], [FileBlob::query()->findOrFail($allowed->blob_id)->health, FileBlob::query()->findOrFail($blocked->blob_id)->health]);
-        $this->assertSame(['checked', 'ok', 'missing', 'corrupt', 'unchanged', 'next_after_id', 'orphans'], array_keys($r), 'counts and a position only: no blob, file or storage identity');
+        $this->assertSame(['checked', 'ok', 'missing', 'corrupt', 'unchanged', 'next_cursor', 'orphans'], array_keys($r), 'counts and a sealed cursor only: no blob, file or storage identity');
+    }
+
+    public function test_the_cursor_never_reveals_a_hidden_id_and_resuming_scans_everything_the_actor_may_see(): void
+    {
+        $a = [];
+        foreach (range(1, 6) as $n) {
+            $a[$n] = $this->artefact('po:'.$n);
+        }
+        // The caller may repair 1, 3 and 5; 2, 4 and 6 are interleaved across every page boundary and hidden from them.
+        $visible = [$a[1]->id, $a[3]->id, $a[5]->id];
+        $this->adapter->rule = fn (DocumentOperationContext $c): bool => $c->operation !== 'reconcile_artefact' || in_array($c->ownerBindingIdentity, ['po:1', 'po:3', 'po:5'], true);
+        foreach ($a as $n => $artefact) {
+            if ($n % 2 === 1) {
+                Storage::disk('files')->delete($this->path($artefact));
+            }
+        }
+
+        $cursor = null;
+        $missing = 0;
+        $pages = 0;
+        do {
+            $page = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, $cursor, 2);
+            $missing += $page['missing'];
+            $cursor = $page['next_cursor'];
+            $pages++;
+            $text = json_encode($page);
+            foreach ([$a[2]->id, $a[4]->id, $a[6]->id] as $hidden) {
+                $this->assertDoesNotMatchRegularExpression('/(?<![0-9a-zA-Z=+\/])'.$hidden.'(?![0-9])/', (string) preg_replace('/"next_cursor":"[^"]*"/', '"next_cursor":"x"', $text), 'no hidden id appears in the result');
+            }
+            $this->assertTrue($cursor === null || (is_string($cursor) && ! ctype_digit($cursor)), 'the cursor is opaque, not an id');
+        } while ($cursor !== null && $pages < 10);
+
+        $this->assertSame(count($visible), $missing, 'resuming scanned everything the caller may see');
+        $this->assertSame(['MISSING', 'VERIFIED'], [FileBlob::query()->findOrFail($a[5]->blob_id)->health, FileBlob::query()->findOrFail($a[6]->blob_id)->health]);
+        // A cursor is bound to its actor and its company, and cannot be forged or edited.
+        $other = User::factory()->create();
+        $first = app(ReconcileDocumentArtefacts::class)->execute($this->user->id, null, 2)['next_cursor'];
+        $this->assertSame('sweep_invalid', $this->refusal(fn () => app(ReconcileDocumentArtefacts::class)->execute($other->id, $first, 2)));
+        $this->assertSame('sweep_invalid', $this->refusal(fn () => app(ReconcileDocumentArtefacts::class)->execute($this->user->id, $first.'x', 2)));
     }
 
     public function test_a_crashed_generation_leaves_a_verified_file_no_artefact_owns_and_the_sweep_reports_it(): void
