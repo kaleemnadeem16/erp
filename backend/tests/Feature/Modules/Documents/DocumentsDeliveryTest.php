@@ -176,13 +176,45 @@ class DocumentsDeliveryTest extends TestCase
         }
     }
 
-    public function test_an_actor_the_owner_refuses_gets_every_artefact_counted_as_refused(): void
+    public function test_an_actor_the_owner_refuses_learns_nothing_from_the_sweep_and_nothing_is_examined(): void
+    {
+        $tampered = $this->artefact('po:1');
+        $this->artefact('po:2');
+        Storage::disk('files')->put($this->path($tampered), 'tampered');
+        $this->adapter->rule = fn (): bool => false;
+
+        $this->assertSame('access_denied', $this->refusal(fn () => app(ReconcileDocumentArtefacts::class)->execute($this->user->id)));
+        $this->assertSame('VERIFIED', FileBlob::query()->findOrFail($tampered->blob_id)->health, 'an unauthorised sweep does not even examine the object');
+    }
+
+    public function test_inactive_missing_and_foreign_company_actors_are_refused_before_anything_is_computed(): void
     {
         $this->artefact('po:1');
-        $this->artefact('po:2');
-        $this->adapter->rule = fn (): bool => false;
+        $suspended = User::factory()->create();
+        DB::table('users')->where('id', $suspended->id)->update(['status' => 'SUSPENDED']);
+        $other = DB::table('companies')->insertGetId(['name' => 'Other Co', 'created_at' => now(), 'updated_at' => now()]);
+        $foreign = User::factory()->create();
+        DB::table('users')->where('id', $foreign->id)->update(['company_id' => $other]);
+        $events = DB::table('file_blob_events')->count();
+
+        foreach ([$suspended->id, $foreign->id, 999999] as $actor) {
+            $this->assertSame('access_denied', $this->refusal(fn () => app(ReconcileDocumentArtefacts::class)->execute($actor)));
+        }
+        $this->assertSame($events, DB::table('file_blob_events')->count());
+    }
+
+    public function test_only_the_documents_the_actor_may_repair_are_counted_and_no_identity_is_returned(): void
+    {
+        $allowed = $this->artefact('po:1');
+        $blocked = $this->artefact('po:2');
+        Storage::disk('files')->delete($this->path($allowed));
+        Storage::disk('files')->delete($this->path($blocked));
+        $this->adapter->rule = fn (DocumentOperationContext $c): bool => $c->ownerBindingIdentity === 'po:1' || $c->operation !== 'reconcile_artefact';
+
         $r = app(ReconcileDocumentArtefacts::class)->execute($this->user->id);
-        $this->assertSame([2, 2, 0], [$r['checked'], $r['refused'], $r['ok']]);
+        $this->assertSame([1, 1, 0], [$r['checked'], $r['missing'], $r['ok']], 'the blocked document is neither examined nor counted');
+        $this->assertSame(['MISSING', 'VERIFIED'], [FileBlob::query()->findOrFail($allowed->blob_id)->health, FileBlob::query()->findOrFail($blocked->blob_id)->health]);
+        $this->assertSame(['checked', 'ok', 'missing', 'corrupt', 'unchanged', 'next_after_id', 'orphans'], array_keys($r), 'counts and a position only: no blob, file or storage identity');
     }
 
     public function test_a_crashed_generation_leaves_a_verified_file_no_artefact_owns_and_the_sweep_reports_it(): void
@@ -202,10 +234,10 @@ class DocumentsDeliveryTest extends TestCase
         $this->assertSame([0, 'FAILED'], [DocumentArtefact::query()->count(), $b['intent']->refresh()->state]);
         $this->assertCount(1, Storage::disk('files')->allFiles());
 
-        $this->assertSame([], app(ReconcileDocumentArtefacts::class)->execute($this->user->id)['orphan_blob_ids'], 'too recent to be called abandoned');
+        $this->assertSame(0, app(ReconcileDocumentArtefacts::class)->execute($this->user->id)['orphans'], 'too recent to be called abandoned');
         Carbon::setTestNow(now()->addHours(3));
         $report = app(ReconcileDocumentArtefacts::class)->execute($this->user->id);
-        $this->assertCount(1, $report['orphan_blob_ids']);
+        $this->assertSame(1, $report['orphans']);
         $this->assertCount(1, Storage::disk('files')->allFiles(), 'reported, never deleted');
     }
 
