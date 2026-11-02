@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Support;
 
 use App\Models\User;
+use App\Modules\Sales\Models\CustomerDecisionCase;
+use App\Modules\Sales\Models\CustomerDecisionEvidence;
 use App\Modules\Sales\Models\QuotationControlSet;
 use App\Modules\Sales\Models\QuotationIssue;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
@@ -24,6 +26,8 @@ class QuotationDemoSeederTest extends TestCase
         $this->assertSame(1, QuotationControlSet::query()->count());
         $this->assertSame(['FLOOR', 'FLOOR'], QuotationControlSet::query()->sole()->controls->pluck('kind')->all());
         $this->assertSame(0, QuotationIssue::query()->count(), 'issue stays blocked until the Tax jurisdiction/classification source exists');
+        // The intake demo hangs on a demo quotation family; the named drafts exist only where the staged duties are locally activated, so here there is nothing to take in.
+        $this->assertSame([0, 0], [CustomerDecisionCase::query()->count(), CustomerDecisionEvidence::query()->count()]);
         $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $this->assertTrue($admin->hasPermissionTo(Sales::QUOTATION_ISSUE));
         $this->assertFalse(app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_ISSUE), 'the staged duties are switched on only while seeding');

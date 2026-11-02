@@ -50,7 +50,7 @@ final class SalesDutyCatalogue
             new SalesDuty('sales.pricing.terms.view', DutyClass::Sensitive, DutyStatus::Specified, 'Read otherwise protected term choices', 'Confidential terms', 'PR2/3'),
             new SalesDuty(PermissionVocabulary::FINANCIAL_CONFIGURE, DutyClass::Sensitive, DutyStatus::Staged, 'Sales FX/rounding policy', 'Config', 'FR1/4'),
             new SalesDuty('sales.customer-decision.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Decision/case safe detail/history', 'Decision-min', 'CA1'),
-            new SalesDuty('sales.customer-decision.evidence.record', DutyClass::NewOrdinary, DutyStatus::Specified, 'Shared intake/append observations', 'Evidence-write', 'CA1; file requires secure DF'),
+            new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, DutyClass::NewOrdinary, DutyStatus::Staged, 'Shared intake/append observations', 'Evidence-write', 'CA1; file requires secure DF'),
             new SalesDuty('sales.customer-decision.accept', DutyClass::Sensitive, DutyStatus::Specified, 'Authoritative ordinary consent/claims', 'Exact consent', 'CA2/3'),
             new SalesDuty('sales.customer-decision.reconcile', DutyClass::Sensitive, DutyStatus::Specified, 'Late recognition', 'Historical consent/impact', 'CA5 + affected HA'),
             new SalesDuty('sales.customer-decision.correct', DutyClass::Sensitive, DutyStatus::Specified, 'Governed accepted reduction', 'Exact consent/impact', 'HA6/CA5'),

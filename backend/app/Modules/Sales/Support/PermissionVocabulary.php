@@ -76,6 +76,12 @@ final class PermissionVocabulary
     public const QUOTATION_WITHDRAW = 'sales.quotation.withdraw';
 
     /**
+     * Recording what a customer sent (CA1): opening a shared intake case and appending textual observations to it. STAGED: `OpenCustomerDecisionCase` and
+     * `AppendCustomerDecisionEvidence` exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates it. An observation is never consent.
+     */
+    public const CUSTOMER_DECISION_EVIDENCE_RECORD = 'sales.customer-decision.evidence.record';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */
