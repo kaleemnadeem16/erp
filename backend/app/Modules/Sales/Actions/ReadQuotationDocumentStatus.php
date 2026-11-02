@@ -9,6 +9,7 @@ use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Files\Models\FileBlob;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -24,7 +25,8 @@ final class ReadQuotationDocumentStatus
     {
         // Authority (exact duty, then the quotation-family policy) and the read share one transaction, so the fence holds until the result is built.
         return DB::transaction(function () use ($actor, $revisionId): array {
-            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_VIEW, 'see the quotation document');
+            SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_VIEW, 'see the quotation document');
+            $this->locator->authorise($actor, $revisionId, 'see the quotation document');
 
             return $this->status($revisionId);
         });

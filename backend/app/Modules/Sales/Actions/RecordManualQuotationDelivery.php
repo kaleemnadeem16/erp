@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +33,8 @@ final class RecordManualQuotationDelivery
     {
         // Authority, the replay look-up and the insert share one transaction, so a replay is only disclosed to someone who may see it now.
         return DB::transaction(function () use ($actor, $revisionId, $fields, $operationKey, $correctsId): array {
-            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DELIVERY_RECORD, 'record a quotation delivery');
+            SalesAccess::require($actor, PermissionVocabulary::DELIVERY_RECORD, 'record a quotation delivery');
+            $this->locator->authorise($actor, $revisionId, 'record a quotation delivery');
 
             return $this->record($actor, $revisionId, $fields, $operationKey, $correctsId);
         });

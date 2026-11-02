@@ -9,6 +9,7 @@ use App\Modules\Documents\Actions\ReconcileDocumentArtefact;
 use App\Modules\Documents\Actions\RestoreDocumentArtefact;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -34,7 +35,8 @@ final class RepairQuotationDocument
 
     private function guarded(User $actor, int $revisionId): int
     {
-        $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_REPAIR, 'repair the quotation document');
+        SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_REPAIR, 'repair the quotation document');
+        $this->locator->authorise($actor, $revisionId, 'repair the quotation document');
 
         return $this->locator->artefactOrFail($revisionId)->id;
     }

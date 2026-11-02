@@ -11,6 +11,7 @@ use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
@@ -34,7 +35,8 @@ final class RequestQuotationDocument
         // Authority is decided under the fence before anything is requested, and again before the result is disclosed. Generation itself runs
         // between the two, outside any transaction, because the Documents worker commits its own lease and progress.
         $manifest = DB::transaction(function () use ($actor, $revisionId) {
-            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_GENERATE, 'generate the quotation document');
+            SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_GENERATE, 'generate the quotation document');
+            $this->locator->authorise($actor, $revisionId, 'generate the quotation document');
 
             return $this->locator->manifest($revisionId);
         });
@@ -61,7 +63,8 @@ final class RequestQuotationDocument
     private function disclose(User $actor, int $revisionId): array
     {
         return DB::transaction(function () use ($actor, $revisionId): array {
-            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_GENERATE, 'generate the quotation document');
+            SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_GENERATE, 'generate the quotation document');
+            $this->locator->authorise($actor, $revisionId, 'generate the quotation document');
 
             return $this->status->status($revisionId);
         });

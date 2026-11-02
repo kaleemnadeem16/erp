@@ -15,7 +15,6 @@ use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -27,18 +26,19 @@ use LogicException;
 final class QuotationDocumentLocator
 {
     /**
-     * The one authority check every quotation document Action makes, inside its own transaction and before anything about the revision is
-     * read: a current ACTIVE member, the exact document duty (company-wide: document duties have no family scope, so a limited grant is
-     * refused) and then the #77 quotation-family policy for the independent view (OWN = current responsible owner, ALL = the company), under
-     * the company access fence held until the caller's transaction ends. A missing duty is 403 before any lookup; a revision that is unknown,
-     * in another company or outside the caller's family scope is the same QUOTATION_NOT_FOUND (404), so nothing discloses existence.
+     * The record half of every quotation document Action's authority. The Action first requires its exact document duty itself
+     * (SalesAccess::require: company-wide, because document duties have no family scope, so a limited grant is refused, never widened).
+     * Then, inside the Action's transaction and before anything about the revision is read: a current ACTIVE member, and the #77
+     * quotation-family policy for the independent view (OWN = current responsible owner, ALL = the company) under the company access fence,
+     * held until the caller's transaction ends. A revision that is unknown, in another company or outside the caller's family scope is the
+     * same DOCUMENT_NOT_FOUND (404) as an unissued one, so nothing discloses existence.
      */
-    public function authorise(User $actor, int $revisionId, string $duty, string $doing): void
+    public function authorise(User $actor, int $revisionId, string $doing): void
     {
         if (DB::transactionLevel() < 1) {
             throw new LogicException('Quotation document authority must be decided inside the transaction that reads the result.');
         }
-        if (ActiveActor::current($actor) === null || ! SalesAccess::may($actor, $duty)) {
+        if (ActiveActor::current($actor) === null) {
             throw new AuthorizationException("You are not permitted to {$doing}.");
         }
         try {

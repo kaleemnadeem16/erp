@@ -9,6 +9,7 @@ use App\Modules\Documents\Actions\StreamAuthorisedDocument;
 use App\Modules\Documents\Support\DocumentDownload;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -23,7 +24,8 @@ final class DownloadQuotationDocument
     {
         // The bytes are copied to a private temporary stream inside execute(), so the hand-off record and the authority share this transaction.
         return DB::transaction(function () use ($actor, $revisionId, $kind): DocumentDownload {
-            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_DOWNLOAD, 'download the quotation document');
+            SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_DOWNLOAD, 'download the quotation document');
+            $this->locator->authorise($actor, $revisionId, 'download the quotation document');
 
             return $this->documents->execute($this->locator->artefactOrFail($revisionId)->id, $actor->id, $kind);
         });
