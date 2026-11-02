@@ -16,9 +16,12 @@ use App\Modules\Documents\Support\FieldType;
 use App\Modules\Documents\Support\ProjectionSchema;
 use App\Modules\Documents\Support\SectionSchema;
 use App\Modules\Sales\Models\QuotationIssue;
+use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\SalesAccess;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The customer-facing quotation document type (ADR 0137). Sales owns the projection allowlist and the access decision; Documents validates shape only and
@@ -110,16 +113,29 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
         }
         // Reading, handing out or repairing the stored document also needs the actor to be able to see that quotation, and the quotation must really be issued.
         if (in_array($context->operation, ['read_status', 'history', 'download', 'reconcile_artefact', 'restore_artefact'], true)) {
-            return SalesAccess::may($actor, PermissionVocabulary::QUOTATION_VIEW) && $this->isIssued($context);
+            return $this->mayViewIssued($actor, $context);
         }
 
         return true;
     }
 
-    private function isIssued(DocumentOperationContext $context): bool
+    /**
+     * The quotation view is decided by the same quotation-family policy as the Sales document Actions (QuotationAccess: OWN = the current responsible owner,
+     * ALL = the company), never company-wide by the bare duty. Inside a caller's transaction this is a savepoint and the company access fence is held until
+     * the caller commits; a caller without one (the reconcile sweep) gets a short transaction of its own. Any refusal, hidden or unknown revision is a denial.
+     */
+    private function mayViewIssued(User $actor, DocumentOperationContext $context): bool
     {
-        return $context->audience === self::AUDIENCE && preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) === 1
-            && QuotationRevision::query()->whereKey((int) $m[1])->where('state', 'ISSUED')->exists();
+        if ($context->audience !== self::AUDIENCE || preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) !== 1) {
+            return false;
+        }
+        try {
+            $revision = DB::transaction(fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, (int) $m[1], [PermissionVocabulary::QUOTATION_VIEW]));
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $revision->state === 'ISSUED';
     }
 
     /**

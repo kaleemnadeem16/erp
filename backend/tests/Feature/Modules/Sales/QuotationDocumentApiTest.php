@@ -268,6 +268,10 @@ class QuotationDocumentApiTest extends TestCase
         Sanctum::actingAs($this->maker);
         $this->getJson($this->url('/document'))->assertOk()->assertJsonPath('data.state', 'READY');
         $this->getJson($this->url('/deliveries'))->assertOk()->assertJsonCount(1, 'data');
+        // History and download also pass the Documents owner gate, which must apply the same family policy (not a company-wide view).
+        $this->getJson($this->url('/document/history'))->assertOk();
+        $this->assertStringStartsWith('%PDF-', $this->get($this->url('/document/download'))->assertOk()->streamedContent());
+        $before = $this->writes(); // the owner's download is a recorded hand-off
 
         Sanctum::actingAs($stranger);
         foreach ($this->routes() as [$method, $tail, $body, $keyed]) {
