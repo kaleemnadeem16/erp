@@ -3,12 +3,14 @@
 namespace Tests\Feature\Modules\Sales;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Numbering\Support\NumberingContext;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationRevision;
 use Carbon\CarbonImmutable;
+use Closure;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
@@ -100,7 +102,7 @@ class QuotationIssueCommitTest extends TestCase
         DB::transaction(function () use ($revision): void {
             $allocation = app(NumberingService::class)->allocate(new NumberingContext('QUOTATION', CarbonImmutable::now(), documentId: $revision->id));
             DB::table('quotation_revisions')->where('id', $revision->id)->update(['state' => 'ISSUED', 'official_number' => $allocation->number, 'numbering_allocation_id' => $allocation->allocationId,
-                'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth()]);
+                'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => $this->expiryOf($revision->valid_through_local_date->format('Y-m-d'))]);
         });
     }
 
@@ -116,7 +118,7 @@ class QuotationIssueCommitTest extends TestCase
             $issueId = DB::table('quotation_issues')->insertGetId(['company_id' => 1, 'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'reviewed_generation' => $revision->input_generation,
                 'revision_created_by' => $revision->created_by, 'issued_by' => $this->checker->id, 'issued_at' => now(), 'official_number' => $allocation->number, 'numbering_allocation_id' => $allocation->allocationId,
                 'policy_version' => 'ISSUE.1', 'unknown_payment_policy' => 'BLOCK', 'currency_id' => $revision->currency_id, 'pricing_date' => $revision->pricing_date->format('Y-m-d'), 'tax_estimate_date' => $revision->tax_estimate_date?->format('Y-m-d'),
-                'valid_through_local_date' => $revision->valid_through_local_date->format('Y-m-d'), 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth(), 'net_total' => '200.0000',
+                'valid_through_local_date' => $revision->valid_through_local_date->format('Y-m-d'), 'issued_timezone' => 'Asia/Karachi', 'expires_at' => $this->expiryOf($revision->valid_through_local_date->format('Y-m-d')), 'net_total' => '200.0000',
                 'optional_net_total' => '30.0000', 'controls_outcome' => 'PASS', 'financial_fingerprint' => str_repeat('c', 64)]);
             foreach ($lines as $i => $line) {
                 $base = $line->membership === 'BASE';
@@ -127,7 +129,123 @@ class QuotationIssueCommitTest extends TestCase
                     'price_currency_id' => $revision->currency_id, 'fx_fingerprint' => $line->fx_fingerprint, 'net' => $base ? '200.0000' : '30.0000']);
             }
             DB::table('quotation_revisions')->where('id', $revision->id)->update(['state' => 'ISSUED', 'official_number' => $allocation->number, 'numbering_allocation_id' => $allocation->allocationId,
-                'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => now()->addMonth()]);
+                'issued_by' => $this->checker->id, 'issued_timezone' => 'Asia/Karachi', 'expires_at' => $this->expiryOf($revision->valid_through_local_date->format('Y-m-d'))]);
         });
+    }
+
+    /**
+     * Two genuinely separate OS processes (pcntl_fork, as the Jobs and Documents slices do) each run the COMPLETE IssueQuotation, released together, each on its own connection.
+     *
+     * @return array{child: array<string, mixed>, parent: array<string, mixed>}
+     */
+    private function race(Closure $childWork, Closure $parentWork): array
+    {
+        $resultPath = sys_get_temp_dir().'/quotation_issue_race_'.getmypid().'.json';
+        $startPath = sys_get_temp_dir().'/quotation_issue_race_'.getmypid().'.start';
+        @unlink($resultPath);
+        @unlink($startPath);
+        $outcome = static function (Closure $work): array {
+            try {
+                $result = $work();
+
+                return ['ok' => true, 'issue' => $result->issueId, 'number' => $result->officialNumber, 'replayed' => $result->replayed];
+            } catch (DomainInvariantException $e) {
+                return ['ok' => false, 'reason' => $e->reasonCode];
+            } catch (\Throwable $e) {
+                return ['ok' => false, 'reason' => 'ERROR: '.$e->getMessage()];
+            }
+        };
+        try {
+            $pid = pcntl_fork();
+            $this->assertNotSame(-1, $pid, 'unable to fork');
+            if ($pid === 0) {
+                config(['database.connections.issue_race_child' => config('database.connections.testing'), 'database.default' => 'issue_race_child']);
+                for ($waited = 0; ! file_exists($startPath) && $waited < 3_000_000; $waited += 1000) {
+                    usleep(1000);
+                }
+                file_put_contents($resultPath, json_encode($outcome($childWork)));
+                posix_kill(getmypid(), SIGKILL);
+            }
+            $default = config('database.default');
+            config(['database.connections.issue_race_parent' => config('database.connections.testing'), 'database.default' => 'issue_race_parent']);
+            file_put_contents($startPath, '1');
+            try {
+                $parent = $outcome($parentWork);
+            } finally {
+                config(['database.default' => $default]);
+                DB::purge('issue_race_parent');
+            }
+            pcntl_waitpid($pid, $status);
+            $child = json_decode((string) file_get_contents($resultPath), true);
+            $this->assertIsArray($child, 'the forked child did not report an outcome');
+
+            return ['child' => $child, 'parent' => $parent];
+        } finally {
+            @unlink($resultPath);
+            @unlink($startPath);
+        }
+    }
+
+    public function test_two_processes_issuing_the_same_revision_produce_exactly_one_number_and_one_issue(): void
+    {
+        $revision = $this->preparedDraft();
+        $generation = QuotationRevision::findOrFail($revision->id)->input_generation;
+        // The actor is loaded inside each process so that its relations use that process's own connection, not the one it was created on before the fork.
+        $checkerId = $this->checker->id;
+        $issue = fn (string $key) => fn () => app(IssueQuotation::class)(User::query()->findOrFail($checkerId), $revision->id, $generation, $key);
+
+        $result = $this->race($issue('child-key'), $issue('parent-key'));
+
+        $outcomes = [$result['child'], $result['parent']];
+        $winners = array_values(array_filter($outcomes, fn (array $o): bool => $o['ok']));
+        $losers = array_values(array_filter($outcomes, fn (array $o): bool => ! $o['ok']));
+        $this->assertCount(1, $winners, json_encode($result));
+        $this->assertSame('QUOTATION_ALREADY_ISSUED', $losers[0]['reason'] ?? null, 'the loser is refused cleanly, never an error: '.json_encode($result));
+        $this->assertSame([1, 1, 1], [DB::table('quotation_issues')->count(), DB::table('numbering_allocations')->where('doc_type', 'QUOTATION')->count(), DB::table('document_manifests')->count()]);
+        $this->assertSame($winners[0]['number'], DB::table('quotation_revisions')->where('id', $revision->id)->value('official_number'));
+    }
+
+    public function test_two_processes_issuing_different_revisions_get_two_distinct_numbers_without_a_deadlock(): void
+    {
+        $first = $this->preparedDraft();
+        $second = $this->preparedDraft();
+        $checkerId = $this->checker->id;
+        $issue = fn (QuotationRevision $r, string $key) => fn () => app(IssueQuotation::class)(User::query()->findOrFail($checkerId), $r->id, QuotationRevision::findOrFail($r->id)->input_generation, $key);
+
+        $result = $this->race($issue($first, 'child-key'), $issue($second, 'parent-key'));
+
+        $this->assertTrue($result['child']['ok'] && $result['parent']['ok'], json_encode($result));
+        $numbers = [$result['child']['number'], $result['parent']['number']];
+        $this->assertCount(2, array_unique($numbers), 'two different numbers');
+        $this->assertSame(2, DB::table('numbering_allocations')->where('doc_type', 'QUOTATION')->count());
+        $this->assertSame(2, DB::table('quotation_issues')->count());
+        sort($numbers);
+        $this->assertSame(['QTN-00001', 'QTN-00002'], $numbers, 'consecutive');
+    }
+
+    public function test_issue_takes_the_tax_generation_fence_so_a_competing_tax_writer_blocks_it(): void
+    {
+        $revision = $this->preparedDraft();
+        $generation = QuotationRevision::findOrFail($revision->id)->input_generation;
+        DB::table('tax_generations')->insertOrIgnore(['company_id' => 1, 'generation' => 0]);
+
+        // A second real session holds Tax's generation row, as any evidence writer does until it commits.
+        $other = DB::connection('session_b');
+        $other->statement('BEGIN');
+        $other->select('select * from tax_generations where company_id = 1 for update');
+        DB::statement("SET lock_timeout = '300ms'");
+        try {
+            app(IssueQuotation::class)($this->checker, $revision->id, $generation, 'fenced-key');
+            $this->fail('Issue must wait on the Tax fence.');
+        } catch (QueryException $e) {
+            $this->assertSame('55P03', $e->errorInfo[0], 'lock_not_available: the issue was held at the fence');
+        } finally {
+            $other->statement('ROLLBACK');
+            DB::statement('RESET lock_timeout');
+        }
+
+        $this->assertSame([0, 'DRAFT'], [DB::table('quotation_issues')->count(), DB::table('quotation_revisions')->where('id', $revision->id)->value('state')]);
+        // With the writer gone, the same request issues.
+        $this->assertSame('QTN-00001', app(IssueQuotation::class)($this->checker, $revision->id, $generation, 'fenced-key')->officialNumber);
     }
 }

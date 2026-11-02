@@ -232,6 +232,10 @@ BEGIN
     OR ROW(iss.currency_id, iss.pricing_date, iss.tax_estimate_date) IS DISTINCT FROM ROW(rev.currency_id, rev.pricing_date, rev.tax_estimate_date) THEN
   RAISE EXCEPTION 'The issue record and the issued revision disagree' USING ERRCODE = '23514';
  END IF;
+ -- The expiry is the database's own arithmetic, not the caller's: the first instant after the valid-through day, in the zone captured at issue.
+ IF iss.expires_at IS DISTINCT FROM (((iss.valid_through_local_date + 1)::timestamp) AT TIME ZONE iss.issued_timezone) THEN
+  RAISE EXCEPTION 'The expiry is not the end of the valid-through day in the captured zone' USING ERRCODE = '23514';
+ END IF;
  SELECT company_id, doc_type, document_id, number INTO alloc FROM numbering_allocations WHERE id = rev.numbering_allocation_id;
  IF alloc.company_id IS DISTINCT FROM p_company OR alloc.doc_type IS DISTINCT FROM 'QUOTATION' OR alloc.document_id IS DISTINCT FROM p_revision OR alloc.number IS DISTINCT FROM rev.official_number THEN
   RAISE EXCEPTION 'The official number does not match its Numbering allocation' USING ERRCODE = '23514';

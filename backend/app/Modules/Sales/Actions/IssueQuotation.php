@@ -26,6 +26,7 @@ use App\Modules\Sales\Support\Quotation\QuotationIssueOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use App\Modules\Sales\Support\SalesAccess;
+use App\Modules\Tax\Support\Quotation\QuotationTaxGenerationFence;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
 use Carbon\CarbonImmutable;
@@ -55,6 +56,7 @@ final class IssueQuotation
         private readonly NumberingService $numbering,
         private readonly CompanyContext $company,
         private readonly BindDocumentManifest $documents,
+        private readonly QuotationTaxGenerationFence $taxFence,
     ) {}
 
     public function __invoke(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey): QuotationIssueOutcome
@@ -98,6 +100,9 @@ final class IssueQuotation
         if ($revision->input_generation !== $expectedGeneration) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_DRAFT_STALE, "The draft is at generation {$revision->input_generation}, not {$expectedGeneration}; review it again before issuing.", 'expected_generation');
         }
+        // Tax's writers serialise on this row until this issue commits: the tax judged below is the tax in force when the issue becomes official, not a second read that a
+        // committing evidence writer could overtake. Taken after the revision lock and before any Tax read (Agent C's contract).
+        $this->taxFence->lock();
         $assessment = $this->assessor->assess($actor, $context, $revision);
         if (! $assessment->ready() || $assessment->preview === null || $assessment->tax === null || ! $assessment->tax->complete || $assessment->controls === null || ! $assessment->controls->passed) {
             $codes = implode(', ', array_map(fn ($blocker): string => $blocker->code.($blocker->lineId === null ? '' : '@'.$blocker->lineId), $assessment->blockers));
