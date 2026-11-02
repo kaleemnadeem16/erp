@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Support;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Database\QueryException;
@@ -11,6 +12,8 @@ use Illuminate\Support\Facades\DB;
 use LogicException;
 use PDO;
 use PDOException;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class CompanyAccessFenceTest extends TestCase
@@ -68,6 +71,38 @@ class CompanyAccessFenceTest extends TestCase
         } catch (QueryException $exception) {
             $this->assertSame('23514', $exception->errorInfo[0]);
         }
+    }
+
+    public function test_role_direct_scope_and_unit_membership_writers_advance_the_shared_barrier(): void
+    {
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        $user = User::factory()->create();
+        $otherCompany = DB::table('companies')->insertGetId(['name' => 'Other', 'created_at' => now(), 'updated_at' => now()]);
+        $permission = Permission::findOrCreate('fence-fixture', 'web');
+        $role = Role::create(['team_id' => 1, 'name' => 'Fence role']);
+
+        $generation = fn (int $company): int => (int) DB::table('company_access_generations')->where('company_id', $company)->value('generation');
+        $beforeOne = $generation(1);
+        $beforeOther = $generation($otherCompany);
+        $user->givePermissionTo($permission);
+        $this->assertGreaterThan($beforeOne, $generation(1));
+        $this->assertGreaterThan($beforeOther, $generation($otherCompany));
+
+        $beforeOne = $generation(1);
+        $user->assignRole($role);
+        $this->assertGreaterThan($beforeOne, $generation(1));
+        $beforeOne = $generation(1);
+        $role->givePermissionTo($permission);
+        $this->assertGreaterThan($beforeOne, $generation(1));
+
+        $beforeOne = $generation(1);
+        DB::table('access_scope_limits')->insert(['company_id' => 1, 'user_id' => $user->id, 'permission' => 'fence-fixture', 'scope' => 'MY_UNITS', 'created_at' => now(), 'updated_at' => now()]);
+        $this->assertGreaterThan($beforeOne, $generation(1));
+
+        $beforeOrganisation = (int) DB::table('company_access_generations')->where('company_id', 1)->value('organisation_generation');
+        $unit = DB::table('organisation_units')->insertGetId(['company_id' => 1, 'code' => 'FENCE', 'name' => 'Fence', 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('organisation_unit_members')->insert(['company_id' => 1, 'unit_id' => $unit, 'user_id' => $user->id, 'created_at' => now(), 'updated_at' => now()]);
+        $this->assertGreaterThan($beforeOrganisation, (int) DB::table('company_access_generations')->where('company_id', 1)->value('organisation_generation'));
     }
 
     public function test_raw_family_writer_waits_for_a_protected_read(): void
