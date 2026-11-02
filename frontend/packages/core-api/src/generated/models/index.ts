@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 171 schemas that export a runtime value use `export *`.
+ * only the 173 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1683,6 +1683,8 @@ export type * from "./quotationPreviewResource";
 export type * from "./quotationSummaryResource";
 export type * from "./quotationSummaryResourceCreatedAt";
 export type * from "./quotationSummaryResourceRecipientPartyId";
+export type * from "./quotationSummaryResourceResponsibleOwnerId";
+export type * from "./quotationSummaryResourceValidThroughLocalDate";
 export type * from "./quotationsDeliveriesIndex200";
 export type * from "./quotationsDeliveriesStore200";
 export type * from "./quotationsDeliveriesStore201";

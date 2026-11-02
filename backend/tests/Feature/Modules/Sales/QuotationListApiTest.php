@@ -53,7 +53,9 @@ class QuotationListApiTest extends TestCase
         $second = $this->getJson('/api/v1/quotations?per_page=1&page=2&sort=id')->assertOk()->assertJsonPath('meta.total', 2)->json('data');
         $this->assertSame($one->id, $first[0]['family_id']);
         $this->assertSame($two->id, $second[0]['family_id']);
-        $this->assertEqualsCanonicalizing(['revision_id', 'family_id', 'revision_ordinal', 'state', 'recipient_party_id', 'currency_id', 'created_at'], array_keys($first[0]));
+        $this->assertEqualsCanonicalizing(['revision_id', 'family_id', 'revision_ordinal', 'state', 'recipient_party_id', 'currency_id', 'created_at', 'valid_through_local_date',
+            'responsible_owner_id'], array_keys($first[0]));
+        $this->assertSame($this->preparer->id, $first[0]['responsible_owner_id'], 'the owner is the family\'s current responsible owner');
         $this->getJson('/api/v1/quotations?filter[owner_id]='.$other->id)->assertOk()->assertJsonPath('meta.total', 0);
         $this->getJson('/api/v1/quotations?filter[mine]=true')->assertOk()->assertJsonPath('meta.total', 2);
         Sanctum::actingAs($this->assigner);
@@ -81,5 +83,15 @@ class QuotationListApiTest extends TestCase
         $first = $this->getJson('/api/v1/quotations?per_page=1&page=1&sort=-created_at')->assertOk()->json('data.0.revision_id');
         $second = $this->getJson('/api/v1/quotations?per_page=1&page=2&sort=-created_at')->assertOk()->json('data.0.revision_id');
         $this->assertSame($ids, [$first, $second]);
+    }
+
+    public function test_a_member_suspended_after_sign_in_lists_nothing(): void
+    {
+        $this->nativeFamily();
+        Sanctum::actingAs($this->preparer);
+        $this->getJson('/api/v1/quotations')->assertOk()->assertJsonPath('meta.total', 1);
+        // A raw status change (as an administrator's would be): the hydrated actor is stale, the list must still refuse.
+        DB::table('users')->where('id', $this->preparer->id)->update(['status' => 'SUSPENDED']);
+        $this->getJson('/api/v1/quotations')->assertForbidden();
     }
 }

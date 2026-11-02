@@ -18,7 +18,7 @@ final class ListQuotations
 {
     /**
      * @param  array<string, mixed>  $input
-     * @return LengthAwarePaginator<int, array{revision_id:int,family_id:int,revision_ordinal:int,state:string,recipient_party_id:int|null,currency_id:int,created_at:string|null}>
+     * @return LengthAwarePaginator<int, array{revision_id:int,family_id:int,revision_ordinal:int,state:string,recipient_party_id:int|null,currency_id:int,created_at:string|null,valid_through_local_date:string|null,responsible_owner_id:int|null}>
      */
     public function __invoke(User $actor, array $input): LengthAwarePaginator
     {
@@ -57,7 +57,7 @@ final class ListQuotations
                 $query->orderBy('id');
             }
 
-            $paginator = $query->paginate((int) ($input['per_page'] ?? 25), ['*'], 'page', (int) ($input['page'] ?? 1));
+            $paginator = $query->with('family:id,responsible_owner_id')->paginate((int) ($input['per_page'] ?? 25), ['*'], 'page', (int) ($input['page'] ?? 1));
             $rows = $paginator->getCollection()->map(static fn (QuotationRevision $revision): array => [
                 'revision_id' => (int) $revision->id,
                 'family_id' => (int) $revision->family_id,
@@ -66,6 +66,9 @@ final class ListQuotations
                 'recipient_party_id' => $revision->recipient_party_id === null ? null : (int) $revision->recipient_party_id,
                 'currency_id' => (int) $revision->currency_id,
                 'created_at' => $revision->created_at?->toIso8601String(),
+                // Safe header facts the detail contract already shows the same view holder; the owner is what the owner/mine filters already reveal.
+                'valid_through_local_date' => $revision->valid_through_local_date?->format('Y-m-d'),
+                'responsible_owner_id' => $revision->family?->responsible_owner_id === null ? null : (int) $revision->family->responsible_owner_id,
             ]);
 
             // @phpstan-ignore return.type

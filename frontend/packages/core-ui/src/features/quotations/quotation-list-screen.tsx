@@ -49,8 +49,8 @@ const STATE_LABELS: Record<QuotationListState, string> = {
 };
 
 /**
- * Columns come only from the safe summary the list contract provides. Owner, valid-through
- * and net amount are intentionally absent until the contract carries a safe field for them.
+ * Columns come only from the safe summary the list contract provides. Party name and net
+ * amount are intentionally absent until the contract carries a safe field for them.
  */
 export const quotationListColumns: DataColumn<QuotationSummary>[] = [
   {
@@ -76,6 +76,11 @@ export const quotationListColumns: DataColumn<QuotationSummary>[] = [
     sortable: true,
     cell: (row) => <QuotationStatus state={row.state} />,
     value: (row) => row.state,
+  },
+  {
+    key: "valid_through",
+    header: "Valid through",
+    value: (row) => formatDate(row.valid_through_local_date),
   },
   {
     key: "created_at",

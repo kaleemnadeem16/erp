@@ -6,6 +6,8 @@
  */
 import type { QuotationSummaryResourceRecipientPartyId } from "./quotationSummaryResourceRecipientPartyId";
 import type { QuotationSummaryResourceCreatedAt } from "./quotationSummaryResourceCreatedAt";
+import type { QuotationSummaryResourceValidThroughLocalDate } from "./quotationSummaryResourceValidThroughLocalDate";
+import type { QuotationSummaryResourceResponsibleOwnerId } from "./quotationSummaryResourceResponsibleOwnerId";
 
 export interface QuotationSummaryResource {
   revision_id: number;
@@ -15,4 +17,6 @@ export interface QuotationSummaryResource {
   recipient_party_id: QuotationSummaryResourceRecipientPartyId;
   currency_id: number;
   created_at: QuotationSummaryResourceCreatedAt;
+  valid_through_local_date: QuotationSummaryResourceValidThroughLocalDate;
+  responsible_owner_id: QuotationSummaryResourceResponsibleOwnerId;
 }

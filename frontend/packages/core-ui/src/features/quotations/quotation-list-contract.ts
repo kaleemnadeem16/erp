@@ -7,8 +7,9 @@ import { z } from "zod";
  * becomes a call to the generated `quotationsIndex` / `useQuotationsIndex`; the parsing and
  * everything above it stays.
  *
- * The contract carries only a safe identity summary. Party name, owner, valid-through and
- * net amount are NOT in it, so the list does not invent them ("contract pending").
+ * The contract carries a safe summary: identities, state, valid-through and the responsible
+ * owner's id. Party name and net amount are NOT in it (a Party read and the commercial view
+ * are separate rights), so the list does not invent them ("contract pending").
  */
 export const LIST_STATES = ["DRAFT", "CANCELLED_DRAFT", "ISSUED"] as const;
 export type QuotationListState = (typeof LIST_STATES)[number];
@@ -32,6 +33,9 @@ export const summarySchema = z.object({
   recipient_party_id: id.nullable(),
   currency_id: id,
   created_at: z.string().nullable(),
+  // Added on the integration baseline: safe header facts the detail contract already shows the same view holder.
+  valid_through_local_date: z.string().nullable(),
+  responsible_owner_id: id.nullable(),
 });
 const pageLink = z.string().nullable();
 export const listPageSchema = z.object({
@@ -116,6 +120,8 @@ export function mockSummary(
     recipient_party_id: 20 + revisionId,
     currency_id: 3,
     created_at: "2026-10-27T09:30:00Z",
+    valid_through_local_date: "2026-11-30",
+    responsible_owner_id: 7,
     ...overrides,
   };
 }
