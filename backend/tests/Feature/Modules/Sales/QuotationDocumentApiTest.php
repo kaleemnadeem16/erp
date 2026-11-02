@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Modules\Sales;
 
+use App\Models\Company;
 use App\Models\User;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Models\QuotationRevision;
@@ -130,5 +131,110 @@ class QuotationDocumentApiTest extends TestCase
         Sanctum::actingAs($noView);
         $this->getJson($this->url('/document'))->assertForbidden();
         $this->get($this->url('/document/download'))->assertForbidden();
+    }
+
+    /**
+     * Every document and delivery route, as (method, tail, body, needs a request key). One shared list so a new route cannot be added without these probes.
+     *
+     * @return list<array{0: string, 1: string, 2: array<string, mixed>, 3: bool}>
+     */
+    private function routes(): array
+    {
+        return [
+            ['GET', '/document', [], false],
+            ['POST', '/document', [], true],
+            ['GET', '/document/download', [], false],
+            ['GET', '/document/history', [], false],
+            ['POST', '/document/check', [], false],
+            ['GET', '/deliveries', [], false],
+            ['POST', '/deliveries', ['channel' => 'HAND', 'delivered_on' => $this->today(), 'recipient_name' => 'Probe'], true],
+        ];
+    }
+
+    /**
+     * What the caller can observe of one request. A fresh request key per call: a refusal must not depend on the key.
+     *
+     * @param  array<string, mixed>  $body
+     * @return array{status: int, body: string}
+     */
+    private function observe(int $revision, string $method, string $tail, array $body, bool $keyed): array
+    {
+        $response = $this->json($method, "/api/v1/quotations/{$revision}{$tail}", $body, $keyed ? ['Idempotency-Key' => 'probe-'.bin2hex(random_bytes(6))] : []);
+
+        return ['status' => $response->getStatusCode(), 'body' => (string) $response->getContent()];
+    }
+
+    /** @return array{events: int, deliveries: int, intents: int} the evidence a refused probe must never write */
+    private function writes(): array
+    {
+        // Raw tables, not models: a model count is scoped to the current company and would miss a write in another one.
+        return ['events' => DB::table('document_access_events')->count(), 'deliveries' => DB::table('quotation_document_deliveries')->count(),
+            'intents' => DB::table('document_generation_intents')->count()];
+    }
+
+    /** A generated, downloaded and delivered document, so the probes below aim at a revision with real evidence behind it. */
+    private function documentWithEvidence(): void
+    {
+        Sanctum::actingAs($this->clerk);
+        $this->postJson($this->url('/document'), [], ['Idempotency-Key' => 'gen-evidence'])->assertOk()->assertJsonPath('data.state', 'READY');
+        $this->get($this->url('/document/download'))->assertOk();
+        $this->postJson($this->url('/deliveries'), ['channel' => 'HAND', 'delivered_on' => $this->today(), 'recipient_name' => 'Mr Customer'], ['Idempotency-Key' => 'del-evidence'])
+            ->assertCreated();
+    }
+
+    public function test_a_caller_without_quotation_view_cannot_tell_an_existing_revision_from_an_unknown_one(): void
+    {
+        $this->activate();
+        $this->documentWithEvidence();
+        $noView = User::factory()->create();
+        $noView->givePermissionTo(array_values(array_diff(self::DUTIES, [P::QUOTATION_VIEW])));
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        Sanctum::actingAs($noView);
+        $before = $this->writes();
+
+        foreach ($this->routes() as [$method, $tail, $body, $keyed]) {
+            $existing = $this->observe($this->revision, $method, $tail, $body, $keyed);
+            $unknown = $this->observe(999999, $method, $tail, $body, $keyed);
+            $this->assertSame(403, $existing['status'], "{$method} {$tail}: a caller without the independent quotation view is refused");
+            $this->assertSame($unknown, $existing, "{$method} {$tail}: an existing revision must look exactly like an unknown one");
+        }
+        $this->assertSame($before, $this->writes(), 'a refused probe writes no access event, delivery or generation intent');
+    }
+
+    public function test_another_companys_revision_and_another_companys_member_are_isolated_at_every_route(): void
+    {
+        $this->activate();
+        $this->documentWithEvidence();
+        $other = DB::table('companies')->insertGetId(['name' => 'Other Co', 'base_currency_id' => Company::findOrFail(1)->base_currency_id, 'created_at' => now(), 'updated_at' => now()]);
+        // Inserted directly: the company trait (rightly) refuses to create another company's row while this company is active.
+        $outsiderId = DB::table('users')->insertGetId(['company_id' => $other, 'name' => 'Outsider', 'email' => 'outsider@other.test', 'password' => 'x', 'status' => 'ACTIVE',
+            'created_at' => now(), 'updated_at' => now()]);
+        $outsider = User::withoutGlobalScopes()->findOrFail($outsiderId);
+        $outsider->givePermissionTo(self::DUTIES);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $foreignFamily = DB::table('quotation_families')->insertGetId(['company_id' => $other, 'created_by' => $outsider->id, 'created_at' => now(), 'updated_at' => now()]);
+        $foreignRevision = DB::table('quotation_revisions')->insertGetId(['company_id' => $other, 'family_id' => $foreignFamily, 'currency_id' => Company::findOrFail(1)->base_currency_id,
+            'created_by' => $outsider->id, 'created_at' => now(), 'updated_at' => now()]);
+        $before = $this->writes();
+
+        // A member of this company, holding every duty, probing another company's revision sees exactly what an unknown id shows: not found.
+        Sanctum::actingAs($this->clerk);
+        foreach ($this->routes() as [$method, $tail, $body, $keyed]) {
+            $foreign = $this->observe($foreignRevision, $method, $tail, $body, $keyed);
+            $unknown = $this->observe(999999, $method, $tail, $body, $keyed);
+            $this->assertSame(404, $foreign['status'], "{$method} {$tail}: another company's revision is not found");
+            $this->assertSame($unknown, $foreign, "{$method} {$tail}: another company's revision must look exactly like an unknown one");
+        }
+
+        // A member of another company, holding every duty there, reaches nothing here, and cannot tell this company's issued revision from an unknown id.
+        Sanctum::actingAs($outsider);
+        foreach ($this->routes() as [$method, $tail, $body, $keyed]) {
+            $here = $this->observe($this->revision, $method, $tail, $body, $keyed);
+            $unknown = $this->observe(999999, $method, $tail, $body, $keyed);
+            $this->assertContains($here['status'], [403, 404], "{$method} {$tail}: an outsider is refused");
+            $this->assertSame($unknown, $here, "{$method} {$tail}: an outsider must not learn that this company's revision exists");
+        }
+
+        $this->assertSame($before, $this->writes(), 'no cross-company probe wrote an access event, a delivery or a generation intent');
     }
 }

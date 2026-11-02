@@ -36,13 +36,15 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 /**
  * The official PDF of an ISSUED quotation and its manual delivery evidence. Every route is guarded twice (the Request's duty, then the Action's duty plus the right to see the
  * quotation); the duties are STAGED, so every caller is refused until they are activated. A quotation that is unknown, in another company or not issued is a plain 404.
+ * The controller never looks a revision up itself: each Action decides authority FIRST and only then asks the company-scoped locator, so a caller who lacks the duty or
+ * the independent quotation view gets the same 403 whether or not the revision exists (no existence oracle).
  * Nothing here emails, shares a link or signs a URL.
  */
 class QuotationDocumentController extends Controller
 {
     public function show(ShowQuotationDocumentRequest $request, int $revision, ReadQuotationDocumentStatus $status): QuotationDocumentStatusResource
     {
-        return new QuotationDocumentStatusResource($this->refusing(fn () => $status($request->user(), $this->revisionId($revision))));
+        return new QuotationDocumentStatusResource($this->refusing(fn () => $status($request->user(), $revision)));
     }
 
     /** Generates the PDF from the original frozen at issue, or retries a failed generation. A failed generation is a status (`FAILED` with `error_code`), not an error. */
@@ -54,14 +56,14 @@ class QuotationDocumentController extends Controller
             throw new HttpResponseException(response()->json(['message' => 'An Idempotency-Key header of 1 to 120 characters is required.', 'reason_code' => 'REQUEST_KEY_REQUIRED', 'errors' => ['idempotency_key' => ['Required.']]], 422));
         }
 
-        return new QuotationDocumentStatusResource($this->refusing(fn () => $generate($request->user(), $this->revisionId($revision), $key)));
+        return new QuotationDocumentStatusResource($this->refusing(fn () => $generate($request->user(), $revision, $key)));
     }
 
     /** The stored official PDF as an attachment (`?intent=print` records the hand-off as a print). Never a link: the bytes are streamed after the owner's decision and a hash check. */
     #[Response(200, 'The PDF bytes (application/pdf) as an attachment; Cache-Control: private, no-store.', type: 'string')]
     public function download(DownloadQuotationDocumentRequest $request, int $revision, DownloadQuotationDocument $download): StreamedResponse
     {
-        $file = $this->refusing(fn () => $download($request->user(), $this->revisionId($revision), $request->query('intent') === 'print' ? 'PRINT' : 'DOWNLOAD'));
+        $file = $this->refusing(fn () => $download($request->user(), $revision, $request->query('intent') === 'print' ? 'PRINT' : 'DOWNLOAD'));
 
         return response()->stream(function () use ($file): void {
             fpassthru($file->stream);
@@ -71,19 +73,19 @@ class QuotationDocumentController extends Controller
 
     public function history(ShowQuotationDocumentRequest $request, int $revision, ReadQuotationDocumentHistory $history): AnonymousResourceCollection
     {
-        return QuotationDocumentHistoryResource::collection($this->refusing(fn () => $history($request->user(), $this->revisionId($revision))));
+        return QuotationDocumentHistoryResource::collection($this->refusing(fn () => $history($request->user(), $revision)));
     }
 
     /** Compares the stored file with its recorded hash (operator). A missing or corrupt file is marked and reported; nothing is deleted or regenerated. */
     #[Response(200, 'The outcome: ok, missing, corrupt or unchanged.', type: 'array{data: array{outcome: string}}')]
     public function check(CheckQuotationDocumentRequest $request, int $revision, RepairQuotationDocument $repair): JsonResponse
     {
-        return response()->json(['data' => ['outcome' => $this->refusing(fn () => $repair->check($request->user(), $this->revisionId($revision)))]]);
+        return response()->json(['data' => ['outcome' => $this->refusing(fn () => $repair->check($request->user(), $revision))]]);
     }
 
     public function deliveries(ListQuotationDeliveriesRequest $request, int $revision, ReadQuotationDocumentDeliveries $read): AnonymousResourceCollection
     {
-        return QuotationDeliveryResource::collection($this->refusing(fn () => $read($request->user(), $this->revisionId($revision))));
+        return QuotationDeliveryResource::collection($this->refusing(fn () => $read($request->user(), $revision)));
     }
 
     /** Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer. */
@@ -94,7 +96,7 @@ class QuotationDocumentController extends Controller
     public function recordDelivery(RecordQuotationDeliveryRequest $request, int $revision, RecordManualQuotationDelivery $record): JsonResponse
     {
         $key = trim((string) $request->header('Idempotency-Key'));
-        $result = $this->refusing(fn () => $record($request->user(), $this->revisionId($revision), [
+        $result = $this->refusing(fn () => $record($request->user(), $revision, [
             'channel' => (string) $request->input('channel'), 'delivered_on' => (string) $request->input('delivered_on'), 'recipient_name' => (string) $request->input('recipient_name'),
             'recipient_detail' => $request->input('recipient_detail'), 'note' => $request->input('note'),
         ], $key, $request->filled('corrects_id') ? $request->integer('corrects_id') : null));
@@ -104,12 +106,6 @@ class QuotationDocumentController extends Controller
         }
 
         return $response;
-    }
-
-    /** A quotation that is not in the caller's company is indistinguishable from one that does not exist: 404. */
-    private function revisionId(int $revision): int
-    {
-        return QuotationRevision::query()->findOrFail($revision)->id;
     }
 
     /**
