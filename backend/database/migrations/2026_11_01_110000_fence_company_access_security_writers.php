@@ -24,6 +24,7 @@ return new class extends Migration
         DB::unprepared(<<<'SQL'
 CREATE OR REPLACE FUNCTION company_access_generation_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
+ IF TG_OP = 'DELETE' AND NOT EXISTS (SELECT 1 FROM companies WHERE id = OLD.company_id) THEN RETURN OLD; END IF;
  IF TG_OP <> 'UPDATE' THEN RAISE EXCEPTION 'Access generations cannot be removed' USING ERRCODE = '23514'; END IF;
  IF NEW.company_id <> OLD.company_id OR NEW.generation < OLD.generation OR NEW.organisation_generation < OLD.organisation_generation OR NEW.capability_generation < OLD.capability_generation THEN
   RAISE EXCEPTION 'Access generations cannot decrease' USING ERRCODE = '23514';

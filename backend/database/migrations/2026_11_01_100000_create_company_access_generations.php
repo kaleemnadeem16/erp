@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('company_access_generations', function (Blueprint $table): void {
-            $table->foreignId('company_id')->primary()->constrained();
+            $table->foreignId('company_id')->primary()->constrained()->cascadeOnDelete();
             $table->bigInteger('generation')->default(0);
             $table->bigInteger('organisation_generation')->default(0);
             $table->bigInteger('capability_generation')->default(0);

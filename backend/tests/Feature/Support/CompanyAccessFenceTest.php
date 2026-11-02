@@ -31,6 +31,20 @@ class CompanyAccessFenceTest extends TestCase
         });
     }
 
+    public function test_generation_row_follows_company_deletion_but_direct_deletion_is_refused(): void
+    {
+        $company = DB::table('companies')->insertGetId(['name' => 'Temporary company', 'created_at' => now(), 'updated_at' => now()]);
+        DB::table('company_access_generations')->insert(['company_id' => $company, 'generation' => 3]);
+        try {
+            DB::transaction(fn () => DB::table('company_access_generations')->where('company_id', $company)->delete());
+            $this->fail('A live company access generation cannot be deleted directly.');
+        } catch (QueryException $exception) {
+            $this->assertSame('23514', $exception->errorInfo[0]);
+        }
+        DB::table('companies')->where('id', $company)->delete();
+        $this->assertDatabaseMissing('company_access_generations', ['company_id' => $company]);
+    }
+
     public function test_an_enclosing_transaction_is_required(): void
     {
         $this->expectException(LogicException::class);
