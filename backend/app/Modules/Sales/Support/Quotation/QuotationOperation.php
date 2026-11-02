@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Support\Quotation;
 
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Support\Scope\CompanyAccessFence;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ final class QuotationOperation
 {
     public const KEY_MAX = 85;
 
-    public function __construct(private readonly QuotationOperationReceipts $receipts) {}
+    public function __construct(private readonly QuotationOperationReceipts $receipts, private readonly CompanyAccessFence $accessFence) {}
 
     /**
      * @param  array<string, mixed>  $intent  everything that gives the request its meaning: subject, expected generation, changed values
@@ -39,6 +40,8 @@ final class QuotationOperation
         for ($attempt = 0; ; $attempt++) {
             try {
                 return DB::transaction(function () use ($actor, $operation, $key, $hash, $lockSubject, $work): array {
+                    // Acquire security first on each attempt; family and revision locks follow.
+                    $this->accessFence->lockAll();
                     $subject = $lockSubject();
                     $receipt = $this->receipts->find($actor, $key);
                     if ($receipt !== null) {

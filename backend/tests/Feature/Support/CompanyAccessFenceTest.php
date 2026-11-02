@@ -70,6 +70,31 @@ class CompanyAccessFenceTest extends TestCase
         }
     }
 
+    public function test_raw_family_writer_waits_for_a_protected_read(): void
+    {
+        $config = config('database.connections.testing');
+        $other = new PDO("pgsql:host={$config['host']};port={$config['port']};dbname={$config['database']}", $config['username'], $config['password']);
+        $other->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $other->exec("SET lock_timeout = '250ms'");
+
+        DB::beginTransaction();
+        try {
+            app(CompanyAccessFence::class)->lock();
+            try {
+                $other->exec('UPDATE quotation_families SET access_unit_id = NULL WHERE id = -1');
+                $this->fail('A raw family writer bypassed the barrier.');
+            } catch (PDOException $exception) {
+                $this->assertSame('55P03', $exception->getCode());
+            }
+            DB::commit();
+        } finally {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+        }
+        $this->assertSame(0, $other->exec('UPDATE quotation_families SET access_unit_id = NULL WHERE id = -1'));
+    }
+
     public function test_raw_member_status_change_waits_for_a_protected_read(): void
     {
         $user = User::factory()->create();
