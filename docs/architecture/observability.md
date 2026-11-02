@@ -111,3 +111,11 @@ When adjusting Cloudflare (free plan), keep these true:
 
 [ci-cd.md](ci-cd.md) · [deployment.md](deployment.md) · [environments.md](environments.md) ·
 [testing-standards.md](testing-standards.md)
+
+## Stored-file locations never reach a log (#73)
+
+Every configured log channel carries `App\Support\Logging\RedactStorageLocationsTap`, which runs `RedactStorageLocations` on each record
+before any handler formats it: a Files storage key (40 hex), its object path (`ab/<key>`) and the files disk root are replaced with fixed
+placeholders in the message, the context strings and any exception in the context (message, previous chain, trace text). A Flysystem
+error names the location it failed on and a query exception carries its bindings, so both would otherwise leak. A new channel must carry
+the tap (`RedactStorageLocationsTest` fails otherwise); Laravel's last-resort `emergency` logger is a bare path and is not configurable.

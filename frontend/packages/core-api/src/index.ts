@@ -2,6 +2,7 @@ export {
   configureCoreApi,
   setAuthToken,
   primeCsrfCookie,
+  fetchBlob,
 } from "./mutator/fetch-client";
 
 export * from "./generated/auth/auth";
@@ -89,3 +90,4 @@ export * from "./generated/sales-stage/sales-stage";
 export * from "./generated/sales-owner/sales-owner";
 
 export * from "./generated/quotation/quotation";
+export * from "./generated/quotation-document/quotation-document";

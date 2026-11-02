@@ -35,6 +35,7 @@ final class DemoDatabaseSeeder extends Seeder
                 AccountingDemoSeeder::class,
                 PartiesDemoSeeder::class,
                 InventoryDemoSeeder::class,
+                QuotationTaxFactsDemoSeeder::class,
                 // Before Purchasing: some item-supplier rows buy in a pack unit.
                 PackConversionsDemoSeeder::class,
                 PurchasingDemoSeeder::class,
@@ -84,6 +85,10 @@ final class DemoDatabaseSeeder extends Seeder
                 SalesCrmDemoSeeder::class,
                 // After SalesCrmDemoSeeder (a draft links to its deal) and the currency rates; a no-op unless the staged quotation duties are locally activated.
                 QuotationDraftsDemoSeeder::class,
+                // After the Sales and Inventory seeders: the draft sells their service and finished-product Items to their customer.
+                QuotationDemoSeeder::class,
+                // After QuotationDemoSeeder: issuing the demo document needs the published control set (local dev preview only).
+                QuotationDocumentsDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
                 // Configuration only; independent of the other seeders (needs the demo login).
                 DocumentConfigurationDemoSeeder::class,

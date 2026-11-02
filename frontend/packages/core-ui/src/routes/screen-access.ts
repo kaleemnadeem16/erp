@@ -1,4 +1,5 @@
 import { quotationAccess } from "../features/quotations/quotation-access";
+import { quotationMilestoneAccess } from "../features/quotations/quotation-milestone-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -230,6 +231,11 @@ export function canAccessScreen(
     if (pathname === "/quotations/new" || /^\/quotations\/[1-9]\d*\/edit$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*\/review$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*$/.test(pathname)) return access.detail;
+    // The list, issue and document screens: production-denied behind the same gate (quotationMilestoneAccess).
+    const milestone = quotationMilestoneAccess(permissions);
+    if (pathname === "/quotations/all") return milestone.list;
+    if (/^\/quotations\/[1-9]\d*\/issue$/.test(pathname)) return milestone.readiness || milestone.issue;
+    if (/^\/quotations\/[1-9]\d*\/document$/.test(pathname)) return milestone.documents || milestone.deliveries;
     return false;
   }
   // A view-only grant must not mount an edit form through a bookmarked URL.

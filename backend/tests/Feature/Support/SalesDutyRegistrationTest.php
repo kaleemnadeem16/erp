@@ -257,19 +257,35 @@ class SalesDutyRegistrationTest extends TestCase
     {
         $dormant = array_map(fn (SalesDuty $duty): string => $duty->name, array_filter(SalesDutyManifest::shipped()->all(), fn (SalesDuty $duty): bool => ! $duty->isActive()));
 
-        // The only quotation routes are the QL1b adapters: three reads and the two draft writes. Their duties are STAGED, so they refuse everyone
-        // (QuotationDraftReviewApiTest, QuotationDraftWriteApiTest). Each URI may only carry the methods listed here.
+        // QL1b draft adapters and the owner-authorised QA4a list remain STAGED. Each URI may only carry the methods listed here.
         $adapters = [
-            'api/v1/quotations' => ['POST'],
             'api/v1/quotations/{revision}' => ['GET', 'HEAD', 'PATCH'],
             'api/v1/quotations/{revision}/editable' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/preview' => ['GET', 'HEAD'],
+            // QL3 issue surface (default-deny, STAGED prepare/issue/view): QuotationIssueApiTest.
+            'api/v1/quotations/{revision}/issue-readiness' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/issue' => ['POST'],
+            'api/v1/quotations/{revision}/issued' => ['GET', 'HEAD'],
+            // The issued-quotation document feature (default-deny, STAGED duties): QuotationDocumentApiTest.
+            'api/v1/quotations/{revision}/document' => ['GET', 'HEAD', 'POST'],
+            'api/v1/quotations/{revision}/document/download' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/document/history' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/document/check' => ['POST'],
+            'api/v1/quotations/{revision}/deliveries' => ['GET', 'HEAD', 'POST'],
         ];
 
         foreach (Route::getRoutes() as $route) {
             $declared = implode(' ', array_merge($route->gatherMiddleware(), [$route->uri()]));
             foreach ($dormant as $name) {
                 $this->assertStringNotContainsString($name, $declared);
+            }
+            if ($route->uri() === 'api/v1/quotations') {
+                $allowed = ['index' => ['GET', 'HEAD'], 'store' => ['POST']];
+                $action = $route->getActionMethod();
+                $this->assertArrayHasKey($action, $allowed, 'Only the quotation list and draft creation may use this URI.');
+                $this->assertSame($allowed[$action], $route->methods(), 'The quotation list and create adapters must keep their exact methods.');
+
+                continue;
             }
             if (isset($adapters[$route->uri()])) {
                 $this->assertSame([], array_diff($route->methods(), $adapters[$route->uri()]), 'A quotation adapter may only carry the methods QL1b delivers.');

@@ -36,16 +36,28 @@ export async function primeCsrfCookie(): Promise<void> {
   await fetch(`${new URL(baseUrl).origin}/sanctum/csrf-cookie`, { credentials: 'include' });
 }
 
-export async function fetchClient<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const headers = new Headers(options.headers);
-  headers.set('Accept', 'application/json');
-
+function authorise(headers: Headers): void {
   if (authToken) {
     headers.set('Authorization', `Bearer ${authToken}`);
   } else {
     const xsrfToken = readCookie('XSRF-TOKEN');
     if (xsrfToken) headers.set('X-XSRF-TOKEN', xsrfToken);
   }
+}
+
+async function refusal(response: Response): Promise<Error> {
+  if (response.status === 401 || response.status === 419) onSessionExpired?.();
+  const body = await response.json().catch(() => null);
+  return Object.assign(new Error(`Request failed: ${response.status}`), {
+    status: response.status,
+    body,
+  });
+}
+
+export async function fetchClient<T>(url: string, options: RequestInit = {}): Promise<T> {
+  const headers = new Headers(options.headers);
+  headers.set('Accept', 'application/json');
+  authorise(headers);
 
   const response = await fetch(`${baseUrl}${url}`, {
     ...options,
@@ -53,14 +65,7 @@ export async function fetchClient<T>(url: string, options: RequestInit = {}): Pr
     credentials: authToken ? 'omit' : 'include',
   });
 
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 419) onSessionExpired?.();
-    const body = await response.json().catch(() => null);
-    throw Object.assign(new Error(`Request failed: ${response.status}`), {
-      status: response.status,
-      body,
-    });
-  }
+  if (!response.ok) throw await refusal(response);
 
   const data = response.status === 204 ? undefined : await response.json();
 
@@ -68,4 +73,18 @@ export async function fetchClient<T>(url: string, options: RequestInit = {}): Pr
   // generated/auth/auth.ts) discriminate on `.status` and read the body off `.data` —
   // this envelope is what the fetch client contract expects the mutator to return.
   return { data, status: response.status, headers: response.headers } as T;
+}
+
+/**
+ * The binary sibling of fetchClient, for an endpoint that answers with file bytes (the official quotation PDF):
+ * the same base URL, credentials, auth header and error shape, but the body is returned as a Blob and is never
+ * parsed. The caller passes a path from a generated URL builder; no link is ever shown to the person.
+ */
+export async function fetchBlob(url: string, accept = 'application/pdf'): Promise<Blob> {
+  const headers = new Headers({ Accept: accept });
+  authorise(headers);
+  const response = await fetch(`${baseUrl}${url}`, { headers, credentials: authToken ? 'omit' : 'include' });
+  if (!response.ok) throw await refusal(response);
+
+  return response.blob();
 }

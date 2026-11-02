@@ -11,7 +11,7 @@ use App\Support\PermissionRegistry;
 use Illuminate\Console\Command;
 
 /**
- * LOCAL DEVELOPMENT ONLY: gives (or takes away) the quotation view and prepare duties for one named developer login, so the quotation screens can be tried on
+ * LOCAL DEVELOPMENT ONLY: gives (or takes away) the quotation preview duties (SalesDevPreview::all(): view, prepare, document and delivery) for one named developer login, so the quotation screens can be tried on
  * localhost. It refuses to run unless the dev preview is enabled (`APP_ENV=local` and `SALES_DEV_QUOTATION_DUTIES=true`); it never touches roles or mandates and
  * it never changes the shipped STAGED defaults.
  */
@@ -21,7 +21,7 @@ final class GrantQuotationDevPreview extends Command
         {email? : The developer login (defaults to the demo user)}
         {--revoke : Take the duties away again}';
 
-    protected $description = 'LOCAL DEV ONLY: grant or revoke the staged quotation view/prepare duties for one login';
+    protected $description = 'LOCAL DEV ONLY: grant or revoke the staged quotation preview duties (view, prepare and the document/delivery duties; never repair, issue or assign) for one login';
 
     public function handle(CompanyContext $companyContext, PermissionRegistry $permissions): int
     {
@@ -41,13 +41,13 @@ final class GrantQuotationDevPreview extends Command
 
         $permissions->registerForTeam($companyContext->id());
         if ($this->option('revoke')) {
-            $user->revokePermissionTo(SalesDevPreview::DUTIES);
-            $this->components->info("{$user->email} no longer holds ".implode(' and ', SalesDevPreview::DUTIES).'.');
+            $user->revokePermissionTo(SalesDevPreview::all());
+            $this->components->info("{$user->email} no longer holds ".implode(' and ', SalesDevPreview::all()).'.');
 
             return self::SUCCESS;
         }
-        $user->givePermissionTo(SalesDevPreview::DUTIES);
-        $this->components->info("{$user->email} now holds ".implode(' and ', SalesDevPreview::DUTIES).' (local development only).');
+        $user->givePermissionTo(SalesDevPreview::all());
+        $this->components->info("{$user->email} now holds ".implode(' and ', SalesDevPreview::all()).' (local development only).');
 
         return self::SUCCESS;
     }

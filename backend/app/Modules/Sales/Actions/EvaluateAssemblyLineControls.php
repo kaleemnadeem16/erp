@@ -22,14 +22,16 @@ use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Pricing\PricingQuantity;
-use App\Modules\Sales\Support\SalesAccess;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Support\CompanyContext;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The cost-blind evaluator (#29b): judges the final settled net of ONE Assembly line (one Assembly version, one work quantity) against the company's FR4 controls
  * — `FLOOR`, `MIN_MARGIN_AMOUNT`, `MIN_MARGIN_PERCENT` only — and returns nothing but `NetControlOutcomeView`: the overall and per-control PASS / WARN / FAIL /
  * UNEVALUABLE by opaque control reference, and whether issue is blocked. The cost comes from Estimating's guarded seam inside this trusted evaluation; the caller
- * needs `sales.quotation.prepare` (STAGED: refused for everyone until a reviewed holder recipe activates it) and NO estimating cost duty, and the cost, margin,
+ * needs `sales.quotation.prepare` for the quotation revision being evaluated, through the shared quotation-family policy (OWN = its current responsible owner,
+ * ALL = the company; STAGED: refused for everyone until a reviewed holder recipe activates it) and NO estimating cost duty, and the cost, margin,
  * thresholds, FX rate and reasons never leave this class. Missing, partial or refused cost evidence makes a cost-dependent control UNEVALUABLE — never PASS, never
  * zero; `FLOOR` needs no cost and is judged regardless, and the cost is not even read when no control needs it. The raw-cost provider is `@internal` to this class:
  * `RawCostProviderHasOneCallerTest` pins that, and the cost-evidence seam re-asks Sales' own authority for the person on every read, so a direct call cannot bypass this guard. The control set is resolved elsewhere (R9) and passed
@@ -47,11 +49,22 @@ final class EvaluateAssemblyLineControls
         private readonly CompanyContext $company,
     ) {}
 
-    public function __invoke(User $actor, int $assemblyVersionId, string $workQuantity, string $finalNet, int $currencyId, string $pricingDate, NetControlSet $controls): NetControlOutcomeView
+    public function __invoke(User $actor, int $revisionId, int $assemblyVersionId, string $workQuantity, string $finalNet, int $currencyId, string $pricingDate, NetControlSet $controls): NetControlOutcomeView
     {
         // Before any evidence is touched: a person who is no longer an active member is refused even if their role still holds the duty, and a stale object does not count.
         ActiveActor::require($actor, 'evaluate quotation controls');
-        SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'evaluate quotation controls');
+
+        // The preparer duty for THIS quotation revision, through the shared quotation-family policy (QA3: OWN = its current responsible owner, ALL = the company,
+        // an unrelated duty never widens), under the company access fence held through the whole evaluation. Hidden and unknown revisions are the same refusal.
+        return DB::transaction(function () use ($actor, $revisionId, $assemblyVersionId, $workQuantity, $finalNet, $currencyId, $pricingDate, $controls): NetControlOutcomeView {
+            app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_PREPARE]);
+
+            return $this->evaluateLine($actor, $assemblyVersionId, $workQuantity, $finalNet, $currencyId, $pricingDate, $controls);
+        });
+    }
+
+    private function evaluateLine(User $actor, int $assemblyVersionId, string $workQuantity, string $finalNet, int $currencyId, string $pricingDate, NetControlSet $controls): NetControlOutcomeView
+    {
         $context = SalesActorContext::forUser($actor, 'quotation.evaluate_assembly_controls');
         if ($assemblyVersionId < 1 || ! Currency::query()->whereKey($currencyId)->exists()) {
             throw ControlRefusal::make(ControlRefusal::FACTS_INVALID, 'The line to evaluate is not valid.', 'line');

@@ -9,6 +9,7 @@ use App\Modules\Estimating\Support\RecipeReadAccess;
 use App\Modules\Inventory\Support\NegativeStockReadAccess;
 use App\Modules\Inventory\Support\PhysicalCountReadAccess;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\PermissionRegistrar;
@@ -18,6 +19,18 @@ use Tests\TestCase;
 class AccessInventoryCommandTest extends TestCase
 {
     use DatabaseMigrations;
+
+    public function runDatabaseMigrations(): void
+    {
+        $this->beforeRefreshingDatabase();
+        $this->refreshTestDatabase();
+        $this->afterRefreshingDatabase();
+        // These tests intentionally change security state; the production rollback guard must remain intact.
+        $this->beforeApplicationDestroyed(function (): void {
+            $this->artisan('migrate:fresh', $this->migrateFreshUsing());
+            RefreshDatabaseState::$migrated = false;
+        });
+    }
 
     public function test_inventory_covers_each_company_roles_direct_grants_and_token_actors_without_mutation(): void
     {

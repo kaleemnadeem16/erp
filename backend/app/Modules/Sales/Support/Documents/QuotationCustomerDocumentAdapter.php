@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Documents;
 
 use App\Models\User;
+use App\Modules\Documents\Actions\BindDocumentManifest;
+use App\Modules\Documents\Actions\BindDocumentSubject;
+use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Support\DocumentAccess;
 use App\Modules\Documents\Support\DocumentOperationContext;
 use App\Modules\Documents\Support\DocumentTypeAdapter;
@@ -12,8 +15,13 @@ use App\Modules\Documents\Support\FieldSpec;
 use App\Modules\Documents\Support\FieldType;
 use App\Modules\Documents\Support\ProjectionSchema;
 use App\Modules\Documents\Support\SectionSchema;
+use App\Modules\Sales\Models\QuotationIssue;
+use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\SalesAccess;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The customer-facing quotation document type (ADR 0137). Sales owns the projection allowlist and the access decision; Documents validates shape only and
@@ -82,6 +90,87 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
             return false;
         }
 
-        return SalesAccess::may(User::query()->find($context->actorId), PermissionVocabulary::DOCUMENT_GENERATE);
+        if ($context->operation === BindDocumentManifest::OPERATION_ORIGINAL) {
+            return $this->mayFreezeOriginal($context);
+        }
+        // The subject binding that precedes a freeze carries no purpose; the issuer of that very issued revision may open it (the freeze itself is then judged above).
+        if ($context->operation === BindDocumentSubject::OPERATION && $this->isIssuerOfIssuedRevision($context)) {
+            return true;
+        }
+
+        // Each Documents operation is answered by its own duty, never by another's, and fails closed for any operation this owner has not named.
+        $duty = match ($context->operation) {
+            'request_generation', 'generate' => PermissionVocabulary::DOCUMENT_GENERATE,
+            'read_status', 'history' => PermissionVocabulary::DOCUMENT_VIEW,
+            'download' => PermissionVocabulary::DOCUMENT_DOWNLOAD,
+            'reconcile_artefact', 'restore_artefact' => PermissionVocabulary::DOCUMENT_REPAIR,
+            BindDocumentManifest::OPERATION, BindDocumentSubject::OPERATION => PermissionVocabulary::DOCUMENT_GENERATE,
+            default => null,
+        };
+        $actor = User::query()->find($context->actorId);
+        if ($duty === null || $actor === null || ActiveActor::current($actor) === null || ! SalesAccess::may($actor, $duty)) {
+            return false;
+        }
+        // Reading, handing out or repairing the stored document also needs the actor to be able to see that quotation, and the quotation must really be issued.
+        if (in_array($context->operation, ['read_status', 'history', 'download', 'reconcile_artefact', 'restore_artefact'], true)) {
+            return $this->mayViewIssued($actor, $context);
+        }
+
+        return true;
+    }
+
+    /**
+     * The quotation view is decided by the same quotation-family policy as the Sales document Actions (QuotationAccess: OWN = the current responsible owner,
+     * ALL = the company), never company-wide by the bare duty. Inside a caller's transaction this is a savepoint and the company access fence is held until
+     * the caller commits; a caller without one (the reconcile sweep) gets a short transaction of its own. Any refusal, hidden or unknown revision is a denial.
+     */
+    private function mayViewIssued(User $actor, DocumentOperationContext $context): bool
+    {
+        if ($context->audience !== self::AUDIENCE || preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) !== 1) {
+            return false;
+        }
+        try {
+            $revision = DB::transaction(fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, (int) $m[1], [PermissionVocabulary::QUOTATION_VIEW]));
+        } catch (\Throwable) {
+            return false;
+        }
+
+        return $revision->state === 'ISSUED';
+    }
+
+    /**
+     * An ORIGINAL is the customer-facing record of an issue that really happened: the issuer, still an active holder of the issue duties, freezing exactly the issued revision's
+     * one issue (identified by its number-bearing record and its financial fingerprint) at its reviewed generation, and nothing else. Documents infers none of this; Sales decides it.
+     */
+    private function mayFreezeOriginal(DocumentOperationContext $context): bool
+    {
+        $issue = $context->purpose === DocumentManifest::ORIGINAL ? $this->issuedByActor($context) : null;
+
+        return $issue !== null && $context->stableGenerationIdentity === QuotationCustomerProjection::stableGenerationIdentity($issue->id)
+            && $context->sourceGeneration === $issue->reviewed_generation && $context->sourceSnapshotReference === $issue->financial_fingerprint;
+    }
+
+    private function isIssuerOfIssuedRevision(DocumentOperationContext $context): bool
+    {
+        return $this->issuedByActor($context) !== null;
+    }
+
+    /** The one issue of the ISSUED revision this binding names, when the actor is an active holder of the issue duties and is the issuer. */
+    private function issuedByActor(DocumentOperationContext $context): ?QuotationIssue
+    {
+        $actor = User::query()->find($context->actorId);
+        if ($actor === null || $context->audience !== self::AUDIENCE || preg_match('/^quotation-revision:(\d+)$/', $context->ownerBindingIdentity, $m) !== 1) {
+            return null;
+        }
+        // The same exact duties and record policy as the issue itself, under the company access fence it already holds (the freeze runs inside the issue transaction); anything
+        // else, including a call outside a transaction, is a denial.
+        try {
+            $revision = app(QuotationAccess::class)->requireRevision($actor, (int) $m[1], [PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_VIEW]);
+        } catch (\Throwable) {
+            return null;
+        }
+        $issue = $revision->state === 'ISSUED' ? QuotationIssue::query()->where('revision_id', $revision->id)->first() : null;
+
+        return $issue !== null && $issue->issued_by === $actor->id ? $issue : null;
     }
 }

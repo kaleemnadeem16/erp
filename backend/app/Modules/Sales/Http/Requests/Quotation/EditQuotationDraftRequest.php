@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Http\Requests\Quotation;
 
-use App\Modules\Sales\Http\Requests\SalesRequest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 
-/** Reopening a draft for editing is the preparer's duty (`sales.quotation.prepare`, STAGED), independent of `sales.quotation.view`. */
-class EditQuotationDraftRequest extends SalesRequest
+/** Reopening a draft requires independent view and prepare duties, both STAGED. */
+class EditQuotationDraftRequest extends QuotationRequest
 {
     protected function capability(): ?string
     {

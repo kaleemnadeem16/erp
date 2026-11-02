@@ -11,8 +11,8 @@ No new permission is registered, no grant is made, no holder is assigned, no rou
 | | Count | State |
 |---|---|---|
 | Existing CRM duties | 8 | **ACTIVE**, registered exactly as before: same strings, same holders, same read and scope meaning; `sales.opportunity.attribution.correct` stays excluded from automatic grants (ADR 0114) |
-| Sales duties specified, no consumer yet | 41 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
-| Sales duties staged (Action delivered, disabled) | 5 | **STAGED**: `sales.quotation.assign` (QA1a ownership Actions `ReassignQuotationOwner`, `ChangeQuotationAccessUnit` and the internal `CaptureQuotationAccessBaseline`, owner-authorised on #59 outside the 78-row matrix); `sales.financial.configure` (FR4/PX6 policy foundation); `sales.quotation.view` / `sales.quotation.prepare` (QL1a draft Actions `ReadQuotationDraft`, `CreateQuotationDraft`, `UpdateQuotationDraft`, `PreviewQuotation`); and `sales.document.generate` (the internal `BindQuotationDocument` and the quotation document adapter's access callback) — each guarded Action exists but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
+| Sales duties specified, no consumer yet | 33 | **SPECIFIED**: not registered, no constant, no permission row, refused by `SalesAccess` even if a row is made by hand |
+| Sales duties staged (Action delivered, disabled) | 13 | **STAGED**: `sales.customer-decision.evidence.record` (CA1 `OpenCustomerDecisionCase`, `AppendCustomerDecisionEvidence`); `sales.quotation.withdraw` (QL4/QL5 `WithdrawQuotationOffer` and `IssueQuotationReplacement`); `sales.quotation.issue` (QL3 `IssueQuotation`, the checker half of the routine maker/checker split; never implied by prepare); `sales.quotation.assign` (QA1a ownership Actions `ReassignQuotationOwner`, `ChangeQuotationAccessUnit` and the internal `CaptureQuotationAccessBaseline`, owner-authorised on #59 outside the 78-row matrix); `sales.financial.configure` (FR4/PX6 policy foundation); `sales.quotation.view` / `sales.quotation.prepare` (QL1a draft Actions `ReadQuotationDraft`, `CreateQuotationDraft`, `UpdateQuotationDraft`, `PreviewQuotation`); and `sales.document.generate` (the internal `BindQuotationDocument` and the quotation document adapter's access callback); and `sales.document.view`, `sales.document.download`, `sales.document.repair`, `sales.delivery.view` and `sales.delivery.record` (the guarded quotation document Actions — request/retry, status, history, download, operator recovery, manual delivery evidence; the independent quotation view is decided by `QuotationAccess`) — each guarded Action exists but the duty is not registered and `SalesAccess` refuses every caller until the owner-reviewed holder recipe activates it |
 | Sales duties reserved by design | 5 | **DORMANT** (D-S): `sales.delivery.send`, `sales.delivery.reconcile`, `sales.pricing.exception.approve`, `sales.pricing.agreement.depart`, `sales.customer-decision.claim-release` — need their own approved and delivered contract before they may even become SPECIFIED |
 | Other modules' duties in the 78-row matrix | 20 | Not Sales' to register (below); 6 are not registered anywhere yet (Tax 2, Documents 4) |
 
@@ -51,8 +51,8 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.quotation.view` | New ordinary | STAGED | Quotation list/detail safe metadata | Quote-min | QL1 |
 | `sales.quotation.commercial.view` | Sensitive | SPECIFIED | General chosen-commercial figures | Commercial | QL1/FR5 |
 | `sales.quotation.prepare` | New ordinary | STAGED | Draft/revise/cancel-draft/preview/ordinary submit | Commercial-workflow | QL1/2 + PR/FR |
-| `sales.quotation.issue` | New ordinary | SPECIFIED | Official issue | Commercial-workflow | QL3 |
-| `sales.quotation.withdraw` | Sensitive | SPECIFIED | Eligible unaccepted withdrawal/replacement disposition | Commercial-workflow | QL4/5; partial remains gated |
+| `sales.quotation.issue` | New ordinary | STAGED | Official issue | Commercial-workflow | QL3 |
+| `sales.quotation.withdraw` | Sensitive | STAGED | Eligible unaccepted withdrawal/replacement disposition | Commercial-workflow | QL4/5; partial remains gated |
 | `sales.quotation.history.view` | New ordinary | SPECIFIED | Quote lifecycle history | Quote-min + independent fields | QL1–6 |
 | `sales.quotation.approve` | Sensitive | SPECIFIED | Exact commercial review subject | Review-commercial | QL2 + shared Approvals |
 | `sales.quotation.review-operational` | Sensitive | SPECIFIED | Exact operational review profile | Review-operational | QL2 + review adapter |
@@ -68,7 +68,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.quotation.assign` | Sensitive | STAGED | Reassign quotation owner / change access unit / internal baseline capture (independent view) | Ownership | QA1a; scoped policy QA1b |
 | `sales.financial.configure` | Sensitive | STAGED | Sales FX/rounding policy | Config | FR1/4 |
 | `sales.customer-decision.view` | New ordinary | SPECIFIED | Decision/case safe detail/history | Decision-min | CA1 |
-| `sales.customer-decision.evidence.record` | New ordinary | SPECIFIED | Shared intake/append observations | Evidence-write | CA1; file requires secure DF |
+| `sales.customer-decision.evidence.record` | New ordinary | STAGED | Shared intake/append observations | Evidence-write | CA1; file requires secure DF |
 | `sales.customer-decision.accept` | Sensitive | SPECIFIED | Authoritative ordinary consent/claims | Exact consent | CA2/3 |
 | `sales.customer-decision.reconcile` | Sensitive | SPECIFIED | Late recognition | Historical consent/impact | CA5 + affected HA |
 | `sales.customer-decision.correct` | Sensitive | SPECIFIED | Governed accepted reduction | Exact consent/impact | HA6/CA5 |
@@ -78,14 +78,14 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.handover.release` | Sensitive | SPECIFIED | Release exact supported component | Operational + baseline | HA2 + real target |
 | `sales.handover.hold` | Sensitive | SPECIFIED | Authorised operational hold | Operational | HA5 |
 | `sales.handover.amend` | Sensitive | SPECIFIED | Schedule/unused cancellation/reassignment | Operational/impact | HA4/5 |
-| `sales.document.view` | New ordinary | SPECIFIED | Safe generation/artefact history/status | Document-min | DF2/DOC1 |
+| `sales.document.view` | New ordinary | STAGED | Safe generation/artefact history/status | Document-min | DF2/DOC1 |
 | `sales.document.generate` | New ordinary | STAGED | Request pinned generation/retry | Customer render profile | DF3/DOC2 |
-| `sales.document.repair` | Sensitive | SPECIFIED | Authorise labelled semantic rendition | Customer render profile | DF4/DOC3 |
-| `sales.document.download` | New ordinary | SPECIFIED | Original/permitted rendition/print invocation | Exact whole payload | DF4/DOC4 |
+| `sales.document.repair` | Sensitive | STAGED | Authorise labelled semantic rendition | Customer render profile | DF4/DOC3 |
+| `sales.document.download` | New ordinary | STAGED | Original/permitted rendition/print invocation | Exact whole payload | DF4/DOC4 |
 | `sales.document.attachment.manage` | Sensitive | SPECIFIED | Validate/link allowed evidence attachment | Association write | DF4 + CA/DOC |
 | `sales.document.attachment.view` | Sensitive | SPECIFIED | Independent confidential file access | Exact association | DF4 + owner adapter |
-| `sales.delivery.view` | New ordinary | SPECIFIED | Safe recipient/attempt history | Recipient/attempt; confidential proof independently | DOC4 |
-| `sales.delivery.record` | New ordinary | SPECIFIED | Manual actual-channel evidence | Recipient/attempt; confidential proof independently | DOC4 |
+| `sales.delivery.view` | New ordinary | STAGED | Safe recipient/attempt history | Recipient/attempt; confidential proof independently | DOC4 |
+| `sales.delivery.record` | New ordinary | STAGED | Manual actual-channel evidence | Recipient/attempt; confidential proof independently | DOC4 |
 | `sales.delivery.send` | Dormant sensitive | DORMANT | External current/historical dispatch | Recipient/attempt; confidential proof independently | DOC6 supported provider only |
 | `sales.delivery.reconcile` | Dormant sensitive | DORMANT | Provider unknown-result disposition | Recipient/attempt; confidential proof independently | DOC6 durable protocol |
 | `sales.forecast.view` | New ordinary | SPECIFIED | Forecast basis/trust/source view | Forecast commercial; no hidden sources/FX-admin | RP1 safe basis; RP4 for published forecast; CA/QL sources |
