@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Support\Quotation;
 
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationFamily;
+use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Support\Scope\CompanyAccessFence;
@@ -53,6 +54,18 @@ final class QuotationAccess
         }
 
         return $query;
+    }
+
+    /** @param list<string> $duties */
+    public function requireRevision(User $actor, int $revisionId, array $duties, bool $forUpdate = false): QuotationRevision
+    {
+        $eligible = $this->queryFor($actor, $duties)->select('quotation_families.id');
+        $query = QuotationRevision::query()->whereKey($revisionId)->whereIn('family_id', $eligible);
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->firstOrFail();
     }
 
     /** @param list<string> $duties */

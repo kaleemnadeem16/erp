@@ -36,6 +36,21 @@ class QuotationAccessTest extends TestCase
         $this->assertThrows(fn () => $access->requireFamily($this->preparer, $legacy->id, [Duty::QUOTATION_VIEW]), ModelNotFoundException::class);
     }
 
+    public function test_revision_loader_rejects_hidden_and_unknown_identically(): void
+    {
+        $own = $this->nativeFamily();
+        $other = User::factory()->create();
+        $other->givePermissionTo([Duty::QUOTATION_PREPARE, Duty::QUOTATION_VIEW]);
+        $hidden = $this->nativeFamily($other);
+        AccessScopeLimit::create(['user_id' => $this->preparer->id, 'permission' => Duty::QUOTATION_VIEW, 'scope' => 'OWN']);
+        $access = app(QuotationAccess::class);
+        $ownRevision = $own->revisions()->firstOrFail()->id;
+        $hiddenRevision = $hidden->revisions()->firstOrFail()->id;
+        $this->assertSame($ownRevision, $access->requireRevision($this->preparer, $ownRevision, [Duty::QUOTATION_VIEW], true)->id);
+        $this->assertThrows(fn () => $access->requireRevision($this->preparer, $hiddenRevision, [Duty::QUOTATION_VIEW]), ModelNotFoundException::class);
+        $this->assertThrows(fn () => $access->requireRevision($this->preparer, 9999999, [Duty::QUOTATION_VIEW]), ModelNotFoundException::class);
+    }
+
     public function test_each_required_duty_is_independently_intersected(): void
     {
         $family = $this->nativeFamily();
