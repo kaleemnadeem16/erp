@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Administration\Actions;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Role;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Support\AccessAssignmentGuard;
+use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\DB;
 
 final class SyncMemberAccess
@@ -69,7 +71,23 @@ final class SyncMemberAccess
 
                 continue; // a stale limit from before the role or permission was removed
             }
-            $rows[] = ['role_id' => $roleId, 'permission' => $permission, 'scope' => $limit['scope'] ?? AccessScopeLimit::MY_UNITS];
+            $scope = $limit['scope'] ?? AccessScopeLimit::MY_UNITS;
+            if (! in_array($scope, [AccessScopeLimit::MY_UNITS, AccessScopeLimit::OWN], true)) {
+                throw new DomainInvariantException('This scope mode is not supported.', 'scope_limits');
+            }
+            if ($scope === AccessScopeLimit::OWN) {
+                $role = $roleId === null ? null : Role::query()->whereKey($roleId)->lockForUpdate()->firstOrFail();
+                $duties = $role === null ? [$permission] : $role->permissions()->pluck('name')->all();
+                if ($duties === []) {
+                    throw new DomainInvariantException('An OWN role needs supported duties.', 'scope_limits');
+                }
+                foreach ($duties as $duty) {
+                    if (! is_string($duty) || ! app(ResourceScopeAdapters::class)->supportsAssignment($duty, AccessScopeLimit::OWN)) {
+                        throw new DomainInvariantException('OWN cannot restrict an unsupported or mixed-duty assignment.', 'scope_limits');
+                    }
+                }
+            }
+            $rows[] = ['role_id' => $roleId, 'permission' => $permission, 'scope' => $scope];
         }
         AccessScopeLimit::query()->where('user_id', $member->id)->delete();
         foreach ($rows as $row) {

@@ -16,6 +16,8 @@ final readonly class ResolvedScope
 
     private const UNITS = 'UNITS';
 
+    private const OWN = 'OWN';
+
     /** @param  list<int>  $unitIds */
     private function __construct(private string $kind, private array $unitIds = []) {}
 
@@ -33,6 +35,21 @@ final readonly class ResolvedScope
     public static function units(array $unitIds): self
     {
         return new self(self::UNITS, array_values(array_unique($unitIds)));
+    }
+
+    public static function own(): self
+    {
+        return new self(self::OWN);
+    }
+
+    public function ownsRecords(): bool
+    {
+        return $this->kind === self::OWN;
+    }
+
+    public function allowsNamedDelegation(): bool
+    {
+        return false;
     }
 
     public function isAll(): bool

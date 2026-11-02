@@ -17,6 +17,9 @@ test('a purchase order line starts on the unit the supplier sells the item in', 
   await page.goto('/purchase-orders/new');
   const sheet = page.getByRole('dialog', { name: 'New purchase order' });
   await pickCombobox(page, 'Supplier', SUPPLIER, { within: sheet });
+  // The supplier's default currency is applied asynchronously; the first step
+  // must finish receiving it before Next validates the header.
+  await expect(sheet.getByLabel('Currency', { exact: true })).toContainText('PKR');
   await sheet.getByRole('button', { name: 'Next' }).click();
 
   const unit = sheet.getByLabel('Purchase UoM', { exact: true });
@@ -33,6 +36,7 @@ test('an item this supplier has no row for starts on its stock unit', async ({ p
   await page.goto('/purchase-orders/new');
   const sheet = page.getByRole('dialog', { name: 'New purchase order' });
   await pickCombobox(page, 'Supplier', SUPPLIER, { within: sheet });
+  await expect(sheet.getByLabel('Currency', { exact: true })).toContainText('PKR');
   await sheet.getByRole('button', { name: 'Next' }).click();
 
   await pickCombobox(page, 'Item', 'Phthalo Blue Pigment', { within: sheet });
