@@ -1069,3 +1069,7 @@ Integrated from source 27028d44110c4283e5e54f80d98d450932d9edf9 (owner approval 
 ## 2026-10-30 — Documents DF3 stored PDF originals, worker, delivery and recovery (branch agent-b/documents-df3-pdf, #72)
 
 Integrated from source ff01fb2cd8533f8f89dc76abd362d09c3e52ce1b (owner approval 2026-10-29); migration `2026_10_30_100000_create_document_artefacts`, applied to the dev database; depends on #26 and #49.
+
+## 2026-10-30 — Customer decision intake foundation G-A0, disabled storage (branch phase4/ga0-customer-decision-intake, #57)
+
+Integrated from source 8800a0d08681b2c91177d76aeaf429b2e5cd8039 (owner approval 2026-10-29); migration `2026_10_27_140000_create_customer_decision_intake_foundation` (sorts before newer migrations, applied additively to the dev database); conflict in Sales README resolved by merge commit keeping both sides.
