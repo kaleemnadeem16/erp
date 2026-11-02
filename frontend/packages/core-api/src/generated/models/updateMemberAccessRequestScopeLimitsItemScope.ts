@@ -11,4 +11,5 @@ export type UpdateMemberAccessRequestScopeLimitsItemScope =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const UpdateMemberAccessRequestScopeLimitsItemScope = {
   MY_UNITS: "MY_UNITS",
+  OWN: "OWN",
 } as const;

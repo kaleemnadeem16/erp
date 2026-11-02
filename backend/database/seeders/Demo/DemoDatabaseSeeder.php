@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders\Demo;
 
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
+use Database\Seeders\Demo\Documents\DocumentConfigurationDemoSeeder;
 use Database\Seeders\Demo\Estimating\ApplicationRatesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssembliesDemoSeeder;
 use Database\Seeders\Demo\Estimating\AssemblyVersionsDemoSeeder;
@@ -16,6 +17,7 @@ use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
+use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -80,9 +82,13 @@ final class DemoDatabaseSeeder extends Seeder
                 // Needs the demo warehouses (InventoryDemoSeeder, StockTransfersDemoSeeder): two sites that own them, and a limited clerk for each.
                 OrganisationDemoSeeder::class,
                 SalesCrmDemoSeeder::class,
+                // After SalesCrmDemoSeeder (a draft links to its deal) and the currency rates; a no-op unless the staged quotation duties are locally activated.
+                QuotationDraftsDemoSeeder::class,
                 // After the Sales and Inventory seeders: the draft sells their service and finished-product Items to their customer.
                 QuotationDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
+                // Configuration only; independent of the other seeders (needs the demo login).
+                DocumentConfigurationDemoSeeder::class,
             ]);
         });
     }
