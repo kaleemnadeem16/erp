@@ -65,12 +65,17 @@ final class QuotationAccess
             $query->lockForUpdate();
         }
 
-        return $query->firstOrFail();
+        return $query->first() ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
     }
 
     /** @param list<string> $duties */
-    public function requireFamily(User $actor, int $familyId, array $duties): QuotationFamily
+    public function requireFamily(User $actor, int $familyId, array $duties, bool $forUpdate = false): QuotationFamily
     {
-        return $this->queryFor($actor, $duties)->where('quotation_families.id', $familyId)->firstOrFail();
+        $query = $this->queryFor($actor, $duties)->where('quotation_families.id', $familyId);
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+
+        return $query->firstOrFail();
     }
 }

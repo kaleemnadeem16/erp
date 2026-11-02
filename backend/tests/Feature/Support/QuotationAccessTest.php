@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Support;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
@@ -47,8 +48,8 @@ class QuotationAccessTest extends TestCase
         $ownRevision = $own->revisions()->firstOrFail()->id;
         $hiddenRevision = $hidden->revisions()->firstOrFail()->id;
         $this->assertSame($ownRevision, $access->requireRevision($this->preparer, $ownRevision, [Duty::QUOTATION_VIEW], true)->id);
-        $this->assertThrows(fn () => $access->requireRevision($this->preparer, $hiddenRevision, [Duty::QUOTATION_VIEW]), ModelNotFoundException::class);
-        $this->assertThrows(fn () => $access->requireRevision($this->preparer, 9999999, [Duty::QUOTATION_VIEW]), ModelNotFoundException::class);
+        $this->assertThrows(fn () => $access->requireRevision($this->preparer, $hiddenRevision, [Duty::QUOTATION_VIEW]), DomainInvariantException::class);
+        $this->assertThrows(fn () => $access->requireRevision($this->preparer, 9999999, [Duty::QUOTATION_VIEW]), DomainInvariantException::class);
     }
 
     public function test_each_required_duty_is_independently_intersected(): void

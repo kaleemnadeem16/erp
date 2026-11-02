@@ -29,7 +29,7 @@ final class QuotationOperation
      * @param  Closure(mixed): array<string, mixed>  $work  performs the change and returns its versioned result (`family_id`, optional `revision_id`)
      * @return array{result: array<string, mixed>, replayed: bool}
      */
-    public function run(SalesActorContext $actor, string $operation, ?string $key, array $intent, Closure $lockSubject, Closure $work): array
+    public function run(SalesActorContext $actor, string $operation, ?string $key, array $intent, Closure $lockSubject, Closure $work, ?Closure $replayGuard = null): array
     {
         $key = trim((string) $key);
         if ($key === '' || mb_strlen($key) > self::KEY_MAX) {
@@ -39,12 +39,15 @@ final class QuotationOperation
 
         for ($attempt = 0; ; $attempt++) {
             try {
-                return DB::transaction(function () use ($actor, $operation, $key, $hash, $lockSubject, $work): array {
+                return DB::transaction(function () use ($actor, $operation, $key, $hash, $lockSubject, $work, $replayGuard): array {
                     // Acquire security first on each attempt; family and revision locks follow.
                     $this->accessFence->lockAll();
                     $subject = $lockSubject();
                     $receipt = $this->receipts->find($actor, $key);
                     if ($receipt !== null) {
+                        if ($replayGuard !== null) {
+                            $replayGuard($receipt['result']);
+                        }
                         if ($receipt['payload_hash'] !== $hash) {
                             throw QuotationRefusal::make(QuotationRefusal::REQUEST_KEY_REUSED, 'That request key was already used for a different request.', 'request_key');
                         }

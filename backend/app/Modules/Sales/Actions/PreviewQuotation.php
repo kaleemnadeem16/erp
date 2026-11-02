@@ -28,13 +28,14 @@ use App\Modules\Sales\Support\Pricing\PricingRefusal;
 use App\Modules\Sales\Support\Pricing\PricingSourceRegistry;
 use App\Modules\Sales\Support\Pricing\ResolveSalesPrice;
 use App\Modules\Sales\Support\Quotation\LineMembership;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationMoney;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
-use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyContext;
 use App\Support\Status;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * A read-only financial preview of a DRAFT: each line through PR0 source resolution, the rounding policy in force on the pricing date (FR4), the pinned FX
@@ -60,11 +61,14 @@ final class PreviewQuotation
     /** @return array<string, mixed> */
     public function __invoke(User $actor, int $revisionId): array
     {
-        SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'preview a quotation');
-        $context = SalesActorContext::forUser($actor, 'quotation.preview');
+        return DB::transaction(fn (): array => $this->preview($actor, $revisionId));
+    }
 
-        $revision = QuotationRevision::query()->find($revisionId)
-            ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id');
+    /** @return array<string, mixed> */
+    private function preview(User $actor, int $revisionId): array
+    {
+        $revision = app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]);
+        $context = SalesActorContext::forUser($actor, 'quotation.preview');
         if (! $revision->isDraft()) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_EDITABLE, 'Only a draft quotation can be previewed.', 'revision_id');
         }

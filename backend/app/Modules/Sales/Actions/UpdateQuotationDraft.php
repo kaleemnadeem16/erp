@@ -18,6 +18,7 @@ use App\Modules\Sales\Support\Quotation\DraftChanges;
 use App\Modules\Sales\Support\Quotation\DraftHeader;
 use App\Modules\Sales\Support\Quotation\DraftSource;
 use App\Modules\Sales\Support\Quotation\LineMembership;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationAssociation;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationMoney;
@@ -49,15 +50,14 @@ final class UpdateQuotationDraft
     /** @param  array<string, mixed>  $input  header fields plus add_lines, update_lines, remove_lines */
     public function __invoke(User $actor, int $revisionId, int $expectedGeneration, ?string $requestKey, array $input): QuotationDraftOutcome
     {
-        SalesAccess::require($actor, PermissionVocabulary::QUOTATION_PREPARE, 'prepare a quotation');
+        DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]));
         $context = SalesActorContext::forUser($actor, 'quotation.update_draft');
         $changes = DraftChanges::parse($input);
         DraftHeader::verifyReferences($changes->header);
 
         $outcome = $this->operations->run(
             $context, 'quotation.update_draft', $requestKey, ['revision_id' => $revisionId, 'expected_generation' => $expectedGeneration] + $changes->toIntent(),
-            fn (): QuotationRevision => QuotationRevision::query()->whereKey($revisionId)->lockForUpdate()->first()
-                ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'revision_id'),
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE], true),
             fn (QuotationRevision $revision): array => $this->apply($actor, $revision, $expectedGeneration, $changes),
         );
 
