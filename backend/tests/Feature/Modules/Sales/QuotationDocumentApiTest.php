@@ -152,7 +152,7 @@ class QuotationDocumentApiTest extends TestCase
     }
 
     /**
-     * What the caller can observe of one request. A fresh request key per call: a refusal must not depend on the key.
+     * What a production caller can observe of one request. A fresh request key per call: a refusal must not depend on the key.
      *
      * @param  array<string, mixed>  $body
      * @return array{status: int, body: string}
@@ -161,7 +161,13 @@ class QuotationDocumentApiTest extends TestCase
     {
         $response = $this->json($method, "/api/v1/quotations/{$revision}{$tail}", $body, $keyed ? ['Idempotency-Key' => 'probe-'.bin2hex(random_bytes(6))] : []);
 
-        return ['status' => $response->getStatusCode(), 'body' => (string) $response->getContent()];
+        // Only what a production client sees: the test app runs with debug on, which appends the exception, file, line and trace, and
+        // those differ by call site, not by revision.
+        $json = json_decode((string) $response->getContent(), true);
+        $body = is_array($json) ? json_encode(array_intersect_key($json, array_flip(['message', 'reason_code', 'errors', 'data'])), JSON_THROW_ON_ERROR)
+            : (string) $response->getContent();
+
+        return ['status' => $response->getStatusCode(), 'body' => $body];
     }
 
     /** @return array{events: int, deliveries: int, intents: int} the evidence a refused probe must never write */
