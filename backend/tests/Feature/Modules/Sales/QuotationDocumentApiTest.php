@@ -4,6 +4,7 @@ namespace Tests\Feature\Modules\Sales;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
@@ -242,5 +243,44 @@ class QuotationDocumentApiTest extends TestCase
         }
 
         $this->assertSame($before, $this->writes(), 'no cross-company probe wrote an access event, a delivery or a generation intent');
+    }
+
+    public function test_document_routes_follow_the_quotation_family_policy_for_own_and_all_holders(): void
+    {
+        $this->activate();
+        $this->documentWithEvidence(); // the clerk holds every duty unrestricted (ALL) and reaches the document
+        $documentDuties = array_values(array_diff(self::DUTIES, [P::QUOTATION_VIEW]));
+
+        // OWN view, and the caller is the quotation's current responsible owner (the maker created the draft): reached.
+        $this->maker->givePermissionTo([...$documentDuties, P::QUOTATION_VIEW]);
+        AccessScopeLimit::create(['user_id' => $this->maker->id, 'permission' => P::QUOTATION_VIEW, 'scope' => 'OWN']);
+        // OWN view, but someone else owns the quotation: exactly what an unknown id shows.
+        $stranger = User::factory()->create();
+        $stranger->givePermissionTo([...$documentDuties, P::QUOTATION_VIEW]);
+        AccessScopeLimit::create(['user_id' => $stranger->id, 'permission' => P::QUOTATION_VIEW, 'scope' => 'OWN']);
+        // A document duty limited to OWN: document duties have no family scope, so the limit is refused outright, never widened.
+        $limitedDuty = User::factory()->create();
+        $limitedDuty->givePermissionTo(self::DUTIES);
+        AccessScopeLimit::create(['user_id' => $limitedDuty->id, 'permission' => P::DOCUMENT_VIEW, 'scope' => 'OWN']);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $before = $this->writes();
+
+        Sanctum::actingAs($this->maker);
+        $this->getJson($this->url('/document'))->assertOk()->assertJsonPath('data.state', 'READY');
+        $this->getJson($this->url('/deliveries'))->assertOk()->assertJsonCount(1, 'data');
+
+        Sanctum::actingAs($stranger);
+        foreach ($this->routes() as [$method, $tail, $body, $keyed]) {
+            $hidden = $this->observe($this->revision, $method, $tail, $body, $keyed);
+            $unknown = $this->observe(999999, $method, $tail, $body, $keyed);
+            $this->assertSame(404, $hidden['status'], "{$method} {$tail}: a quotation outside the caller's OWN scope is not found");
+            $this->assertSame($unknown, $hidden, "{$method} {$tail}: a hidden quotation must look exactly like an unknown one");
+        }
+
+        Sanctum::actingAs($limitedDuty);
+        $this->assertSame($this->observe(999999, 'GET', '/document', [], false), $refused = $this->observe($this->revision, 'GET', '/document', [], false));
+        $this->assertSame(403, $refused['status']);
+
+        $this->assertSame($before, $this->writes(), 'reads write nothing, and no refused or hidden probe writes anything');
     }
 }

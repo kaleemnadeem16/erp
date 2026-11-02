@@ -8,10 +8,8 @@ use App\Models\User;
 use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Files\Models\FileBlob;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The safe status of one issued quotation's official PDF: not generated yet / generating / failed (with a stable code) / ready, and for a ready file whether it can be handed
@@ -24,11 +22,12 @@ final class ReadQuotationDocumentStatus
     /** @return array{revision_id: int, state: string, error_code: string|null, artefact: array{id: int, pages: int, size_bytes: int, media_type: string, created_at: string, available: bool}|null} */
     public function __invoke(User $actor, int $revisionId): array
     {
-        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_VIEW, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to see the quotation document.');
-        }
+        // Authority (exact duty, then the quotation-family policy) and the read share one transaction, so the fence holds until the result is built.
+        return DB::transaction(function () use ($actor, $revisionId): array {
+            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_VIEW, 'see the quotation document');
 
-        return $this->status($revisionId);
+            return $this->status($revisionId);
+        });
     }
 
     /** @return array{revision_id: int, state: string, error_code: string|null, artefact: array{id: int, pages: int, size_bytes: int, media_type: string, created_at: string, available: bool}|null} */

@@ -5,11 +5,20 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Documents;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Documents\Models\DocumentArtefact;
 use App\Modules\Documents\Models\DocumentArtefactHead;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Documents\Models\DocumentSubjectBinding;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
+use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
+use App\Modules\Sales\Support\Quotation\QuotationRefusal;
+use App\Modules\Sales\Support\SalesAccess;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
+use LogicException;
 
 /**
  * Finds the official document of an issued quotation revision: its subject binding (by Sales' owner identity), the one ORIGINAL manifest frozen at issue and, once
@@ -17,6 +26,29 @@ use App\Modules\Sales\Models\QuotationRevision;
  */
 final class QuotationDocumentLocator
 {
+    /**
+     * The one authority check every quotation document Action makes, inside its own transaction and before anything about the revision is
+     * read: a current ACTIVE member, the exact document duty (company-wide: document duties have no family scope, so a limited grant is
+     * refused) and then the #77 quotation-family policy for the independent view (OWN = current responsible owner, ALL = the company), under
+     * the company access fence held until the caller's transaction ends. A missing duty is 403 before any lookup; a revision that is unknown,
+     * in another company or outside the caller's family scope is the same QUOTATION_NOT_FOUND (404), so nothing discloses existence.
+     */
+    public function authorise(User $actor, int $revisionId, string $duty, string $doing): void
+    {
+        if (DB::transactionLevel() < 1) {
+            throw new LogicException('Quotation document authority must be decided inside the transaction that reads the result.');
+        }
+        if (ActiveActor::current($actor) === null || ! SalesAccess::may($actor, $duty)) {
+            throw new AuthorizationException("You are not permitted to {$doing}.");
+        }
+        try {
+            app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW]);
+        } catch (DomainInvariantException $refusal) {
+            // Hidden, foreign and unknown revisions are one answer here: the same "not found" as an unissued one.
+            throw $refusal->reasonCode === QuotationRefusal::QUOTATION_NOT_FOUND ? $this->notFound() : $refusal;
+        }
+    }
+
     public function notFound(): DomainInvariantException
     {
         return new DomainInvariantException('The quotation document was not found.', 'revision_id', 'DOCUMENT_NOT_FOUND');

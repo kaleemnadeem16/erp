@@ -120,7 +120,8 @@ class QuotationDocumentController extends Controller
             return $work();
         } catch (DomainInvariantException $refusal) {
             $code = (string) $refusal->reasonCode;
-            if ($code === 'DOCUMENT_NOT_FOUND' || $code === 'artefact_not_found') {
+            // QUOTATION_NOT_FOUND is QuotationAccess's answer for a revision outside the caller's family scope: the same plain 404.
+            if ($code === 'DOCUMENT_NOT_FOUND' || $code === 'artefact_not_found' || $code === 'QUOTATION_NOT_FOUND') {
                 throw (new ModelNotFoundException)->setModel(QuotationRevision::class);
             }
             if ($code === 'access_denied') {

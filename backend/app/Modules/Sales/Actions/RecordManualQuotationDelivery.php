@@ -8,10 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -33,9 +30,20 @@ final class RecordManualQuotationDelivery
      */
     public function __invoke(User $actor, int $revisionId, array $fields, string $operationKey, ?int $correctsId = null): array
     {
-        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DELIVERY_RECORD, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to record a quotation delivery.');
-        }
+        // Authority, the replay look-up and the insert share one transaction, so a replay is only disclosed to someone who may see it now.
+        return DB::transaction(function () use ($actor, $revisionId, $fields, $operationKey, $correctsId): array {
+            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DELIVERY_RECORD, 'record a quotation delivery');
+
+            return $this->record($actor, $revisionId, $fields, $operationKey, $correctsId);
+        });
+    }
+
+    /**
+     * @param  array{channel: string, delivered_on: string, recipient_name: string, recipient_detail?: string|null, note?: string|null}  $fields
+     * @return array{delivery: QuotationDocumentDelivery, replayed: bool}
+     */
+    private function record(User $actor, int $revisionId, array $fields, string $operationKey, ?int $correctsId): array
+    {
         $operationKey = trim($operationKey);
         $recipient = trim($fields['recipient_name']);
         $detail = isset($fields['recipient_detail']) ? trim((string) $fields['recipient_detail']) : null;

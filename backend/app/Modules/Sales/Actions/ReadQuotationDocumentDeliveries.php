@@ -7,10 +7,8 @@ namespace App\Modules\Sales\Actions;
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 /** The manual delivery history of one issued quotation: who recorded what, when, with corrections shown as such. Needs `sales.delivery.view` and the right to see the quotation. */
 final class ReadQuotationDocumentDeliveries
@@ -20,11 +18,11 @@ final class ReadQuotationDocumentDeliveries
     /** @return list<QuotationDocumentDelivery> */
     public function __invoke(User $actor, int $revisionId): array
     {
-        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DELIVERY_VIEW, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to see quotation deliveries.');
-        }
-        $this->locator->manifest($revisionId);
+        return DB::transaction(function () use ($actor, $revisionId): array {
+            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DELIVERY_VIEW, 'see quotation deliveries');
+            $this->locator->manifest($revisionId);
 
-        return QuotationDocumentDelivery::query()->where('revision_id', $revisionId)->orderBy('id')->get()->all();
+            return QuotationDocumentDelivery::query()->where('revision_id', $revisionId)->orderBy('id')->get()->all();
+        });
     }
 }

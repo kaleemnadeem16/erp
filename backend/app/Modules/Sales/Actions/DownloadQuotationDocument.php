@@ -8,10 +8,8 @@ use App\Models\User;
 use App\Modules\Documents\Actions\StreamAuthorisedDocument;
 use App\Modules\Documents\Support\DocumentDownload;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Hands out the stored official PDF of an issued quotation: `sales.document.download` and the right to see the quotation, then the document owner's decision and the
@@ -23,10 +21,11 @@ final class DownloadQuotationDocument
 
     public function __invoke(User $actor, int $revisionId, string $kind = 'DOWNLOAD'): DocumentDownload
     {
-        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_DOWNLOAD, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to download the quotation document.');
-        }
+        // The bytes are copied to a private temporary stream inside execute(), so the hand-off record and the authority share this transaction.
+        return DB::transaction(function () use ($actor, $revisionId, $kind): DocumentDownload {
+            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_DOWNLOAD, 'download the quotation document');
 
-        return $this->documents->execute($this->locator->artefactOrFail($revisionId)->id, $actor->id, $kind);
+            return $this->documents->execute($this->locator->artefactOrFail($revisionId)->id, $actor->id, $kind);
+        });
     }
 }

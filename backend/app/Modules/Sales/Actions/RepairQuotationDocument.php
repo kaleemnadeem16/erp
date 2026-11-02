@@ -8,10 +8,8 @@ use App\Models\User;
 use App\Modules\Documents\Actions\ReconcileDocumentArtefact;
 use App\Modules\Documents\Actions\RestoreDocumentArtefact;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
-use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Operator recovery of the stored official PDF (`sales.document.repair`, a sensitive duty, plus the right to see the quotation): `check` compares the stored object with its
@@ -25,20 +23,18 @@ final class RepairQuotationDocument
     /** @return 'ok'|'missing'|'corrupt'|'unchanged' */
     public function check(User $actor, int $revisionId): string
     {
-        return $this->reconcile->execute($this->guarded($actor, $revisionId), $actor->id);
+        return DB::transaction(fn (): string => $this->reconcile->execute($this->guarded($actor, $revisionId), $actor->id));
     }
 
     /** @param resource $bytes */
     public function restore(User $actor, int $revisionId, $bytes, string $reason): void
     {
-        $this->restore->execute($this->guarded($actor, $revisionId), $bytes, $reason, $actor->id);
+        DB::transaction(fn () => $this->restore->execute($this->guarded($actor, $revisionId), $bytes, $reason, $actor->id));
     }
 
     private function guarded(User $actor, int $revisionId): int
     {
-        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_REPAIR, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to repair the quotation document.');
-        }
+        $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_REPAIR, 'repair the quotation document');
 
         return $this->locator->artefactOrFail($revisionId)->id;
     }

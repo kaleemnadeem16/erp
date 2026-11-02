@@ -10,10 +10,9 @@ use App\Modules\Documents\Actions\RequestDocumentGeneration;
 use App\Modules\Documents\Models\DocumentGenerationIntent;
 use App\Modules\Documents\Support\DocumentException;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
-use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Generates (or retries) the official PDF of an issued quotation from the original manifest frozen at issue — never from the live quotation, so a later change cannot alter it.
@@ -32,12 +31,15 @@ final class RequestQuotationDocument
     /** @return array{revision_id: int, state: string, error_code: string|null, artefact: array{id: int, pages: int, size_bytes: int, media_type: string, created_at: string, available: bool}|null} */
     public function __invoke(User $actor, int $revisionId, string $operationKey): array
     {
-        if (ActiveActor::current($actor) === null || ! SalesAccess::mayAll($actor, PermissionVocabulary::DOCUMENT_GENERATE, PermissionVocabulary::QUOTATION_VIEW)) {
-            throw new AuthorizationException('You are not permitted to generate the quotation document.');
-        }
-        $manifest = $this->locator->manifest($revisionId);
+        // Authority is decided under the fence before anything is requested, and again before the result is disclosed. Generation itself runs
+        // between the two, outside any transaction, because the Documents worker commits its own lease and progress.
+        $manifest = DB::transaction(function () use ($actor, $revisionId) {
+            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_GENERATE, 'generate the quotation document');
+
+            return $this->locator->manifest($revisionId);
+        });
         if ($this->locator->artefact($manifest) !== null) {
-            return $this->status->status($revisionId);
+            return $this->disclose($actor, $revisionId);
         }
         $intent = DocumentGenerationIntent::query()->where('manifest_id', $manifest->id)->orderByDesc('id')->first();
         if ($intent === null || $intent->state === 'FAILED') {
@@ -52,6 +54,16 @@ final class RequestQuotationDocument
             }
         }
 
-        return $this->status->status($revisionId);
+        return $this->disclose($actor, $revisionId);
+    }
+
+    /** @return array{revision_id: int, state: string, error_code: string|null, artefact: array{id: int, pages: int, size_bytes: int, media_type: string, created_at: string, available: bool}|null} */
+    private function disclose(User $actor, int $revisionId): array
+    {
+        return DB::transaction(function () use ($actor, $revisionId): array {
+            $this->locator->authorise($actor, $revisionId, PermissionVocabulary::DOCUMENT_GENERATE, 'generate the quotation document');
+
+            return $this->status->status($revisionId);
+        });
     }
 }
