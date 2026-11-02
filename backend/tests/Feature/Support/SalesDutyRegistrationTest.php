@@ -264,6 +264,12 @@ class SalesDutyRegistrationTest extends TestCase
             'api/v1/quotations/{revision}' => ['GET', 'HEAD', 'PATCH'],
             'api/v1/quotations/{revision}/editable' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/preview' => ['GET', 'HEAD'],
+            // The issued-quotation document feature (default-deny, STAGED duties): QuotationDocumentApiTest.
+            'api/v1/quotations/{revision}/document' => ['GET', 'HEAD', 'POST'],
+            'api/v1/quotations/{revision}/document/download' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/document/history' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/document/check' => ['POST'],
+            'api/v1/quotations/{revision}/deliveries' => ['GET', 'HEAD', 'POST'],
         ];
 
         foreach (Route::getRoutes() as $route) {

@@ -9,5 +9,5 @@ export type QuotationsDeliveriesStoreHeaders = {
   /**
    * Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).
    */
-  "Idempotency-Key"?: unknown;
+  "Idempotency-Key": string;
 };

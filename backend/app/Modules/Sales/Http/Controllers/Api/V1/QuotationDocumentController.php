@@ -40,15 +40,13 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 class QuotationDocumentController extends Controller
 {
-    private const IDEMPOTENCY = 'Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).';
-
     public function show(ShowQuotationDocumentRequest $request, int $revision, ReadQuotationDocumentStatus $status): QuotationDocumentStatusResource
     {
         return new QuotationDocumentStatusResource($this->refusing(fn () => $status($request->user(), $this->revisionId($revision))));
     }
 
     /** Generates the PDF from the original frozen at issue, or retries a failed generation. A failed generation is a status (`FAILED` with `error_code`), not an error. */
-    #[HeaderParameter('Idempotency-Key', self::IDEMPOTENCY)]
+    #[HeaderParameter('Idempotency-Key', 'Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).', required: true, type: 'string')]
     public function generate(RequestQuotationDocumentRequest $request, int $revision, RequestQuotationDocument $generate): QuotationDocumentStatusResource
     {
         $key = trim((string) $request->header('Idempotency-Key'));
@@ -89,7 +87,7 @@ class QuotationDocumentController extends Controller
     }
 
     /** Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer. */
-    #[HeaderParameter('Idempotency-Key', self::IDEMPOTENCY)]
+    #[HeaderParameter('Idempotency-Key', 'Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).', required: true, type: 'string')]
     #[Response(201, 'The delivery was recorded.', type: 'array{data: QuotationDeliveryResource}')]
     #[Response(200, 'An exact retry: the stored record, with the header Idempotency-Replayed: true.', type: 'array{data: QuotationDeliveryResource}')]
     #[Response(409, 'The Idempotency-Key was already used for a different record (reason_code DELIVERY_KEY_REUSED).', type: 'array{message: string, reason_code: string, errors: array<string, list<string>>}')]

@@ -308,7 +308,7 @@ export const getQuotationsDocumentGenerateUrl = (revision: number) => {
 
 export const quotationsDocumentGenerate = async (
   revision: number,
-  headers?: QuotationsDocumentGenerateHeaders,
+  headers: QuotationsDocumentGenerateHeaders,
   options?: RequestInit,
 ): Promise<quotationsDocumentGenerateResponse> => {
   return fetchClient<quotationsDocumentGenerateResponse>(
@@ -331,14 +331,14 @@ export const getQuotationsDocumentGenerateMutationOptions = <
   mutation?: UseMutationOptions<
     Awaited<ReturnType<typeof quotationsDocumentGenerate>>,
     TError,
-    { revision: number; headers?: QuotationsDocumentGenerateHeaders },
+    { revision: number; headers: QuotationsDocumentGenerateHeaders },
     TContext
   >;
   request?: SecondParameter<typeof fetchClient>;
 }): UseMutationOptions<
   Awaited<ReturnType<typeof quotationsDocumentGenerate>>,
   TError,
-  { revision: number; headers?: QuotationsDocumentGenerateHeaders },
+  { revision: number; headers: QuotationsDocumentGenerateHeaders },
   TContext
 > => {
   const mutationKey = ["quotationsDocumentGenerate"];
@@ -352,7 +352,7 @@ export const getQuotationsDocumentGenerateMutationOptions = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof quotationsDocumentGenerate>>,
-    { revision: number; headers?: QuotationsDocumentGenerateHeaders }
+    { revision: number; headers: QuotationsDocumentGenerateHeaders }
   > = (props) => {
     const { revision, headers } = props ?? {};
 
@@ -385,7 +385,7 @@ export const useQuotationsDocumentGenerate = <
     mutation?: UseMutationOptions<
       Awaited<ReturnType<typeof quotationsDocumentGenerate>>,
       TError,
-      { revision: number; headers?: QuotationsDocumentGenerateHeaders },
+      { revision: number; headers: QuotationsDocumentGenerateHeaders },
       TContext
     >;
     request?: SecondParameter<typeof fetchClient>;
@@ -394,7 +394,7 @@ export const useQuotationsDocumentGenerate = <
 ): UseMutationResult<
   Awaited<ReturnType<typeof quotationsDocumentGenerate>>,
   TError,
-  { revision: number; headers?: QuotationsDocumentGenerateHeaders },
+  { revision: number; headers: QuotationsDocumentGenerateHeaders },
   TContext
 > => {
   const mutationOptions = getQuotationsDocumentGenerateMutationOptions(options);
@@ -1304,7 +1304,7 @@ export const getQuotationsDeliveriesStoreUrl = (revision: number) => {
 export const quotationsDeliveriesStore = async (
   revision: number,
   recordQuotationDeliveryRequest: RecordQuotationDeliveryRequest,
-  headers?: QuotationsDeliveriesStoreHeaders,
+  headers: QuotationsDeliveriesStoreHeaders,
   options?: RequestInit,
 ): Promise<quotationsDeliveriesStoreResponse> => {
   return fetchClient<quotationsDeliveriesStoreResponse>(
@@ -1336,7 +1336,7 @@ export const getQuotationsDeliveriesStoreMutationOptions = <
     {
       revision: number;
       data: RecordQuotationDeliveryRequest;
-      headers?: QuotationsDeliveriesStoreHeaders;
+      headers: QuotationsDeliveriesStoreHeaders;
     },
     TContext
   >;
@@ -1347,7 +1347,7 @@ export const getQuotationsDeliveriesStoreMutationOptions = <
   {
     revision: number;
     data: RecordQuotationDeliveryRequest;
-    headers?: QuotationsDeliveriesStoreHeaders;
+    headers: QuotationsDeliveriesStoreHeaders;
   },
   TContext
 > => {
@@ -1365,7 +1365,7 @@ export const getQuotationsDeliveriesStoreMutationOptions = <
     {
       revision: number;
       data: RecordQuotationDeliveryRequest;
-      headers?: QuotationsDeliveriesStoreHeaders;
+      headers: QuotationsDeliveriesStoreHeaders;
     }
   > = (props) => {
     const { revision, data, headers } = props ?? {};
@@ -1405,7 +1405,7 @@ export const useQuotationsDeliveriesStore = <
       {
         revision: number;
         data: RecordQuotationDeliveryRequest;
-        headers?: QuotationsDeliveriesStoreHeaders;
+        headers: QuotationsDeliveriesStoreHeaders;
       },
       TContext
     >;
@@ -1418,7 +1418,7 @@ export const useQuotationsDeliveriesStore = <
   {
     revision: number;
     data: RecordQuotationDeliveryRequest;
-    headers?: QuotationsDeliveriesStoreHeaders;
+    headers: QuotationsDeliveriesStoreHeaders;
   },
   TContext
 > => {
