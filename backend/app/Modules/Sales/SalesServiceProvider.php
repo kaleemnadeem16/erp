@@ -20,10 +20,12 @@ use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
 use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;
+use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -31,6 +33,9 @@ class SalesServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(ResourceScopeAdapters::class, static function (ResourceScopeAdapters $adapters): void {
+            $adapters->register(QuotationFamilyScopeAdapter::RESOURCE, new QuotationFamilyScopeAdapter);
+        });
         $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDevPreview::manifest());
         $this->app->bind(AssemblyCostEvidenceProvider::class, EstimatingAssemblyCostEvidence::class);
         // Estimating opens cost evidence only for the authority the owning workflow registers: this is Sales' (active member + preparer duty, judged now).
