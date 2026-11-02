@@ -32,6 +32,12 @@ use Illuminate\Support\Carbon;
  * @property string|null $rounding_policy_fingerprint the rounding policy the entered prices were prepared under (null while no price is entered)
  * @property int|null $rounding_policy_version_no
  * @property Carbon|null $rounding_policy_as_of
+ * @property string|null $official_number the one official number, allocated by Numbering when the revision is issued
+ * @property int|null $numbering_allocation_id
+ * @property Carbon|null $issued_at the database's own instant of issue
+ * @property int|null $issued_by
+ * @property string|null $issued_timezone the company-local zone frozen at issue
+ * @property Carbon|null $expires_at the exact instant the offer lapses (end of the valid-through day in the frozen zone)
  */
 class QuotationRevision extends Model
 {
@@ -44,7 +50,12 @@ class QuotationRevision extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['pricing_date' => 'date', 'tax_estimate_date' => 'date', 'valid_through_local_date' => 'date', 'cancelled_at' => 'datetime', 'rounding_policy_as_of' => 'date'];
+        return ['pricing_date' => 'date', 'tax_estimate_date' => 'date', 'valid_through_local_date' => 'date', 'cancelled_at' => 'datetime', 'issued_at' => 'datetime', 'expires_at' => 'datetime', 'rounding_policy_as_of' => 'date'];
+    }
+
+    public function isIssued(): bool
+    {
+        return $this->state === 'ISSUED';
     }
 
     public function isDraft(): bool

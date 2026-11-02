@@ -63,10 +63,32 @@ final class PermissionVocabulary
     public const QUOTATION_ASSIGN = 'sales.quotation.assign';
 
     /**
+     * Official issue of a quotation revision (QL3, ADR 0123). STAGED like the other quotation duties: `IssueQuotation` exists and is guarded, but `SalesAccess` refuses every caller
+     * until the manifest activates it with a reviewed holder recipe. It is the checker half of the routine maker/checker split — a smaller group than the preparers, never implied by
+     * `sales.quotation.prepare` — and is not in `all()`, so nothing registers or grants it.
+     */
+    public const QUOTATION_ISSUE = 'sales.quotation.issue';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */
     public const DOCUMENT_GENERATE = 'sales.document.generate';
+
+    /**
+     * The rest of the quotation document feature (DF3/DF4 + DOC2-DOC4). All STAGED: the guarded Actions exist, nobody holds them until a holder recipe is reviewed.
+     * `view` reads status and history, `download` hands the stored original out, `repair` is the operator recovery, `delivery.view|record` read and write the manual
+     * delivery evidence. None of them is customer receipt, consent or acceptance.
+     */
+    public const DOCUMENT_VIEW = 'sales.document.view';
+
+    public const DOCUMENT_DOWNLOAD = 'sales.document.download';
+
+    public const DOCUMENT_REPAIR = 'sales.document.repair';
+
+    public const DELIVERY_VIEW = 'sales.delivery.view';
+
+    public const DELIVERY_RECORD = 'sales.delivery.record';
 
     /**
      * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified

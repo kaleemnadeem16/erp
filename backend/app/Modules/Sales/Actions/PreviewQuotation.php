@@ -61,13 +61,23 @@ final class PreviewQuotation
     /** @return array<string, mixed> */
     public function __invoke(User $actor, int $revisionId): array
     {
-        return DB::transaction(fn (): array => $this->preview($actor, $revisionId));
+        return DB::transaction(function () use ($actor, $revisionId): array {
+            $revision = app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]);
+
+            return $this->forRevision($actor, $revision);
+        });
     }
 
-    /** @return array<string, mixed> */
-    private function preview(User $actor, int $revisionId): array
+    /**
+     * The preview of an already-found draft, without the access check: for the Actions that carry their own guard (issue readiness, issue itself). Nothing else may call it; it
+     * checks neither a duty nor an active membership nor record access.
+     *
+     * @internal
+     *
+     * @return array<string, mixed>
+     */
+    public function forRevision(User $actor, QuotationRevision $revision): array
     {
-        $revision = app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]);
         $context = SalesActorContext::forUser($actor, 'quotation.preview');
         if (! $revision->isDraft()) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_EDITABLE, 'Only a draft quotation can be previewed.', 'revision_id');

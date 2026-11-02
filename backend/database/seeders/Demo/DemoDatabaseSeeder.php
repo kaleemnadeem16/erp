@@ -85,6 +85,7 @@ final class DemoDatabaseSeeder extends Seeder
                 SalesCrmDemoSeeder::class,
                 // After SalesCrmDemoSeeder (a draft links to its deal) and the currency rates; a no-op unless the staged quotation duties are locally activated.
                 QuotationDraftsDemoSeeder::class,
+                QuotationDocumentsDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
                 // Configuration only; independent of the other seeders (needs the demo login).
                 DocumentConfigurationDemoSeeder::class,

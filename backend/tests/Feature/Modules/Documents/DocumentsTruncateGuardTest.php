@@ -23,7 +23,7 @@ class DocumentsTruncateGuardTest extends TestCase
     ];
 
     /** Sales' quotation_document_bindings references document_subject_bindings, so it has to ride along in any set that truncates the latter. */
-    private const REFERENCING = 'quotation_document_bindings';
+    private const REFERENCING = 'quotation_document_deliveries, quotation_document_bindings';
 
     /** Everything that references document_subject_bindings or a configuration version (manifests) or a manifest (intents) must be truncated with them. */
     private const WITH_BINDINGS = 'document_access_events, document_artefact_heads, document_artefacts, document_manifests, document_generation_intents, '.self::REFERENCING;
@@ -58,7 +58,7 @@ class DocumentsTruncateGuardTest extends TestCase
         }
         // Truncated together, no foreign key stands in the way; only the guard does.
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE '.implode(', ', [...self::TABLES, self::REFERENCING])));
-        foreach (['document_operation_receipts, document_subject_bindings, '.self::WITH_BINDINGS, 'document_default_activations, document_company_defaults, document_template_versions, document_page_policy_versions, document_access_events, document_artefact_heads, document_artefacts, document_manifests, document_generation_intents'] as $set) {
+        foreach (['document_operation_receipts, document_subject_bindings, '.self::WITH_BINDINGS, 'document_default_activations, document_company_defaults, document_template_versions, document_page_policy_versions, document_access_events, document_artefact_heads, document_artefacts, document_manifests, document_generation_intents, quotation_document_deliveries'] as $set) {
             $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$set}"));
         }
     }

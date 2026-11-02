@@ -41,13 +41,13 @@ final class GrantQuotationDevPreview extends Command
 
         $permissions->registerForTeam($companyContext->id());
         if ($this->option('revoke')) {
-            $user->revokePermissionTo(SalesDevPreview::DUTIES);
-            $this->components->info("{$user->email} no longer holds ".implode(' and ', SalesDevPreview::DUTIES).'.');
+            $user->revokePermissionTo(SalesDevPreview::all());
+            $this->components->info("{$user->email} no longer holds ".implode(' and ', SalesDevPreview::all()).'.');
 
             return self::SUCCESS;
         }
-        $user->givePermissionTo(SalesDevPreview::DUTIES);
-        $this->components->info("{$user->email} now holds ".implode(' and ', SalesDevPreview::DUTIES).' (local development only).');
+        $user->givePermissionTo(SalesDevPreview::all());
+        $this->components->info("{$user->email} now holds ".implode(' and ', SalesDevPreview::all()).' (local development only).');
 
         return self::SUCCESS;
     }

@@ -23,6 +23,8 @@ final class QuotationRefusalStatus
         QuotationRefusal::QUOTATION_NOT_FOUND => self::NOT_FOUND,
         QuotationRefusal::REQUEST_KEY_REUSED => self::CONFLICT,
         QuotationRefusal::QUOTATION_NOT_EDITABLE => self::UNPROCESSABLE,
+        QuotationRefusal::QUOTATION_ALREADY_ISSUED => self::UNPROCESSABLE,
+        QuotationRefusal::QUOTATION_NOT_ISSUABLE => self::UNPROCESSABLE,
         QuotationRefusal::QUOTATION_DRAFT_STALE => self::UNPROCESSABLE,
         QuotationRefusal::QUOTATION_DRAFT_CHANGED => self::UNPROCESSABLE,
         QuotationRefusal::REQUEST_KEY_REQUIRED => self::UNPROCESSABLE,

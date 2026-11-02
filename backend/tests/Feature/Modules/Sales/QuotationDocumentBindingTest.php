@@ -124,7 +124,8 @@ class QuotationDocumentBindingTest extends TestCase
         // Registration is not permission, and nothing here is a route.
         $this->app->instance(SalesDutyManifest::class, SalesDutyManifest::shipped());
         $this->assertNotContains(self::DUTY, app(PermissionRegistry::class)->all());
-        $this->assertSame([], array_filter(array_map(fn ($route) => $route->uri(), Route::getRoutes()->getRoutes()), fn (string $uri) => str_contains($uri, 'document') && str_contains($uri, 'quotation')));
+        $this->assertSame([], array_filter(array_map(fn ($route) => $route->uri(), Route::getRoutes()->getRoutes()), fn (string $uri) => str_contains($uri, 'document') && str_contains($uri, 'quotation') && ! str_starts_with($uri, 'api/v1/quotations/{revision}/document')));
+        // The only document routes are the guarded, default-deny ones of the issued-quotation document feature (QuotationDocumentApiTest).
     }
 
     public function test_a_missing_adapter_refuses_and_writes_nothing(): void
