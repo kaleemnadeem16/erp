@@ -57,8 +57,9 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
 - DF4 manual-delivery pilot foundation (issue #78, disabled): `document_access_events` (insert-only, database clock, composite-FK tenancy) records every authorised hand-off
   of a stored document (`StreamAuthorisedDocument`, kind `DOWNLOAD` or `PRINT`, outcome `DELIVERED`, or `UNAVAILABLE` when the object failed its check). If the event
   cannot be recorded nothing is handed over. **A hand-off is never evidence that the customer received, read or accepted anything**; that stays Sales' separate manual
-  delivery evidence. `ReconcileDocumentArtefacts` is the bounded, resumable sweep (limit and `after_id` cursor, owner-gated per artefact, counts only; reports generation
-  files no artefact owns once they are older than a cutoff, never deletes or regenerates). `ReadDocumentArtefactHistory` gives the owner (`history`) a safe timeline:
+  delivery evidence. `ReconcileDocumentArtefacts` is the bounded, resumable sweep (limit and `after_id` cursor, owner-gated per artefact for a currently active member, counts and an opaque position only; counts generation
+  files no artefact owns once they are older than a cutoff, for documents the actor may repair; names no file or blob, never deletes or regenerates; an actor the owner
+  refuses gets a plain refusal and nothing is examined). `ReadDocumentArtefactHistory` gives the owner (`history`) a safe timeline:
   generated, handed out, missing/quarantined/restored, with no key, path, hash or payload.
   Operator runbook: run the sweep on a schedule you own (nothing here schedules it); a `MISSING` or `QUARANTINED` original is restored only with `RestoreDocumentArtefact`
   from a backup copy whose bytes have exactly the recorded hash (a regenerated PDF is not a recovery and is refused); reported orphans are removed by Files' own
