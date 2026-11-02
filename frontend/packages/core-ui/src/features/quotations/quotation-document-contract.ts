@@ -102,12 +102,15 @@ export const pendingDocumentGateway: QuotationDocumentGateway = {
   recordDelivery: pending,
 };
 
+/**
+ * The states `ReadQuotationDocumentStatus` returns: PENDING (nothing requested), RUNNING, FAILED (with
+ * `error_code`) and READY; VERIFIED is the generation intent's own finished state and can surface for a
+ * moment before the artefact head is read. Anything else is shown as unavailable, never guessed.
+ */
 export const STATE_LABELS: Record<string, string> = {
   PENDING: "Not generated yet",
-  REQUESTED: "Waiting to generate",
-  QUEUED: "Waiting to generate",
-  GENERATING: "Generating",
   RUNNING: "Generating",
+  VERIFIED: "Generated",
   READY: "Ready",
   FAILED: "Generation failed",
 };
@@ -127,18 +130,23 @@ export const CHANNEL_LABELS: Record<string, string> = {
   POST: "Post",
   OTHER: "Other",
 };
+/**
+ * The events `ReadDocumentArtefactHistory` returns: GENERATED, the access kind and outcome of every hand-off
+ * (`DOWNLOAD_DELIVERED`, `PRINT_DELIVERED`, `*_UNAVAILABLE`) and the stored file's health changes. A hand-off is
+ * never a receipt by the customer, so no label says "received" or "sent".
+ */
 export const HISTORY_LABELS: Record<string, string> = {
-  DOWNLOAD: "Downloaded",
-  DOWNLOADED: "Downloaded",
-  PRINT: "Printed",
-  PRINTED: "Printed",
   GENERATED: "Generated",
-  GENERATE: "Generated",
-  CHECKED: "Checked",
-  DENIED: "Access refused",
+  DOWNLOAD_DELIVERED: "Downloaded",
+  PRINT_DELIVERED: "Printed",
+  DOWNLOAD_UNAVAILABLE: "Download refused: the stored file was unavailable",
+  PRINT_UNAVAILABLE: "Print refused: the stored file was unavailable",
+  MISSING_DETECTED: "Stored file found missing",
+  QUARANTINED: "Stored file quarantined",
+  RESTORED: "Stored file restored",
 };
 export function historyLabel(event: string): string {
-  return HISTORY_LABELS[event.toUpperCase()] ?? "Document activity";
+  return HISTORY_LABELS[event] ?? "Document activity";
 }
 export const DOCUMENT_REFUSALS: Record<string, string> = {
   DELIVERY_KEY_REUSED:

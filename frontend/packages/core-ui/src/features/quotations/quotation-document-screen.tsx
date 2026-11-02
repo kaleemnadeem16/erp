@@ -27,7 +27,7 @@ import {
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { QuotationFailure } from "./quotation-display";
-import { newRequestKey } from "./quotation-issue-contract";
+import { IntentKey } from "./request-key";
 import {
   CHANNEL_LABELS,
   CHECK_LABELS,
@@ -345,13 +345,20 @@ export function DeliveryForm({
   );
 }
 
-function saveBlob(blob: Blob, name: string) {
+/**
+ * Saves the authorised bytes the gateway returned. Only a PDF is accepted (an HTML or JSON body is an error,
+ * never offered as a file), and the object URL lives briefly after the click: revoking it in the same tick
+ * can cancel the download in some browsers.
+ */
+export function saveBlob(blob: Blob, name: string) {
+  if (blob.type !== "application/pdf")
+    throw new Error("The server did not return a PDF.");
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
   anchor.download = name;
   anchor.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 30_000);
 }
 
 /** Unregistered in Phase 1; contract pending, so the default gateway fails closed. */
@@ -404,15 +411,19 @@ function GatedDocument({
     enabled: access.deliveries,
     retry: shouldRetryQuery,
   });
-  const generateKey = useRef<string | null>(null);
-  const deliveryKey = useRef<string | null>(null);
+  // Keys are bound to the exact intent: an uncertain failure keeps the key for a safe retry, success or a
+  // definitive refusal ends it, and different delivery details always get a new key.
+  const generateKey = useRef(new IntentKey());
+  const deliveryKey = useRef(new IntentKey());
+  const [deliveryForm, setDeliveryForm] = useState(0);
   const generate = useMutation({
-    mutationFn: () => {
-      generateKey.current ??= newRequestKey();
-      return gateway.generate({ revisionId, requestKey: generateKey.current });
-    },
+    mutationFn: () =>
+      gateway.generate({
+        revisionId,
+        requestKey: generateKey.current.for({ revisionId }),
+      }),
     onSuccess: () => {
-      generateKey.current = null;
+      generateKey.current.settle();
       void client.invalidateQueries({
         queryKey: ["quotation-document", revisionId],
       });
@@ -420,10 +431,7 @@ function GatedDocument({
         queryKey: ["quotation-document-history", revisionId],
       });
     },
-    onError: (e) => {
-      if (isApiError(e) && e.status >= 400 && e.status < 500)
-        generateKey.current = null;
-    },
+    onError: (e) => generateKey.current.settle(e),
   });
   const download = useMutation({
     mutationFn: async (intent: "download" | "print") => {
@@ -443,24 +451,21 @@ function GatedDocument({
       }),
   });
   const record = useMutation({
-    mutationFn: (body: DeliveryInput) => {
-      deliveryKey.current ??= newRequestKey();
-      return gateway.recordDelivery({
+    mutationFn: (body: DeliveryInput) =>
+      gateway.recordDelivery({
         revisionId,
         body,
-        requestKey: deliveryKey.current,
-      });
-    },
+        requestKey: deliveryKey.current.for({ revisionId, body }),
+      }),
     onSuccess: () => {
-      deliveryKey.current = null;
+      deliveryKey.current.settle();
+      // A recorded delivery clears the form, so the next entry is a new record, not a resubmission.
+      setDeliveryForm((n) => n + 1);
       void client.invalidateQueries({
         queryKey: ["quotation-deliveries", revisionId],
       });
     },
-    onError: (e) => {
-      if (isApiError(e) && e.status >= 400 && e.status < 500)
-        deliveryKey.current = null;
-    },
+    onError: (e) => deliveryKey.current.settle(e),
   });
   const busy = generate.isPending || download.isPending || check.isPending;
   return (
@@ -504,6 +509,7 @@ function GatedDocument({
         ))}
       {access.recordDelivery && (
         <DeliveryForm
+          key={deliveryForm}
           onSubmit={(body) => record.mutate(body)}
           pending={record.isPending}
           error={record.error}

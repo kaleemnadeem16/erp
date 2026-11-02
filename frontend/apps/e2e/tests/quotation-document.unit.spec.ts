@@ -110,8 +110,12 @@ test("pending, failed and generating states are explicit; failure hides error co
   expect(failed).toContain("Try again");
   expect(failed).not.toContain("PDF_ENGINE_SECRET_PATH");
   expect(
-    status({ status: mockStatus({ state: "GENERATING", artefact: null }) }),
+    status({ status: mockStatus({ state: "RUNNING", artefact: null }) }),
   ).toContain("Generating");
+  // A state the backend never sends is not guessed at.
+  expect(
+    status({ status: mockStatus({ state: "GENERATING", artefact: null }) }),
+  ).toContain("Status unavailable");
   expect(
     status({
       status: mockStatus({ state: "WEIRD", artefact: null }),
@@ -149,17 +153,34 @@ test("history and deliveries render labelled entries; manual record is not prese
   const history = renderToStaticMarkup(
     createElement(QuotationDocumentHistoryView, {
       entries: readHistory([
+        // The events ReadDocumentArtefactHistory actually returns (agent-b/quotation-document-feature).
+        { at: "2026-10-30T09:00:00Z", event: "GENERATED", detail: {} },
         {
           at: "2026-10-30T10:00:00Z",
-          event: "DOWNLOADED",
+          event: "DOWNLOAD_DELIVERED",
           detail: { user_ip: "10.0.0.9" },
         },
+        { at: "2026-10-30T10:30:00Z", event: "PRINT_DELIVERED", detail: {} },
+        {
+          at: "2026-10-30T10:40:00Z",
+          event: "DOWNLOAD_UNAVAILABLE",
+          detail: {},
+        },
+        { at: "2026-10-30T10:50:00Z", event: "MISSING_DETECTED", detail: {} },
         { at: "2026-10-30T11:00:00Z", event: "internal_thing", detail: {} },
       ]),
     }),
   );
-  expect(history).toContain("Downloaded");
-  expect(history).toContain("Document activity");
+  for (const label of [
+    "Generated",
+    "Downloaded",
+    "Printed",
+    "Download refused: the stored file was unavailable",
+    "Stored file found missing",
+    "Document activity",
+  ])
+    expect(history).toContain(label);
+  expect(history).not.toMatch(/received|sent/i);
   expect(history).not.toContain("10.0.0.9");
   expect(history).not.toContain("internal_thing");
   expect(
@@ -238,7 +259,10 @@ test("contracts strip extras and reject malformed responses; no storage identity
     JSON.stringify(readDeliveries([{ ...mockDelivery(), internal: "SECRET" }])),
   ).not.toContain("SECRET");
   expect(formatBytes(10)).toBe("10 bytes");
-  expect(historyLabel("print")).toBe("Printed");
+  expect(historyLabel("PRINT_DELIVERED")).toBe("Printed");
+  // Invented or lower-case names are not the contract: they get the generic label.
+  expect(historyLabel("print")).toBe("Document activity");
+  expect(historyLabel("DOWNLOADED")).toBe("Document activity");
 });
 
 test("document screen is denied in production and without the document duties", () => {

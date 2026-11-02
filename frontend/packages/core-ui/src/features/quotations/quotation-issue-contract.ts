@@ -44,7 +44,12 @@ export const issueOutcomeSchema = z.object({
   replayed: z.boolean(),
 });
 const decimal = z.string().regex(/^-?\d+(?:\.\d+)?$/);
-/** The frozen record of an issued revision. Only fields the issue record stores; no cost, margin or internal fingerprint. */
+/**
+ * CONTRACT PENDING — NOT CALLED BY ANY SCREEN. No backend read of an issued revision's frozen terms exists
+ * (phase4/ql3-issue-quotation has no such route; `IssueQuotation` returns only the outcome above). This shape
+ * and `QuotationIssuedView` stay for the design; the issue screen shows only the real outcome until a read
+ * contract exists and these fields are re-verified against it.
+ */
 export const issuedTermsSchema = z.object({
   revision_id: id,
   official_number: z.string().min(1),
@@ -82,7 +87,6 @@ export interface QuotationIssueGateway {
     expectedGeneration: number;
     requestKey: string;
   }): Promise<IssueOutcome>;
-  issued(revisionId: number): Promise<IssuedTerms>;
 }
 
 const pending = async (): Promise<never> => {
@@ -92,7 +96,6 @@ const pending = async (): Promise<never> => {
 export const pendingIssueGateway: QuotationIssueGateway = {
   readiness: pending,
   issue: pending,
-  issued: pending,
 };
 
 /** Named groups the screen shows, in this order. */
@@ -264,12 +267,8 @@ export const ISSUE_REFUSALS: Record<string, string> = {
   REQUEST_KEY_REQUIRED: "The request could not be identified. Try again.",
 };
 
-/** A new random request key; one key per confirmation attempt, reused when the same attempt is retried. */
-export function newRequestKey(): string {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `k-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
+/** Request keys are bound to the write intent; see `IntentKey` in ./request-key. */
+export { newRequestKey } from "./request-key";
 
 /** MOCK DATA: tests and the unregistered preview only. */
 export function mockReadiness(

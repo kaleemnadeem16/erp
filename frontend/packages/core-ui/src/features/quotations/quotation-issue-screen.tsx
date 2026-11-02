@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { DetailField } from "../../components/detail/detail-field";
 import {
   DetailPageLayout,
@@ -22,15 +22,16 @@ import {
   isApiError,
   shouldRetryQuery,
 } from "../../lib/api-errors";
+import { IntentKey } from "./request-key";
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { QuotationFailure } from "./quotation-display";
 import {
   groupBlockers,
   ISSUE_REFUSALS,
-  newRequestKey,
   pendingIssueGateway,
   type IssuedTerms,
+  type IssueOutcome,
   type IssueReadiness,
   type QuotationIssueGateway,
 } from "./quotation-issue-contract";
@@ -179,7 +180,7 @@ function money(value: string | null, currency: number) {
   return value === null ? "None" : `${value} · Currency reference #${currency}`;
 }
 
-/** Issued state: the official number and the frozen terms, read only. */
+/** Issued state with the frozen terms, read only. CONTRACT PENDING: no screen renders it until a backend read of the issued terms exists (see `issuedTermsSchema`). */
 export function QuotationIssuedView({ terms }: { terms: IssuedTerms }) {
   const same = terms.prepared_by === terms.issued_by;
   return (
@@ -282,65 +283,44 @@ function GatedIssue({
   mayIssue: boolean;
   mayReadiness: boolean;
 }) {
-  const client = useQueryClient();
   const [confirming, setConfirming] = useState(false);
-  const [issued, setIssued] = useState(false);
-  // One key per confirmation attempt: a retry of the same attempt replays, a new attempt gets a new key.
-  const key = useRef<string | null>(null);
+  const [outcome, setOutcome] = useState<IssueOutcome | null>(null);
+  // One key per issue intent (revision + reviewed generation): an uncertain failure keeps it so a retry replays,
+  // success or a definitive refusal ends it, and a newer generation always gets a new key.
+  const keys = useRef(new IntentKey());
   const readiness = useQuery({
     queryKey: ["quotation-issue-readiness", revisionId],
     queryFn: () => gateway.readiness(revisionId),
-    enabled: mayReadiness && !issued,
-    retry: shouldRetryQuery,
-  });
-  const alreadyIssued =
-    issued ||
-    getApiReasonCode(readiness.error) === "QUOTATION_NOT_EDITABLE" ||
-    getApiReasonCode(readiness.error) === "QUOTATION_ALREADY_ISSUED";
-  const terms = useQuery({
-    queryKey: ["quotation-issued", revisionId],
-    queryFn: () => gateway.issued(revisionId),
-    enabled: alreadyIssued,
+    enabled: mayReadiness && outcome === null,
     retry: shouldRetryQuery,
   });
   const issue = useMutation({
-    mutationFn: () => {
-      key.current ??= newRequestKey();
-      return gateway.issue({
+    mutationFn: (expectedGeneration: number) =>
+      gateway.issue({
         revisionId,
-        expectedGeneration: readiness.data!.input_generation,
-        requestKey: key.current,
-      });
-    },
-    onSuccess: () => {
-      key.current = null;
+        expectedGeneration,
+        requestKey: keys.current.for({ revisionId, expectedGeneration }),
+      }),
+    onSuccess: (result) => {
+      keys.current.settle();
       setConfirming(false);
-      setIssued(true);
-      void client.invalidateQueries({
-        queryKey: ["quotation-issued", revisionId],
-      });
+      setOutcome(result);
     },
-    onError: (error) => {
-      // A definitive refusal ends the attempt; a transient failure keeps the key so a retry replays safely.
-      if (isApiError(error) && error.status >= 400 && error.status < 500)
-        key.current = null;
-    },
+    onError: (error) => keys.current.settle(error),
   });
-  if (alreadyIssued) {
-    if (terms.isError)
-      return (
-        <QuotationFailure
-          error={terms.error}
-          retry={() => void terms.refetch()}
-        />
-      );
-    if (!terms.data) return <Loading />;
-    return <QuotationIssuedView terms={terms.data} />;
-  }
+  if (outcome !== null) return <QuotationIssueOutcomeView outcome={outcome} />;
   if (!mayReadiness)
     return (
       <p className="p-4 text-sm">
         Issuing needs the readiness result, which your access does not include.
+      </p>
+    );
+  // Not a draft any more (issued, or a cancelled draft): readiness cannot say which, so the screen says neither.
+  if (getApiReasonCode(readiness.error) === "QUOTATION_NOT_EDITABLE")
+    return (
+      <p role="status" className="p-4 text-sm">
+        Only a draft quotation can be issued. This quotation is no longer a
+        draft.
       </p>
     );
   if (readiness.isError)
@@ -351,10 +331,11 @@ function GatedIssue({
       />
     );
   if (!readiness.data) return <Loading />;
+  const reviewed = readiness.data;
   return (
     <>
       <QuotationReadinessView
-        readiness={readiness.data}
+        readiness={reviewed}
         mayIssue={mayIssue}
         onIssue={() => {
           issue.reset();
@@ -369,12 +350,42 @@ function GatedIssue({
           onOpenChange={(open) => {
             if (!open && !issue.isPending) setConfirming(false);
           }}
-          onConfirm={() => issue.mutate()}
+          // The generation the person reviewed is the one sent; a refetch that changes it changes the intent and the key.
+          onConfirm={() => issue.mutate(reviewed.input_generation)}
           pending={issue.isPending}
           error={issue.error}
         />
       )}
     </>
+  );
+}
+
+/** What the server confirmed when the quotation was issued. Only fields `IssueQuotation` returns; nothing monetary. */
+export function QuotationIssueOutcomeView({
+  outcome,
+}: {
+  outcome: IssueOutcome;
+}) {
+  return (
+    <DetailPageLayout>
+      <DetailSection title="Quotation issued" fullWidth>
+        <DetailField label="Official number">
+          <span className="font-semibold">{outcome.official_number}</span>
+        </DetailField>
+        <DetailField label="Status">
+          <StatusBadge tone="success">Issued</StatusBadge>
+        </DetailField>
+        <DetailField label="Issued at">
+          {formatDateTime(outcome.issued_at)}
+        </DetailField>
+        {outcome.replayed && (
+          <p role="note" className="col-span-full text-sm">
+            This quotation had already been issued by this request; nothing was
+            issued twice.
+          </p>
+        )}
+      </DetailSection>
+    </DetailPageLayout>
   );
 }
 
