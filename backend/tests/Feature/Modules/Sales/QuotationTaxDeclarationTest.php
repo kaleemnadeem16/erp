@@ -75,11 +75,11 @@ class QuotationTaxDeclarationTest extends TestCase
 
         $this->edit($revision->id, ['update_lines' => array_map(fn (int $id): array => $this->declare($id, 'GOODS', 'goods', 'It is supplied paint, not labour')['update_lines'][0], $lines)])->assertOk();
         $tax = $this->tax($revision->id);
-        $this->assertSame(['COMPLETE', '23.0000', '253.0000'], [$tax['certainty'], $tax['total'], $tax['total_including_tax']['amount']], 'optional lines are taxed but do not count in the total');
+        $this->assertSame(['COMPLETE', '20.0000', '220.0000'], [$tax['certainty'], $tax['total'], $tax['total_including_tax']['amount']], 'the optional line is taxed too but does not count in the total');
         $this->assertEqualsCanonicalizing(['20.0000', '3.0000'], array_column($tax['lines'], 'tax'));
 
         $history = $this->getJson("/api/v1/quotations/{$revision->id}/tax-declarations")->assertOk()->json('data');
-        $this->assertSame([[1, 'services'], [1, 'services'], [2, 'goods'], [2, 'goods']], array_map(fn (array $r): array => [$r['version_no'], $r['classification']], $history));
+        $this->assertSame([[1, 'services'], [2, 'goods'], [1, 'services'], [2, 'goods']], array_map(fn (array $r): array => [$r['version_no'], $r['classification']], $history));
         $this->assertSame($this->maker->id, $history[0]['declared_by']);
 
         // Restating what is in force adds no version; the editable read shows the latest.
