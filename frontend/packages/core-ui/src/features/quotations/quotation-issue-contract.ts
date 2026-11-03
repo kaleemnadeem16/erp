@@ -112,6 +112,7 @@ export type BlockerGroup =
   | "pricing"
   | "tax"
   | "controls"
+  | "approval"
   | "authority";
 export const BLOCKER_GROUPS: { id: BlockerGroup; title: string }[] = [
   { id: "recipient", title: "Recipient" },
@@ -120,6 +121,7 @@ export const BLOCKER_GROUPS: { id: BlockerGroup; title: string }[] = [
   { id: "pricing", title: "Pricing, exchange rates and rounding" },
   { id: "tax", title: "Tax" },
   { id: "controls", title: "Financial controls" },
+  { id: "approval", title: "Approval" },
   { id: "authority", title: "Authority" },
 ];
 
@@ -227,6 +229,11 @@ const KNOWN: Record<string, { group: BlockerGroup; label: string }> = {
   TAX_GENERATION_MOVED: {
     group: "tax",
     label: "Tax rules changed while checking; check again.",
+  },
+  APPROVAL_REQUIRED: {
+    group: "approval",
+    label:
+      "A discount or price override needs approval before this can be issued.",
   },
   CONTROLS_NOT_CONFIGURED: {
     group: "controls",

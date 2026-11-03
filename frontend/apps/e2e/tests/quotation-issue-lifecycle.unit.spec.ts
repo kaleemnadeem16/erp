@@ -56,6 +56,7 @@ const EMITTED = [
   ["TAX_CALCULATION_UNSUPPORTED", "TAX"],
   ["TAX_CONTEXT_NOT_AUTHORISED", "TAX"],
   ["TAX_GENERATION_MOVED", "TAX"],
+  ["APPROVAL_REQUIRED", "LINE"],
   ["CONTROLS_NOT_CONFIGURED", "CONTROLS"],
   ["CONTROLS_NO_MANDATORY_CONTROL", "CONTROLS"],
   ["CONTROLS_NO_LINES", "CONTROLS"],
@@ -75,6 +76,13 @@ test("every emitted blocker code has its own plain wording in the right group", 
     seen.add(view.label);
   }
   expect(seen.size).toBe(EMITTED.length);
+  expect(
+    describeBlocker({
+      code: "APPROVAL_REQUIRED",
+      scope: "HEADER",
+      line_id: null,
+    }).group,
+  ).toBe("approval");
   expect(
     describeBlocker({ code: "TAX_NOT_DETERMINED", scope: "TAX", line_id: null })
       .group,
