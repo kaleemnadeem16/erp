@@ -32,3 +32,21 @@ Decision: withdraw/replace have Actions (QL4/QL5) but **no HTTP routes or screen
 - Shared file, small: `components/ui/dialog.tsx` — the Close (X) control was a 16px hit area on every dialog; now a 44px box with the icon in the same place (found by the 390px check, fixed once at the shared level).
 - Tests: `quotation-issue-lifecycle.unit.spec.ts` (all emitted blocker codes labelled, availability states, PDF link gating, totals hidden for non-commercial viewers, list columns) and `quotation-issue-phone.unit.spec.ts` (390px no horizontal overflow and ≥44px targets for readiness, confirm dialog, issued record in four availabilities, with the compiled app CSS). Whole `--project=unit` suite: 107 passed.
 - Note on "generated hooks only": the issue/list/document screens call the generated client through the existing *gateway* seam (generated functions, responses parsed by zod) so tests can script them; I followed that established pattern rather than rewriting it onto hooks.
+
+## Slice 5 — demo data (local preview only)
+- Owner decision: a local-only dev issue grant for the demo seeders. Implemented as the narrowest form: `QuotationIssuingDemoSeeder` runs only when `SalesDevPreview::enabled()` (APP_ENV=local + switch); it switches `issue`/`withdraw` ACTIVE only while it runs (manifest instance restored afterwards, like the other quotation seeders) and grants the Tax configuration duty for the run and revokes it. **`SalesDevPreview::DUTIES` is unchanged**, so in the running local app the `issue` duty is still staged and the Issue button is refused (403) — the owner can *see* issued records, but issuing from the screen locally needs a separate decision (adding `issue` to the preview duties).
+- Scenarios (stable keys, rerun adds nothing; test `QuotationIssuingDemoSeederTest`): ready draft, issued, issued-expiring-today, issued-then-withdrawn, cancelled draft, draft blocked by a missing tax declaration (DIRECT_ITEM on an undeclared item → `TAX_CLASSIFICATION_REQUIRED`). A fictitious 10% service tax declaration is built through Tax's own Actions (not a legal rule).
+- **"Expired" cannot be seeded honestly:** the Actions refuse a past valid-through and issued records are immutable, so the demo issues one valid through TODAY; it shows Expired from the next local midnight with no scheduler.
+
+## Decisions and conflicts
+- **Tax facts binding (owner decision vs landed code).** The owner decided: bind `QuotationTaxFacts` to the declared Tax source, DIRECT_ITEM only, manual/service blocked. Before that could be merged, the tax agent landed `DraftQuotationTaxFacts` (commit 613dd95e/28b827e2), which reads the same declared sources **and** also classifies SERVICE_ITEM lines and MANUAL lines from the seller's per-line versioned declaration. I dropped my own narrower adapter (not committed) to avoid two bindings and a conflict in `SalesServiceProvider`. **Awaiting owner:** accept the broader landed behaviour, or ask the tax agent to narrow it.
+- A worktree (`/home/kaleem/projects/erp-issuing`, branch `issuing/issuing`) was used from this point because the shared tree had another agent's uncommitted edits in a file origin/develop also changed, which blocks a merge. Pushes go `HEAD:develop` from there.
+- Withdraw/replace have Actions (QL4/QL5) but no routes/screens: not in this milestone's accepted scope.
+
+## Remaining work (size: S ≤ 1 day, M 2–4 days, L ≥ 1 week)
+- Withdraw / replace HTTP routes + screens, duty review, activation recipe — M.
+- Add `issue` (and `withdraw`) to the local preview duties so the owner can issue from the screen locally — S (needs owner yes).
+- QL6 revision history/compare — M. B4/B5 customer decision intake and acceptance (and the real `QuotationAcceptanceState`) — L.
+- Browser (stack) e2e of the issue flow against the real backend — S–M.
+- Approval engine for `APPROVAL_REQUIRED` (today it only blocks) — L.
+- Production gate `QUOTATION_UI_ENABLED` and real holder recipes: owner decisions, untouched.
