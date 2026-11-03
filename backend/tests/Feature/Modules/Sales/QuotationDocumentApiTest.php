@@ -18,6 +18,7 @@ use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
+use Tests\Support\AssertsPopulatedRollbackRefusal;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use Tests\TestCase;
  */
 class QuotationDocumentApiTest extends TestCase
 {
+    use AssertsPopulatedRollbackRefusal;
     use BuildsIssuableQuotations;
     use RefreshDatabase;
 
@@ -286,5 +288,15 @@ class QuotationDocumentApiTest extends TestCase
         $this->assertSame(403, $refused['status']);
 
         $this->assertSame($before, $this->writes(), 'reads write nothing, and no refused or hidden probe writes anything');
+    }
+
+    public function test_populated_issue_document_and_delivery_migrations_refuse_rollback_without_erasing_guards(): void
+    {
+        $this->activate();
+        $this->documentWithEvidence();
+        $this->assertPopulatedRollbackRefused('2026_10_29_120000_create_quotation_issue_foundation.php', ['quotation_issues', 'quotation_issued_lines']);
+        $this->assertPopulatedRollbackRefused('2026_10_30_100000_create_document_artefacts.php', ['document_artefacts', 'document_artefact_heads']);
+        $this->assertPopulatedRollbackRefused('2026_10_30_120000_create_document_access_events.php', ['document_access_events']);
+        $this->assertPopulatedRollbackRefused('2026_10_30_130000_create_quotation_document_deliveries.php', ['quotation_document_deliveries']);
     }
 }

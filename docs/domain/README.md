@@ -147,6 +147,7 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 ## Proposed quotation access design
 
 - [Quotation record access (#45)](quotation-record-access-design.md) — own/team/delegated architecture, storage and ordered slices; proposed, no implementation or activation.
+- [Quotation access safety proofs](quotation-access-safety-proofs.md) — bounded waits, synthetic contention harness, deadlock and populated rollback evidence; activation remains blocked.
 
 ## Related
 
