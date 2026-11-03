@@ -233,10 +233,16 @@ class AssemblyCostEvidenceSeamTest extends TestCase
 
     public function test_no_confidential_figure_appears_in_any_representation(): void
     {
-        $version = $this->costedVersion();
+        $version = $this->version([[
+            'kind' => 'SUBCONTRACT', 'qty_per_work_unit' => '1', 'uom_id' => $this->sqm->id, 'rate_override' => '87654321098765.4321',
+        ]]);
         $evidence = $this->read($version->id, '3');
         $amounts = $evidence->amounts(self::WORKFLOW);
-        $secrets = ['315', '105', '10.5000', '100.0000'];
+        $secrets = ['262962963296296', '87654321098765', '262962963296296.2963', '87654321098765.4321'];
+        $this->assertNotNull($amounts);
+        $this->assertSame('87654321098765.4321', (string) $version->components()->sole()->rate_override);
+        $this->assertSame('262962963296296.2963', (string) $amounts->total());
+        $this->assertSame('262962963296296.2963', (string) $amounts->known());
 
         $representations = [
             'json evidence' => json_encode($evidence),
@@ -269,6 +275,9 @@ class AssemblyCostEvidenceSeamTest extends TestCase
                 $this->fail('Cost evidence must not serialise.');
             } catch (\LogicException $e) {
                 $this->assertStringNotContainsString('315', $e->getMessage());
+                foreach ($secrets as $secret) {
+                    $this->assertStringNotContainsString($secret, $e->getMessage());
+                }
             }
         }
         $this->assertSame(['assembly_version_id' => $version->id, 'certainty' => 'COMPLETE', 'reason_code' => null], json_decode((string) json_encode($evidence), true));
