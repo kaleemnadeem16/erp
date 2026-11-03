@@ -43,7 +43,7 @@ final class QuotationIssuingDemoSeederTest extends TestCase
         $this->assertSame(6, QuotationRevision::query()->count());
         $this->assertSame(3, QuotationIssue::query()->count(), 'issued, expiring today and withdrawn');
         $states = QuotationRevision::query()->get()->map(fn (QuotationRevision $r): string => QuotationAvailability::of($r))->countBy()->all();
-        $this->assertSame([QuotationAvailability::DRAFT => 2, QuotationAvailability::AVAILABLE => 2, QuotationAvailability::WITHDRAWN => 1, QuotationAvailability::CANCELLED_DRAFT => 1], $states);
+        $this->assertEquals([QuotationAvailability::DRAFT => 2, QuotationAvailability::AVAILABLE => 2, QuotationAvailability::WITHDRAWN => 1, QuotationAvailability::CANCELLED_DRAFT => 1], $states);
 
         // The ready draft is genuinely ready; the undeclared one is blocked by tax, never by a faked pass.
         $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
