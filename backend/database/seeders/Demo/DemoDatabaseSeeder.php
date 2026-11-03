@@ -19,6 +19,7 @@ use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationConcessionsDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
+use Database\Seeders\Demo\Sales\QuotationIssuingDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -92,6 +93,8 @@ final class DemoDatabaseSeeder extends Seeder
                 QuotationConcessionsDemoSeeder::class,
                 // After QuotationDemoSeeder: issuing the demo document needs the published control set (local dev preview only).
                 QuotationDocumentsDemoSeeder::class,
+                // After QuotationDemoSeeder (control set) and QuotationTaxFactsDemoSeeder (declared facts): issued/expiring/withdrawn/cancelled/blocked quotations, local preview only.
+                QuotationIssuingDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
                 // Configuration only; independent of the other seeders (needs the demo login).
                 DocumentConfigurationDemoSeeder::class,

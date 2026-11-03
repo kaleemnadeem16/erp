@@ -168,6 +168,7 @@ in the same commit.
 | [0151](0151-reconcile-source-obligations-and-govern-post-close-evidence.md) | Reconcile source obligations and govern post-close evidence | accepted | 2026-10-16 |
 | [0152](0152-own-job-document-content-and-reuse-shared-formal-output.md) | Own Job document content and reuse shared formal output | accepted | 2026-10-16 |
 | [0153](0153-own-shared-file-storage-in-a-dedicated-files-module.md) | Own shared file storage in a dedicated Files module | proposed (owner acceptance pending); supersedes 0137 for shared blob/storage ownership only | 2026-10-27 |
+| [0154](0154-record-draft-concessions-tax-declarations-and-list-values-as-versioned-per-row-facts.md) | Record draft concessions, tax declarations and list values as versioned, per-row facts | proposed (owner acceptance pending) | 2026-11-03 |
 
 | [0154](0154-quotation-demo-access-and-activation-boundaries.md) | Bound quotation demo access and preserve activation gates | accepted; implementation incomplete; partly supersedes 0129 | 2026-11-03 |
 
