@@ -152,6 +152,12 @@ final class IssueQuotation
         return QuotationIssueOutcome::result($revision->family_id, $revision->id, $issue->id, $allocation->number, $revision->issued_at?->toIso8601String() ?? $now->toIso8601String());
     }
 
+    /** @param array<string, mixed> $previewLine */
+    private function lineReductionKind(array $previewLine): ?string
+    {
+        return ($previewLine['adjustment']['override'] ?? null) !== null ? 'OVERRIDE' : (($previewLine['adjustment']['discount'] ?? null) !== null ? 'DISCOUNT' : null);
+    }
+
     /**
      * The frozen lines and the settled document totals, from the very preview and tax result the assessment was decided on.
      *
@@ -185,6 +191,9 @@ final class IssueQuotation
                 'membership' => $line->membership, 'choice_group_id' => $line->choice_group_id, 'is_baseline' => (bool) $line->is_baseline, 'counts_in_total' => $counts, 'source_kind' => $line->source_kind,
                 'item_id' => $line->item_id, 'manual_measure' => $line->manual_measure, 'offered_quantity' => (string) $line->offered_quantity, 'offered_uom_id' => $line->offered_uom_id,
                 'unit_price' => (string) $line->unit_price, 'price_currency_id' => $line->price_currency_id ?? $revision->currency_id, 'fx_fingerprint' => $line->fx_fingerprint,
+                'line_reduction_kind' => $this->lineReductionKind($previewLine),
+                'line_reduction_amount' => (string) BigDecimal::of((string) ($previewLine['list_amount'] ?? $previewLine['net']['amount']))->minus((string) ($previewLine['pre_document_net'] ?? $previewLine['net']['amount']))->toScale(4),
+                'document_reduction_amount' => (string) BigDecimal::of((string) ($previewLine['adjustment']['document_share'] ?? '0'))->toScale(4),
                 'net' => (string) $lineNet, 'tax' => $lineTax->tax, 'gross' => $lineTax->gross, 'tax_disposition' => $lineTax->disposition, 'tax_evidence_reference' => $lineTax->evidenceReference,
             ];
         }

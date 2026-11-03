@@ -5,10 +5,13 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { UpdateQuotationDraftRequestUpdateLinesItemUnitPrice } from "./updateQuotationDraftRequestUpdateLinesItemUnitPrice";
+import type { UpdateQuotationDraftRequestUpdateLinesItemDiscount } from "./updateQuotationDraftRequestUpdateLinesItemDiscount";
+import type { UpdateQuotationDraftRequestUpdateLinesItemNetOverride } from "./updateQuotationDraftRequestUpdateLinesItemNetOverride";
 import type { UpdateQuotationDraftRequestUpdateLinesItemSectionTitle } from "./updateQuotationDraftRequestUpdateLinesItemSectionTitle";
 import type { LineMembership } from "./lineMembership";
 import type { UpdateQuotationDraftRequestUpdateLinesItemChoiceGroupRef } from "./updateQuotationDraftRequestUpdateLinesItemChoiceGroupRef";
 import type { UpdateQuotationDraftRequestUpdateLinesItemOfferedUomId } from "./updateQuotationDraftRequestUpdateLinesItemOfferedUomId";
+import type { UpdateQuotationDraftRequestUpdateLinesItemTaxDeclaration } from "./updateQuotationDraftRequestUpdateLinesItemTaxDeclaration";
 
 export type UpdateQuotationDraftRequestUpdateLinesItem = {
   /** @minimum 1 */
@@ -17,6 +20,8 @@ export type UpdateQuotationDraftRequestUpdateLinesItem = {
   offered_quantity?: string;
   /** @pattern ^-?\d+(\.\d+)?$ */
   unit_price?: UpdateQuotationDraftRequestUpdateLinesItemUnitPrice;
+  discount?: UpdateQuotationDraftRequestUpdateLinesItemDiscount;
+  net_override?: UpdateQuotationDraftRequestUpdateLinesItemNetOverride;
   /** @maxLength 200 */
   section_title?: UpdateQuotationDraftRequestUpdateLinesItemSectionTitle;
   description?: string;
@@ -32,4 +37,5 @@ export type UpdateQuotationDraftRequestUpdateLinesItem = {
   offered_uom_id?: UpdateQuotationDraftRequestUpdateLinesItemOfferedUomId;
   /** @minimum 0 */
   sort_order?: number;
+  tax_declaration?: UpdateQuotationDraftRequestUpdateLinesItemTaxDeclaration;
 };

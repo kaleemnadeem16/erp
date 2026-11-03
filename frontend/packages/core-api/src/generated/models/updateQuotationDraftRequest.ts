@@ -10,6 +10,7 @@ import type { UpdateQuotationDraftRequestTaxEstimateDate } from "./updateQuotati
 import type { UpdateQuotationDraftRequestValidThroughLocalDate } from "./updateQuotationDraftRequestValidThroughLocalDate";
 import type { UpdateQuotationDraftRequestAddLinesItem } from "./updateQuotationDraftRequestAddLinesItem";
 import type { UpdateQuotationDraftRequestUpdateLinesItem } from "./updateQuotationDraftRequestUpdateLinesItem";
+import type { UpdateQuotationDraftRequestDocumentDiscount } from "./updateQuotationDraftRequestDocumentDiscount";
 
 /**
  * Changing a draft needs `sales.quotation.prepare` (STAGED) and the input generation the caller last saw. Everything else in the JSON body goes to
@@ -27,5 +28,6 @@ export interface UpdateQuotationDraftRequest {
   valid_through_local_date?: UpdateQuotationDraftRequestValidThroughLocalDate;
   add_lines?: UpdateQuotationDraftRequestAddLinesItem[];
   update_lines?: UpdateQuotationDraftRequestUpdateLinesItem[];
+  document_discount?: UpdateQuotationDraftRequestDocumentDiscount;
   remove_lines?: number[];
 }

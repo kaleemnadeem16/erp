@@ -13,23 +13,26 @@ use App\Modules\Sales\Support\Pricing\PricingSourceKind;
  */
 final readonly class DraftChanges
 {
-    private const ADD_FIELDS = ['scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order'];
+    private const ADD_FIELDS = ['scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
 
-    private const UPDATE_FIELDS = ['id', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order'];
+    private const UPDATE_FIELDS = ['id', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
 
     /**
      * @param  array<string, int|string|null>  $header
      * @param  list<array<string, mixed>>  $add
      * @param  list<array<string, mixed>>  $update
      * @param  list<int>  $remove
+     * @param  array{kind: string, value: string}|null  $documentDiscount  null with `$documentDiscountSet` removes the document discount
      */
-    private function __construct(public array $header, public array $add, public array $update, public array $remove) {}
+    private function __construct(public array $header, public array $add, public array $update, public array $remove, public bool $documentDiscountSet = false, public ?array $documentDiscount = null) {}
 
     /** @param  array<string, mixed>  $input */
     public static function parse(array $input): self
     {
         $lines = ['add_lines', 'update_lines', 'remove_lines'];
-        $header = DraftHeader::parse(array_diff_key($input, array_flip($lines)));
+        $documentSet = array_key_exists('document_discount', $input);
+        $document = $documentSet ? self::discount($input['document_discount'], 'document_discount', ['PERCENT', 'AMOUNT']) : null;
+        $header = DraftHeader::parse(array_diff_key($input, array_flip([...$lines, 'document_discount'])));
         $add = array_map(fn (mixed $line): array => self::line($line, self::ADD_FIELDS, 'add_lines', true), self::list($input['add_lines'] ?? [], 'add_lines'));
         $update = array_map(fn (mixed $line): array => self::line($line, self::UPDATE_FIELDS, 'update_lines', false), self::list($input['update_lines'] ?? [], 'update_lines'));
         $remove = array_map(static fn (mixed $id): int => is_int($id) && $id > 0 ? $id : throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'A line identifier is a positive whole number.', 'remove_lines'), self::list($input['remove_lines'] ?? [], 'remove_lines'));
@@ -38,17 +41,113 @@ final readonly class DraftChanges
         if (count($ids) !== count(array_unique($ids))) {
             throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'A line can be changed or removed once per update.', 'update_lines');
         }
-        if ($header === [] && $add === [] && $update === [] && $remove === []) {
+        if ($header === [] && $add === [] && $update === [] && $remove === [] && ! $documentSet) {
             throw QuotationRefusal::make(QuotationRefusal::NOTHING_TO_CHANGE, 'The update changes nothing.');
         }
 
-        return new self($header, $add, $update, $remove);
+        return new self($header, $add, $update, $remove, $documentSet, $document);
     }
 
     /** @return array<string, mixed> */
     public function toIntent(): array
     {
-        return ['header' => $this->header, 'add' => $this->add, 'update' => $this->update, 'remove' => $this->remove];
+        return ['header' => $this->header, 'add' => $this->add, 'update' => $this->update, 'remove' => $this->remove]
+            + ($this->documentDiscountSet ? ['document_discount' => $this->documentDiscount] : []);
+    }
+
+    /** Does this change set or clear any discount (line or document)? The caller then also needs the discount duty. */
+    public function touchesDiscount(): bool
+    {
+        return $this->documentDiscountSet || $this->anyLine('discount');
+    }
+
+    /** Does this change set or clear any final-net override? The caller then also needs the sensitive override duty. */
+    public function touchesOverride(): bool
+    {
+        return $this->anyLine('net_override');
+    }
+
+    private function anyLine(string $field): bool
+    {
+        foreach ([...$this->add, ...$this->update] as $line) {
+            if (array_key_exists($field, $line)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * A discount is `{kind, value}` or null (remove). PERCENT is 0-100 with at most four places; amounts are at most four places; zero is not a discount (remove it instead).
+     *
+     * @param  list<string>  $kinds
+     * @return array{kind: string, value: string}|null
+     */
+    private static function discount(mixed $value, string $field, array $kinds): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        $bad = fn (string $why) => QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, $why, $field);
+        if (! is_array($value) || array_keys($value) !== ['kind', 'value'] && array_keys($value) !== ['value', 'kind']) {
+            throw $bad('A discount is an object with a kind and a value.');
+        }
+        $number = $value['value'];
+        if (! in_array($value['kind'], $kinds, true) || ! (is_string($number) || is_int($number)) || preg_match('/^\d+(\.\d{1,4})?$/', (string) $number) !== 1) {
+            throw $bad('A discount has a known kind and an exact positive decimal with at most four places, written as text.');
+        }
+        $number = (string) $number;
+        if (bccomp($number, '0', 4) <= 0 || ($value['kind'] === 'PERCENT' && bccomp($number, '100', 4) > 0)) {
+            throw $bad('A discount is greater than zero (remove it instead) and a percentage is at most 100.');
+        }
+
+        return ['kind' => $value['kind'], 'value' => $number];
+    }
+
+    /**
+     * A manual line's tax nature and classification, with the reason for stating (or correcting) them. There is no null: evidence is superseded by a new version, never removed.
+     *
+     * @return array{nature: string, classification: string, reason: string}
+     */
+    private static function taxDeclaration(mixed $value, string $where): array
+    {
+        $bad = fn (string $why) => QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, $why, "{$where}.tax_declaration");
+        if (! is_array($value) || array_diff(array_keys($value), ['nature', 'classification', 'reason']) !== [] || count($value) !== 3) {
+            throw $bad('A tax declaration is an object with a nature, a classification and a reason.');
+        }
+        $classification = is_string($value['classification']) ? trim($value['classification']) : '';
+        $reason = is_string($value['reason']) ? trim($value['reason']) : '';
+        if (! in_array($value['nature'], ['GOODS', 'SERVICES'], true) || $classification === '' || mb_strlen($classification) > 80) {
+            throw $bad('The nature is GOODS or SERVICES and the classification is 1 to 80 characters.');
+        }
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw QuotationRefusal::make(QuotationRefusal::REASON_REQUIRED, 'A tax declaration needs a reason of at most 500 characters.', "{$where}.tax_declaration");
+        }
+
+        return ['nature' => $value['nature'], 'classification' => $classification, 'reason' => $reason];
+    }
+
+    /** @return array{amount: string, reason: string}|null */
+    private static function override(mixed $value, string $where): ?array
+    {
+        if ($value === null) {
+            return null;
+        }
+        $bad = fn (string $why) => QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, $why, "{$where}.net_override");
+        if (! is_array($value) || (array_keys($value) !== ['amount', 'reason'] && array_keys($value) !== ['reason', 'amount'])) {
+            throw $bad('A final-net override is an object with an amount and a reason.');
+        }
+        $amount = $value['amount'];
+        $reason = is_string($value['reason']) ? trim($value['reason']) : '';
+        if (! (is_string($amount) || is_int($amount)) || preg_match('/^\d+(\.\d{1,4})?$/', (string) $amount) !== 1) {
+            throw $bad('The override amount is an exact non-negative decimal with at most four places, written as text.');
+        }
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw QuotationRefusal::make(QuotationRefusal::REASON_REQUIRED, 'A final-net override needs a reason of at most 500 characters.', "{$where}.net_override");
+        }
+
+        return ['amount' => (string) $amount, 'reason' => $reason];
     }
 
     /** @return list<mixed> */
@@ -108,6 +207,9 @@ final readonly class DraftChanges
             'source_kind' => is_string($value) && PricingSourceKind::tryFrom($value) !== null ? $value : throw $bad('The source kind is not recognised.'),
             // Exact decimals travel as text (or a whole number): a float has already lost the value the user typed.
             'offered_quantity' => is_string($value) || is_int($value) ? (string) $value : throw $bad('A quantity is an exact decimal written as text.'),
+            'discount' => self::discount($value, "{$where}.discount", ['PERCENT', 'PER_PRICED_UNIT', 'PER_LINE']),
+            'net_override' => self::override($value, $where),
+            'tax_declaration' => self::taxDeclaration($value, $where),
             'unit_price' => $value === null ? null : (is_string($value) || is_int($value) ? (string) $value : throw $bad('A unit price is an exact decimal written as text.')),
             default => throw $bad('This field is not accepted.'),
         };

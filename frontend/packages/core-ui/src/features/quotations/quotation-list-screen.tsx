@@ -51,8 +51,9 @@ const STATE_LABELS: Record<QuotationListState, string> = {
 };
 
 /**
- * Columns come only from the safe summary the list contract provides. Party name and net
- * amount are intentionally absent until the contract carries a safe field for them.
+ * Columns come only from the safe summary the list contract provides. The recipient name and
+ * the net amount are decided per row by the server (Party read; the commercial view for an
+ * issued quotation); when hidden the screen shows a neutral placeholder and never a guess.
  */
 export const quotationListColumns: DataColumn<QuotationSummary>[] = [
   {
@@ -66,11 +67,19 @@ export const quotationListColumns: DataColumn<QuotationSummary>[] = [
   {
     key: "recipient",
     header: "Recipient",
-    // The contract returns a party reference only; a name lookup is contract pending.
     value: (row) =>
       row.recipient_party_id === null
         ? "Not specified"
-        : `Party reference ${row.recipient_party_id}`,
+        : (row.recipient_name ?? `Party reference ${row.recipient_party_id}`),
+  },
+  {
+    key: "net_amount",
+    header: "Net amount",
+    // Only an issued quotation has a frozen net, and only a commercial-view holder receives it.
+    value: (row) =>
+      row.net_amount == null
+        ? "Not shown"
+        : `${row.net_amount} · Currency reference ${row.currency_id}`,
   },
   {
     key: "state",

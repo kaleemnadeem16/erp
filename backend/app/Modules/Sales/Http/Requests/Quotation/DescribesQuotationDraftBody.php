@@ -58,9 +58,34 @@ trait DescribesQuotationDraftBody
             'update_lines.*.id' => ['required', 'integer', 'min:1'],
             'update_lines.*.offered_quantity' => ['sometimes', 'string', $decimal],
             'update_lines.*.unit_price' => ['sometimes', 'nullable', 'string', $decimal],
+            'document_discount' => ['sometimes', 'nullable', 'array'],
+            'document_discount.kind' => ['required_with:document_discount', Rule::in(['PERCENT', 'AMOUNT'])],
+            'document_discount.value' => ['required_with:document_discount', 'string', 'regex:/^\d+(\.\d+)?$/'],
+            'add_lines.*.discount' => ['sometimes', 'nullable', 'array'],
+            'update_lines.*.discount' => ['sometimes', 'nullable', 'array'],
+            'add_lines.*.net_override' => ['sometimes', 'nullable', 'array'],
+            'update_lines.*.net_override' => ['sometimes', 'nullable', 'array'],
             'remove_lines' => ['sometimes', 'array'],
             'remove_lines.*' => ['integer', 'min:1'],
-        ] + $fields('add_lines') + $fields('update_lines');
+        ] + $fields('add_lines') + $fields('update_lines') + $this->concessionRules();
+    }
+
+    /** @return array<string, mixed> */
+    private function concessionRules(): array
+    {
+        $rules = [];
+        foreach (['add_lines', 'update_lines'] as $list) {
+            $rules["{$list}.*.discount.kind"] = ['required_with:'.$list.'.*.discount', Rule::in(['PERCENT', 'PER_PRICED_UNIT', 'PER_LINE'])];
+            $rules["{$list}.*.discount.value"] = ['required_with:'.$list.'.*.discount', 'string', 'regex:/^\d+(\.\d+)?$/'];
+            $rules["{$list}.*.net_override.amount"] = ['required_with:'.$list.'.*.net_override', 'string', 'regex:/^\d+(\.\d+)?$/'];
+            $rules["{$list}.*.tax_declaration"] = ['sometimes', 'array'];
+            $rules["{$list}.*.tax_declaration.nature"] = ['required_with:'.$list.'.*.tax_declaration', Rule::in(['GOODS', 'SERVICES'])];
+            $rules["{$list}.*.tax_declaration.classification"] = ['required_with:'.$list.'.*.tax_declaration', 'string', 'max:80'];
+            $rules["{$list}.*.tax_declaration.reason"] = ['required_with:'.$list.'.*.tax_declaration', 'string', 'max:500'];
+            $rules["{$list}.*.net_override.reason"] = ['required_with:'.$list.'.*.net_override', 'string', 'max:500'];
+        }
+
+        return $rules;
     }
 
     /** A body that is not a JSON object is refused before any Action runs: malformed JSON must never read as an empty draft request. */

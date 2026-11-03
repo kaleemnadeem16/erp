@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Actions;
 
+use App\Models\Currency;
 use App\Models\User;
 use App\Modules\Sales\Models\Opportunity;
 use App\Modules\Sales\Models\QuotationChoiceGroup;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationLogicalScope;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Financial\Arithmetic;
 use App\Modules\Sales\Support\Financial\Policy\RoundingPolicyBinding;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
@@ -19,6 +21,7 @@ use App\Modules\Sales\Support\Quotation\DraftHeader;
 use App\Modules\Sales\Support\Quotation\DraftSource;
 use App\Modules\Sales\Support\Quotation\LineMembership;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
+use App\Modules\Sales\Support\Quotation\QuotationAdjustmentEngine;
 use App\Modules\Sales\Support\Quotation\QuotationAssociation;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationMoney;
@@ -26,6 +29,7 @@ use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Support\Scope\CompanyAccessFence;
+use Brick\Math\BigDecimal;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -46,6 +50,7 @@ final class UpdateQuotationDraft
         private readonly QuotationOperation $operations,
         private readonly DraftSource $sources,
         private readonly QuotationMoney $money,
+        private readonly QuotationAdjustmentEngine $adjustments,
     ) {}
 
     /** @param  array<string, mixed>  $input  header fields plus add_lines, update_lines, remove_lines */
@@ -65,10 +70,21 @@ final class UpdateQuotationDraft
         $context = SalesActorContext::forUser($actor, 'quotation.update_draft');
         $changes = DraftChanges::parse($input);
         DraftHeader::verifyReferences($changes->header);
+        // A concession is its own duty, judged by the same family policy: setting or clearing a discount needs `discount`, an override needs the sensitive `price.override`.
+        $duties = [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE];
+        if ($changes->touchesDiscount()) {
+            $duties[] = PermissionVocabulary::QUOTATION_DISCOUNT;
+        }
+        if ($changes->touchesOverride()) {
+            $duties[] = PermissionVocabulary::QUOTATION_PRICE_OVERRIDE;
+        }
+        if (count($duties) > 2) {
+            DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, $duties));
+        }
 
         $outcome = $this->operations->run(
             $context, 'quotation.update_draft', $requestKey, ['revision_id' => $revisionId, 'expected_generation' => $expectedGeneration] + $changes->toIntent(),
-            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE], true),
+            fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, $revisionId, $duties, true),
             fn (QuotationRevision $revision): array => $this->apply($actor, $revision, $expectedGeneration, $changes),
         );
 
@@ -117,6 +133,8 @@ final class UpdateQuotationDraft
         }
 
         $this->refreshEvidence($revision);
+        $this->applyDocumentDiscount($actor, $revision, $changes);
+        $this->reassess($revision);
         $revision->refresh();
 
         return QuotationDraftOutcome::result($revision->family_id, $revision->id, $revision->input_generation);
@@ -138,14 +156,44 @@ final class UpdateQuotationDraft
             throw QuotationRefusal::make(QuotationRefusal::SCOPE_ALREADY_ON_REVISION, 'That deliverable is already a line of this draft.', 'scope_ref');
         }
         $money = ($fields['unit_price'] ?? null) === null ? QuotationMoney::none() : $this->money->enter($revision->currency_id, $revision->pricing_date?->format('Y-m-d'), $fields['unit_price']);
+        $concessions = $this->concessions($actor, $fields, null, $money['unit_price'] !== null);
 
+        $declaration = $fields['tax_declaration'] ?? null;
+        if ($declaration !== null && $kind !== PricingSourceKind::Manual) {
+            throw $this->declarationNotAllowed();
+        }
         QuotationDraftLine::create([
             'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'logical_scope_id' => $scope->id, 'created_by' => $actor->id,
             'sort_order' => $fields['sort_order'] ?? ((int) QuotationDraftLine::query()->where('revision_id', $revision->id)->max('sort_order') + 10),
             'section_title' => $fields['section_title'] ?? null, 'description' => $source['description'], 'membership' => $membership, 'choice_group_id' => $groupId, 'is_baseline' => $baseline,
             'source_kind' => $kind->value, 'item_id' => $fields['item_id'] ?? null, 'manual_measure' => $fields['manual_measure'] ?? null,
             'offered_quantity' => $source['offered_quantity'], 'offered_uom_id' => $source['offered_uom_id'],
-        ] + $source['measures'] + $money);
+        ] + $source['measures'] + $money + $concessions);
+        if ($declaration !== null) {
+            $this->declareTax($actor, $revision, $scope->id, $declaration);
+        }
+    }
+
+    private function declarationNotAllowed(): \Throwable
+    {
+        return QuotationRefusal::make(QuotationRefusal::TAX_DECLARATION_NOT_ALLOWED, 'Only a manual line carries a seller\'s tax declaration; an Item\'s classification belongs to Tax.', 'tax_declaration');
+    }
+
+    /**
+     * Appends the next version of the line's tax declaration (a correction is just the next version, with its reason). Stating exactly what is already in force adds nothing.
+     *
+     * @param  array{nature: string, classification: string, reason: string}  $declaration
+     */
+    private function declareTax(User $actor, QuotationRevision $revision, int $scopeId, array $declaration): void
+    {
+        $latest = DB::table('quotation_draft_tax_declarations')->where('revision_id', $revision->id)->where('logical_scope_id', $scopeId)->orderByDesc('version_no')->first();
+        if ($latest !== null && $latest->nature === $declaration['nature'] && $latest->classification === $declaration['classification']) {
+            return;
+        }
+        DB::table('quotation_draft_tax_declarations')->insert([
+            'company_id' => $revision->company_id, 'revision_id' => $revision->id, 'logical_scope_id' => $scopeId, 'version_no' => $latest === null ? 1 : (int) $latest->version_no + 1,
+            'nature' => $declaration['nature'], 'classification' => $declaration['classification'], 'reason' => $declaration['reason'], 'declared_by' => $actor->id,
+        ]);
     }
 
     /** @param  array<string, mixed>  $fields */
@@ -174,7 +222,120 @@ final class UpdateQuotationDraft
         if (array_key_exists('unit_price', $fields)) {
             $attributes += $fields['unit_price'] === null ? QuotationMoney::none() : $this->money->enter($revision->currency_id, $revision->pricing_date?->format('Y-m-d'), $fields['unit_price']);
         }
+        $priced = array_key_exists('unit_price', $fields) ? $fields['unit_price'] !== null : $line->unit_price !== null;
+        // A final-net override replaces a figure calculated from the price and quantity: changing either without restating the override would leave a stale concession.
+        if ($line->net_override !== null && ! array_key_exists('net_override', $fields)
+            && (array_key_exists('unit_price', $fields) || array_key_exists('offered_quantity', $fields) || array_key_exists('item_id', $fields) || array_key_exists('offered_uom_id', $fields))) {
+            throw QuotationRefusal::make(QuotationRefusal::OVERRIDE_BASIS_CHANGED, 'This line has a final-net override; restate or clear the override in the same update as a price or quantity change.', 'net_override');
+        }
+        $attributes += $this->concessions($actor, $fields, $line, $priced);
+        $declaration = $fields['tax_declaration'] ?? null;
+        if ($declaration !== null && $line->sourceKind() !== PricingSourceKind::Manual) {
+            throw $this->declarationNotAllowed();
+        }
         $line->forceFill($attributes)->save();
+        if ($declaration !== null) {
+            $this->declareTax($actor, $revision, $line->logical_scope_id, $declaration);
+        }
+    }
+
+    /**
+     * The discount / override columns a line change sets: the entered values plus who entered them and when (set by the server, never by the caller). A discount and an
+     * override exclude each other, and an override needs the unit price whose calculated net it replaces.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return array<string, mixed>
+     */
+    private function concessions(User $actor, array $fields, ?QuotationDraftLine $line, bool $priced): array
+    {
+        $out = [];
+        $now = now();
+        if (array_key_exists('discount', $fields)) {
+            $d = $fields['discount'];
+            $out += $d === null ? ['discount_kind' => null, 'discount_value' => null, 'discount_entered_by' => null, 'discount_entered_at' => null]
+                : ['discount_kind' => $d['kind'], 'discount_value' => $d['value'], 'discount_entered_by' => $actor->id, 'discount_entered_at' => $now];
+        }
+        if (array_key_exists('net_override', $fields)) {
+            $o = $fields['net_override'];
+            $out += $o === null ? ['net_override' => null, 'override_reason' => null, 'override_entered_by' => null, 'override_entered_at' => null]
+                : ['net_override' => $o['amount'], 'override_reason' => $o['reason'], 'override_entered_by' => $actor->id, 'override_entered_at' => $now];
+        }
+        $discount = array_key_exists('discount_kind', $out) ? $out['discount_kind'] : $line?->discount_kind;
+        $override = array_key_exists('net_override', $out) ? $out['net_override'] : $line?->net_override;
+        if ($discount !== null && $override !== null) {
+            throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'A line takes a discount or a final-net override, not both: an override runs no discount afterwards.', 'net_override');
+        }
+        if ($discount === null && $override === null && ($line?->approval_reason !== null || $line?->approval_required)) {
+            // Nothing is conceded any more, so there is nothing left that could need approval.
+            $out += ['approval_required' => false, 'approval_reason' => null];
+        }
+        if ($override !== null && ! $priced) {
+            throw QuotationRefusal::make(QuotationRefusal::OVERRIDE_NOT_ALLOWED, 'A final-net override needs an entered unit price: the calculated net it replaces must exist.', 'net_override');
+        }
+
+        return $out;
+    }
+
+    /** A document discount is one slot per draft: set it (stamped with the actor and time) or remove it. */
+    private function applyDocumentDiscount(User $actor, QuotationRevision $revision, DraftChanges $changes): void
+    {
+        if (! $changes->documentDiscountSet) {
+            return;
+        }
+        $existing = DB::table('quotation_draft_document_discounts')->where('revision_id', $revision->id);
+        if ($changes->documentDiscount === null) {
+            $existing->delete();
+
+            return;
+        }
+        $values = ['kind' => $changes->documentDiscount['kind'], 'value' => $changes->documentDiscount['value'], 'entered_by' => $actor->id, 'entered_at' => now(), 'approval_required' => false, 'approval_reason' => null];
+        if ($existing->exists()) {
+            DB::table('quotation_draft_document_discounts')->where('revision_id', $revision->id)->update($values);
+        } else {
+            DB::table('quotation_draft_document_discounts')->insert($values + ['company_id' => $revision->company_id, 'revision_id' => $revision->id, 'created_at' => now(), 'updated_at' => now()]);
+        }
+    }
+
+    /**
+     * After every change: prove each concession computes (a discount larger than its line, an override above the calculated net or one that is not a whole currency unit is
+     * refused now, not at issue) and record whether it needs approval. A concession whose figures cannot be computed yet (no price, no pricing date) is recorded as "not
+     * proven within a limit".
+     */
+    private function reassess(QuotationRevision $revision): void
+    {
+        $document = DB::table('quotation_draft_document_discounts')->where('revision_id', $revision->id)->first();
+        $lines = QuotationDraftLine::query()->where('revision_id', $revision->id)->get();
+        $date = $revision->pricing_date?->format('Y-m-d');
+        $policy = $date === null ? null : $this->money->policyOn($date);
+        $currency = Currency::query()->findOrFail($revision->currency_id);
+        $rule = $policy?->settlementRule($currency);
+        $counted = [];
+        foreach ($lines as $line) {
+            $concession = $line->discount_kind !== null || $line->net_override !== null;
+            $figures = null;
+            $quantity = (string) $line->offered_quantity;
+            if ($line->unit_price !== null && $policy !== null && $rule !== null) {
+                $figures = $this->adjustments->line($line, $revision->currency_id, $date, $policy, $rule, Arithmetic::quantity($quantity));
+            }
+            if ($figures !== null && ($line->membership === 'BASE' || ($line->membership === 'CHOOSE_ONE' && $line->is_baseline))) {
+                $counted[$line->id] = $figures['net'];
+            }
+            $reason = $concession ? $this->adjustments->approvalFor($line->net_override !== null, $line->discount_kind !== null, $figures, $revision->currency_id, $date, $policy, $quantity) : null;
+            if ($line->approval_reason !== $reason) {
+                $line->forceFill(['approval_required' => $reason !== null, 'approval_reason' => $reason])->save();
+            }
+        }
+        if ($document === null) {
+            return;
+        }
+        $reason = QuotationAdjustmentEngine::APPROVAL_UNVERIFIED;
+        $counts = collect($lines)->filter(fn ($l): bool => $l->membership === 'BASE' || ($l->membership === 'CHOOSE_ONE' && $l->is_baseline))->count();
+        if ($policy !== null && $rule !== null && $counts > 0 && count($counted) === $counts) {
+            $result = $this->adjustments->document($counted, (string) $document->kind, (string) $document->value, $rule);
+            $before = array_reduce($counted, fn ($carry, $net) => $carry->plus($net), BigDecimal::zero());
+            $reason = $this->adjustments->approvalForDocument($before, $before->minus($result['amount']), (string) $document->kind, (string) $document->value, $revision->currency_id, $date, $policy);
+        }
+        DB::table('quotation_draft_document_discounts')->where('revision_id', $revision->id)->update(['approval_required' => $reason !== null, 'approval_reason' => $reason]);
     }
 
     /**

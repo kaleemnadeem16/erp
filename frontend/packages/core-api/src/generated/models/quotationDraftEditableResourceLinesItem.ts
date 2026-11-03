@@ -10,6 +10,9 @@ import type { QuotationDraftEditableResourceLinesItemItemId } from "./quotationD
 import type { QuotationDraftEditableResourceLinesItemManualMeasure } from "./quotationDraftEditableResourceLinesItemManualMeasure";
 import type { QuotationDraftEditableResourceLinesItemOfferedUomId } from "./quotationDraftEditableResourceLinesItemOfferedUomId";
 import type { QuotationDraftEditableResourceLinesItemUnitPrice } from "./quotationDraftEditableResourceLinesItemUnitPrice";
+import type { QuotationDraftEditableResourceLinesItemDiscount } from "./quotationDraftEditableResourceLinesItemDiscount";
+import type { QuotationDraftEditableResourceLinesItemNetOverride } from "./quotationDraftEditableResourceLinesItemNetOverride";
+import type { QuotationDraftEditableResourceLinesItemApprovalReason } from "./quotationDraftEditableResourceLinesItemApprovalReason";
 
 export type QuotationDraftEditableResourceLinesItem = {
   id: number;
@@ -26,4 +29,9 @@ export type QuotationDraftEditableResourceLinesItem = {
   offered_uom_id: QuotationDraftEditableResourceLinesItemOfferedUomId;
   unit_price: QuotationDraftEditableResourceLinesItemUnitPrice;
   sort_order: number;
+  discount: QuotationDraftEditableResourceLinesItemDiscount;
+  net_override: QuotationDraftEditableResourceLinesItemNetOverride;
+  tax_declaration: unknown;
+  approval_required: boolean;
+  approval_reason: QuotationDraftEditableResourceLinesItemApprovalReason;
 };

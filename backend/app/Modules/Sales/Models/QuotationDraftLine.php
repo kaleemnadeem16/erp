@@ -46,6 +46,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $stock_quantity
  * @property int|null $stock_uom_id
  * @property int|null $conversion_version
+ * @property string|null $discount_kind PERCENT, PER_PRICED_UNIT or PER_LINE; null is no discount
+ * @property string|null $discount_value
+ * @property string|null $net_override the reasoned final net that replaces the calculated one (never above it)
+ * @property string|null $override_reason
+ * @property bool $approval_required recorded fact: the concession is not proven within a limit, so approval would be needed
+ * @property string|null $approval_reason a code, never a limit
  */
 class QuotationDraftLine extends Model
 {
@@ -70,7 +76,7 @@ class QuotationDraftLine extends Model
     {
         return [
             'is_baseline' => 'boolean', 'offered_quantity' => 'decimal:4', 'unit_price' => 'decimal:4', 'base_unit_price' => 'decimal:4', 'fx_evidence' => 'array',
-            'priced_quantity' => 'decimal:4', 'stock_quantity' => 'decimal:4',
+            'priced_quantity' => 'decimal:4', 'stock_quantity' => 'decimal:4', 'discount_value' => 'decimal:4', 'net_override' => 'decimal:4', 'approval_required' => 'boolean',
         ];
     }
 

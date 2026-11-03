@@ -40,6 +40,7 @@ import type {
   QuotationsStore201,
   QuotationsStore409,
   QuotationsStoreHeaders,
+  QuotationsTaxDeclarationsIndex200,
   QuotationsUpdate200,
   QuotationsUpdate404,
   QuotationsUpdate409,
@@ -1029,6 +1030,240 @@ export function useQuotationsEditable<
   queryKey: DataTag<QueryKey, TData, TError>;
 } {
   const queryOptions = getQuotationsEditableQueryOptions(revision, options);
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+/**
+ * @summary Every version of the seller's tax declarations for the draft's manual lines, oldest first (evidence: a correction is a later version, never an edit)
+ */
+export type quotationsTaxDeclarationsIndexResponse200 = {
+  data: QuotationsTaxDeclarationsIndex200;
+  status: 200;
+};
+
+export type quotationsTaxDeclarationsIndexResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsTaxDeclarationsIndexResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsTaxDeclarationsIndexResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsTaxDeclarationsIndexResponseSuccess =
+  quotationsTaxDeclarationsIndexResponse200 & {
+    headers: Headers;
+  };
+export type quotationsTaxDeclarationsIndexResponseError = (
+  | quotationsTaxDeclarationsIndexResponse401
+  | quotationsTaxDeclarationsIndexResponse403
+  | quotationsTaxDeclarationsIndexResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsTaxDeclarationsIndexResponse =
+  | quotationsTaxDeclarationsIndexResponseSuccess
+  | quotationsTaxDeclarationsIndexResponseError;
+
+export const getQuotationsTaxDeclarationsIndexUrl = (revision: number) => {
+  return `/v1/quotations/${revision}/tax-declarations`;
+};
+
+export const quotationsTaxDeclarationsIndex = async (
+  revision: number,
+  options?: RequestInit,
+): Promise<quotationsTaxDeclarationsIndexResponse> => {
+  return fetchClient<quotationsTaxDeclarationsIndexResponse>(
+    getQuotationsTaxDeclarationsIndexUrl(revision),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getQuotationsTaxDeclarationsIndexQueryKey = (
+  revision?: number,
+) => {
+  return [`/v1/quotations/${revision}/tax-declarations`] as const;
+};
+
+export const getQuotationsTaxDeclarationsIndexQueryOptions = <
+  TData = Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQuotationsTaxDeclarationsIndexQueryKey(revision);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>
+  > = () => quotationsTaxDeclarationsIndex(revision, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!revision,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type QuotationsTaxDeclarationsIndexQueryResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>
+>;
+export type QuotationsTaxDeclarationsIndexQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useQuotationsTaxDeclarationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsTaxDeclarationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+          TError,
+          Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useQuotationsTaxDeclarationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+/**
+ * @summary Every version of the seller's tax declarations for the draft's manual lines, oldest first (evidence: a correction is a later version, never an edit)
+ */
+
+export function useQuotationsTaxDeclarationsIndex<
+  TData = Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  revision: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof quotationsTaxDeclarationsIndex>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getQuotationsTaxDeclarationsIndexQueryOptions(
+    revision,
+    options,
+  );
 
   const query = useQuery(queryOptions, queryClient) as UseQueryResult<
     TData,

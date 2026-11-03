@@ -21,12 +21,12 @@ use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\ConfiguredQuotationControlsProvider;
+use App\Modules\Sales\Support\Quotation\Issue\DraftQuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\Issue\Fr3QuotationTaxProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use App\Modules\Sales\Support\Quotation\Issue\SalesQuotationTaxContextAuthorizer;
-use App\Modules\Sales\Support\Quotation\Issue\UnavailableQuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\NoAcceptanceYet;
 use App\Modules\Sales\Support\Quotation\QuotationAcceptanceState;
 use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
@@ -49,8 +49,9 @@ class SalesServiceProvider extends ServiceProvider
         $this->app->singleton(SalesDutyManifest::class, static fn (): SalesDutyManifest => SalesDevPreview::manifest());
         // Issue asks two independent evidence questions. Until the Tax-owned FR3 determination (through a Sales adapter) and a configured control set exist, both answer "not yet".
         $this->app->bind(QuotationTaxProvider::class, Fr3QuotationTaxProvider::class);
-        // The jurisdiction and classification are not persisted anywhere yet, so the shipped facts say "unknown" and every line stays blocked until an owner-reviewed source is bound.
-        $this->app->bind(QuotationTaxFacts::class, UnavailableQuotationTaxFacts::class);
+        // Jurisdiction and Item classification come from Tax's own append-only facts (none exist until the staged configuration duty is used); a manual line's classification is the
+        // seller's declared, versioned fact on the draft. With nothing declared or configured every line stays blocked: nothing is defaulted.
+        $this->app->bind(QuotationTaxFacts::class, DraftQuotationTaxFacts::class);
         $this->app->bind(QuotationControlsProvider::class, ConfiguredQuotationControlsProvider::class);
         // B5 rebinds this to the reader of the real acceptance records.
         $this->app->bind(QuotationAcceptanceState::class, NoAcceptanceYet::class);

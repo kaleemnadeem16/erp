@@ -44,6 +44,26 @@ export const amountSchema = z
       });
     }
   });
+const adjustment = z.object({
+  discount: z
+    .object({
+      kind: z.enum(["PERCENT", "PER_PRICED_UNIT", "PER_LINE"]),
+      value: decimal,
+    })
+    .nullable(),
+  override: z.object({ amount: decimal, reason: z.string() }).nullable(),
+  amount: decimal.nullable(),
+  document_share: decimal.nullable(),
+  pre_document_net: decimal.nullable(),
+  approval_required: z.boolean(),
+  approval_reason: z.string().nullable(),
+});
+const lineTax = z.object({
+  line_id: id,
+  disposition: z.string(),
+  tax: decimal,
+  gross: decimal,
+});
 const measure = z.object({ quantity: decimal, uom_id: id.nullable() });
 const line = z.object({
   id,
@@ -64,6 +84,9 @@ const line = z.object({
     .nullable(),
   unit_price: decimal.nullable(),
   base_unit_price: decimal.nullable(),
+  counts_in_total: z.boolean().optional(),
+  list_amount: decimal.nullable().optional(),
+  adjustment: adjustment.optional(),
   net: amountSchema,
   issues: z.array(z.string()),
   fx: z
@@ -95,16 +118,32 @@ export const previewSchema = z.object({
   currency_id: id,
   pricing_date: date,
   lines: z.array(line),
+  document_discount: z
+    .object({
+      kind: z.enum(["PERCENT", "AMOUNT"]),
+      value: decimal,
+      amount: decimal.nullable(),
+      approval_required: z.boolean(),
+      approval_reason: z.string().nullable(),
+      issues: z.array(z.string()),
+    })
+    .nullable()
+    .optional(),
   totals: z.object({
     net: amountSchema,
     optional_net: amountSchema.nullable(),
+    list: decimal.nullable().optional(),
+    reduction: decimal.nullable().optional(),
   }),
   tax: z.object({
-    certainty: z.literal("UNKNOWN"),
+    certainty: z.enum(["COMPLETE", "UNKNOWN"]),
     reasons: z.array(z.string()),
+    lines: z.array(lineTax).optional(),
+    total: decimal.optional(),
+    blocked_lines: z.array(id).optional(),
     total_including_tax: z.object({
-      certainty: z.literal("UNKNOWN"),
-      amount: z.null(),
+      certainty: z.enum(["COMPLETE", "UNKNOWN"]),
+      amount: decimal.nullable(),
     }),
   }),
   controls: z.object({

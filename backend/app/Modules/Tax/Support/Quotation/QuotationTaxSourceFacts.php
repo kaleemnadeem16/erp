@@ -21,9 +21,14 @@ final class QuotationTaxSourceFacts
     public function jurisdiction(string $date): ?string
     {
         new EffectivePeriod($date);
-        $rows = $this->onDate('tax_quotation_jurisdictions', $date)->limit(2)->get(['jurisdiction']);
+        $rows = $this->onDate('tax_quotation_jurisdictions', $date)->limit(2)->get(['id', 'jurisdiction']);
+        if ($rows->count() !== 1) {
+            return null;
+        }
+        // The latest correction of the fact supersedes it for its own period; the original and earlier versions stay as evidence.
+        $correction = $this->latestCorrection('jurisdiction_fact_id', (int) $rows->first()->id);
 
-        return $rows->count() === 1 ? (string) $rows->first()->jurisdiction : null;
+        return (string) ($correction->jurisdiction ?? $rows->first()->jurisdiction);
     }
 
     public function item(int $itemId, string $date): ?TaxClassification
@@ -32,17 +37,22 @@ final class QuotationTaxSourceFacts
         if ($itemId < 1) {
             return null;
         }
-        $rows = $this->onDate('tax_quotation_item_classifications', $date)->where('item_id', $itemId)->limit(2)->get(['nature', 'classification']);
+        $rows = $this->onDate('tax_quotation_item_classifications', $date)->where('item_id', $itemId)->limit(2)->get(['id', 'nature', 'classification']);
         if ($rows->count() !== 1) {
             return null;
         }
-        $row = $rows->first();
+        $row = $this->latestCorrection('classification_fact_id', (int) $rows->first()->id) ?? $rows->first();
         $nature = TaxNature::tryFrom((string) $row->nature);
         if ($nature === null || $nature === TaxNature::Both) {
             return null;
         }
 
         return new TaxClassification(SourceKind::Item, $nature, (string) $row->classification, 'item_explicit');
+    }
+
+    private function latestCorrection(string $column, int $factId): ?object
+    {
+        return DB::table('tax_quotation_source_corrections')->where('company_id', app(CompanyContext::class)->id())->where($column, $factId)->orderByDesc('version_no')->first();
     }
 
     private function onDate(string $table, string $date): Builder

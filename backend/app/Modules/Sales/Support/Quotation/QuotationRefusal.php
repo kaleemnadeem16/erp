@@ -67,6 +67,16 @@ final class QuotationRefusal
 
     public const REASON_REQUIRED = 'REASON_REQUIRED';
 
+    public const DISCOUNT_EXCEEDS_BASE = 'DISCOUNT_EXCEEDS_BASE';
+
+    public const DISCOUNT_PRECISION_EXCEEDED = 'DISCOUNT_PRECISION_EXCEEDED';
+
+    public const OVERRIDE_NOT_ALLOWED = 'OVERRIDE_NOT_ALLOWED';
+
+    public const OVERRIDE_BASIS_CHANGED = 'OVERRIDE_BASIS_CHANGED';
+
+    public const TAX_DECLARATION_NOT_ALLOWED = 'TAX_DECLARATION_NOT_ALLOWED';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

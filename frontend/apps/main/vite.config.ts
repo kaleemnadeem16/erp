@@ -9,6 +9,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // The app ships as one bundle that grew past the plugin's 2 MiB default precache limit (the build then fails, it does not warn). Raise the precache ceiling rather than
+      // dropping the bundle from the offline shell; splitting the bundle by route is a separate piece of work.
+      workbox: { maximumFileSizeToCacheInBytes: 4 * 1024 * 1024 },
       // Real icons/branding are a Phase 4 design-system task — see
       // phase-0-foundation.md scope note "Frontend design system beyond shadcn defaults".
       manifest: {

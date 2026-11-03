@@ -72,6 +72,7 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
                     'quantity' => new FieldSpec(FieldType::Decimal),
                     'uom' => new FieldSpec(FieldType::String, required: false),
                     'unit_price' => new FieldSpec(FieldType::Decimal),
+                    'discount' => new FieldSpec(FieldType::Decimal, required: false),
                     'amount' => new FieldSpec(FieldType::Decimal),
                 ]),
                 'terms' => new SectionSchema(fields: ['payment_terms' => new FieldSpec(FieldType::String, required: false), 'customer_notes' => new FieldSpec(FieldType::String, required: false)], required: false),

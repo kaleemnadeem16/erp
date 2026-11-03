@@ -22,5 +22,6 @@ export interface QuotationDraftEditableResource {
   tax_estimate_date: QuotationDraftEditableResourceTaxEstimateDate;
   valid_through_local_date: QuotationDraftEditableResourceValidThroughLocalDate;
   current_opportunity_id: QuotationDraftEditableResourceCurrentOpportunityId;
+  document_discount: unknown;
   lines: QuotationDraftEditableResourceLinesItem[];
 }

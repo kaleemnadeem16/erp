@@ -14,6 +14,7 @@ use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Actions\ReadIssuedQuotation;
 use App\Modules\Sales\Actions\ReadQuotationDraft;
 use App\Modules\Sales\Actions\ReadQuotationDraftForEdit;
+use App\Modules\Sales\Actions\ReadQuotationTaxDeclarations;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
 use App\Modules\Sales\Http\Requests\Quotation\AssessQuotationIssueReadinessRequest;
 use App\Modules\Sales\Http\Requests\Quotation\EditQuotationDraftRequest;
@@ -22,6 +23,7 @@ use App\Modules\Sales\Http\Requests\Quotation\IssueQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\PreviewQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\ShowIssuedQuotationRequest;
 use App\Modules\Sales\Http\Requests\Quotation\ShowQuotationDraftRequest;
+use App\Modules\Sales\Http\Requests\Quotation\ShowQuotationTaxDeclarationsRequest;
 use App\Modules\Sales\Http\Requests\Quotation\StoreQuotationDraftRequest;
 use App\Modules\Sales\Http\Requests\Quotation\UpdateQuotationDraftRequest;
 use App\Modules\Sales\Http\Resources\QuotationDraftEditableResource;
@@ -32,6 +34,7 @@ use App\Modules\Sales\Http\Resources\QuotationIssueOutcomeResource;
 use App\Modules\Sales\Http\Resources\QuotationIssueReadinessResource;
 use App\Modules\Sales\Http\Resources\QuotationPreviewResource;
 use App\Modules\Sales\Http\Resources\QuotationSummaryResource;
+use App\Modules\Sales\Http\Resources\QuotationTaxDeclarationResource;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationIssueOutcome;
@@ -61,6 +64,12 @@ class QuotationController extends Controller
     public function editable(EditQuotationDraftRequest $request, int $revision, ReadQuotationDraftForEdit $edit): QuotationDraftEditableResource
     {
         return new QuotationDraftEditableResource($this->refusing(fn () => $edit($request->user(), $revision)));
+    }
+
+    /** Every version of the seller's tax declarations for the draft's manual lines, oldest first (evidence: a correction is a later version, never an edit). */
+    public function taxDeclarations(ShowQuotationTaxDeclarationsRequest $request, int $revision, ReadQuotationTaxDeclarations $read): AnonymousResourceCollection
+    {
+        return QuotationTaxDeclarationResource::collection($this->refusing(fn () => $read($request->user(), $revision)));
     }
 
     public function preview(PreviewQuotationRequest $request, int $revision, PreviewQuotation $preview): QuotationPreviewResource

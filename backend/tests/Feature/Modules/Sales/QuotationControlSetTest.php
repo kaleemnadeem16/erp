@@ -102,7 +102,7 @@ class QuotationControlSetTest extends TestCase
     {
         $bad = [
             'empty' => [],
-            'unsupported kind' => [['ref' => 'r', 'kind' => 'INPUT_REDUCTION_PERCENT', 'mode' => 'MANDATORY', 'limit' => '5']],
+            'unsupported kind' => [['ref' => 'r', 'kind' => 'MADE_UP_KIND', 'mode' => 'MANDATORY', 'limit' => '5']],
             'amount without currency' => [['ref' => 'r', 'kind' => 'FLOOR', 'mode' => 'MANDATORY', 'limit' => '5']],
             'percent with currency' => [['ref' => 'r', 'kind' => 'MIN_MARGIN_PERCENT', 'mode' => 'MANDATORY', 'limit' => '5', 'currency_id' => $this->pkr]],
             'percent over 100' => [['ref' => 'r', 'kind' => 'MIN_MARGIN_PERCENT', 'mode' => 'MANDATORY', 'limit' => '101']],

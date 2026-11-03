@@ -36,6 +36,9 @@ use App\Support\Concerns\BelongsToCompany;
  * @property string|null $gross
  * @property string|null $tax_disposition
  * @property string|null $tax_evidence_reference
+ * @property string|null $line_reduction_kind
+ * @property string $line_reduction_amount
+ * @property string $document_reduction_amount
  */
 class QuotationIssuedLine extends Model
 {
@@ -50,6 +53,6 @@ class QuotationIssuedLine extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['is_baseline' => 'boolean', 'counts_in_total' => 'boolean', 'offered_quantity' => 'decimal:4', 'unit_price' => 'decimal:4', 'net' => 'decimal:4', 'tax' => 'decimal:4', 'gross' => 'decimal:4'];
+        return ['is_baseline' => 'boolean', 'counts_in_total' => 'boolean', 'offered_quantity' => 'decimal:4', 'unit_price' => 'decimal:4', 'net' => 'decimal:4', 'tax' => 'decimal:4', 'gross' => 'decimal:4', 'line_reduction_amount' => 'decimal:4', 'document_reduction_amount' => 'decimal:4'];
     }
 }

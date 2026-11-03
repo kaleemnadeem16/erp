@@ -103,6 +103,22 @@ them. Invalid definitions and unavailable references use the same redacted refus
 SQL/bindings or evidence. There is no profile lookup/filter/count/export/history projection to leak
 these facts. Any future exposure requires an accepted authority decision and reviewed projections.
 
+## Corrections and draft declarations (delivered)
+
+Evidence is never edited, so a wrong fact is put right by a **new version**.
+
+- **Tax source facts** (`tax_quotation_jurisdictions`, `tax_quotation_item_classifications`): `CorrectQuotationTaxSource` appends a reasoned, immutable correction version that supersedes
+  the fact it names for that fact's own period (`tax_quotation_source_corrections`). The original and every earlier version stay; the reader uses the latest. It needs the staged
+  `tax.configuration.manage` duty with company-wide scope, takes the Tax generation fence and an operation key (a retry replays; stale input is refused) and moves the Tax generation, so a
+  determination made earlier is provably stale. UPDATE, DELETE and TRUNCATE are refused; rollback refuses while corrections exist.
+- **A manual draft line** has no Item to read a classification from, so the seller declares its nature (GOODS or SERVICES), classification and reason on the draft
+  (`quotation_draft_tax_declarations`, per logical line). A correction is the next version with its reason; restating what is in force adds nothing. Declaring needs the ordinary
+  prepare/view duties judged by the quotation-family policy and moves the draft's input generation. Item lines cannot carry a seller declaration: their classification is Tax's.
+  Whether Tax covers a declared classification is Tax's decision: uncovered is UNKNOWN with a code, never zero. Decision: a seller's declaration is the accepted "manual explicit" fact
+  (`TaxClassification::resolve`), and no separate Sales duty exists for it in the accepted matrix.
+- Sales' `QuotationTaxFacts` is bound to `DraftQuotationTaxFacts`: jurisdiction and Item classification from Tax's own reader, a manual line's from its latest declaration; nothing is
+  defaulted, so with nothing configured every line stays blocked. The review shows the per-line disposition, tax and gross when Tax can determine them.
+
 ## Problem statement
 
 Tax is not one percentage added to every document. Sales/output and purchase/input tax have

@@ -6,10 +6,13 @@
  */
 import type { PricingSourceKind } from "./pricingSourceKind";
 import type { UpdateQuotationDraftRequestAddLinesItemUnitPrice } from "./updateQuotationDraftRequestAddLinesItemUnitPrice";
+import type { UpdateQuotationDraftRequestAddLinesItemDiscount } from "./updateQuotationDraftRequestAddLinesItemDiscount";
+import type { UpdateQuotationDraftRequestAddLinesItemNetOverride } from "./updateQuotationDraftRequestAddLinesItemNetOverride";
 import type { UpdateQuotationDraftRequestAddLinesItemSectionTitle } from "./updateQuotationDraftRequestAddLinesItemSectionTitle";
 import type { LineMembership } from "./lineMembership";
 import type { UpdateQuotationDraftRequestAddLinesItemChoiceGroupRef } from "./updateQuotationDraftRequestAddLinesItemChoiceGroupRef";
 import type { UpdateQuotationDraftRequestAddLinesItemOfferedUomId } from "./updateQuotationDraftRequestAddLinesItemOfferedUomId";
+import type { UpdateQuotationDraftRequestAddLinesItemTaxDeclaration } from "./updateQuotationDraftRequestAddLinesItemTaxDeclaration";
 
 export type UpdateQuotationDraftRequestAddLinesItem = {
   /** @maxLength 80 */
@@ -19,6 +22,8 @@ export type UpdateQuotationDraftRequestAddLinesItem = {
   offered_quantity: string;
   /** @pattern ^-?\d+(\.\d+)?$ */
   unit_price?: UpdateQuotationDraftRequestAddLinesItemUnitPrice;
+  discount?: UpdateQuotationDraftRequestAddLinesItemDiscount;
+  net_override?: UpdateQuotationDraftRequestAddLinesItemNetOverride;
   /** @maxLength 200 */
   section_title?: UpdateQuotationDraftRequestAddLinesItemSectionTitle;
   description?: string;
@@ -34,4 +39,5 @@ export type UpdateQuotationDraftRequestAddLinesItem = {
   offered_uom_id?: UpdateQuotationDraftRequestAddLinesItemOfferedUomId;
   /** @minimum 0 */
   sort_order?: number;
+  tax_declaration?: UpdateQuotationDraftRequestAddLinesItemTaxDeclaration;
 };
