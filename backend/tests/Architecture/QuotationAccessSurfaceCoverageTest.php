@@ -18,6 +18,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
         'POST api/v1/quotations' => ['CreateQuotationDraft', 'queryFor', 'prepare', 'receipt identity', 'QuotationDraftWriteApiTest'],
         'GET api/v1/quotations/{revision}' => ['ReadQuotationDraft', 'requireRevision', 'view', 'safe header', 'QuotationDraftReviewApiTest'],
         'GET api/v1/quotations/{revision}/editable' => ['ReadQuotationDraftForEdit', 'requireRevision', 'view + prepare', 'editable commercial operands', 'QuotationDraftEditableApiTest'],
+        'GET api/v1/quotations/{revision}/tax-declarations' => ['ReadQuotationTaxDeclarations', 'requireRevision', 'view + prepare', 'seller tax declaration versions', 'QuotationTaxDeclarationTest'],
         'PATCH api/v1/quotations/{revision}' => ['UpdateQuotationDraft', 'requireRevision', 'view + prepare', 'receipt identity', 'QuotationDraftWriteApiTest'],
         'GET api/v1/quotations/{revision}/preview' => ['PreviewQuotation', 'requireRevision', 'view + prepare', 'commercial preview', 'QuotationDraftReviewApiTest'],
         'GET api/v1/quotations/{revision}/issue-readiness' => ['AssessQuotationIssueReadiness', 'requireRevision', 'view + prepare', 'readiness codes', 'QuotationIssueApiTest'],
