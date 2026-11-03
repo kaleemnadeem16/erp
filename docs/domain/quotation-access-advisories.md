@@ -68,6 +68,18 @@ storage identity. `DOCUMENT_NOT_READY` remains the existing authorised-user 422.
 command's description already names document/delivery duties; the approved demo/preset extension
 is a separate delivery slice.
 
+## Reviewed choices retained
+
+Line references identify the integrated advisory checkpoint; search the named method if later edits move them.
+
+| Retained behaviour | Source | Rule/reason |
+|---|---|---|
+| Transaction-required programming refusal | `backend/app/Support/Scope/CompanyAccessFence.php:25` | A builder without the enclosing fence transaction is unsafe; keep LogicException rather than return an unprotected query. |
+| ALL includes unresolved; OWN excludes it | `backend/app/Modules/Sales/Support/Quotation/QuotationFamilyScopeAdapter.php:34` | Preserve accepted QA3 recovery semantics; explicit company-wide holders can review the recovery queue, with no invented historical owner. |
+| Current availability does not prohibit historical manual hand-off evidence | `backend/app/Modules/Sales/Actions/RecordManualQuotationDelivery.php:33` | Accepted 0135 records a past event and sends nothing; a new dispatch is a separate capability/availability decision. |
+| History retains attributed actor IDs and renderer contract/version | `backend/app/Modules/Documents/Actions/ReadDocumentArtefactHistory.php:37` | These are document timeline facts, not the access-management roster or storage identity; free-text restoration notes are separately redacted. |
+| Existing authorised-user DOCUMENT_NOT_READY refusal | `backend/app/Modules/Sales/Support/Documents/QuotationDocumentLocator.php:86` | Preserve the existing 422 contract after current authority/visibility checks. |
+
 ## Verification and remaining work
 
 Focused authority, ownership, list and retry tests passed before integration. The snapshot suite

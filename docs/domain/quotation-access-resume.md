@@ -3,7 +3,7 @@
 # Quotation access completion — resume checkpoint
 
 **2026-11-03: incomplete, unpublished continuation.** This is a handoff after an editor interruption
-and a shared test-service failure, not feature sign-off. Follow the original owner direction in
+and a shared test-service failure, not feature sign-off. The test service was subsequently recovered under the owner’s one-time exception; see the recovery update below. Follow the original owner direction in
 [#77](https://github.com/kaleemnadeem16/erp/issues/77). Do not edit STATUS files or run anything
 against the owner's `erp` database. Production activation remains **BLOCKED**.
 
@@ -26,8 +26,7 @@ on develop and have not been pushed as a finished slice:
   inventory portion; no holder recipe is applied and no right is granted.
 
 Three additional incoming-migration populated rollback proofs are prepared in
-`IncomingQuotationRollbackProofTest`. Pint and whole-project PHPStan passed, but those new tests
-have **not run** because the test service stopped. Do not represent them as verified.
+`IncomingQuotationRollbackProofTest`. Pint and whole-project PHPStan passed. After recovery, all three tests passed (25 assertions) on the private test database.
 
 ## Verification evidence
 
@@ -44,7 +43,7 @@ on postgres-test. No owner/dev/production database or running app endpoint was u
 | Scope/snapshot/ratchet rerun | 12 passed, 35 assertions; real two-connection count/page regression included |
 | CompanyAccessFenceTest rerun | 14 passed; two failed during schema setup with SQLSTATE 53100, not a passing run |
 | Frontend | core-api/core-ui/main TypeScript checks and Vite production build passed |
-| New incoming rollback proofs | Static checks passed; database execution outstanding |
+| New incoming rollback proofs | Passed: three tests, 25 assertions, after approved test-service recovery |
 | Final codegen/migration cycle/module regression/CI/demo/browser | Outstanding; no final-head green claim |
 
 Logs under `/tmp/erp-quotation-`: `advisory-resume.log`, `integration-focused.log`,
@@ -54,7 +53,7 @@ The last published CI is upstream `f0f81854`,
 [run 41606304669](https://github.com/kaleemnadeem16/erp/actions/runs/41606304669), failed the
 missing tax route entries and editable shape now corrected locally. This run is not our final head.
 
-## Blocking conditions and owner questions
+## Historical test-service failure and recovery
 
 [#84](https://github.com/kaleemnadeem16/erp/issues/84) records the shared postgres-test tmpfs
 exhaustion (1.3 GiB, 100%). Supported cleanup briefly recovered only our DB, then another run
@@ -73,13 +72,25 @@ guards remain unchanged. Submit implementation for exact-SHA review and CI **bef
 this replaces the previous pending first-holder question. Sharing consumers are not delivered yet:
 do not bootstrap an incomplete set now and silently expand it later.
 
-Owner asked to check whether the test service recovered. It was checked again and still reports
-Exited (1); no restart was performed. Explicit test-service recovery approval is pending again.
+The owner subsequently approved a **one-time fresh initialisation of postgres-test only**.
+Recovery acquired the exclusive stack lock and confirmed no active tests; inspection verified
+no disk-backed mounts and only the existing `size=1280m` tmpfs. Only the existing
+`erp-postgres-test-1` container was started, with no Compose restart, volume deletion or change
+to owner ERP/application services. Health, SQL connectivity and fresh test-only database inventory
+passed. Initial usage was 46 MB (4%); the isolated incoming rollback test run passed all three
+tests/25 assertions and used 8% tmpfs. Existing limit retained; tests initially use one private
+database at a time. This exception grants no future cluster reset permission.
+
+Original failure evidence: SQLSTATE 53100 disk exhaustion, checkpoint panic writing
+`pg_logical/replorigin_checkpoint.tmp`, failed B-tree WAL redo and exit 1; `OOMKilled=false`.
+Full old log is local at `/tmp/erp-postgres-test-failure-2026-11-03.log`. Outcome recorded on
+[#84](https://github.com/kaleemnadeem16/erp/issues/84) and #77.
+Broader module/ratchet regression is now running; no final-head verification claim yet.
 
 ## Continue in order
 
-1. Confirm test-service recovery approval/coordination and capacity; do not restart the shared app.
-2. Run new incoming rollback proofs. Retry the two disk-failed fence cases; complete Sales and
+1. Test-service recovery is complete. Monitor capacity and keep private test runs serial; do not restart the shared app.
+2. Incoming rollback proofs passed. Retry the two disk-failed fence cases; complete Sales and
    Documents regression and all applicable ratchets. Keep the populated refusal guards.
 3. On a clean exact checkout run codegen --check and the private migration cycle; verify frontend
    drift and demo CI requirements. Merge origin/develop again before normal push; do not push

@@ -94,8 +94,10 @@ unrelated duty never widens, anything else default-deny).
   `expected_generation` in the body), `GET …/issued` (view). The issued record carries the official number, instant, maker/checker and frozen
   header terms; settled totals only for a caller who also holds prepare or issue for that revision. Never cost, margin, controls outcome,
   fingerprints, tax evidence or numbering references.
-- **List summary.** Adds `valid_through_local_date` and `responsible_owner_id`. Recipient name and net amount are NOT in the list: a Party read
-  and the commercial view are separate rights (the commercial view duty is still SPECIFIED) — a follow-up once those can be judged per row.
+- **List summary.** Includes `valid_through_local_date`, `responsible_owner_id`, official number and derived availability. The integrated pricing
+  follow-up judges recipient Party read and exact quotation commercial-view eligibility independently per row: unreadable/absent values are null.
+  Only frozen issued net is projected; draft previews are never recomputed by the list. Commercial-view remains STAGED. Eligibility, count and page
+  share one SQL snapshot; counts never include hidden families.
 - **Fence reads are pure SELECTs.** `CompanyAccessFence::lock()` inserts a company's barrier row only when it is missing.
 
 ## QA4 read-only inventory checkpoint
