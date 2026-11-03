@@ -11,7 +11,7 @@ use App\Support\PermissionRegistry;
 use Illuminate\Console\Command;
 
 /**
- * LOCAL DEVELOPMENT ONLY: gives (or takes away) the quotation preview duties (SalesDevPreview::all(): view, prepare, document and delivery) for one named developer login, so the quotation screens can be tried on
+ * LOCAL DEVELOPMENT ONLY: gives (or takes away) the quotation preview duties (SalesDevPreview::all(): view, prepare, issue, document and delivery) for one named developer login, so the quotation screens can be tried on
  * localhost. It refuses to run unless the dev preview is enabled (`APP_ENV=local` and `SALES_DEV_QUOTATION_DUTIES=true`); it never touches roles or mandates and
  * it never changes the shipped STAGED defaults.
  */
@@ -21,7 +21,7 @@ final class GrantQuotationDevPreview extends Command
         {email? : The developer login (defaults to the demo user)}
         {--revoke : Take the duties away again}';
 
-    protected $description = 'LOCAL DEV ONLY: grant or revoke the staged quotation preview duties (view, prepare and the document/delivery duties; never repair, issue or assign) for one login';
+    protected $description = 'LOCAL DEV ONLY: grant or revoke the staged quotation preview duties (view, prepare and the document/delivery duties; never repair or assign) for one login';
 
     public function handle(CompanyContext $companyContext, PermissionRegistry $permissions): int
     {

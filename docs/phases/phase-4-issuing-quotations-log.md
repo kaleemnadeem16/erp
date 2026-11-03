@@ -50,3 +50,9 @@ Decision: withdraw/replace have Actions (QL4/QL5) but **no HTTP routes or screen
 - Browser (stack) e2e of the issue flow against the real backend — S–M.
 - Approval engine for `APPROVAL_REQUIRED` (today it only blocks) — L.
 - Production gate `QUOTATION_UI_ENABLED` and real holder recipes: owner decisions, untouched.
+
+## Owner review corrections (after CI green on 33713ae5)
+- **Decisions recorded:** (1) the broader landed Tax facts (DIRECT_ITEM, SERVICE_ITEM, seller-declared MANUAL) are *conditionally* approved, subject to independent Tax/security verification, evidence, tenant isolation and default-deny — not yet independently verified. (2) `sales.quotation.issue` is now part of the LOCAL preview (`SalesDevPreview::ISSUE_DUTIES`, included in `all()` and so in `sales:dev-grant-quotation`); only under APP_ENV=local + the switch, to explicitly granted logins. Shipped manifest/vocabulary still STAGED; no production grant or activation.
+- **Seeder fix:** `QuotationIssuingDemoSeeder` now records the login's *direct* permissions before the run and, in `finally`, revokes exactly those it added (success or failure); before, it compared against role-inherited permissions and left the Sales duties behind. Regression tests: restored exactly after success and after a forced failure (whole run rolls back too). Two old assertions that "issue stays off locally" were updated to the approved behaviour and still assert the shipped manifest keeps issue STAGED.
+- **Process note:** earlier pushes went straight to `develop` as the work order instructed; from now on changes wait for independent review and owner approval before the integrator merges.
+- **Still open:** real-stack browser E2E (issue, retry safety, issued record, PDF navigation, permission refusals). It needs the shared stack and a seeded database; the work order forbids touching the owner's dev DB/stack, so it is waiting for an explicit go-ahead and an isolated e2e database.
