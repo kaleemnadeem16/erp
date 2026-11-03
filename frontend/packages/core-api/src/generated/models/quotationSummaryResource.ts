@@ -9,6 +9,8 @@ import type { QuotationSummaryResourceCreatedAt } from "./quotationSummaryResour
 import type { QuotationSummaryResourceValidThroughLocalDate } from "./quotationSummaryResourceValidThroughLocalDate";
 import type { QuotationSummaryResourceOfficialNumber } from "./quotationSummaryResourceOfficialNumber";
 import type { QuotationSummaryResourceResponsibleOwnerId } from "./quotationSummaryResourceResponsibleOwnerId";
+import type { QuotationSummaryResourceRecipientName } from "./quotationSummaryResourceRecipientName";
+import type { QuotationSummaryResourceNetAmount } from "./quotationSummaryResourceNetAmount";
 
 export interface QuotationSummaryResource {
   revision_id: number;
@@ -22,4 +24,6 @@ export interface QuotationSummaryResource {
   official_number: QuotationSummaryResourceOfficialNumber;
   availability: string;
   responsible_owner_id: QuotationSummaryResourceResponsibleOwnerId;
+  recipient_name: QuotationSummaryResourceRecipientName;
+  net_amount: QuotationSummaryResourceNetAmount;
 }
