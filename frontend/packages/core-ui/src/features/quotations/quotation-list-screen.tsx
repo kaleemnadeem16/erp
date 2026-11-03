@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../../components/ui/select";
+import { StatusBadge } from "../../components/ui/status-badge";
 import { formatDate } from "../../lib/format-date";
 import {
   apiSortToTableSorting,
@@ -38,6 +39,7 @@ import {
   type QuotationListState,
   type QuotationSummary,
 } from "./quotation-list-contract";
+import { AVAILABILITY_VIEW } from "./quotation-issue-contract";
 import { QuotationListPanel } from "./quotation-list-panel";
 import { liveListGateway } from "./quotation-live-gateways";
 
@@ -74,8 +76,21 @@ export const quotationListColumns: DataColumn<QuotationSummary>[] = [
     key: "state",
     header: "Status",
     sortable: true,
-    cell: (row) => <QuotationStatus state={row.state} />,
-    value: (row) => row.state,
+    // Issued rows say what the offer is now (Issued, Expired, Withdrawn, Replaced); drafts keep their own wording.
+    cell: (row) => {
+      const issued = AVAILABILITY_VIEW[row.availability];
+      return issued ? (
+        <StatusBadge tone={issued.tone}>{issued.label}</StatusBadge>
+      ) : (
+        <QuotationStatus state={row.state} />
+      );
+    },
+    value: (row) => AVAILABILITY_VIEW[row.availability]?.label ?? row.state,
+  },
+  {
+    key: "official_number",
+    header: "Official number",
+    value: (row) => row.official_number ?? "Not issued",
   },
   {
     key: "valid_through",

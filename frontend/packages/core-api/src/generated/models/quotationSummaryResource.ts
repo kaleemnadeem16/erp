@@ -7,6 +7,7 @@
 import type { QuotationSummaryResourceRecipientPartyId } from "./quotationSummaryResourceRecipientPartyId";
 import type { QuotationSummaryResourceCreatedAt } from "./quotationSummaryResourceCreatedAt";
 import type { QuotationSummaryResourceValidThroughLocalDate } from "./quotationSummaryResourceValidThroughLocalDate";
+import type { QuotationSummaryResourceOfficialNumber } from "./quotationSummaryResourceOfficialNumber";
 import type { QuotationSummaryResourceResponsibleOwnerId } from "./quotationSummaryResourceResponsibleOwnerId";
 
 export interface QuotationSummaryResource {
@@ -18,5 +19,7 @@ export interface QuotationSummaryResource {
   currency_id: number;
   created_at: QuotationSummaryResourceCreatedAt;
   valid_through_local_date: QuotationSummaryResourceValidThroughLocalDate;
+  official_number: QuotationSummaryResourceOfficialNumber;
+  availability: string;
   responsible_owner_id: QuotationSummaryResourceResponsibleOwnerId;
 }

@@ -17,5 +17,6 @@ export interface QuotationIssuedResource {
   pricing_date: string;
   valid_through_local_date: string;
   expires_at: string;
+  availability: string;
   totals: QuotationIssuedResourceTotals;
 }

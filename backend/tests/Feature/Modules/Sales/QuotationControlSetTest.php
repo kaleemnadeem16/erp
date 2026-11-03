@@ -23,6 +23,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
+use Tests\Support\AssertsPopulatedRollbackRefusal;
 use Tests\TestCase;
 
 /**
@@ -31,6 +32,7 @@ use Tests\TestCase;
  */
 class QuotationControlSetTest extends TestCase
 {
+    use AssertsPopulatedRollbackRefusal;
     use BuildsIssuableQuotations;
     use RefreshDatabase;
 
@@ -199,5 +201,11 @@ class QuotationControlSetTest extends TestCase
         DB::statement('ALTER TABLE quotation_control_sets ENABLE TRIGGER quotation_control_sets_guard');
 
         $this->assertCount(2, array_filter($this->codes($revision), fn ($c) => str_starts_with($c, 'CONTROL_UNEVALUABLE@')));
+    }
+
+    public function test_populated_control_set_migration_refuses_rollback(): void
+    {
+        $this->publish($this->floor('1'));
+        $this->assertPopulatedRollbackRefused('2026_10_30_110000_create_quotation_control_sets.php', ['quotation_control_sets']);
     }
 }

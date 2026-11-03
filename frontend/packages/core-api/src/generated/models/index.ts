@@ -1698,6 +1698,7 @@ export type * from "./quotationIssuedResourceTotalsAnyOfTaxTotal";
 export type * from "./quotationPreviewResource";
 export type * from "./quotationSummaryResource";
 export type * from "./quotationSummaryResourceCreatedAt";
+export type * from "./quotationSummaryResourceOfficialNumber";
 export type * from "./quotationSummaryResourceRecipientPartyId";
 export type * from "./quotationSummaryResourceResponsibleOwnerId";
 export type * from "./quotationSummaryResourceValidThroughLocalDate";

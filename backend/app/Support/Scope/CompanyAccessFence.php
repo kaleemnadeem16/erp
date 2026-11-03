@@ -11,16 +11,30 @@ use LogicException;
 /**
  * Company-wide security barrier. Hold the enclosing transaction through the authorised read or
  * write. No authority follows from this lock itself: callers must re-read and prove each duty.
- * This primitive is not yet wired to quotation access or security writers.
+ * Protected quotation operations and raw security writers share this barrier.
  */
 final class CompanyAccessFence
 {
-    /** Match the conservative writer trigger: acquire all company barriers in ascending order. */
-    public function lockAll(): void
+    public const LOCK_TIMEOUT_MS = 1000;
+
+    public const STATEMENT_TIMEOUT_MS = 30000;
+
+    private function boundWaits(): void
     {
         if (DB::transactionLevel() < 1) {
             throw new LogicException('The company access fence requires an enclosing transaction.');
         }
+        // Transaction-local: keep the bounds through materialisation/work, never on the next
+        // pooled request. Honour a caller's stricter bound rather than silently extending it.
+        DB::select("SELECT set_config(name, LEAST(COALESCE(NULLIF(setting::bigint, 0), bounds.maximum), bounds.maximum)::text, true)
+            FROM pg_settings JOIN (VALUES ('lock_timeout', ?::bigint), ('statement_timeout', ?::bigint)) AS bounds(parameter, maximum)
+            ON name = bounds.parameter", [self::LOCK_TIMEOUT_MS, self::STATEMENT_TIMEOUT_MS]);
+    }
+
+    /** Match the conservative writer trigger: acquire all company barriers in ascending order. */
+    public function lockAll(): void
+    {
+        $this->boundWaits();
         DB::statement('INSERT INTO company_access_generations(company_id) SELECT id FROM companies ORDER BY id ON CONFLICT DO NOTHING');
         DB::table('company_access_generations')->orderBy('company_id')->lockForUpdate()->get();
     }
@@ -28,9 +42,7 @@ final class CompanyAccessFence
     /** @return object{generation: int, organisation_generation: int, capability_generation: int} */
     public function lock(bool $exclusive = false): object
     {
-        if (DB::transactionLevel() < 1) {
-            throw new LogicException('The company access fence requires an enclosing transaction.');
-        }
+        $this->boundWaits();
 
         $company = app(CompanyContext::class)->id();
         $query = fn () => DB::table('company_access_generations')->where('company_id', $company);

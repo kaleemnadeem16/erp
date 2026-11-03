@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { DetailField } from "../../components/detail/detail-field";
 import {
   DetailPageLayout,
@@ -28,6 +29,7 @@ import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { QuotationFailure } from "./quotation-display";
 import {
+  availabilityView,
   groupBlockers,
   ISSUE_REFUSALS,
   type IssuedTerms,
@@ -189,8 +191,16 @@ function money(value: string | null, currency: number) {
 }
 
 /** The issued record with its frozen terms, read only (GET .../issued); totals only when the server includes them for this person. */
-export function QuotationIssuedView({ terms }: { terms: IssuedTerms }) {
+export function QuotationIssuedView({
+  terms,
+  documentsTo,
+}: {
+  terms: IssuedTerms;
+  /** Where the official PDF lives; given only to people who may see documents. */
+  documentsTo?: string;
+}) {
   const same = terms.prepared_by === terms.issued_by;
+  const availability = availabilityView(terms.availability);
   return (
     <DetailPageLayout>
       <DetailSection title="Issued quotation" fullWidth>
@@ -198,11 +208,28 @@ export function QuotationIssuedView({ terms }: { terms: IssuedTerms }) {
           <span className="font-semibold">{terms.official_number}</span>
         </DetailField>
         <DetailField label="Status">
-          <StatusBadge tone="success">Issued</StatusBadge>
+          <StatusBadge tone={availability.tone}>
+            {availability.label}
+          </StatusBadge>
         </DetailField>
+        {availability.note && (
+          <p className="col-span-full text-sm" role="note">
+            {availability.note}
+          </p>
+        )}
         <DetailField label="Issued at">
           {formatDateTime(terms.issued_at)}
         </DetailField>
+        {documentsTo && (
+          <div className="col-span-full">
+            <Link
+              className="ui-link-action inline-flex min-h-11 items-center"
+              to={documentsTo}
+            >
+              Official PDF and delivery
+            </Link>
+          </div>
+        )}
         <DetailField label="Prepared by (maker)">
           Person reference #{terms.prepared_by}
         </DetailField>
@@ -281,6 +308,9 @@ export function QuotationIssueScreen({
       gateway={gateway}
       mayIssue={access.issue}
       mayReadiness={access.readiness}
+      documentsTo={
+        access.documents ? `/quotations/${revisionId}/document` : undefined
+      }
     />
   );
 }
@@ -290,11 +320,13 @@ function GatedIssue({
   gateway,
   mayIssue,
   mayReadiness,
+  documentsTo,
 }: {
   revisionId: number;
   gateway: QuotationIssueGateway;
   mayIssue: boolean;
   mayReadiness: boolean;
+  documentsTo?: string;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [outcome, setOutcome] = useState<IssueOutcome | null>(null);
@@ -331,9 +363,17 @@ function GatedIssue({
     retry: shouldRetryQuery,
   });
   if (outcome !== null || notDraft) {
-    if (record.data) return <QuotationIssuedView terms={record.data} />;
+    if (record.data)
+      return (
+        <QuotationIssuedView terms={record.data} documentsTo={documentsTo} />
+      );
     if (outcome !== null)
-      return <QuotationIssueOutcomeView outcome={outcome} />;
+      return (
+        <QuotationIssueOutcomeView
+          outcome={outcome}
+          documentsTo={documentsTo}
+        />
+      );
     if (record.isPending) return <Loading />;
     return (
       <p role="status" className="p-4 text-sm">
@@ -388,8 +428,10 @@ function GatedIssue({
 /** What the server confirmed when the quotation was issued. Only fields `IssueQuotation` returns; nothing monetary. */
 export function QuotationIssueOutcomeView({
   outcome,
+  documentsTo,
 }: {
   outcome: IssueOutcome;
+  documentsTo?: string;
 }) {
   return (
     <DetailPageLayout>
@@ -403,6 +445,16 @@ export function QuotationIssueOutcomeView({
         <DetailField label="Issued at">
           {formatDateTime(outcome.issued_at)}
         </DetailField>
+        {documentsTo && (
+          <div className="col-span-full">
+            <Link
+              className="ui-link-action inline-flex min-h-11 items-center"
+              to={documentsTo}
+            >
+              Official PDF and delivery
+            </Link>
+          </div>
+        )}
         {outcome.replayed && (
           <p role="note" className="col-span-full text-sm">
             This quotation had already been issued by this request; nothing was

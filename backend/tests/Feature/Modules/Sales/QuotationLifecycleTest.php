@@ -29,6 +29,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
+use Tests\Support\AssertsPopulatedRollbackRefusal;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,7 @@ use Tests\TestCase;
  */
 class QuotationLifecycleTest extends TestCase
 {
+    use AssertsPopulatedRollbackRefusal;
     use BuildsIssuableQuotations;
     use RefreshDatabase;
 
@@ -306,5 +308,12 @@ class QuotationLifecycleTest extends TestCase
         $refuses(fn () => DB::table('quotation_dispositions')->update(['reason' => 'edited']));
         $refuses(fn () => DB::table('quotation_dispositions')->delete());
         $refuses(fn () => DB::statement('TRUNCATE quotation_dispositions'));
+    }
+
+    public function test_populated_disposition_migration_refuses_rollback(): void
+    {
+        $issued = $this->issued();
+        app(WithdrawQuotationOffer::class)($this->manager, $issued->id, 'rollback-proof', 'Synthetic withdrawal');
+        $this->assertPopulatedRollbackRefused('2026_11_02_100000_create_quotation_dispositions.php', ['quotation_dispositions']);
     }
 }

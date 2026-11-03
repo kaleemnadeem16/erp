@@ -60,6 +60,8 @@ export const issuedTermsSchema = z.object({
   pricing_date: z.string(),
   valid_through_local_date: z.string(),
   expires_at: z.string(),
+  /** Derived by the server, never stored: AVAILABLE, EXPIRED, WITHDRAWN or REPLACED. Says nothing about acceptance. */
+  availability: z.string(),
   totals: z
     .object({
       net_total: decimal,
@@ -194,9 +196,62 @@ const KNOWN: Record<string, { group: BlockerGroup; label: string }> = {
     label: "Exchange-rate evidence is missing.",
   },
   TAX_NOT_DETERMINED: { group: "tax", label: "Tax has not been determined." },
+  TAX_ESTIMATE_DATE_REQUIRED: {
+    group: "tax",
+    label: "Set the tax estimate date.",
+  },
+  TAX_JURISDICTION_UNKNOWN: {
+    group: "tax",
+    label: "The tax jurisdiction for this date is not set up.",
+  },
+  TAX_CLASSIFICATION_REQUIRED: {
+    group: "tax",
+    label: "A line has no tax classification declared.",
+  },
+  TAX_NET_UNKNOWN: {
+    group: "tax",
+    label: "Tax cannot be worked out until the line’s net amount is known.",
+  },
+  TAX_CONTEXT_UNKNOWN: {
+    group: "tax",
+    label: "Tax for a line could not be determined.",
+  },
+  TAX_CALCULATION_UNSUPPORTED: {
+    group: "tax",
+    label: "Tax for a line is not supported yet.",
+  },
+  TAX_CONTEXT_NOT_AUTHORISED: {
+    group: "tax",
+    label: "You are not allowed to see the tax evidence for a line.",
+  },
+  TAX_GENERATION_MOVED: {
+    group: "tax",
+    label: "Tax rules changed while checking; check again.",
+  },
   CONTROLS_NOT_CONFIGURED: {
     group: "controls",
     label: "Financial controls have not been configured.",
+  },
+  CONTROLS_NO_MANDATORY_CONTROL: {
+    group: "controls",
+    label: "The financial controls include no mandatory control.",
+  },
+  CONTROLS_NO_LINES: {
+    group: "controls",
+    label: "Financial controls cannot be checked without lines.",
+  },
+  CONTROLS_NET_UNKNOWN: {
+    group: "controls",
+    label:
+      "Financial controls cannot be checked until the line’s net is known.",
+  },
+  CONTROL_FAILED: {
+    group: "controls",
+    label: "A line does not meet a mandatory financial control.",
+  },
+  CONTROL_UNEVALUABLE: {
+    group: "controls",
+    label: "A mandatory financial control cannot be checked for a line.",
   },
 };
 
@@ -259,6 +314,46 @@ export function groupBlockers(blockers: IssueBlocker[]) {
   }).filter((group) => group.items.length > 0);
 }
 
+/** Plain wording and tone for what an issued offer's availability says. Never claims acceptance. */
+export const AVAILABILITY_VIEW: Record<
+  string,
+  {
+    label: string;
+    tone: "success" | "pending" | "danger" | "draft";
+    note: string;
+  }
+> = {
+  AVAILABLE: {
+    label: "Issued",
+    tone: "success",
+    note: "This quotation is issued and open until its expiry date.",
+  },
+  EXPIRED: {
+    label: "Expired",
+    tone: "danger",
+    note: "This quotation has passed its expiry and is no longer an open offer.",
+  },
+  WITHDRAWN: {
+    label: "Withdrawn",
+    tone: "danger",
+    note: "This quotation was withdrawn and is no longer an open offer.",
+  },
+  REPLACED: {
+    label: "Replaced",
+    tone: "pending",
+    note: "A newer revision replaced this quotation.",
+  },
+};
+export function availabilityView(availability: string) {
+  return (
+    AVAILABILITY_VIEW[availability] ?? {
+      label: "Issued",
+      tone: "draft" as const,
+      note: "",
+    }
+  );
+}
+
 export const ISSUE_REFUSALS: Record<string, string> = {
   QUOTATION_DRAFT_STALE:
     "The draft changed since you reviewed it. Check readiness again before issuing.",
@@ -300,6 +395,7 @@ export function mockIssuedTerms(
     pricing_date: "2026-10-27",
     valid_through_local_date: "2026-11-30",
     expires_at: "2026-12-01T00:00:00Z",
+    availability: "AVAILABLE",
     totals: {
       net_total: "1000.00",
       optional_net_total: null,

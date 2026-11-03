@@ -9,6 +9,7 @@ use App\Modules\Sales\Models\QuotationIssue;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
+use App\Modules\Sales\Support\Quotation\QuotationAvailability;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -24,7 +25,7 @@ use Throwable;
  */
 final class ReadIssuedQuotation
 {
-    /** @return array{revision_id: int, family_id: int, official_number: string, issued_at: string, prepared_by: int, issued_by: int, currency_id: int, pricing_date: string, valid_through_local_date: string, expires_at: string, totals: array{net_total: string, optional_net_total: string|null, tax_total: string|null, gross_total: string|null}|null} */
+    /** @return array{revision_id: int, family_id: int, official_number: string, issued_at: string, prepared_by: int, issued_by: int, currency_id: int, pricing_date: string, valid_through_local_date: string, expires_at: string, availability: string, totals: array{net_total: string, optional_net_total: string|null, tax_total: string|null, gross_total: string|null}|null} */
     public function __invoke(User $actor, int $revisionId): array
     {
         return DB::transaction(function () use ($actor, $revisionId): array {
@@ -46,6 +47,8 @@ final class ReadIssuedQuotation
                 'pricing_date' => $issue->pricing_date->format('Y-m-d'),
                 'valid_through_local_date' => $issue->valid_through_local_date->format('Y-m-d'),
                 'expires_at' => $issue->expires_at->toIso8601String(),
+                // Derived, never stored: AVAILABLE, EXPIRED (database clock), WITHDRAWN or REPLACED. Says nothing about acceptance.
+                'availability' => QuotationAvailability::of($revision),
                 'totals' => $figures ? [
                     'net_total' => (string) $issue->net_total,
                     'optional_net_total' => $issue->optional_net_total === null ? null : (string) $issue->optional_net_total,

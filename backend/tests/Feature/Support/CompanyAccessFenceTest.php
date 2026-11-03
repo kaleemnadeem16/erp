@@ -53,6 +53,33 @@ class CompanyAccessFenceTest extends TestCase
         app(CompanyAccessFence::class)->lock();
     }
 
+    public function test_protected_operations_bound_waits_without_extending_stricter_callers_or_leaking_settings(): void
+    {
+        $before = DB::selectOne("SELECT current_setting('lock_timeout') AS lock_wait, current_setting('statement_timeout') AS statement_wait");
+        DB::transaction(function (): void {
+            app(CompanyAccessFence::class)->lockAll();
+            $this->assertSame('1s', DB::selectOne('SHOW lock_timeout')->lock_timeout);
+            $this->assertSame('30s', DB::selectOne('SHOW statement_timeout')->statement_timeout);
+        });
+        $this->assertEquals($before, DB::selectOne("SELECT current_setting('lock_timeout') AS lock_wait, current_setting('statement_timeout') AS statement_wait"));
+        $this->expectException(QueryException::class);
+        DB::transaction(function (): void {
+            DB::statement("SET LOCAL lock_timeout = '100ms'");
+            DB::statement("SET LOCAL statement_timeout = '500ms'");
+            app(CompanyAccessFence::class)->lock();
+            $this->assertSame('100ms', DB::selectOne('SHOW lock_timeout')->lock_timeout);
+            $this->assertSame('500ms', DB::selectOne('SHOW statement_timeout')->statement_timeout);
+            try {
+                DB::select('SELECT pg_sleep(1)');
+                $this->fail('The protected statement must be cancelled.');
+            } catch (QueryException $exception) {
+                $this->assertSame('57014', $exception->errorInfo[0]);
+                // A cancelled statement aborts the transaction. Let the outer wrapper roll it back.
+                throw $exception;
+            }
+        });
+    }
+
     public function test_populated_barrier_refuses_downgrade_before_dropping_triggers(): void
     {
         User::factory()->create();
@@ -64,6 +91,26 @@ class CompanyAccessFenceTest extends TestCase
             $this->assertStringContainsString('requires a separately approved backout', $exception->getMessage());
         }
         $this->assertSame(1, DB::table('pg_trigger')->where('tgname', 'company_access_security_barrier')->whereRaw("tgrelid = 'users'::regclass")->count());
+    }
+
+    public function test_raw_writer_with_no_session_lock_timeout_is_still_bounded_by_the_trigger(): void
+    {
+        $config = config('database.connections.testing');
+        $other = new PDO("pgsql:host={$config['host']};port={$config['port']};dbname={$config['database']}", $config['username'], $config['password']);
+        $other->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $other->exec("SET statement_timeout = '5s'");
+        DB::beginTransaction();
+        try {
+            app(CompanyAccessFence::class)->lock();
+            try {
+                $other->exec('UPDATE quotation_families SET access_unit_id = NULL WHERE id = -1');
+                $this->fail('The raw writer must not pass an open protected read.');
+            } catch (PDOException $exception) {
+                $this->assertSame('55P03', $exception->getCode(), 'the trigger lock timeout, not the longer statement timeout, cancels the wait');
+            }
+        } finally {
+            DB::rollBack();
+        }
     }
 
     public function test_raw_security_writers_use_the_barrier_and_advance_epochs_atomically(): void

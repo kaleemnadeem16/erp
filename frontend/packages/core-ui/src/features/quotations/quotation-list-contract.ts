@@ -35,6 +35,10 @@ export const summarySchema = z.object({
   created_at: z.string().nullable(),
   // Added on the integration baseline: safe header facts the detail contract already shows the same view holder.
   valid_through_local_date: z.string().nullable(),
+  /** Present once issued. */
+  official_number: z.string().nullable(),
+  /** Derived by the server: DRAFT, CANCELLED_DRAFT, AVAILABLE, EXPIRED, WITHDRAWN, REPLACED. */
+  availability: z.string(),
   responsible_owner_id: id.nullable(),
 });
 const pageLink = z.string().nullable();
@@ -121,6 +125,8 @@ export function mockSummary(
     currency_id: 3,
     created_at: "2026-10-27T09:30:00Z",
     valid_through_local_date: "2026-11-30",
+    official_number: null,
+    availability: "DRAFT",
     responsible_owner_id: 7,
     ...overrides,
   };
@@ -129,8 +135,17 @@ export function mockSummary(
 export function mockListGateway(
   rows: QuotationSummary[] = [
     mockSummary(1),
-    mockSummary(2, { state: "ISSUED", revision_ordinal: 2 }),
-    mockSummary(3, { state: "CANCELLED_DRAFT", recipient_party_id: null }),
+    mockSummary(2, {
+      state: "ISSUED",
+      revision_ordinal: 2,
+      official_number: "QUO-2026-0007",
+      availability: "AVAILABLE",
+    }),
+    mockSummary(3, {
+      state: "CANCELLED_DRAFT",
+      availability: "CANCELLED_DRAFT",
+      recipient_party_id: null,
+    }),
   ],
 ): QuotationListGateway {
   return async (params) => {
