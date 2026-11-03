@@ -261,6 +261,8 @@ class SalesDutyRegistrationTest extends TestCase
         $adapters = [
             'api/v1/quotations/{revision}' => ['GET', 'HEAD', 'PATCH'],
             'api/v1/quotations/{revision}/editable' => ['GET', 'HEAD'],
+            // Seller declaration history: exact view + prepare, default-deny; QuotationTaxDeclarationTest.
+            'api/v1/quotations/{revision}/tax-declarations' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/preview' => ['GET', 'HEAD'],
             // QL3 issue surface (default-deny, STAGED prepare/issue/view): QuotationIssueApiTest.
             'api/v1/quotations/{revision}/issue-readiness' => ['GET', 'HEAD'],
