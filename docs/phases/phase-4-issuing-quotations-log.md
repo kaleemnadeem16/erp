@@ -23,3 +23,12 @@ Changes (all additive, read-only):
 - Generated client regenerated (`quotationIssuedResource`, `quotationSummaryResource`, one new model file).
 
 Decision: withdraw/replace have Actions (QL4/QL5) but **no HTTP routes or screens** and are not part of this milestone's accepted scope; listed under remaining work (needs a route + duty review). QL6 revision history and B5 customer acceptance are out of scope.
+
+## Slice 3/4 — frontend completion and list integration (behind the existing gate)
+- `quotation-issue-contract.ts`: plain-language wording for **every** code the backend emits (tax FR3 and controls FR4 codes had only a generic by-scope fallback); `availability` in the issued schema (required) with `AVAILABILITY_VIEW` (Issued / Expired / Withdrawn / Replaced badge + note; never says "accepted").
+- `quotation-issue-screen.tsx`: issued view shows the availability badge/note and a link "Official PDF and delivery" **only** when the person holds document access; the post-issue confirmation carries the same link. Double-submit/retry safety was already built (IntentKey per revision+generation, dialog button disabled while pending) and is covered by existing specs.
+- `quotation-list-*`: official number column, status shows Issued/Expired/Withdrawn/Replaced for issued rows (drafts keep their wording), valid-through column kept, state filter (Draft/Cancelled/Issued) kept.
+- `quotation-detail-screen.tsx`: "Issue readiness" and "Official PDF" links, shown only for people whose duties allow those screens (the screens still deny on their own).
+- Shared file, small: `components/ui/dialog.tsx` — the Close (X) control was a 16px hit area on every dialog; now a 44px box with the icon in the same place (found by the 390px check, fixed once at the shared level).
+- Tests: `quotation-issue-lifecycle.unit.spec.ts` (all emitted blocker codes labelled, availability states, PDF link gating, totals hidden for non-commercial viewers, list columns) and `quotation-issue-phone.unit.spec.ts` (390px no horizontal overflow and ≥44px targets for readiness, confirm dialog, issued record in four availabilities, with the compiled app CSS). Whole `--project=unit` suite: 107 passed.
+- Note on "generated hooks only": the issue/list/document screens call the generated client through the existing *gateway* seam (generated functions, responses parsed by zod) so tests can script them; I followed that established pattern rather than rewriting it onto hooks.
