@@ -2,7 +2,7 @@
 
 # 0129 — Demo and sandbox data live in a separate demo deployment
 
-- **Status:** accepted (the separate deployment is **deferred** until the product nears completion; the interim rule applies now)
+- **Status:** accepted; interim create-only seeding and shared-password rules superseded by [0154](0154-quotation-demo-access-and-activation-boundaries.md) (new parameterised create-only seeders may run on the VM demo Company 1; old overwriting seeders remain prohibited). Original decision: (the separate deployment is **deferred** until the product nears completion; the interim rule applies now)
 - **Date:** 2026-10-14
 - **Affects:** `backend/database/seeders/Demo/`, `demo:seed`, [environments.md](../architecture/environments.md), [deployment.md](../architecture/deployment.md), [multi-tenancy.md](../architecture/multi-tenancy.md)
 

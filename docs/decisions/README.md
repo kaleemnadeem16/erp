@@ -143,7 +143,7 @@ in the same commit.
 | [0126](0126-conserve-acceptance-entitlements-and-allocation-evidence.md) | Conserve acceptance entitlements and allocation evidence | accepted | 2026-10-14 |
 | [0127](0127-record-customer-decision-evidence-and-atomic-business-claims.md) | Record customer decision evidence and atomic business claims | accepted | 2026-10-14 |
 | [0128](0128-observe-with-the-existing-grafana-loki-stack.md) | Observe the ERP with the existing Prometheus, Loki and Grafana stack | accepted | 2026-10-14 |
-| [0129](0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md) | Demo and sandbox data live in a separate demo deployment (deferred) | accepted | 2026-10-14 |
+| [0129](0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md) | Demo and sandbox data live in a separate demo deployment (deferred) | accepted; interim create-only seeding/password rules superseded by 0154 | 2026-10-14 |
 | [0130](0130-back-up-locally-first-through-a-read-only-role-with-pluggable-off-site-copies.md) | Back up locally first, through a read-only role, with pluggable off-site copies | accepted | 2026-10-14 |
 | [0131](0131-preserve-operational-baselines-and-handover-identity.md) | Preserve operational baselines and handover identity | accepted | 2026-10-14 |
 | [0132](0132-govern-bounded-accepted-business-reductions-and-claim-release.md) | Govern bounded accepted-business reductions and claim release | accepted | 2026-10-14 |
@@ -169,7 +169,9 @@ in the same commit.
 | [0152](0152-own-job-document-content-and-reuse-shared-formal-output.md) | Own Job document content and reuse shared formal output | accepted | 2026-10-16 |
 | [0153](0153-own-shared-file-storage-in-a-dedicated-files-module.md) | Own shared file storage in a dedicated Files module | proposed (owner acceptance pending); supersedes 0137 for shared blob/storage ownership only | 2026-10-27 |
 
-**Next number: 0154**
+| [0154](0154-quotation-demo-access-and-activation-boundaries.md) | Bound quotation demo access and preserve activation gates | accepted; implementation incomplete; partly supersedes 0129 | 2026-11-03 |
+
+**Next number: 0155**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
