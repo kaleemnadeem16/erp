@@ -64,12 +64,17 @@ modification was performed.** An owner question requests permission for coordina
 recovery with the exclusive stack lock and sufficient capacity. Do not run a wrapper that starts
 postgres-test until that approval or infrastructure-owner recovery is confirmed.
 
-The synthetic access-operator persona is approved. A second question asks how to create its first
-staged grant: unchanged SaveRole/SyncMemberAccess forbid granting what the grantor does not hold,
-and no existing persona holds the new staged management duties. Proposed resolution is an explicit,
-operator-only, create-once demo bootstrap Action with exact allowed duties/provenance, followed by
-unchanged administration Actions for personas/presets. That exception is **not yet approved**.
-Do not weaken guards, fake actor permissions or silently use raw pivot rows.
+The synthetic access-operator bootstrap is now **approved with conditions** in
+[0155](../decisions/0155-bootstrap-only-the-synthetic-demo-access-operator.md). Implement only the
+exact synthetic Company 1 target and approved staged assignment/share set, transactionally,
+idempotently and auditable, unavailable in production. After success refuse added/altered grants.
+No public route/UI, broad grant, issue/repair or permission activation. Ordinary access flows and
+guards remain unchanged. Submit implementation for exact-SHA review and CI **before merging**;
+this replaces the previous pending first-holder question. Sharing consumers are not delivered yet:
+do not bootstrap an incomplete set now and silently expand it later.
+
+Owner asked to check whether the test service recovered. It was checked again and still reports
+Exited (1); no restart was performed. Explicit test-service recovery approval is pending again.
 
 ## Continue in order
 
@@ -85,7 +90,7 @@ Do not weaken guards, fake actor permissions or silently use raw pivot rows.
    append-only shares/revocations, real Actions, owner transfer and permission-aware UI with
    non-disclosing errors. Published pricing UI dependency is now satisfied. Preserve the existing
    gate, unrelated CRM semantics, issue/repair separation and independent view + prepare authority.
-6. Implement approved demo extension after first-holder resolution, using ADR 0154 and the
+6. Implement approved demo extension under the approved first-holder conditions, using ADR 0154 and the
    persona/preset contract: exact guards, shared role definitions, real Actions/scenarios, create-only
    reruns, no issue/repair and no real-holder production activation. Complete exact-head CI.
 

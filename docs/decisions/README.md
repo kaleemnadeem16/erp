@@ -171,7 +171,9 @@ in the same commit.
 
 | [0154](0154-quotation-demo-access-and-activation-boundaries.md) | Bound quotation demo access and preserve activation gates | accepted; implementation incomplete; partly supersedes 0129 | 2026-11-03 |
 
-**Next number: 0155**
+| [0155](0155-bootstrap-only-the-synthetic-demo-access-operator.md) | Bootstrap only the synthetic demo access operator | accepted; exact-SHA review and CI required before integration | 2026-11-03 |
+
+**Next number: 0156**
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

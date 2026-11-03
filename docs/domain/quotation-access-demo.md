@@ -42,8 +42,7 @@ settings-overwriting seeders on the VM.
 
 The additional operator is needed because none of the existing personas administers access and
 main-user self access editing is forbidden. Its creation is owner-approved; its first-holder
-bootstrap mechanism remains an explicit unresolved implementation boundary. It must never be
-implemented by weakening `SaveRole`, `SyncMemberAccess` or `AccessAssignmentGuard`.
+bootstrap is now approved only under [0155](../decisions/0155-bootstrap-only-the-synthetic-demo-access-operator.md): exact identity/company, non-production, immutable approved staged grant set, transactional/idempotent audit, and exact-SHA review/CI before merging. Implementation is outstanding. It must never weaken `SaveRole`, `SyncMemberAccess` or `AccessAssignmentGuard`.
 
 ## Accepted main-user presets
 
