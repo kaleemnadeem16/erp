@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 173 schemas that export a runtime value use `export *`.
+ * only the 176 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1668,9 +1668,14 @@ export type * from "./quotationDocumentStatusResourceErrorCode";
 export type * from "./quotationDraftEditableResource";
 export type * from "./quotationDraftEditableResourceCurrentOpportunityId";
 export type * from "./quotationDraftEditableResourceLinesItem";
+export type * from "./quotationDraftEditableResourceLinesItemApprovalReason";
 export type * from "./quotationDraftEditableResourceLinesItemChoiceGroupRef";
+export type * from "./quotationDraftEditableResourceLinesItemDiscount";
+export type * from "./quotationDraftEditableResourceLinesItemDiscountAnyOf";
 export type * from "./quotationDraftEditableResourceLinesItemItemId";
 export type * from "./quotationDraftEditableResourceLinesItemManualMeasure";
+export type * from "./quotationDraftEditableResourceLinesItemNetOverride";
+export type * from "./quotationDraftEditableResourceLinesItemNetOverrideAnyOf";
 export type * from "./quotationDraftEditableResourceLinesItemOfferedUomId";
 export type * from "./quotationDraftEditableResourceLinesItemSectionTitle";
 export type * from "./quotationDraftEditableResourceLinesItemUnitPrice";
@@ -2628,14 +2633,26 @@ export type * from "./updatePurchasingSettingsRequest";
 export type * from "./updateQuotationDraftRequest";
 export type * from "./updateQuotationDraftRequestAddLinesItem";
 export type * from "./updateQuotationDraftRequestAddLinesItemChoiceGroupRef";
+export type * from "./updateQuotationDraftRequestAddLinesItemDiscount";
+export type * from "./updateQuotationDraftRequestAddLinesItemDiscountAnyOf";
+export * from "./updateQuotationDraftRequestAddLinesItemDiscountAnyOfKind";
+export type * from "./updateQuotationDraftRequestAddLinesItemNetOverride";
+export type * from "./updateQuotationDraftRequestAddLinesItemNetOverrideAnyOf";
 export type * from "./updateQuotationDraftRequestAddLinesItemOfferedUomId";
 export type * from "./updateQuotationDraftRequestAddLinesItemSectionTitle";
 export type * from "./updateQuotationDraftRequestAddLinesItemUnitPrice";
+export type * from "./updateQuotationDraftRequestDocumentDiscount";
+export * from "./updateQuotationDraftRequestDocumentDiscountKind";
 export type * from "./updateQuotationDraftRequestPricingDate";
 export type * from "./updateQuotationDraftRequestRecipientPartyId";
 export type * from "./updateQuotationDraftRequestTaxEstimateDate";
 export type * from "./updateQuotationDraftRequestUpdateLinesItem";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemChoiceGroupRef";
+export type * from "./updateQuotationDraftRequestUpdateLinesItemDiscount";
+export type * from "./updateQuotationDraftRequestUpdateLinesItemDiscountAnyOf";
+export * from "./updateQuotationDraftRequestUpdateLinesItemDiscountAnyOfKind";
+export type * from "./updateQuotationDraftRequestUpdateLinesItemNetOverride";
+export type * from "./updateQuotationDraftRequestUpdateLinesItemNetOverrideAnyOf";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemOfferedUomId";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemSectionTitle";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemUnitPrice";

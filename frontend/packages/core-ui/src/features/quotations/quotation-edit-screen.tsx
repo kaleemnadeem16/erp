@@ -30,7 +30,7 @@ import {
   isTransientFailure,
   lookupState,
 } from "../../lib/api-errors";
-import { quotationAccess } from "./quotation-access";
+import { quotationAccess, quotationConcessionAccess } from "./quotation-access";
 import { revisionId } from "./quotation-contract";
 import { QuotationFailure } from "./quotation-display";
 import {
@@ -39,6 +39,7 @@ import {
   newAttemptKey,
   readEditable,
   valuesFromEditable,
+  type DocumentDiscount,
   type DraftValues,
   type Editable,
   type EditableLine,
@@ -72,6 +73,15 @@ export function QuotationEditScreen() {
 export function QuotationEditForm({ id }: { id: number }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  // Which concession controls to offer; the server judges the same duties on every write, so this only avoids offering what would be refused.
+  const concessions = quotationConcessionAccess(
+    new Set(
+      (user?.permissions ?? []).filter(
+        (x): x is string => typeof x === "string",
+      ),
+    ),
+  );
   const key = `quotation-edit-${id}`;
   const [stored] = useState(() => readDraft<Stored>(key)?.value);
   const [baseline, setBaseline] = useState<Editable | null>(
@@ -319,7 +329,7 @@ export function QuotationEditForm({ id }: { id: number }) {
               The last save may have completed. Retry its exact saved input and
               key.
             </p>
-            <Button
+            <Button className="min-h-11"
               type="button"
               disabled={busy}
               onClick={() => void submit(pending)}
@@ -366,7 +376,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                 </li>
               ))}
             </ul>
-            <Button
+            <Button className="min-h-11"
               type="button"
               variant="outline"
               disabled={!fresh || query.isFetching}
@@ -407,7 +417,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                 }
               />
               {values.header.recipient_party_id && (
-                <Button
+                <Button className="min-h-11"
                   type="button"
                   variant="ghost"
                   onClick={() =>
@@ -470,6 +480,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                 <LineEditor
                   key={line.id}
                   line={line}
+                  concessions={concessions}
                   onChange={(next) =>
                     update({
                       ...values,
@@ -491,6 +502,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                 <LineEditor
                   key={line.client_id}
                   line={line}
+                  concessions={concessions}
                   onChange={(next) =>
                     update({
                       ...values,
@@ -515,7 +527,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                     Line marked for removal:{" "}
                     {baseline.lines.find((x) => x.id === lineId)?.description}
                   </span>
-                  <Button
+                  <Button className="min-h-11"
                     type="button"
                     variant="outline"
                     onClick={() => {
@@ -535,7 +547,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                 </div>
               ))}
               <div className="flex flex-wrap gap-3">
-                <Button
+                <Button className="min-h-11"
                   type="button"
                   variant="outline"
                   onClick={() =>
@@ -560,7 +572,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                 >
                   Add manual line
                 </Button>
-                <Button
+                <Button className="min-h-11"
                   type="button"
                   variant="outline"
                   onClick={() =>
@@ -587,6 +599,11 @@ export function QuotationEditForm({ id }: { id: number }) {
               </div>
             </div>
           </DetailSection>
+          <DocumentDiscountSection
+            value={values.document_discount}
+            canEdit={concessions.discount}
+            onChange={(next) => update({ ...values, document_discount: next })}
+          />
           {review && changes && (
             <DetailSection title="Review changes">
               <div className="col-span-full space-y-3">
@@ -611,6 +628,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                             pricing_date: "pricing date",
                             tax_estimate_date: "tax estimate date",
                             valid_through_local_date: "valid through",
+                            document_discount: "document discount",
                           }) as Record<string, string>
                         )[k] ?? k,
                     )
@@ -653,7 +671,7 @@ export function QuotationEditForm({ id }: { id: number }) {
                     </li>
                   ))}
                 </ul>
-                <Button
+                <Button className="min-h-11"
                   type="button"
                   disabled={busy}
                   onClick={() =>
@@ -670,7 +688,7 @@ export function QuotationEditForm({ id }: { id: number }) {
               </div>
             </DetailSection>
           )}
-          <Button type="button" variant="outline" onClick={startReview}>
+          <Button className="min-h-11" type="button" variant="outline" onClick={startReview}>
             Review changes
           </Button>
         </>
@@ -682,10 +700,12 @@ export function QuotationEditForm({ id }: { id: number }) {
 type Line = EditableLine | NewLine;
 function LineEditor({
   line,
+  concessions,
   onChange,
   onRemove,
 }: {
   line: Line;
+  concessions: { discount: boolean; override: boolean };
   onChange: (value: Line) => void;
   onRemove: () => void;
 }) {
@@ -718,7 +738,7 @@ function LineEditor({
       )}
       <div className="space-y-2">
         <Label htmlFor={`description-${key}`}>Description</Label>
-        <Input
+        <Input className="min-h-11"
           id={`description-${key}`}
           value={line.description ?? ""}
           onChange={(e) => set({ description: e.target.value })}
@@ -727,7 +747,7 @@ function LineEditor({
       {line.source_kind === "MANUAL" && (
         <div className="space-y-2">
           <Label htmlFor={`measure-${key}`}>Measure</Label>
-          <Input
+          <Input className="min-h-11"
             id={`measure-${key}`}
             value={line.manual_measure ?? ""}
             maxLength={100}
@@ -740,6 +760,7 @@ function LineEditor({
           <Label htmlFor={`quantity-${key}`}>Quantity</Label>
           <DecimalInput
             id={`quantity-${key}`}
+            className="min-h-11"
             value={line.offered_quantity}
             rule={{ spec: "stockLedger", sign: "positive" }}
             onChange={(value) => set({ offered_quantity: value })}
@@ -749,6 +770,7 @@ function LineEditor({
           <Label htmlFor={`price-${key}`}>Unit price (optional)</Label>
           <DecimalInput
             id={`price-${key}`}
+            className="min-h-11"
             value={line.unit_price ?? ""}
             rule={{ spec: "money", sign: "nonNegative" }}
             onChange={(value) => set({ unit_price: value || null })}
@@ -757,7 +779,7 @@ function LineEditor({
       </div>
       <div className="space-y-2">
         <Label htmlFor={`section-${key}`}>Section title (optional)</Label>
-        <Input
+        <Input className="min-h-11"
           id={`section-${key}`}
           maxLength={200}
           value={line.section_title ?? ""}
@@ -767,7 +789,7 @@ function LineEditor({
       {"client_id" in line && (
         <div className="space-y-2">
           <Label htmlFor={`scope-${key}`}>Scope reference (optional)</Label>
-          <Input
+          <Input className="min-h-11"
             id={`scope-${key}`}
             maxLength={80}
             value={line.scope_ref ?? ""}
@@ -777,7 +799,7 @@ function LineEditor({
       )}
       <div className="space-y-2">
         <Label htmlFor={`order-${key}`}>Sort order (optional)</Label>
-        <Input
+        <Input className="min-h-11"
           id={`order-${key}`}
           type="number"
           min="0"
@@ -795,11 +817,17 @@ function LineEditor({
           }
         />
       </div>
+      <ConcessionFields
+        id={key}
+        line={line}
+        concessions={concessions}
+        onChange={(patch) => set(patch as Partial<Line>)}
+      />
       <div className="space-y-2">
         <Label htmlFor={`membership-${key}`}>Offer membership</Label>
         <select
           id={`membership-${key}`}
-          className="h-10 w-full rounded-md border bg-background px-3"
+          className="min-h-11 w-full rounded-md border bg-background px-3"
           value={line.membership ?? "BASE"}
           onChange={(e) => {
             const membership = e.target.value as
@@ -821,7 +849,7 @@ function LineEditor({
         <>
           <div className="space-y-2">
             <Label htmlFor={`group-${key}`}>Choice group reference</Label>
-            <Input
+            <Input className="min-h-11"
               id={`group-${key}`}
               maxLength={80}
               value={line.choice_group_ref ?? ""}
@@ -838,9 +866,266 @@ function LineEditor({
           </label>
         </>
       )}
-      <Button type="button" variant="outline" onClick={onRemove}>
+      <Button className="min-h-11" type="button" variant="outline" onClick={onRemove}>
         Remove line
       </Button>
     </fieldset>
+  );
+}
+
+const kindLabels = {
+  PERCENT: "Percent of the line",
+  PER_PRICED_UNIT: "Amount per unit",
+  PER_LINE: "Amount off the line",
+} as const;
+type LineKind = keyof typeof kindLabels;
+
+/**
+ * The discount and the reasoned final-net override of one line. Each control is offered only to the person who holds its duty; anyone else sees what was entered, read-only,
+ * and the code that says approval would be needed (never a limit). The server calculates every amount; nothing is computed here.
+ */
+export function ConcessionFields({
+  id,
+  line,
+  concessions,
+  onChange,
+}: {
+  id: string;
+  line: Line;
+  concessions: { discount: boolean; override: boolean };
+  onChange: (patch: Record<string, unknown>) => void;
+}) {
+  const discount = (line.discount ?? null) as {
+    kind: LineKind;
+    value: string;
+  } | null;
+  const override = (line.net_override ?? null) as {
+    amount: string;
+    reason: string;
+  } | null;
+  const entered = discount !== null || override !== null;
+  if (!entered && !concessions.discount && !concessions.override) return null;
+  return (
+    <div
+      className="space-y-3 rounded-md border border-dashed p-3"
+      role="group"
+      aria-label="Discount and override"
+    >
+      {"approval_reason" in line && line.approval_reason && (
+        <p role="status" className="text-sm">
+          Approval would be needed: {approvalText(line.approval_reason)}
+        </p>
+      )}
+      {discount && !concessions.discount && (
+        <p className="text-sm">
+          Discount entered: {kindLabels[discount.kind]} {discount.value}
+        </p>
+      )}
+      {override && !concessions.override && (
+        <p className="text-sm">
+          Final-net override entered: {override.amount} ({override.reason})
+        </p>
+      )}
+      {concessions.discount && override === null && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={`discount-kind-${id}`}>Discount type</Label>
+            <select
+              id={`discount-kind-${id}`}
+              className="min-h-11 w-full rounded-md border bg-background px-3"
+              value={discount?.kind ?? ""}
+              onChange={(e) =>
+                onChange({
+                  discount: e.target.value
+                    ? {
+                        kind: e.target.value as LineKind,
+                        value: discount?.value ?? "",
+                      }
+                    : null,
+                })
+              }
+            >
+              <option value="">No discount</option>
+              {(Object.keys(kindLabels) as LineKind[]).map((kind) => (
+                <option key={kind} value={kind}>
+                  {kindLabels[kind]}
+                </option>
+              ))}
+            </select>
+          </div>
+          {discount && (
+            <div className="space-y-2">
+              <Label htmlFor={`discount-value-${id}`}>
+                {discount.kind === "PERCENT" ? "Discount percent" : "Discount amount"}
+              </Label>
+              <DecimalInput
+                id={`discount-value-${id}`}
+                className="min-h-11"
+                value={discount.value}
+                rule={{
+                  spec:
+                    discount.kind === "PERCENT"
+                      ? { scale: 4, maxInteger: 3 }
+                      : "money",
+                  sign: "positive",
+                }}
+                onChange={(value) =>
+                  onChange({ discount: { kind: discount.kind, value } })
+                }
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {concessions.override && discount === null && (
+        <div className="space-y-2">
+          <p className="text-sm text-muted-foreground">
+            A final-net override replaces the calculated net for this line (it
+            can only lower it) and always needs approval.
+          </p>
+          {override === null ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() =>
+                onChange({ net_override: { amount: "", reason: "" } })
+              }
+            >
+              Override line net
+            </Button>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor={`override-amount-${id}`}>Final net for the line</Label>
+                <DecimalInput
+                  id={`override-amount-${id}`}
+                  className="min-h-11"
+                  value={override.amount}
+                  rule={{ spec: "money", sign: "nonNegative" }}
+                  onChange={(amount) =>
+                    onChange({ net_override: { amount, reason: override.reason } })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor={`override-reason-${id}`}>Reason</Label>
+                <Input
+                  id={`override-reason-${id}`}
+                  className="min-h-11"
+                  maxLength={500}
+                  value={override.reason}
+                  onChange={(e) =>
+                    onChange({
+                      net_override: {
+                        amount: override.amount,
+                        reason: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="min-h-11"
+                onClick={() => onChange({ net_override: null })}
+              >
+                Remove override
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function approvalText(reason: string): string {
+  return (
+    (
+      {
+        PRICE_OVERRIDE: "a final-net override is always reviewed.",
+        DISCOUNT_ABOVE_LIMIT: "the discount is above the configured limit.",
+        DISCOUNT_LIMIT_NOT_CONFIGURED: "no discount limit is configured.",
+        DISCOUNT_LIMIT_UNVERIFIED:
+          "the discount could not be checked against a limit yet.",
+      } as Record<string, string>
+    )[reason] ?? "a check needs review."
+  );
+}
+
+/** One discount for the whole quotation, spread over the lines that count towards the total by the server. */
+export function DocumentDiscountSection({
+  value,
+  canEdit,
+  onChange,
+}: {
+  value: DocumentDiscount | null;
+  canEdit: boolean;
+  onChange: (next: DocumentDiscount | null) => void;
+}) {
+  if (!value && !canEdit) return null;
+  return (
+    <DetailSection
+      title="Document discount"
+      description="One discount for the whole quotation, spread over the counted lines by the server."
+    >
+      {value?.approval_reason && (
+        <p role="status" className="col-span-full text-sm">
+          Approval would be needed: {approvalText(value.approval_reason)}
+        </p>
+      )}
+      {!canEdit && value ? (
+        <p className="col-span-full text-sm">
+          {value.kind === "PERCENT" ? `${value.value} percent` : `Amount ${value.value}`}
+        </p>
+      ) : (
+        <div className="col-span-full grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor="document-discount-kind">Discount type</Label>
+            <select
+              id="document-discount-kind"
+              className="min-h-11 w-full rounded-md border bg-background px-3"
+              value={value?.kind ?? ""}
+              onChange={(e) =>
+                onChange(
+                  e.target.value
+                    ? {
+                        kind: e.target.value as "PERCENT" | "AMOUNT",
+                        value: value?.value ?? "",
+                      }
+                    : null,
+                )
+              }
+            >
+              <option value="">No document discount</option>
+              <option value="PERCENT">Percent of the counted lines</option>
+              <option value="AMOUNT">Amount off the counted lines</option>
+            </select>
+          </div>
+          {value && (
+            <div className="space-y-2">
+              <Label htmlFor="document-discount-value">
+                {value.kind === "PERCENT" ? "Discount percent" : "Discount amount"}
+              </Label>
+              <DecimalInput
+                id="document-discount-value"
+                className="min-h-11"
+                value={value.value}
+                rule={{
+                  spec:
+                    value.kind === "PERCENT"
+                      ? { scale: 4, maxInteger: 3 }
+                      : "money",
+                  sign: "positive",
+                }}
+                onChange={(next) => onChange({ kind: value.kind, value: next })}
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </DetailSection>
   );
 }

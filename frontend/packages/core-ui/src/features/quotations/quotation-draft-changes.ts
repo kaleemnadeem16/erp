@@ -8,6 +8,20 @@ import type {
 import { z } from "zod";
 
 const id = z.number().int().positive().safe();
+const discount = z.object({
+  kind: z.enum(["PERCENT", "PER_PRICED_UNIT", "PER_LINE"]),
+  value: z.string(),
+});
+const override = z.object({ amount: z.string(), reason: z.string() });
+const documentDiscount = z.object({
+  kind: z.enum(["PERCENT", "AMOUNT"]),
+  value: z.string(),
+  approval_required: z.boolean().optional(),
+  approval_reason: z.string().nullable().optional(),
+});
+export type LineDiscount = z.infer<typeof discount>;
+export type LineOverride = z.infer<typeof override>;
+export type DocumentDiscount = z.infer<typeof documentDiscount>;
 const line = z.object({
   id,
   scope_ref: z.string().min(1).max(80),
@@ -23,6 +37,10 @@ const line = z.object({
   offered_uom_id: id.nullable(),
   unit_price: z.string().nullable(),
   sort_order: z.number().int().nonnegative().safe(),
+  discount: discount.nullable().default(null),
+  net_override: override.nullable().default(null),
+  approval_required: z.boolean().default(false),
+  approval_reason: z.string().nullable().default(null),
 });
 export const editableSchema = z.object({
   revision_id: id,
@@ -35,6 +53,7 @@ export const editableSchema = z.object({
   tax_estimate_date: z.string().nullable(),
   valid_through_local_date: z.string().nullable(),
   current_opportunity_id: id.nullable(),
+  document_discount: documentDiscount.nullable().default(null),
   lines: z.array(line),
 });
 export type Editable = z.infer<typeof editableSchema>;
@@ -54,6 +73,7 @@ export type DraftValues = {
   lines: EditableLine[];
   added: NewLine[];
   removed: number[];
+  document_discount: DocumentDiscount | null;
 };
 
 export function readEditable(value: QuotationDraftEditableResource): Editable {
@@ -71,6 +91,7 @@ export function valuesFromEditable(value: Editable): DraftValues {
     lines: value.lines.map((x) => ({ ...x })),
     added: [],
     removed: [],
+    document_discount: value.document_discount,
   };
 }
 const headerFields = [
@@ -118,6 +139,10 @@ export function buildChanges(
     const update: Record<string, unknown> = { id: current.id };
     for (const key of lineFields)
       if (current[key] !== prior[key]) update[key] = current[key];
+    // Concessions are objects: compare by content, and send null to remove one.
+    for (const key of ["discount", "net_override"] as const)
+      if (JSON.stringify(current[key]) !== JSON.stringify(prior[key]))
+        update[key] = current[key];
     if (Object.keys(update).length > 1)
       updates.push(update as UpdateQuotationDraftRequestUpdateLinesItem);
   }
@@ -126,6 +151,27 @@ export function buildChanges(
     values.lines.length + removed.size !== base.lines.length
   )
     throw new Error("Invalid line set.");
+  const sameDocument =
+    JSON.stringify(
+      values.document_discount && {
+        kind: values.document_discount.kind,
+        value: values.document_discount.value,
+      },
+    ) ===
+    JSON.stringify(
+      base.document_discount && {
+        kind: base.document_discount.kind,
+        value: base.document_discount.value,
+      },
+    );
+  if (!sameDocument)
+    Object.assign(result, {
+      document_discount:
+        values.document_discount && {
+          kind: values.document_discount.kind,
+          value: values.document_discount.value,
+        },
+    });
   if (updates.length) result.update_lines = updates;
   if (values.removed.length) result.remove_lines = values.removed;
   if (values.added.length)

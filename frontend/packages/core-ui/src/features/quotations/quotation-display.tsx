@@ -47,6 +47,27 @@ const REASON_LABELS: Record<string, string> = {
   PRICING_RULE_CONFLICT: "Conflicting pricing rules need review.",
   PARTY_NOT_FOUND: "The recipient is unavailable or archived.",
   INVALID_INPUT: "The quotation inputs need correction.",
+  APPROVAL_REQUIRED:
+    "A discount or override needs approval before this can be issued.",
+  PRICE_OVERRIDE: "A final-net override always needs approval.",
+  DISCOUNT_ABOVE_LIMIT: "The discount is above the configured limit.",
+  DISCOUNT_LIMIT_NOT_CONFIGURED:
+    "No discount limit is configured, so the discount is not proven within one.",
+  DISCOUNT_LIMIT_UNVERIFIED:
+    "The discount could not be checked against a limit yet.",
+  DISCOUNT_EXCEEDS_BASE: "A discount cannot be larger than the amount it reduces.",
+  DOCUMENT_DISCOUNT_PENDING:
+    "The document discount is spread once every counted line has a net.",
+  TAX_ESTIMATE_DATE_REQUIRED: "Set a tax estimate date to determine tax.",
+  TAX_JURISDICTION_UNKNOWN:
+    "No tax jurisdiction is established for the tax estimate date.",
+  TAX_CLASSIFICATION_REQUIRED:
+    "A line needs its tax classification before tax can be determined.",
+  TAX_NET_UNKNOWN: "Tax waits for the line net to be known.",
+  TAX_CONTEXT_UNKNOWN: "Tax could not be established for a line.",
+  TAX_CONTEXT_NOT_AUTHORISED: "Tax is not available to you for a line.",
+  TAX_CALCULATION_UNSUPPORTED: "This tax setup is not supported yet.",
+  TAX_GENERATION_MOVED: "Tax configuration changed while it was being read; review again.",
 };
 function unitReference(id: number | null): string {
   return id === null ? "Unit not specified" : `Unit reference #${id}`;
@@ -203,9 +224,37 @@ export function QuotationTotals({ preview }: { preview: QuotationPreview }) {
   return (
     <DetailSection
       title="Preview totals"
-      description="Server-calculated net amounts. Optional scope is separate; tax is undetermined."
+      description="Server-calculated amounts. Optional scope is separate; tax appears only when it can be determined."
       fullWidth
     >
+      {preview.totals.list != null && preview.totals.reduction != null && (
+        <>
+          <DetailField label="List amount">
+            {preview.totals.list} · Currency reference #{preview.currency_id}
+          </DetailField>
+          <DetailField label="Discounts and overrides">
+            {preview.totals.reduction} off
+          </DetailField>
+        </>
+      )}
+      {preview.document_discount && (
+        <DetailField label="Document discount">
+          {preview.document_discount.kind === "PERCENT"
+            ? `${preview.document_discount.value} percent`
+            : preview.document_discount.value}
+          {preview.document_discount.amount
+            ? ` · ${preview.document_discount.amount} taken off`
+            : " · not yet spread"}
+          <Reasons
+            values={[
+              ...(preview.document_discount.approval_reason
+                ? [preview.document_discount.approval_reason]
+                : []),
+              ...preview.document_discount.issues,
+            ]}
+          />
+        </DetailField>
+      )}
       <DetailField label="Base and baseline net">
         <QuotationMoney
           value={preview.totals.net}
@@ -223,9 +272,20 @@ export function QuotationTotals({ preview }: { preview: QuotationPreview }) {
         </DetailField>
       )}
       <DetailField label="Tax">
-        Unknown — tax has not been determined
+        {preview.tax.certainty === "COMPLETE" && preview.tax.total != null ? (
+          <span className="tabular-nums">
+            {preview.tax.total} · Currency reference #{preview.currency_id}
+          </span>
+        ) : (
+          <>
+            Unknown — tax has not been determined
+            <Reasons values={preview.tax.reasons} />
+          </>
+        )}
       </DetailField>
-      <DetailField label="Total including tax">Unknown</DetailField>
+      <DetailField label="Total including tax">
+        {preview.tax.total_including_tax.amount ?? "Unknown"}
+      </DetailField>
     </DetailSection>
   );
 }
@@ -279,6 +339,30 @@ export function QuotationLines({ preview }: { preview: QuotationPreview }) {
                   ? "Not entered"
                   : `${line.unit_price} · Currency reference #${preview.currency_id}`}
               </DetailField>
+              {line.list_amount != null && line.adjustment && (
+                <DetailField label="List amount">{line.list_amount}</DetailField>
+              )}
+              {line.adjustment?.discount && (
+                <DetailField label="Discount">
+                  {line.adjustment.discount.kind === "PERCENT"
+                    ? `${line.adjustment.discount.value} percent`
+                    : line.adjustment.discount.kind === "PER_PRICED_UNIT"
+                      ? `${line.adjustment.discount.value} per unit`
+                      : `${line.adjustment.discount.value} off the line`}
+                  {line.adjustment.amount ? ` · ${line.adjustment.amount} taken off` : ""}
+                </DetailField>
+              )}
+              {line.adjustment?.override && (
+                <DetailField label="Final-net override">
+                  {line.adjustment.override.amount} — {line.adjustment.override.reason}
+                  {line.adjustment.amount ? ` · ${line.adjustment.amount} taken off` : ""}
+                </DetailField>
+              )}
+              {line.adjustment?.document_share && (
+                <DetailField label="Share of document discount">
+                  {line.adjustment.document_share}
+                </DetailField>
+              )}
               <DetailField label="Line net">
                 <QuotationMoney
                   value={line.net}
@@ -286,6 +370,17 @@ export function QuotationLines({ preview }: { preview: QuotationPreview }) {
                 />
                 <Reasons values={line.net.reasons} />
               </DetailField>
+              {preview.tax.lines?.find((x) => x.line_id === line.id) && (
+                <DetailField label="Line tax">
+                  {preview.tax.lines.find((x) => x.line_id === line.id)?.tax} ·{" "}
+                  {label(
+                    preview.tax.lines.find((x) => x.line_id === line.id)
+                      ?.disposition ?? "",
+                  )}{" "}
+                  · Gross{" "}
+                  {preview.tax.lines.find((x) => x.line_id === line.id)?.gross}
+                </DetailField>
+              )}
               {line.fx && (
                 <DetailField label="Pinned exchange evidence">
                   {label(line.fx.current)} ·{" "}
@@ -303,6 +398,11 @@ export function QuotationLines({ preview }: { preview: QuotationPreview }) {
                 </DetailField>
               )}
             </div>
+            {line.adjustment?.approval_reason && (
+              <p role="status" className="text-sm font-medium">
+                Approval needed: {reasonLabel(line.adjustment.approval_reason)}
+              </p>
+            )}
             <Reasons values={line.issues} />
           </article>
         ))}
