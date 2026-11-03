@@ -158,6 +158,10 @@ final class UpdateQuotationDraft
         $money = ($fields['unit_price'] ?? null) === null ? QuotationMoney::none() : $this->money->enter($revision->currency_id, $revision->pricing_date?->format('Y-m-d'), $fields['unit_price']);
         $concessions = $this->concessions($actor, $fields, null, $money['unit_price'] !== null);
 
+        $declaration = $fields['tax_declaration'] ?? null;
+        if ($declaration !== null && $kind !== PricingSourceKind::Manual) {
+            throw $this->declarationNotAllowed();
+        }
         QuotationDraftLine::create([
             'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'logical_scope_id' => $scope->id, 'created_by' => $actor->id,
             'sort_order' => $fields['sort_order'] ?? ((int) QuotationDraftLine::query()->where('revision_id', $revision->id)->max('sort_order') + 10),
@@ -165,6 +169,31 @@ final class UpdateQuotationDraft
             'source_kind' => $kind->value, 'item_id' => $fields['item_id'] ?? null, 'manual_measure' => $fields['manual_measure'] ?? null,
             'offered_quantity' => $source['offered_quantity'], 'offered_uom_id' => $source['offered_uom_id'],
         ] + $source['measures'] + $money + $concessions);
+        if ($declaration !== null) {
+            $this->declareTax($actor, $revision, $scope->id, $declaration);
+        }
+    }
+
+    private function declarationNotAllowed(): \Throwable
+    {
+        return QuotationRefusal::make(QuotationRefusal::TAX_DECLARATION_NOT_ALLOWED, 'Only a manual line carries a seller\'s tax declaration; an Item\'s classification belongs to Tax.', 'tax_declaration');
+    }
+
+    /**
+     * Appends the next version of the line's tax declaration (a correction is just the next version, with its reason). Stating exactly what is already in force adds nothing.
+     *
+     * @param  array{nature: string, classification: string, reason: string}  $declaration
+     */
+    private function declareTax(User $actor, QuotationRevision $revision, int $scopeId, array $declaration): void
+    {
+        $latest = DB::table('quotation_draft_tax_declarations')->where('revision_id', $revision->id)->where('logical_scope_id', $scopeId)->orderByDesc('version_no')->first();
+        if ($latest !== null && $latest->nature === $declaration['nature'] && $latest->classification === $declaration['classification']) {
+            return;
+        }
+        DB::table('quotation_draft_tax_declarations')->insert([
+            'company_id' => $revision->company_id, 'revision_id' => $revision->id, 'logical_scope_id' => $scopeId, 'version_no' => $latest === null ? 1 : (int) $latest->version_no + 1,
+            'nature' => $declaration['nature'], 'classification' => $declaration['classification'], 'reason' => $declaration['reason'], 'declared_by' => $actor->id,
+        ]);
     }
 
     /** @param  array<string, mixed>  $fields */
@@ -200,7 +229,14 @@ final class UpdateQuotationDraft
             throw QuotationRefusal::make(QuotationRefusal::OVERRIDE_BASIS_CHANGED, 'This line has a final-net override; restate or clear the override in the same update as a price or quantity change.', 'net_override');
         }
         $attributes += $this->concessions($actor, $fields, $line, $priced);
+        $declaration = $fields['tax_declaration'] ?? null;
+        if ($declaration !== null && $line->sourceKind() !== PricingSourceKind::Manual) {
+            throw $this->declarationNotAllowed();
+        }
         $line->forceFill($attributes)->save();
+        if ($declaration !== null) {
+            $this->declareTax($actor, $revision, $line->logical_scope_id, $declaration);
+        }
     }
 
     /**

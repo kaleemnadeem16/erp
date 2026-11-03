@@ -13,9 +13,9 @@ use App\Modules\Sales\Support\Pricing\PricingSourceKind;
  */
 final readonly class DraftChanges
 {
-    private const ADD_FIELDS = ['scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override'];
+    private const ADD_FIELDS = ['scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
 
-    private const UPDATE_FIELDS = ['id', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override'];
+    private const UPDATE_FIELDS = ['id', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
 
     /**
      * @param  array<string, int|string|null>  $header
@@ -105,6 +105,29 @@ final readonly class DraftChanges
         return ['kind' => $value['kind'], 'value' => $number];
     }
 
+    /**
+     * A manual line's tax nature and classification, with the reason for stating (or correcting) them. There is no null: evidence is superseded by a new version, never removed.
+     *
+     * @return array{nature: string, classification: string, reason: string}
+     */
+    private static function taxDeclaration(mixed $value, string $where): array
+    {
+        $bad = fn (string $why) => QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, $why, "{$where}.tax_declaration");
+        if (! is_array($value) || array_diff(array_keys($value), ['nature', 'classification', 'reason']) !== [] || count($value) !== 3) {
+            throw $bad('A tax declaration is an object with a nature, a classification and a reason.');
+        }
+        $classification = is_string($value['classification']) ? trim($value['classification']) : '';
+        $reason = is_string($value['reason']) ? trim($value['reason']) : '';
+        if (! in_array($value['nature'], ['GOODS', 'SERVICES'], true) || $classification === '' || mb_strlen($classification) > 80) {
+            throw $bad('The nature is GOODS or SERVICES and the classification is 1 to 80 characters.');
+        }
+        if ($reason === '' || mb_strlen($reason) > 500) {
+            throw QuotationRefusal::make(QuotationRefusal::REASON_REQUIRED, 'A tax declaration needs a reason of at most 500 characters.', "{$where}.tax_declaration");
+        }
+
+        return ['nature' => $value['nature'], 'classification' => $classification, 'reason' => $reason];
+    }
+
     /** @return array{amount: string, reason: string}|null */
     private static function override(mixed $value, string $where): ?array
     {
@@ -186,6 +209,7 @@ final readonly class DraftChanges
             'offered_quantity' => is_string($value) || is_int($value) ? (string) $value : throw $bad('A quantity is an exact decimal written as text.'),
             'discount' => self::discount($value, "{$where}.discount", ['PERCENT', 'PER_PRICED_UNIT', 'PER_LINE']),
             'net_override' => self::override($value, $where),
+            'tax_declaration' => self::taxDeclaration($value, $where),
             'unit_price' => $value === null ? null : (is_string($value) || is_int($value) ? (string) $value : throw $bad('A unit price is an exact decimal written as text.')),
             default => throw $bad('This field is not accepted.'),
         };

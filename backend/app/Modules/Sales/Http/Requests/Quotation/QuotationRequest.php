@@ -34,7 +34,7 @@ abstract class QuotationRequest extends SalesRequest
             return false;
         }
         $duties = [$capability];
-        if ($this instanceof EditQuotationDraftRequest || $this instanceof PreviewQuotationRequest || $this instanceof UpdateQuotationDraftRequest
+        if ($this instanceof EditQuotationDraftRequest || $this instanceof ShowQuotationTaxDeclarationsRequest || $this instanceof PreviewQuotationRequest || $this instanceof UpdateQuotationDraftRequest
             || $this instanceof AssessQuotationIssueReadinessRequest || $this instanceof IssueQuotationRequest) {
             $duties[] = PermissionVocabulary::QUOTATION_VIEW;
         }

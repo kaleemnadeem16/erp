@@ -78,6 +78,10 @@ trait DescribesQuotationDraftBody
             $rules["{$list}.*.discount.kind"] = ['required_with:'.$list.'.*.discount', Rule::in(['PERCENT', 'PER_PRICED_UNIT', 'PER_LINE'])];
             $rules["{$list}.*.discount.value"] = ['required_with:'.$list.'.*.discount', 'string', 'regex:/^\d+(\.\d+)?$/'];
             $rules["{$list}.*.net_override.amount"] = ['required_with:'.$list.'.*.net_override', 'string', 'regex:/^\d+(\.\d+)?$/'];
+            $rules["{$list}.*.tax_declaration"] = ['sometimes', 'array'];
+            $rules["{$list}.*.tax_declaration.nature"] = ['required_with:'.$list.'.*.tax_declaration', Rule::in(['GOODS', 'SERVICES'])];
+            $rules["{$list}.*.tax_declaration.classification"] = ['required_with:'.$list.'.*.tax_declaration', 'string', 'max:80'];
+            $rules["{$list}.*.tax_declaration.reason"] = ['required_with:'.$list.'.*.tax_declaration', 'string', 'max:500'];
             $rules["{$list}.*.net_override.reason"] = ['required_with:'.$list.'.*.net_override', 'string', 'max:500'];
         }
 

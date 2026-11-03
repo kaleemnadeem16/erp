@@ -37,6 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotations', [QuotationController::class, 'store'])->name('quotations.store');
     Route::get('quotations/{revision}', [QuotationController::class, 'show'])->whereNumber('revision')->name('quotations.show');
     Route::get('quotations/{revision}/editable', [QuotationController::class, 'editable'])->whereNumber('revision')->name('quotations.editable');
+    Route::get('quotations/{revision}/tax-declarations', [QuotationController::class, 'taxDeclarations'])->whereNumber('revision')->name('quotations.tax-declarations.index');
     Route::patch('quotations/{revision}', [QuotationController::class, 'update'])->whereNumber('revision')->name('quotations.update');
     Route::get('quotations/{revision}/preview', [QuotationController::class, 'preview'])->whereNumber('revision')->name('quotations.preview');
     Route::get('quotations/{revision}/issue-readiness', [QuotationController::class, 'readiness'])->whereNumber('revision')->name('quotations.issue-readiness');

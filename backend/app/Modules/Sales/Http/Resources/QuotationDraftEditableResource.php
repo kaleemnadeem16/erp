@@ -52,6 +52,7 @@ class QuotationDraftEditableResource extends JsonResource
                 'sort_order' => (int) $line->sort_order,
                 'discount' => $line->discount_kind === null ? null : ['kind' => (string) $line->discount_kind, 'value' => (string) $line->discount_value],
                 'net_override' => $line->net_override === null ? null : ['amount' => (string) $line->net_override, 'reason' => (string) $line->override_reason],
+                'tax_declaration' => $line->getAttribute('tax_declaration'),
                 'approval_required' => (bool) $line->approval_required,
                 'approval_reason' => $line->approval_reason,
             ])->values()->all(),
