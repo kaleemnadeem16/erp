@@ -75,6 +75,8 @@ class QuotationListApiTest extends TestCase
 
     public function test_stable_sort_uses_id_to_break_equal_created_at_values(): void
     {
+        // The test needs two drafts with the SAME created_at; a real clock can cross a second between them on a slow runner, so the clock is held still.
+        $this->freezeTime();
         $one = $this->nativeFamily();
         $two = $this->nativeFamily();
         $ids = [$one->revisions()->firstOrFail()->id, $two->revisions()->firstOrFail()->id];
