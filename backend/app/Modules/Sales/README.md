@@ -124,3 +124,5 @@ Preview and editable reads carry the entered concessions and approval codes only
 A MANUAL draft line carries the seller's versioned tax declaration (`tax_declaration` on a line write; history at `GET /quotations/{revision}/tax-declarations`). It is append-only evidence;
 a correction is the next version. `DraftQuotationTaxFacts` reads Tax's jurisdiction and Item facts and these declarations, and the preview shows the Tax-determined breakdown or the
 codes that say why not. See [Tax](../../../../docs/domain/tax.md#corrections-and-draft-declarations-delivered).
+
+Quotation access preparation: `sales:audit-quotation-access --company=<id>` is a read-only, explicit-company role/direct/mandate-path inventory; it grants nothing. See [the QA4 checkpoint](../../../../docs/domain/quotation-access-qa2-qa4.md#qa4-read-only-inventory-checkpoint) and [approved demo contract](../../../../docs/domain/quotation-access-demo.md). Holder recipe and demo implementation remain outstanding.

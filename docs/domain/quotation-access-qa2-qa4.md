@@ -98,6 +98,21 @@ unrelated duty never widens, anything else default-deny).
   and the commercial view are separate rights (the commercial view duty is still SPECIFIED) — a follow-up once those can be judged per row.
 - **Fence reads are pure SELECTs.** `CompanyAccessFence::lock()` inserts a company's barrier row only when it is missing.
 
+## QA4 read-only inventory checkpoint
+
+`sales:audit-quotation-access --company=<id>` is the server-operated preparation report. It
+requires an explicit existing company and runs in PostgreSQL REPEATABLE READ, READ ONLY. It lists
+all quotation/document/delivery role and direct paths, their stored assignment scope, unrestricted
+paths, unit memberships and configured full-access mandate candidates. Generic mandate qualification
+is explicitly **not** reviewed quotation rollout approval. Unassigned roles and suspended members
+are included for review. No password/token columns are queried; nothing is registered, granted,
+activated or applied. Do not run it against the owner's database during development verification.
+
+The command is only the inventory portion of QA4. Holder-recipe code, origin ledger, dry-run/backout
+proofs and staging sign-off remain outstanding. The approved demo exception is separately recorded
+in [0154](../decisions/0154-quotation-demo-access-and-activation-boundaries.md) and the
+[persona/preset contract](quotation-access-demo.md); it is not real-holder activation.
+
 ## Related
 
 [Safety proofs and parameterised synthetic harness](quotation-access-safety-proofs.md) records
