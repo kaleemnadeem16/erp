@@ -11,6 +11,7 @@ import type { UpdateQuotationDraftRequestUpdateLinesItemSectionTitle } from "./u
 import type { LineMembership } from "./lineMembership";
 import type { UpdateQuotationDraftRequestUpdateLinesItemChoiceGroupRef } from "./updateQuotationDraftRequestUpdateLinesItemChoiceGroupRef";
 import type { UpdateQuotationDraftRequestUpdateLinesItemOfferedUomId } from "./updateQuotationDraftRequestUpdateLinesItemOfferedUomId";
+import type { UpdateQuotationDraftRequestUpdateLinesItemTaxDeclaration } from "./updateQuotationDraftRequestUpdateLinesItemTaxDeclaration";
 
 export type UpdateQuotationDraftRequestUpdateLinesItem = {
   /** @minimum 1 */
@@ -36,4 +37,5 @@ export type UpdateQuotationDraftRequestUpdateLinesItem = {
   offered_uom_id?: UpdateQuotationDraftRequestUpdateLinesItemOfferedUomId;
   /** @minimum 0 */
   sort_order?: number;
+  tax_declaration?: UpdateQuotationDraftRequestUpdateLinesItemTaxDeclaration;
 };

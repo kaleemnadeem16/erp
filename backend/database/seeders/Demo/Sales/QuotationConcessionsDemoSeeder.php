@@ -12,6 +12,7 @@ use App\Modules\Sales\Actions\UpdateQuotationDraft;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
+use App\Support\CompanyContext;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ use Spatie\Permission\Models\Permission;
  *  - WITHIN LIMIT   A 10% line discount, at the limit: recorded with who entered it, no approval needed.
  *  - ABOVE LIMIT    A 25% discount: approval would be needed (DISCOUNT_ABOVE_LIMIT), which keeps the draft from being issued.
  *  - OVERRIDE       A reasoned final-net override of a lump-sum line: always needs approval (PRICE_OVERRIDE).
+ *  - TAX         A manual line whose tax classification is declared, then corrected (version 2); Tax has no declared rate here, so the tax stays honestly unknown.
  *  - DOCUMENT       A 5% document discount spread over the counted lines; an optional line takes no share.
  */
 final class QuotationConcessionsDemoSeeder extends Seeder
@@ -36,6 +38,12 @@ final class QuotationConcessionsDemoSeeder extends Seeder
 
     public function run(): void
     {
+        $this->seedFor(app(CompanyContext::class)->id());
+    }
+
+    /** Create-only for one named company: every request key replays, nothing existing is edited, and another company's data is never read. */
+    public function seedFor(int $companyId): void
+    {
         $this->ensureDemoEnvironment();
         // Like the other quotation drafts, only where the local preview already makes prepare/view usable; anywhere else it logs one line and does nothing.
         if (! app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_PREPARE)) {
@@ -43,7 +51,7 @@ final class QuotationConcessionsDemoSeeder extends Seeder
 
             return;
         }
-        $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
+        $admin = User::query()->where('company_id', $companyId)->where('email', config('demo.user.email'))->firstOrFail();
         foreach (self::DUTIES as $duty) {
             Permission::findOrCreate($duty, 'web');
         }
@@ -84,6 +92,14 @@ final class QuotationConcessionsDemoSeeder extends Seeder
         $this->change($admin, $override, 'override-lines', ['add_lines' => [
             $line('survey', 'Site survey and report', '1', '80000.00', ['net_override' => ['amount' => '65000', 'reason' => 'Existing customer: survey fee reduced after the site visit.']]),
         ]]);
+
+        // TAX: a manual line has no Item for Tax to read, so the seller declares its nature and classification; the correction is the next version, the first stays on record.
+        $tax = $this->draft($admin, 'tax', $header($alpha));
+        $step = $this->change($admin, $tax, 'tax-lines', ['add_lines' => [
+            $line('install', 'Installation labour and materials', '1', '90000.00', ['tax_declaration' => ['nature' => 'SERVICES', 'classification' => 'demo-service', 'reason' => 'Entered as labour only.']]),
+        ]]);
+        $lineId = (int) DB::table('quotation_draft_lines')->where('revision_id', $tax->revisionId)->value('id');
+        $this->change($admin, $step, 'tax-correction', ['update_lines' => [['id' => $lineId, 'tax_declaration' => ['nature' => 'GOODS', 'classification' => 'demo-goods', 'reason' => 'Materials are most of the value: corrected to goods.']]]]);
 
         $document = $this->draft($admin, 'document', $header($metro));
         $step = $this->change($admin, $document, 'document-lines', ['add_lines' => [

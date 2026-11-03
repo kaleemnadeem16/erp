@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 176 schemas that export a runtime value use `export *`.
+ * only the 178 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1702,6 +1702,8 @@ export type * from "./quotationSummaryResourceOfficialNumber";
 export type * from "./quotationSummaryResourceRecipientPartyId";
 export type * from "./quotationSummaryResourceResponsibleOwnerId";
 export type * from "./quotationSummaryResourceValidThroughLocalDate";
+export type * from "./quotationTaxDeclarationResource";
+export type * from "./quotationTaxDeclarationResourceLineId";
 export type * from "./quotationsDeliveriesIndex200";
 export type * from "./quotationsDeliveriesStore200";
 export type * from "./quotationsDeliveriesStore201";
@@ -1747,6 +1749,7 @@ export type * from "./quotationsStore201";
 export type * from "./quotationsStore409";
 export type * from "./quotationsStore409Errors";
 export type * from "./quotationsStoreHeaders";
+export type * from "./quotationsTaxDeclarationsIndex200";
 export type * from "./quotationsUpdate200";
 export type * from "./quotationsUpdate404";
 export type * from "./quotationsUpdate409";
@@ -2641,6 +2644,8 @@ export type * from "./updateQuotationDraftRequestAddLinesItemNetOverride";
 export type * from "./updateQuotationDraftRequestAddLinesItemNetOverrideAnyOf";
 export type * from "./updateQuotationDraftRequestAddLinesItemOfferedUomId";
 export type * from "./updateQuotationDraftRequestAddLinesItemSectionTitle";
+export type * from "./updateQuotationDraftRequestAddLinesItemTaxDeclaration";
+export * from "./updateQuotationDraftRequestAddLinesItemTaxDeclarationNature";
 export type * from "./updateQuotationDraftRequestAddLinesItemUnitPrice";
 export type * from "./updateQuotationDraftRequestDocumentDiscount";
 export * from "./updateQuotationDraftRequestDocumentDiscountKind";
@@ -2656,6 +2661,8 @@ export type * from "./updateQuotationDraftRequestUpdateLinesItemNetOverride";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemNetOverrideAnyOf";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemOfferedUomId";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemSectionTitle";
+export type * from "./updateQuotationDraftRequestUpdateLinesItemTaxDeclaration";
+export * from "./updateQuotationDraftRequestUpdateLinesItemTaxDeclarationNature";
 export type * from "./updateQuotationDraftRequestUpdateLinesItemUnitPrice";
 export type * from "./updateQuotationDraftRequestValidThroughLocalDate";
 export type * from "./updateRateDimensionRequest";

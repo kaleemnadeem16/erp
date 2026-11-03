@@ -45,6 +45,8 @@ class QuotationConcessionsDemoSeederTest extends TestCase
         $this->assertNotNull($lines[2]->override_reason);
         $document = DB::table('quotation_draft_document_discounts')->sole();
         $this->assertSame(['PERCENT', false], [$document->kind, (bool) $document->approval_required], 'a 5% document discount is within the 10% routine limit');
+        $declarations = DB::table('quotation_draft_tax_declarations')->orderBy('version_no')->get();
+        $this->assertSame([[1, 'demo-service'], [2, 'demo-goods']], $declarations->map(fn ($d): array => [(int) $d->version_no, $d->classification])->all(), 'the correction is the next version; the first stays');
         $this->assertFalse(app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_DISCOUNT), 'the duties are switched on only while seeding');
         $this->assertFalse(app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_PRICE_OVERRIDE));
     }

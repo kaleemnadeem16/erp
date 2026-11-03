@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import {
   quotationsUpdate,
   useQuotationsEditable,
+  useQuotationsTaxDeclarationsIndex,
   useCurrenciesIndex,
 } from "@erp/core-api";
 import { useAuthStore } from "../../stores/auth-store";
@@ -40,6 +41,7 @@ import {
   readEditable,
   valuesFromEditable,
   type DocumentDiscount,
+  type TaxDeclarationInput,
   type DraftValues,
   type Editable,
   type EditableLine,
@@ -170,6 +172,18 @@ export function QuotationEditForm({ id }: { id: number }) {
         (!Number.isSafeInteger(line.sort_order) || line.sort_order < 0)
       )
         return "Line order must be a non-negative whole number.";
+      const declared =
+        "tax_declaration_change" in line
+          ? line.tax_declaration_change
+          : (line as NewLine).tax_declaration;
+      if (
+        declared &&
+        (!declared.classification?.trim() ||
+          declared.classification.trim().length > 80 ||
+          !declared.reason?.trim() ||
+          declared.reason.length > 500)
+      )
+        return "A tax declaration needs a classification (up to 80 characters) and a reason.";
       if (line.scope_ref !== undefined && !line.scope_ref.trim())
         return "A scope reference cannot be blank.";
       if (
@@ -604,6 +618,7 @@ export function QuotationEditForm({ id }: { id: number }) {
             canEdit={concessions.discount}
             onChange={(next) => update({ ...values, document_discount: next })}
           />
+          <TaxDeclarationHistory revision={id} />
           {review && changes && (
             <DetailSection title="Review changes">
               <div className="col-span-full space-y-3">
@@ -817,6 +832,27 @@ function LineEditor({
           }
         />
       </div>
+      {line.source_kind === "MANUAL" && (
+        <TaxDeclarationFields
+          id={key}
+          current={"id" in line ? line.tax_declaration : null}
+          value={
+            "id" in line
+              ? (line.tax_declaration_change ?? null)
+              : ((line as NewLine).tax_declaration as
+                  | TaxDeclarationInput
+                  | null
+                  | undefined) ?? null
+          }
+          onChange={(next) =>
+            set(
+              ("id" in line
+                ? { tax_declaration_change: next }
+                : { tax_declaration: next ?? undefined }) as Partial<Line>,
+            )
+          }
+        />
+      )}
       <ConcessionFields
         id={key}
         line={line}
@@ -1126,6 +1162,133 @@ export function DocumentDiscountSection({
           )}
         </div>
       )}
+    </DetailSection>
+  );
+}
+
+/**
+ * A manual line has no Item for Tax to read a classification from, so the seller states it. Each statement is saved as the next version with its reason; earlier versions stay
+ * on record. Whether Tax covers the classification is decided by Tax: an uncovered one leaves the tax unknown, never zero.
+ */
+export function TaxDeclarationFields({
+  id,
+  current,
+  value,
+  onChange,
+}: {
+  id: string;
+  current: {
+    version_no: number;
+    nature: "GOODS" | "SERVICES";
+    classification: string;
+    reason: string;
+  } | null;
+  value: TaxDeclarationInput | null;
+  onChange: (next: TaxDeclarationInput | null) => void;
+}) {
+  return (
+    <div
+      className="space-y-3 rounded-md border border-dashed p-3"
+      role="group"
+      aria-label="Tax classification"
+    >
+      <p className="text-sm">
+        {current
+          ? `Tax classification (version ${current.version_no}): ${current.nature === "GOODS" ? "goods" : "services"}, ${current.classification}`
+          : "Tax classification: not declared, so tax cannot be determined for this line."}
+      </p>
+      {value === null ? (
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={() =>
+            onChange({
+              nature: current?.nature ?? "GOODS",
+              classification: current?.classification ?? "",
+              reason: "",
+            })
+          }
+        >
+          {current ? "Correct classification" : "Declare classification"}
+        </Button>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label htmlFor={`tax-nature-${id}`}>Nature</Label>
+            <select
+              id={`tax-nature-${id}`}
+              className="min-h-11 w-full rounded-md border bg-background px-3"
+              value={value.nature}
+              onChange={(e) =>
+                onChange({
+                  ...value,
+                  nature: e.target.value as "GOODS" | "SERVICES",
+                })
+              }
+            >
+              <option value="GOODS">Goods</option>
+              <option value="SERVICES">Services</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`tax-class-${id}`}>Classification</Label>
+            <Input
+              id={`tax-class-${id}`}
+              className="min-h-11"
+              maxLength={80}
+              value={value.classification}
+              onChange={(e) =>
+                onChange({ ...value, classification: e.target.value })
+              }
+            />
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor={`tax-reason-${id}`}>Reason for stating it</Label>
+            <Input
+              id={`tax-reason-${id}`}
+              className="min-h-11"
+              maxLength={500}
+              value={value.reason}
+              onChange={(e) => onChange({ ...value, reason: e.target.value })}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={() => onChange(null)}
+          >
+            Cancel
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Every saved version of the declarations, oldest first: a correction is shown beside what it corrected. */
+export function TaxDeclarationHistory({ revision }: { revision: number }) {
+  const query = useQuotationsTaxDeclarationsIndex(revision, {
+    query: { retry: false },
+  });
+  const rows = query.data?.status === 200 ? query.data.data.data : [];
+  if (!rows.length) return null;
+  return (
+    <DetailSection
+      title="Tax declaration history"
+      description="Saved versions stay on record; a correction is a later version."
+    >
+      <ul className="col-span-full list-disc space-y-1 pl-5 text-sm">
+        {rows.map((row) => (
+          <li key={`${row.scope_ref}-${row.version_no}`} className="break-words">
+            {row.scope_ref}, version {row.version_no}:{" "}
+            {row.nature === "GOODS" ? "goods" : "services"}, {row.classification}
+            {" — "}
+            {row.reason}
+          </li>
+        ))}
+      </ul>
     </DetailSection>
   );
 }

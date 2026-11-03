@@ -31,6 +31,7 @@ export type QuotationDraftEditableResourceLinesItem = {
   sort_order: number;
   discount: QuotationDraftEditableResourceLinesItemDiscount;
   net_override: QuotationDraftEditableResourceLinesItemNetOverride;
+  tax_declaration: unknown;
   approval_required: boolean;
   approval_reason: QuotationDraftEditableResourceLinesItemApprovalReason;
 };

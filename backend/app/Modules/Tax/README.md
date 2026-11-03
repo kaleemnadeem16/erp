@@ -23,6 +23,7 @@ inclusive/compound/withholding execution beyond the BASIC internal calculation, 
 | `DefineTaxGroupGraph` | Append one complete graph of pinned rule versions and named predecessors. |
 | `ActivateTaxGroup` | Under the generation fence validate company, periods, methods, mode, scope, currency and acyclicity, then append activation. |
 | `CreateTaxPartyProfileSuccessor` / `ActivateTaxPartyProfile` | Atomically create complete successor evidence and append activation under the shared generation fence; no determination. |
+| `CorrectQuotationTaxSource` | Append a reasoned correction VERSION of a jurisdiction or Item classification source fact; the reader uses the latest, earlier versions stay. Staged configuration duty, generation-fenced, idempotent. |
 | `DetermineQuotationTax` | Pure classification-only support result; statutory disposition stays UNKNOWN and no amount is returned. |
 
 ## Authorisation and rollout

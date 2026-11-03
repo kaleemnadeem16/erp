@@ -118,3 +118,9 @@ A guarded Action must check its own duty and scope before calling the kernel and
 (`sales.quotation.discount`, `sales.quotation.price.override`) judged by `QuotationAccess` for the same family, in the Request and again in the Action. `QuotationAdjustmentEngine` does the
 arithmetic through the pricing kernel and records the approval-needed code (default-deny, see [Sales pricing](../../../../docs/domain/sales-pricing.md#draft-concessions--discounts-and-final-net-overrides-pr4pr5-delivered)).
 Preview and editable reads carry the entered concessions and approval codes only, never cost, margin or limits. Issue is blocked while approval is needed.
+
+## Draft tax declarations
+
+A MANUAL draft line carries the seller's versioned tax declaration (`tax_declaration` on a line write; history at `GET /quotations/{revision}/tax-declarations`). It is append-only evidence;
+a correction is the next version. `DraftQuotationTaxFacts` reads Tax's jurisdiction and Item facts and these declarations, and the preview shows the Tax-determined breakdown or the
+codes that say why not. See [Tax](../../../../docs/domain/tax.md#corrections-and-draft-declarations-delivered).

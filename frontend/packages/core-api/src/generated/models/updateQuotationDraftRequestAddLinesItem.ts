@@ -12,6 +12,7 @@ import type { UpdateQuotationDraftRequestAddLinesItemSectionTitle } from "./upda
 import type { LineMembership } from "./lineMembership";
 import type { UpdateQuotationDraftRequestAddLinesItemChoiceGroupRef } from "./updateQuotationDraftRequestAddLinesItemChoiceGroupRef";
 import type { UpdateQuotationDraftRequestAddLinesItemOfferedUomId } from "./updateQuotationDraftRequestAddLinesItemOfferedUomId";
+import type { UpdateQuotationDraftRequestAddLinesItemTaxDeclaration } from "./updateQuotationDraftRequestAddLinesItemTaxDeclaration";
 
 export type UpdateQuotationDraftRequestAddLinesItem = {
   /** @maxLength 80 */
@@ -38,4 +39,5 @@ export type UpdateQuotationDraftRequestAddLinesItem = {
   offered_uom_id?: UpdateQuotationDraftRequestAddLinesItemOfferedUomId;
   /** @minimum 0 */
   sort_order?: number;
+  tax_declaration?: UpdateQuotationDraftRequestAddLinesItemTaxDeclaration;
 };

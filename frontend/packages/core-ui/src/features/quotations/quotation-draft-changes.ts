@@ -19,6 +19,18 @@ const documentDiscount = z.object({
   approval_required: z.boolean().optional(),
   approval_reason: z.string().nullable().optional(),
 });
+const taxDeclaration = z.object({
+  version_no: z.number().int().positive(),
+  nature: z.enum(["GOODS", "SERVICES"]),
+  classification: z.string(),
+  reason: z.string(),
+});
+/** What the seller is stating now; saved as the next version of the line's declaration. */
+export type TaxDeclarationInput = {
+  nature: "GOODS" | "SERVICES";
+  classification: string;
+  reason: string;
+};
 export type LineDiscount = z.infer<typeof discount>;
 export type LineOverride = z.infer<typeof override>;
 export type DocumentDiscount = z.infer<typeof documentDiscount>;
@@ -39,6 +51,7 @@ const line = z.object({
   sort_order: z.number().int().nonnegative().safe(),
   discount: discount.nullable().default(null),
   net_override: override.nullable().default(null),
+  tax_declaration: taxDeclaration.nullable().default(null),
   approval_required: z.boolean().default(false),
   approval_reason: z.string().nullable().default(null),
 });
@@ -57,7 +70,10 @@ export const editableSchema = z.object({
   lines: z.array(line),
 });
 export type Editable = z.infer<typeof editableSchema>;
-export type EditableLine = z.infer<typeof line>;
+export type EditableLine = z.infer<typeof line> & {
+  /** Client-only: a declaration the person has typed and not saved yet. */
+  tax_declaration_change?: TaxDeclarationInput | null;
+};
 export type NewLine = UpdateQuotationDraftRequestAddLinesItem & {
   client_id: string;
 };
@@ -139,6 +155,21 @@ export function buildChanges(
     const update: Record<string, unknown> = { id: current.id };
     for (const key of lineFields)
       if (current[key] !== prior[key]) update[key] = current[key];
+    if (current.tax_declaration_change) {
+      const t = current.tax_declaration_change;
+      const now = prior.tax_declaration;
+      // Restating what is in force changes nothing; anything else is the next version, and it needs a reason.
+      if (
+        !now ||
+        now.nature !== t.nature ||
+        now.classification !== t.classification.trim()
+      )
+        update.tax_declaration = {
+          nature: t.nature,
+          classification: t.classification.trim(),
+          reason: t.reason.trim(),
+        };
+    }
     // Concessions are objects: compare by content, and send null to remove one.
     for (const key of ["discount", "net_override"] as const)
       if (JSON.stringify(current[key]) !== JSON.stringify(prior[key]))
