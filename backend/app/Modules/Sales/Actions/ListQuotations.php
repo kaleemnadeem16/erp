@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
+use App\Modules\Sales\Support\Quotation\QuotationAvailability;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -18,7 +19,7 @@ final class ListQuotations
 {
     /**
      * @param  array<string, mixed>  $input
-     * @return LengthAwarePaginator<int, array{revision_id:int,family_id:int,revision_ordinal:int,state:string,recipient_party_id:int|null,currency_id:int,created_at:string|null,valid_through_local_date:string|null,responsible_owner_id:int|null}>
+     * @return LengthAwarePaginator<int, array{revision_id:int,family_id:int,revision_ordinal:int,state:string,recipient_party_id:int|null,currency_id:int,created_at:string|null,valid_through_local_date:string|null,official_number:string|null,availability:string,responsible_owner_id:int|null}>
      */
     public function __invoke(User $actor, array $input): LengthAwarePaginator
     {
@@ -68,6 +69,9 @@ final class ListQuotations
                 'created_at' => $revision->created_at?->toIso8601String(),
                 // Safe header facts the detail contract already shows the same view holder; the owner is what the owner/mine filters already reveal.
                 'valid_through_local_date' => $revision->valid_through_local_date?->format('Y-m-d'),
+                // The official number exists only once issued; availability is derived (DRAFT, CANCELLED_DRAFT, AVAILABLE, EXPIRED, WITHDRAWN, REPLACED), never stored.
+                'official_number' => $revision->official_number,
+                'availability' => QuotationAvailability::of($revision),
                 'responsible_owner_id' => $revision->family?->responsible_owner_id === null ? null : (int) $revision->family->responsible_owner_id,
             ]);
 
