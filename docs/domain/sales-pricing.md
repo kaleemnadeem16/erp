@@ -267,6 +267,18 @@ Issue freezes the provenance per line (`line_reduction_kind`, `line_reduction_am
 price - discount = amount. Override reasons and approval codes never reach the customer projection. Duties are not in the local dev preview; they are switched on only inside the demo
 seeder's own transaction.
 
+## Quotation list: recipient name and net amount (delivered)
+
+`GET /api/v1/quotations` adds `recipient_name` and `net_amount`, each decided **per row inside the list's transaction and access fence**, never by a screen:
+
+- `recipient_name` follows **Party read**. Party read has no duty and no record scope (the Parties API is open to every active member; the company scope keeps another company's Party
+  out), so the rule is exactly that: a current active member and a Party visible under the company scope. `RecipientNames` is the one place to change if Parties ever gain a read duty.
+- `net_amount` needs the independent, STAGED `sales.quotation.commercial.view` (family scope OWN or ALL) **for that row's family**, judged by `QuotationAccess`, and is the **frozen net
+  total of an ISSUED revision**. A draft shows null: a list never reprices and a draft's settled figure is a preview. The duty never adds a row the view scope would hide.
+- A hidden value is `null`, the same as an absent one, so the answer never says which. Neither can be sorted or filtered on (both are refused with 422). No cost, margin or tax fact is added.
+
+Safest default if the model ever cannot judge a row (no duty, staged, suspended member): null, never a refusal that names the record.
+
 ## Related
 
 - [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)

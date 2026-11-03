@@ -8,8 +8,9 @@ import { z } from "zod";
  * everything above it stays.
  *
  * The contract carries a safe summary: identities, state, valid-through and the responsible
- * owner's id. Party name and net amount are NOT in it (a Party read and the commercial view
- * are separate rights), so the list does not invent them ("contract pending").
+ * owner's id, plus two values the server decides PER ROW: `recipient_name` (Party read) and
+ * `net_amount` (the independent commercial view; the frozen net of an issued quotation only).
+ * Either is null when it is hidden or absent, and the list never says which.
  */
 export const LIST_STATES = ["DRAFT", "CANCELLED_DRAFT", "ISSUED"] as const;
 export type QuotationListState = (typeof LIST_STATES)[number];
@@ -40,6 +41,12 @@ export const summarySchema = z.object({
   /** Derived by the server: DRAFT, CANCELLED_DRAFT, AVAILABLE, EXPIRED, WITHDRAWN, REPLACED. */
   availability: z.string(),
   responsible_owner_id: id.nullable(),
+  recipient_name: z.string().nullable().optional(),
+  net_amount: z
+    .string()
+    .regex(/^\d+(?:\.\d+)?$/)
+    .nullable()
+    .optional(),
 });
 const pageLink = z.string().nullable();
 export const listPageSchema = z.object({
@@ -128,6 +135,8 @@ export function mockSummary(
     official_number: null,
     availability: "DRAFT",
     responsible_owner_id: 7,
+    recipient_name: null,
+    net_amount: null,
     ...overrides,
   };
 }
@@ -140,6 +149,8 @@ export function mockListGateway(
       revision_ordinal: 2,
       official_number: "QUO-2026-0007",
       availability: "AVAILABLE",
+      recipient_name: "Alpha Decorators",
+      net_amount: "860000.0000",
     }),
     mockSummary(3, {
       state: "CANCELLED_DRAFT",
