@@ -63,8 +63,16 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
 
     public function test_internal_family_writers_keep_the_exclusive_fence_before_subject_and_receipt(): void
     {
-        foreach (['CreateQuotationDraft', 'UpdateQuotationDraft', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
-            'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline'] as $action) {
+        $registered = ['CreateQuotationDraft', 'UpdateQuotationDraft', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
+            'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline'];
+        $found = [];
+        foreach (glob(app_path('Modules/Sales/Actions/*.php')) as $file) {
+            if (str_contains((string) file_get_contents($file), 'QuotationOperation')) {
+                $found[] = basename($file, '.php');
+            }
+        }
+        $this->assertEqualsCanonicalizing($registered, $found, 'every governed operation needs a writer-inventory review');
+        foreach ($registered as $action) {
             $source = (string) file_get_contents(app_path('Modules/Sales/Actions/'.$action.'.php'));
             $this->assertStringContainsString('$this->operations->run(', $source, $action);
         }

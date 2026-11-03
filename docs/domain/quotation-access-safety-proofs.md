@@ -57,7 +57,8 @@ ERP_AGENT=quotation-security docker/backend/measure-access-fence.sh \
 
 The wrapper locks the shared stack and its own database, validates the private name, then
 rebuilds only `erp_testing_<agent>` on `postgres-test`. It never runs against `erp` or the
-application stack database. Do not use this destructive fixture rebuild on a database whose
+application stack database. The PHP harness also refuses unsafe settings and cached configuration
+before Laravel boots. Do not use this destructive fixture rebuild on a database whose
 contents you need. Company count, concurrent writers/readers, family rows **per fixture
 company**, iterations, simulated transaction hold and session lock timeout are parameters.
 The schema also has its ordinary baseline company; `--companies` counts added fixture companies.
@@ -124,6 +125,14 @@ required. Refusal after first use is deliberate, including development (A6). Do 
 reset counters or disable guards to make rollback succeed. Backout first disables entry points and
 workers; any removal of a used barrier needs a separately approved forward plan. This work adds no
 backout that silently removes evidence or activates/grants a duty.
+
+## Verification checkpoint
+
+The isolated full backend run at `e9757c36` passed 3,371 tests with one existing skip
+(44,266 assertions). The later A3 reproduction passed all three real-session concurrency
+tests. Migration forward/rollback/reapply, populated refusal proofs, PHPStan and the route/security
+ratchets passed locally. The remaining supplementary checks and final-head CI are recorded on #77;
+this checkpoint is not a claim of completed activation or later access/UI slices.
 
 ## Related
 
