@@ -98,7 +98,7 @@ unrelated duty never widens, anything else default-deny).
   and the commercial view are separate rights (the commercial view duty is still SPECIFIED) — a follow-up once those can be judged per row.
 - **Fence reads are pure SELECTs.** `CompanyAccessFence::lock()` inserts a company's barrier row only when it is missing.
 
-## Pre-activation safety evidence
+## Related
 
 [Safety proofs and parameterised synthetic harness](quotation-access-safety-proofs.md) records
 bounded waits, the real upgrade-deadlock reproduction, supported writer ordering and populated

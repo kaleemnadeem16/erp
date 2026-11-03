@@ -41,6 +41,10 @@ Rejected: increasing waits to disguise contention; reducing locks to the current
 without proving shared-role/security-writer ordering; treating the existence of a counter,
 a benchmark result or a retry as activation approval.
 
+PostgreSQL documents the [per-statement timeout semantics](https://www.postgresql.org/docs/16/runtime-config-client.html)
+and [function-local configuration restoration](https://www.postgresql.org/docs/16/sql-createfunction.html);
+these inform the distinction between the protected operation and a raw external statement.
+
 ## Repeatable synthetic measurement
 
 Run only from this checkout, with a private agent identity:
@@ -99,7 +103,11 @@ behaviour suite. `CompanyAccessFenceTest` separately inventories database securi
 This is not a claim that arbitrary raw SQL, an external integration, a caller holding prior row
 locks or every future writer is deadlock-free. Such callers must obey the same order; PostgreSQL
 aborts unsafe attempts, and bounds/retries fail closed. Production lock-order review remains a
-sign-off requirement. A3's family-first inversion remains prohibited, not silently supported.
+sign-off requirement. A separate two-session test also reproduces A3: one transaction locks a family first,
+while another holds the exclusive company fence and requests that family. A subsequent raw
+security write by the first transaction produces a real 40P01 victim. The supported path
+prevents this inversion by taking the fence before any family lock; arbitrary family-first
+callers remain prohibited, not silently supported.
 
 ## Populated rollback and backout
 
