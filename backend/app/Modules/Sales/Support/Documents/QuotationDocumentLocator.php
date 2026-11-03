@@ -15,6 +15,7 @@ use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
+use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use LogicException;
@@ -25,6 +26,14 @@ use LogicException;
  */
 final class QuotationDocumentLocator
 {
+    /** Exact document duties must use a fresh actor under the same fence as family visibility. */
+    public function currentActor(User $actor): User
+    {
+        app(CompanyAccessFence::class)->lock();
+
+        return ActiveActor::require($actor, 'access quotation documents');
+    }
+
     /**
      * The record half of every quotation document Action's authority. The Action first requires its exact document duty itself
      * (SalesAccess::require: company-wide, because document duties have no family scope, so a limited grant is refused, never widened).

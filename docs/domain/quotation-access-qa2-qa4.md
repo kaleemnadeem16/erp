@@ -104,3 +104,6 @@ unrelated duty never widens, anything else default-deny).
 bounded waits, the real upgrade-deadlock reproduction, supported writer ordering and populated
 rollback proofs. Production activation remains blocked pending owner-supplied representative
 company counts, concurrent workload profile and latency budgets.
+
+[Advisory corrections](quotation-access-advisories.md) records the current-actor, retry, list
+snapshot and safe-history changes, with retained fail-closed rules and remaining integration checks.

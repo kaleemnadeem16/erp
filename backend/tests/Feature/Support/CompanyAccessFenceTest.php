@@ -8,6 +8,7 @@ use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
 use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Database\QueryException;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
@@ -301,6 +302,34 @@ class CompanyAccessFenceTest extends TestCase
         } finally {
             DB::rollBack();
         }
+    }
+
+    public function test_unique_key_races_and_deadlocks_have_independent_bounded_retry_budgets(): void
+    {
+        $user = User::factory()->create();
+        $context = SalesActorContext::forUser($user, 'fixture');
+        $family = DB::table('quotation_families')->insertGetId(['company_id' => 1, 'created_by' => $user->id,
+            'access_baseline_state' => 'UNRESOLVED', 'created_at' => now(), 'updated_at' => now()]);
+        $deadlock = new PDOException('deadlock detected');
+        $deadlock->errorInfo = ['40P01', 7, 'deadlock detected'];
+        $unique = new PDOException('duplicate key sales_quotation_receipts_key_unique');
+        $unique->errorInfo = ['23505', 7, 'duplicate key'];
+        $victims = [new QueryException('testing', 'select 1', [], $deadlock),
+            new UniqueConstraintViolationException('testing', 'select 1', [], $unique)];
+        foreach ([$victims, array_reverse($victims)] as $order => $failures) {
+            $calls = 0;
+            $out = app(QuotationOperation::class)->run($context, 'fixture', 'mixed-retries-'.$order, [], fn () => null,
+                function () use (&$calls, $failures, $family): array {
+                    if ($calls++ < count($failures)) {
+                        throw $failures[$calls - 1];
+                    }
+
+                    return ['family_id' => $family];
+                });
+            $this->assertFalse($out['replayed']);
+            $this->assertSame(3, $calls, 'one kind of restart must not consume the other budget');
+        }
+        $this->assertSame(2, DB::table('sales_quotation_operation_receipts')->count());
     }
 
     public function test_every_table_that_can_change_access_is_behind_the_barrier_or_named_as_exempt(): void

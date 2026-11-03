@@ -39,7 +39,9 @@ final class ReadDocumentArtefactHistory
             $rows[] = ['at' => $e->occurred_at, 'event' => $e->access_kind.'_'.$e->outcome, 'detail' => ['actor_id' => $e->actor_id]];
         }
         foreach (FileBlobEvent::query()->where('blob_id', $artefact->blob_id)->whereIn('event', ['MISSING_DETECTED', 'QUARANTINED', 'RESTORED'])->orderBy('id')->get() as $e) {
-            $rows[] = ['at' => $e->occurred_at, 'event' => $e->event, 'detail' => ['from' => $e->from_health, 'to' => $e->to_health, 'reason' => $e->reason, 'actor_id' => $e->actor_id]];
+            $reason = $e->event === 'RESTORED' ? 'restored_identical_bytes'
+                : (in_array($e->reason, ['object_missing', 'object_corrupt', 'infected'], true) ? $e->reason : null);
+            $rows[] = ['at' => $e->occurred_at, 'event' => $e->event, 'detail' => ['from' => $e->from_health, 'to' => $e->to_health, 'reason' => $reason, 'actor_id' => $e->actor_id]];
         }
         usort($rows, fn (array $a, array $b): int => $a['at'] <=> $b['at']);
 

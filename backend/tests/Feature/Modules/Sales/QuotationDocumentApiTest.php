@@ -2,16 +2,25 @@
 
 namespace Tests\Feature\Modules\Sales;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
+use App\Modules\Sales\Actions\DownloadQuotationDocument;
 use App\Modules\Sales\Actions\IssueQuotation;
+use App\Modules\Sales\Actions\ReadQuotationDocumentDeliveries;
+use App\Modules\Sales\Actions\ReadQuotationDocumentHistory;
+use App\Modules\Sales\Actions\ReadQuotationDocumentStatus;
+use App\Modules\Sales\Actions\RecordManualQuotationDelivery;
+use App\Modules\Sales\Actions\RequestQuotationDocument;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
 use App\Modules\Sales\Support\Authority\SalesDuty;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -298,5 +307,49 @@ class QuotationDocumentApiTest extends TestCase
         $this->assertPopulatedRollbackRefused('2026_10_30_100000_create_document_artefacts.php', ['document_artefacts', 'document_artefact_heads']);
         $this->assertPopulatedRollbackRefused('2026_10_30_120000_create_document_access_events.php', ['document_access_events']);
         $this->assertPopulatedRollbackRefused('2026_10_30_130000_create_quotation_document_deliveries.php', ['quotation_document_deliveries']);
+    }
+
+    public function test_revoked_direct_document_duties_on_a_hydrated_actor_are_refused_before_lookup_or_replay(): void
+    {
+        $this->activate();
+        $this->documentWithEvidence();
+        $this->clerk->load(['permissions', 'roles']);
+        User::query()->findOrFail($this->clerk->id)->revokePermissionTo(array_values(array_diff(self::DUTIES, [P::QUOTATION_VIEW])));
+        $this->assertTrue($this->clerk->can(P::DELIVERY_VIEW), 'the supplied actor really has stale direct permissions');
+        $before = $this->writes();
+        foreach ([$this->revision, 999999999] as $revision) {
+            foreach ([
+                fn () => app(ReadQuotationDocumentStatus::class)($this->clerk, $revision),
+                fn () => app(ReadQuotationDocumentHistory::class)($this->clerk, $revision),
+                fn () => app(ReadQuotationDocumentDeliveries::class)($this->clerk, $revision),
+                fn () => app(DownloadQuotationDocument::class)($this->clerk, $revision),
+                fn () => app(RequestQuotationDocument::class)($this->clerk, $revision, 'gen-evidence'),
+                fn () => app(RecordManualQuotationDelivery::class)($this->clerk, $revision,
+                    ['channel' => 'HAND', 'delivered_on' => $this->today(), 'recipient_name' => 'Mr Customer'], 'del-evidence'),
+            ] as $call) {
+                $this->assertThrows($call, AuthorizationException::class);
+            }
+        }
+        $this->assertSame($before, $this->writes(), 'refused direct calls neither disclose cached evidence nor write anything');
+    }
+
+    public function test_manual_delivery_uses_the_database_date_bound_even_when_the_php_clock_differs(): void
+    {
+        $this->activate();
+        $this->documentWithEvidence();
+        $dates = DB::selectOne('SELECT (current_date + 1)::text AS allowed, (current_date + 2)::text AS future');
+        $fields = ['channel' => 'HAND', 'delivered_on' => $dates->allowed, 'recipient_name' => 'Synthetic recipient'];
+        $out = Carbon::withTestNow(now()->subDays(10), fn () => app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, $fields, 'db-date-bound'));
+        $this->assertSame($dates->allowed, DB::table('quotation_document_deliveries')->where('id', $out['delivery']->id)->value('delivered_on'));
+        Carbon::withTestNow(now()->addDays(10), function () use ($dates, $fields): void {
+            foreach ([$dates->future, '2026-02-31', "2026-01-01\0"] as $date) {
+                try {
+                    app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, [...$fields, 'delivered_on' => $date], 'invalid-date');
+                    $this->fail('An invalid date must be refused by the Action.');
+                } catch (DomainInvariantException $exception) {
+                    $this->assertSame('DELIVERY_INVALID', $exception->reasonCode);
+                }
+            }
+        });
     }
 }

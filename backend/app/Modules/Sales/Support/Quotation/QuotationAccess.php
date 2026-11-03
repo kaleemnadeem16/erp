@@ -76,6 +76,6 @@ final class QuotationAccess
             $query->lockForUpdate();
         }
 
-        return $query->firstOrFail();
+        return $query->first() ?? throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'family_id');
     }
 }

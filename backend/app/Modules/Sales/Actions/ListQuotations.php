@@ -9,6 +9,7 @@ use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationAvailability;
+use App\Modules\Sales\Support\Quotation\QuotationListSnapshot;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -58,7 +59,7 @@ final class ListQuotations
                 $query->orderBy('id');
             }
 
-            $paginator = $query->with('family:id,responsible_owner_id')->paginate((int) ($input['per_page'] ?? 25), ['*'], 'page', (int) ($input['page'] ?? 1));
+            $paginator = app(QuotationListSnapshot::class)->paginate($query, (int) ($input['per_page'] ?? 25), (int) ($input['page'] ?? 1), $field, str_starts_with($sort, '-'));
             $rows = $paginator->getCollection()->map(static fn (QuotationRevision $revision): array => [
                 'revision_id' => (int) $revision->id,
                 'family_id' => (int) $revision->family_id,

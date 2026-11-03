@@ -35,7 +35,7 @@ final class RepairQuotationDocument
 
     private function guarded(User $actor, int $revisionId): int
     {
-        SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_REPAIR, 'repair the quotation document');
+        SalesAccess::require($this->locator->currentActor($actor), PermissionVocabulary::DOCUMENT_REPAIR, 'repair the quotation document');
         $this->locator->authorise($actor, $revisionId, 'repair the quotation document');
 
         return $this->locator->artefactOrFail($revisionId)->id;

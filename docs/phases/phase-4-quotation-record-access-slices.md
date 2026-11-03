@@ -131,7 +131,7 @@ verify the populated safe refusal and upgrading existing companies/grants too.
 ### QA5 — Generated client and usable UI
 
 Dependencies: QA3 API/client contract, QA4 approved supported rollout and exact staging identities.
-Expose owner (separate creator), scoped list/detail, view-only safe metadata, prepare-only preview,
+Expose owner (separate creator), scoped list/detail, view-only safe metadata, preview/edit requiring both view and prepare,
 explicit unit/owner transfer, named recipient and level, optional start/end, revoke/expired state,
 and access history only at its authorised projection. Use existing shell, selectors and sheets.
 No client-supplied allow flags, financial operands in access diagnostics or shares-as-permission UI.

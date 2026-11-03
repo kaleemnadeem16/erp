@@ -148,6 +148,7 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 - [Quotation record access (#45)](quotation-record-access-design.md) — own/team/delegated architecture, storage and ordered slices; proposed, no implementation or activation.
 - [Quotation access safety proofs](quotation-access-safety-proofs.md) — bounded waits, synthetic contention harness, deadlock and populated rollback evidence; activation remains blocked.
+- [Quotation access advisory corrections](quotation-access-advisories.md) — current-duty checks, retry budgets, consistent list snapshots and safe document history.
 
 ## Related
 

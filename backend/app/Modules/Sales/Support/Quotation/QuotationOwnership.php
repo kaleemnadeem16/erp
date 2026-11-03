@@ -12,7 +12,6 @@ use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\SalesRecords;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -38,11 +37,7 @@ final class QuotationOwnership
 
     public static function lockFamily(int $familyId, User $actor): QuotationFamily
     {
-        try {
-            return app(QuotationAccess::class)->requireFamily($actor, $familyId, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW], true);
-        } catch (ModelNotFoundException) {
-            throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_FOUND, 'The quotation was not found.', 'family_id');
-        }
+        return app(QuotationAccess::class)->requireFamily($actor, $familyId, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW], true);
     }
 
     public static function requireResolved(QuotationFamily $family): void

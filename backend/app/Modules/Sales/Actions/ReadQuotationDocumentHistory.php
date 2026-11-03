@@ -20,7 +20,7 @@ final class ReadQuotationDocumentHistory
     public function __invoke(User $actor, int $revisionId): array
     {
         return DB::transaction(function () use ($actor, $revisionId): array {
-            SalesAccess::require($actor, PermissionVocabulary::DOCUMENT_VIEW, 'see the quotation document history');
+            SalesAccess::require($this->locator->currentActor($actor), PermissionVocabulary::DOCUMENT_VIEW, 'see the quotation document history');
             $this->locator->authorise($actor, $revisionId, 'see the quotation document history');
 
             return $this->history->execute($this->locator->artefactOrFail($revisionId)->id, $actor->id);

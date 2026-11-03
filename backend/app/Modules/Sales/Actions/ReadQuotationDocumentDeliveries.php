@@ -20,7 +20,7 @@ final class ReadQuotationDocumentDeliveries
     public function __invoke(User $actor, int $revisionId): array
     {
         return DB::transaction(function () use ($actor, $revisionId): array {
-            SalesAccess::require($actor, PermissionVocabulary::DELIVERY_VIEW, 'see quotation deliveries');
+            SalesAccess::require($this->locator->currentActor($actor), PermissionVocabulary::DELIVERY_VIEW, 'see quotation deliveries');
             $this->locator->authorise($actor, $revisionId, 'see quotation deliveries');
             $this->locator->manifest($revisionId);
 

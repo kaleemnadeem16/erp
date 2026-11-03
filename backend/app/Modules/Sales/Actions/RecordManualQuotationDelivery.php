@@ -33,7 +33,7 @@ final class RecordManualQuotationDelivery
     {
         // Authority, the replay look-up and the insert share one transaction, so a replay is only disclosed to someone who may see it now.
         return DB::transaction(function () use ($actor, $revisionId, $fields, $operationKey, $correctsId): array {
-            SalesAccess::require($actor, PermissionVocabulary::DELIVERY_RECORD, 'record a quotation delivery');
+            SalesAccess::require($this->locator->currentActor($actor), PermissionVocabulary::DELIVERY_RECORD, 'record a quotation delivery');
             $this->locator->authorise($actor, $revisionId, 'record a quotation delivery');
 
             return $this->record($actor, $revisionId, $fields, $operationKey, $correctsId);
@@ -50,10 +50,13 @@ final class RecordManualQuotationDelivery
         $recipient = trim($fields['recipient_name']);
         $detail = isset($fields['recipient_detail']) ? trim((string) $fields['recipient_detail']) : null;
         $note = isset($fields['note']) ? trim((string) $fields['note']) : null;
+        $date = preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $fields['delivered_on']) === 1
+            ? \DateTimeImmutable::createFromFormat('!Y-m-d', $fields['delivered_on']) : false;
+        $maximumDate = (string) DB::selectOne('SELECT (current_date + 1)::text AS maximum_date')->maximum_date;
         if ($operationKey === '' || mb_strlen($operationKey) > 120 || $recipient === '' || mb_strlen($recipient) > 200 || ($detail !== null && mb_strlen($detail) > 200)
             || ($note !== null && mb_strlen($note) > 1000) || ! in_array($fields['channel'], self::CHANNELS, true)
-            || preg_match('/^\d{4}-\d{2}-\d{2}$/', $fields['delivered_on']) !== 1 || strtotime($fields['delivered_on']) === false
-            || $fields['delivered_on'] > now()->addDay()->format('Y-m-d')) {
+            || ! $date || $date->format('Y-m-d') !== $fields['delivered_on']
+            || $fields['delivered_on'] > $maximumDate) {
             throw new DomainInvariantException('A delivery record needs a request key, a recipient, a channel (HAND, COURIER, POST, OTHER) and the actual date, which cannot be in the future.', 'delivery', 'DELIVERY_INVALID');
         }
         $artefact = $this->locator->artefactOrFail($revisionId);

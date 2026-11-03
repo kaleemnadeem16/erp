@@ -312,7 +312,8 @@ class DocumentsDeliveryTest extends TestCase
 
         // Wrong bytes (even a regenerated-looking file) are refused; the exact backup is accepted.
         $this->assertSame('restore_restore_mismatch', $this->refusal(fn () => app(RestoreDocumentArtefact::class)->execute($a->id, $this->stream($backup.' '), 'restore from backup', $this->user->id)));
-        app(RestoreDocumentArtefact::class)->execute($a->id, $this->stream($backup), 'restore from backup', $this->user->id);
+        $privateReason = 'SYNTHETIC-RESTORE-NOTE private/synthetic-original.pdf';
+        app(RestoreDocumentArtefact::class)->execute($a->id, $this->stream($backup), $privateReason, $this->user->id);
         $this->assertSame($backup, Storage::disk('files')->get($this->path($a)));
         $dl = app(StreamAuthorisedDocument::class)->execute($a->id, $this->user->id);
         $this->assertSame($a->sha256, hash('sha256', stream_get_contents($dl->stream)));
@@ -322,6 +323,10 @@ class DocumentsDeliveryTest extends TestCase
         $this->assertSame($events, DB::table('file_blob_events')->count());
         $this->assertSame(['GENERATED', 'MISSING_DETECTED', 'DOWNLOAD_UNAVAILABLE', 'RESTORED', 'DOWNLOAD_DELIVERED'],
             array_column(app(ReadDocumentArtefactHistory::class)->execute($a->id, $this->user->id), 'event'));
+        $history = app(ReadDocumentArtefactHistory::class)->execute($a->id, $this->user->id);
+        $this->assertStringNotContainsString($privateReason, json_encode($history, JSON_THROW_ON_ERROR));
+        $this->assertSame('restored_identical_bytes', collect($history)->firstWhere('event', 'RESTORED')['detail']['reason']);
+        $this->assertSame($privateReason, DB::table('file_blob_events')->where('blob_id', $a->blob_id)->where('event', 'RESTORED')->value('reason'), 'redact the projection, never rewrite append-only audit evidence');
     }
 
     public function test_there_is_still_no_way_in_and_rolling_back_refuses_with_evidence(): void

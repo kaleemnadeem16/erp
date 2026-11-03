@@ -43,7 +43,9 @@ final class QuotationOperation
         }
         $hash = OperationIntent::hash($operation, $intent);
 
-        for ($attempt = 0; ; $attempt++) {
+        $uniqueRetries = 0;
+        $deadlockRetries = 0;
+        while (true) {
             try {
                 return DB::transaction(function () use ($actor, $operation, $key, $hash, $lockSubject, $work, $replayGuard): array {
                     // Acquire security first on each attempt; family and revision locks follow.
@@ -67,14 +69,14 @@ final class QuotationOperation
                 });
             } catch (UniqueConstraintViolationException $race) {
                 // Someone completed the same key between our look-up and our insert: try again and replay (or refuse) their receipt.
-                if ($attempt >= 1 || ! str_contains($race->getMessage(), 'sales_quotation_receipts_key_unique')) {
+                if (! str_contains($race->getMessage(), 'sales_quotation_receipts_key_unique') || $uniqueRetries++ >= 1) {
                     throw $race;
                 }
             } catch (PDOException $failure) {
                 // A deadlock or serialisation failure aborted this attempt (PostgreSQL chose it as the victim). Restart the WHOLE operation — the fence, the authority check in
                 // lockSubject, the receipt look-up and the work all run again from the start — but only as the outermost transaction: inside a caller's, the aborted transaction
                 // cannot continue, so the failure goes back to the caller.
-                if (! self::isConcurrencyVictim($failure) || $attempt >= self::DEADLOCK_RETRIES || DB::transactionLevel() > 0) {
+                if (! self::isConcurrencyVictim($failure) || $deadlockRetries++ >= self::DEADLOCK_RETRIES || DB::transactionLevel() > 0) {
                     throw $failure;
                 }
             }
