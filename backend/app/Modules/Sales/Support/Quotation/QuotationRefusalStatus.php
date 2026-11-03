@@ -50,6 +50,10 @@ final class QuotationRefusalStatus
         QuotationRefusal::BASELINE_NOT_APPLICABLE => self::UNPROCESSABLE,
         QuotationRefusal::BASELINE_CONFLICT => self::UNPROCESSABLE,
         QuotationRefusal::REASON_REQUIRED => self::UNPROCESSABLE,
+        QuotationRefusal::DISCOUNT_EXCEEDS_BASE => self::UNPROCESSABLE,
+        QuotationRefusal::DISCOUNT_PRECISION_EXCEEDED => self::UNPROCESSABLE,
+        QuotationRefusal::OVERRIDE_NOT_ALLOWED => self::UNPROCESSABLE,
+        QuotationRefusal::OVERRIDE_BASIS_CHANGED => self::UNPROCESSABLE,
     ];
 
     public static function for(?string $reasonCode): int

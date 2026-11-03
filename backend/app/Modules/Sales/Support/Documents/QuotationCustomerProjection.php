@@ -11,6 +11,7 @@ use App\Modules\Documents\Support\DocumentProjection;
 use App\Modules\Sales\Models\QuotationIssue;
 use App\Modules\Sales\Models\QuotationIssuedLine;
 use App\Modules\Sales\Models\QuotationRevision;
+use Brick\Math\BigDecimal;
 
 /**
  * The customer-safe snapshot of an ISSUED quotation, built only from the frozen issue and its frozen lines (never from the draft, the preview or any cost, margin, control or
@@ -26,6 +27,14 @@ final class QuotationCustomerProjection
     public static function stableGenerationIdentity(int $issueId): string
     {
         return "issue:{$issueId}";
+    }
+
+    /** What was taken off this line (its own discount or override plus its share of a document discount), as the customer sees a discount; absent when nothing was. */
+    private static function discount(QuotationIssuedLine $line): ?string
+    {
+        $total = BigDecimal::of((string) $line->line_reduction_amount)->plus((string) $line->document_reduction_amount);
+
+        return $total->isPositive() ? (string) $total->toScale(4) : null;
     }
 
     public static function forIssue(QuotationIssue $issue, QuotationRevision $revision): DocumentProjection
@@ -52,7 +61,7 @@ final class QuotationCustomerProjection
             'header' => $header,
             'sections' => ['lines' => $lines->map(fn (QuotationIssuedLine $line): array => array_filter([
                 'section_title' => $line->section_title, 'description' => $line->description, 'membership' => $line->membership, 'quantity' => (string) $line->offered_quantity,
-                'uom' => $line->offered_uom_id === null ? ($line->manual_measure) : ($uoms[$line->offered_uom_id] ?? null), 'unit_price' => (string) $line->unit_price, 'amount' => (string) $line->net,
+                'uom' => $line->offered_uom_id === null ? ($line->manual_measure) : ($uoms[$line->offered_uom_id] ?? null), 'unit_price' => (string) $line->unit_price, 'discount' => self::discount($line), 'amount' => (string) $line->net,
             ], fn ($v): bool => $v !== null))->values()->all()],
         ]);
     }

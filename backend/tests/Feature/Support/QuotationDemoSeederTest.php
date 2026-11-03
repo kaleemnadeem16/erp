@@ -24,7 +24,7 @@ class QuotationDemoSeederTest extends TestCase
         $this->artisan('demo:seed')->assertSuccessful();
 
         $this->assertSame(1, QuotationControlSet::query()->count());
-        $this->assertSame(['FLOOR', 'FLOOR'], QuotationControlSet::query()->sole()->controls->pluck('kind')->all());
+        $this->assertSame(['FLOOR', 'FLOOR', 'INPUT_REDUCTION_PERCENT'], QuotationControlSet::query()->sole()->controls->pluck('kind')->all());
         $this->assertSame(0, QuotationIssue::query()->count(), 'issue stays blocked until the Tax jurisdiction/classification source exists');
         // The intake demo hangs on a demo quotation family; the named drafts exist only where the staged duties are locally activated, so here there is nothing to take in.
         $this->assertSame([0, 0], [CustomerDecisionCase::query()->count(), CustomerDecisionEvidence::query()->count()]);

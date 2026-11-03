@@ -24,12 +24,13 @@ use Illuminate\Support\Facades\DB;
 /**
  * Publishes the next version of the company's final-net control set (D3): a whole, immutable set that governs every quotation issued after it. Guarded by
  * `sales.financial.configure` (STAGED) and a currently active member; the controls are the company's rules, never a seller input. Only the kinds the evaluator supports are
- * accepted (`FLOOR`, `MIN_MARGIN_AMOUNT`, `MIN_MARGIN_PERCENT`), each validated by `NetControl` itself, and the set is pinned to the rounding policy in force today: a later change of
+ * accepted (`FLOOR`, `MIN_MARGIN_AMOUNT`, `MIN_MARGIN_PERCENT` and the four discount-limit kinds `INPUT_REDUCTION_*` / `AGGREGATE_REDUCTION_*`), each validated by `NetControl` itself, and the set is pinned to the rounding policy in force today: a later change of
  * that policy makes every control UNEVALUABLE until a set is published against the new one, never a false pass. An empty set is refused. No route calls it.
  */
 final class PublishQuotationControlSet
 {
-    private const KINDS = [NetControlKind::Floor, NetControlKind::MinMarginAmount, NetControlKind::MinMarginPercent];
+    private const KINDS = [NetControlKind::Floor, NetControlKind::MinMarginAmount, NetControlKind::MinMarginPercent, NetControlKind::InputReductionPercent, NetControlKind::InputReductionAmount,
+        NetControlKind::AggregateReductionPercent, NetControlKind::AggregateReductionAmount];
 
     public function __construct(private readonly CompanyContext $company, private readonly ResolveRoundingPolicy $rounding) {}
 

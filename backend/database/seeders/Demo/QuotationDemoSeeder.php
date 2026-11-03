@@ -16,6 +16,7 @@ use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
+use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
@@ -56,11 +57,14 @@ final class QuotationDemoSeeder extends Seeder
     private function seed(User $admin): void
     {
         $pkr = Currency::query()->where('code', 'PKR')->firstOrFail();
-        if (! QuotationControlSet::query()->exists()) {
+        // The latest published set must also hold the routine-discount limit; a database seeded before it existed gets one new version (versions are immutable), never an edit.
+        $latest = QuotationControlSet::query()->orderByDesc('version_no')->with('controls')->first();
+        if ($latest === null || ! $latest->controls->contains('kind', 'INPUT_REDUCTION_PERCENT')) {
             app(PublishQuotationControlSet::class)($admin, [
                 ['ref' => 'line-floor', 'kind' => 'FLOOR', 'mode' => 'MANDATORY', 'limit' => '1000', 'currency_id' => $pkr->id],
                 ['ref' => 'line-floor-advice', 'kind' => 'FLOOR', 'mode' => 'ADVISORY', 'limit' => '5000', 'currency_id' => $pkr->id],
-            ], 'Demo: no line below Rs 1,000; advise review below Rs 5,000');
+                ['ref' => 'routine-discount', 'kind' => 'INPUT_REDUCTION_PERCENT', 'mode' => 'MANDATORY', 'limit' => '10'],
+            ], 'Demo: no line below Rs 1,000; advise review below Rs 5,000; a routine discount is at most 10% of the list amount');
         }
         $this->intake($admin);
     }
@@ -69,7 +73,9 @@ final class QuotationDemoSeeder extends Seeder
     private function intake(User $admin): void
     {
         $party = Party::query()->where('code', 'cus-alpha')->first();
-        $line = QuotationDraftLine::query()->orderBy('id')->first();
+        // The named drafts of the demo preparer only: other demo drafts (concessions) are not about this purchase order.
+        $preparer = User::query()->where('email', QuotationDraftsDemoSeeder::PREPARER)->first();
+        $line = $preparer === null ? null : QuotationDraftLine::query()->where('created_by', $preparer->id)->orderBy('id')->first();
         if ($party === null || $line === null || CustomerDecisionCase::query()->exists()) {
             return;
         }

@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Quotation\Issue;
 
+use App\Models\Currency;
 use App\Modules\Sales\Models\QuotationControlSet;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Financial\Arithmetic;
 use App\Modules\Sales\Support\Financial\Controls\ControlBasis;
 use App\Modules\Sales\Support\Financial\Controls\ControlMode;
 use App\Modules\Sales\Support\Financial\Controls\ControlOutcome;
+use App\Modules\Sales\Support\Financial\Controls\DiscretionaryInput;
 use App\Modules\Sales\Support\Financial\Controls\EvaluateSettledNetControls;
+use App\Modules\Sales\Support\Financial\Controls\GovernedReference;
 use App\Modules\Sales\Support\Financial\Controls\NetControl;
 use App\Modules\Sales\Support\Financial\Controls\NetControlKind;
 use App\Modules\Sales\Support\Financial\Controls\NetControlSet;
 use App\Modules\Sales\Support\Financial\Controls\SettledNetFacts;
 use App\Modules\Sales\Support\Financial\Policy\ResolveRoundingPolicy;
+use App\Modules\Sales\Support\Financial\Policy\RoundingPolicy;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Support\CompanyContext;
@@ -31,6 +36,29 @@ use App\Support\CompanyContext;
 final class ConfiguredQuotationControlsProvider implements QuotationControlsProvider
 {
     public function __construct(private readonly EvaluateSettledNetControls $evaluate, private readonly ResolveRoundingPolicy $rounding, private readonly CompanyContext $company) {}
+
+    /**
+     * What a reduction control needs about the line: the governed reference (the settled list amount of the entered price) and the specific discretionary input the seller entered,
+     * or the known absence of one. A line with no entered price has neither, so reduction controls stay UNEVALUABLE for it.
+     *
+     * @return array{0: GovernedReference|null, 1: DiscretionaryInput|null}
+     */
+    private function concession(QuotationDraftLine $line, int $currencyId, ?RoundingPolicy $policy): array
+    {
+        if ($line->unit_price === null || $policy === null) {
+            return [null, null];
+        }
+        $rule = $policy->settlementRule(Currency::query()->findOrFail($currencyId));
+        $list = Arithmetic::settleLine((string) $line->unit_price, (string) $line->offered_quantity, $rule)->settled;
+        $discretionary = match ($line->discount_kind) {
+            null => DiscretionaryInput::none(),
+            'PERCENT' => DiscretionaryInput::percent((string) $line->discount_value),
+            'PER_PRICED_UNIT' => DiscretionaryInput::amount((string) $line->discount_value, $currencyId, ControlBasis::PerUnit),
+            default => DiscretionaryInput::amount((string) $line->discount_value, $currencyId, ControlBasis::Line),
+        };
+
+        return [new GovernedReference($list, $currencyId, 'ENTERED_PRICE'), $discretionary];
+    }
 
     public function assess(SalesActorContext $actor, QuotationRevision $revision, array $settledNets): QuotationControlsOutcome
     {
@@ -58,7 +86,8 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
 
                 continue;
             }
-            $evaluation = ($this->evaluate)(new SettledNetFacts($this->company->id(), $revision->currency_id, $net, (string) $line->offered_quantity, $pricingDate, null, null, null, [], $policy), $set);
+            [$reference, $discretionary] = $this->concession($line, $revision->currency_id, $policy);
+            $evaluation = ($this->evaluate)(new SettledNetFacts($this->company->id(), $revision->currency_id, $net, (string) $line->offered_quantity, $pricingDate, $reference, $discretionary, null, [], $policy), $set);
             $judged[] = [$line->id, $net, $evaluation->fingerprint()];
             foreach ($evaluation->results as $result) {
                 if ($result->blocksIssue()) {

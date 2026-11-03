@@ -13,6 +13,16 @@ use Illuminate\Support\Facades\DB;
 /** Preliminary duty check; the Action repeats current duty and family policy under its own fence. */
 abstract class QuotationRequest extends SalesRequest
 {
+    /**
+     * Further duties this particular body needs (a field-level duty, e.g. a discount): judged by the same family policy, so a caller without one is refused before any lookup.
+     *
+     * @return list<string>
+     */
+    protected function extraDuties(): array
+    {
+        return [];
+    }
+
     public function authorize(): bool
     {
         $actor = $this->user();
@@ -28,6 +38,7 @@ abstract class QuotationRequest extends SalesRequest
             || $this instanceof AssessQuotationIssueReadinessRequest || $this instanceof IssueQuotationRequest) {
             $duties[] = PermissionVocabulary::QUOTATION_VIEW;
         }
+        array_push($duties, ...$this->extraDuties());
         try {
             DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, $duties));
 

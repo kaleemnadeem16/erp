@@ -17,6 +17,7 @@ use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
+use Database\Seeders\Demo\Sales\QuotationConcessionsDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -87,6 +88,8 @@ final class DemoDatabaseSeeder extends Seeder
                 QuotationDraftsDemoSeeder::class,
                 // After the Sales and Inventory seeders: the draft sells their service and finished-product Items to their customer.
                 QuotationDemoSeeder::class,
+                // After QuotationDemoSeeder: the drafts judge their discounts against the control set it publishes.
+                QuotationConcessionsDemoSeeder::class,
                 // After QuotationDemoSeeder: issuing the demo document needs the published control set (local dev preview only).
                 QuotationDocumentsDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,

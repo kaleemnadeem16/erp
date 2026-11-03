@@ -95,9 +95,19 @@ final class QuotationIssueAssessor
             if ($line['net']['certainty'] !== Certainty::Complete->value) {
                 $blockers[] = new IssueBlocker((string) ($line['net']['reasons'][0] ?? 'NET_UNKNOWN'), IssueBlocker::LINE, $id);
             }
+            if (($line['adjustment']['approval_required'] ?? false) === true) {
+                // Recorded, not decided: no approval can be given yet, so a concession that needs one keeps the draft from being issued.
+                $blockers[] = new IssueBlocker('APPROVAL_REQUIRED', IssueBlocker::LINE, $id);
+            }
             if (($line['fx']['current'] ?? 'SAME') !== 'SAME') {
                 $blockers[] = new IssueBlocker('FX_EVIDENCE_'.$line['fx']['current'], IssueBlocker::LINE, $id);
             }
+        }
+        if (($preview['document_discount']['approval_required'] ?? false) === true) {
+            $blockers[] = new IssueBlocker('APPROVAL_REQUIRED', IssueBlocker::HEADER);
+        }
+        foreach ($preview['document_discount']['issues'] ?? [] as $code) {
+            $blockers[] = new IssueBlocker((string) $code, IssueBlocker::HEADER);
         }
         foreach ($preview['issues'] as $issue) {
             $blockers[] = new IssueBlocker(explode(':', (string) $issue)[0], IssueBlocker::HEADER);

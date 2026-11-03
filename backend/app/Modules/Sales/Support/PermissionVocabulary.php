@@ -103,6 +103,18 @@ final class PermissionVocabulary
     public const DELIVERY_RECORD = 'sales.delivery.record';
 
     /**
+     * Pricing concessions on a draft (PR4/PR5, ADR 0116). STAGED like the other quotation duties: the guarded draft Actions ask for them, `SalesAccess`/`QuotationAccess` refuse every
+     * caller until a reviewed holder recipe activates them. `discount` is the routine specific discount (line or document); `price.override` is the sensitive reasoned final-net
+     * override; `commercial.view` is the independent right to see chosen commercial figures (recipient name and net amount) in the quotation list. None implies another, and none
+     * is part of an automatic grant or of `all()`.
+     */
+    public const QUOTATION_DISCOUNT = 'sales.quotation.discount';
+
+    public const QUOTATION_PRICE_OVERRIDE = 'sales.quotation.price.override';
+
+    public const QUOTATION_COMMERCIAL_VIEW = 'sales.quotation.commercial.view';
+
+    /**
      * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified
      * in `Authority\SalesDutyManifest` and deliberately has no constant here until the slice that delivers it.
      *

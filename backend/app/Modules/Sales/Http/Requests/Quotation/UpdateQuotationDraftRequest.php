@@ -20,6 +20,24 @@ class UpdateQuotationDraftRequest extends QuotationRequest
         return PermissionVocabulary::QUOTATION_PREPARE;
     }
 
+    /** @return list<string> */
+    protected function extraDuties(): array
+    {
+        $body = json_decode((string) $this->getContent(), true);
+        $body = is_array($body) ? $body : [];
+        $lines = [...(is_array($body['add_lines'] ?? null) ? $body['add_lines'] : []), ...(is_array($body['update_lines'] ?? null) ? $body['update_lines'] : [])];
+        $has = static fn (string $field): bool => collect($lines)->contains(static fn (mixed $line): bool => is_array($line) && array_key_exists($field, $line));
+        $duties = [];
+        if (array_key_exists('document_discount', $body) || $has('discount')) {
+            $duties[] = PermissionVocabulary::QUOTATION_DISCOUNT;
+        }
+        if ($has('net_override')) {
+            $duties[] = PermissionVocabulary::QUOTATION_PRICE_OVERRIDE;
+        }
+
+        return $duties;
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {

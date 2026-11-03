@@ -246,6 +246,27 @@ QL1a's `StorageAmount` contract (negative amounts refused); signed settlement re
 separate evidence and remain signed strings. Credits would require a new server/UI contract.
 The work-area link provides a safe fallback with no invented list.
 
+## Draft concessions — discounts and final-net overrides (PR4/PR5, delivered)
+
+A DRAFT holds the seller's concessions as inputs, stamped with who entered them and when; the server calculates every amount through the kernel (`CalculateSimplePrice`, the settlement
+rule and largest-remainder allocation) and the browser calculates nothing.
+
+| Concession | Stored on | Duty (STAGED, quotation-family scope) | Rule |
+|---|---|---|---|
+| Line discount (one slot): PERCENT, PER_PRICED_UNIT, PER_LINE | `quotation_draft_lines` | `sales.quotation.discount` | Greater than zero; never larger than its line; settled once |
+| Final-net override: amount + mandatory reason | `quotation_draft_lines` | `sales.quotation.price.override` (sensitive) | Needs an entered price; may only **reduce** the calculated net; excludes a discount; a price or quantity change must restate or clear it |
+| Document discount (one slot): PERCENT or AMOUNT | `quotation_draft_document_discounts` | `sales.quotation.discount` | Spread over the counted lines (base and baseline choices) by largest remainder, so the header stays the sum of its settled lines; optional lines take no share |
+
+**Approval is a recorded fact, not a workflow** (the approvals engine is not built). An override always needs approval (no risk bypass). A discount needs it unless the company's published
+control set holds a reduction control (`INPUT_REDUCTION_*`, `AGGREGATE_REDUCTION_*`, now publishable) that the discount is proven within; no control set, no reduction control, a policy the set
+was not written for, or figures that cannot be computed yet count as "not proven within a limit" (default-deny). Only a code is stored and returned (`PRICE_OVERRIDE`,
+`DISCOUNT_ABOVE_LIMIT`, `DISCOUNT_LIMIT_NOT_CONFIGURED`, `DISCOUNT_LIMIT_UNVERIFIED`); no limit, threshold or cost reaches any reader. A draft that needs approval is blocked from issue
+(`APPROVAL_REQUIRED`) because no approval can be given yet; at issue the reduction controls also see the discount (reference and discretionary input) instead of being unevaluable.
+
+Issue freezes the provenance per line (`line_reduction_kind`, `line_reduction_amount`, `document_reduction_amount`), and the customer document shows the line `discount` so quantity x unit
+price - discount = amount. Override reasons and approval codes never reach the customer projection. Duties are not in the local dev preview; they are switched on only inside the demo
+seeder's own transaction.
+
 ## Related
 
 - [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)
