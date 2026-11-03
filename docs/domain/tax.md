@@ -289,4 +289,4 @@ does not imply permission to change tax rules or recovery treatment.
 - [Sales pricing](sales-pricing.md) · [Sales pipeline](sales-pipeline.md)
 - [Receivables](receivables.md) · [General ledger](general-ledger.md)
 - [Items](items.md) · [Assemblies](assemblies.md)
-- [ADR 0025](../decisions/0025-configurable-tax-engine.md) · [ADR 0056](../decisions/0056-progressive-tax-calculation-and-recovery.md)
+- [ADR 0154](../decisions/0154-record-draft-concessions-tax-declarations-and-list-values-as-versioned-per-row-facts.md) · [ADR 0025](../decisions/0025-configurable-tax-engine.md) · [ADR 0056](../decisions/0056-progressive-tax-calculation-and-recovery.md)

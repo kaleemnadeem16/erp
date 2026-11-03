@@ -283,5 +283,6 @@ Safest default if the model ever cannot judge a row (no duty, staged, suspended 
 
 - [Resolution specification](sales-pricing-resolution.md) · [R3 slices](../phases/phase-4-r3-implementation-slices.md)
 - [Accepted review](../phases/phase-4-r3-business-review.md) · [Worked example](../phases/phase-4-r3-worked-example.md)
+- [0154](../decisions/0154-record-draft-concessions-tax-declarations-and-list-values-as-versioned-per-row-facts.md) (concessions, declarations, list values)
 - [0115](../decisions/0115-resolve-sales-pricing-by-explicit-eligibility-and-commercial-intent.md) · [0116](../decisions/0116-govern-sales-discounts-and-final-net-controls.md) · [0117](../decisions/0117-preserve-pricing-evidence-across-capability-transitions.md)
 - [0109](../decisions/0109-shared-commercial-quotation-lines-and-optional-estimating.md) · [Parties](parties.md) · [Items](items.md) · [Assemblies](assemblies.md)

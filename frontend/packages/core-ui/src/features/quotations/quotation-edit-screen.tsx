@@ -308,10 +308,10 @@ export function QuotationEditForm({ id }: { id: number }) {
         description="Changes apply to the saved draft. Review them before saving."
         actions={
           <div className="flex flex-wrap gap-3">
-            <Link className="ui-link-action" to={`/quotations/${id}/review`}>
+            <Link className="ui-link-action inline-flex min-h-11 items-center" to={`/quotations/${id}/review`}>
               Review saved quotation
             </Link>
-            <Link className="ui-link-action" to="/quotations">
+            <Link className="ui-link-action inline-flex min-h-11 items-center" to="/quotations">
               Back to quotations
             </Link>
           </div>
