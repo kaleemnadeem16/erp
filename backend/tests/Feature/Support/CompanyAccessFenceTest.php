@@ -113,6 +113,28 @@ class CompanyAccessFenceTest extends TestCase
         }
     }
 
+    public function test_a_protected_read_serialises_another_companys_security_write_but_not_its_login(): void
+    {
+        $company = DB::table('companies')->insertGetId(['name' => 'Synthetic foreign company', 'created_at' => now(), 'updated_at' => now()]);
+        $userId = DB::table('users')->insertGetId(['company_id' => $company, 'name' => 'Synthetic foreign actor',
+            'email' => 'foreign-fence@example.invalid', 'password' => 'unusable-fixture-password', 'status' => 'ACTIVE']);
+        $other = $this->otherSession();
+        DB::beginTransaction();
+        try {
+            app(CompanyAccessFence::class)->lock(); // Company 1, not the target user's company.
+            $this->assertSame(1, $other->exec("UPDATE users SET last_login_at = now() WHERE id = {$userId}"));
+            try {
+                $other->exec("UPDATE users SET status = 'SUSPENDED' WHERE id = {$userId}");
+                $this->fail('The conservative barrier serialises security writers even across companies.');
+            } catch (PDOException $exception) {
+                $this->assertSame('55P03', $exception->getCode());
+            }
+        } finally {
+            DB::rollBack();
+        }
+        $this->assertSame('ACTIVE', DB::table('users')->where('id', $userId)->value('status'));
+    }
+
     public function test_raw_security_writers_use_the_barrier_and_advance_epochs_atomically(): void
     {
         $user = User::factory()->create();

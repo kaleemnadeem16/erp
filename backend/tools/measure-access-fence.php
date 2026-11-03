@@ -6,6 +6,19 @@ declare(strict_types=1);
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\DB;
 
+// Refuse before Laravel/providers can establish any connection. A cached application
+// configuration is inappropriate for a disposable database measurement.
+if (getenv('APP_ENV') !== 'testing' || getenv('TEST_DB_HOST') !== 'postgres-test'
+    || ! preg_match('/^erp_testing_[a-z0-9_]{1,40}$/D', (string) getenv('TEST_DB_DATABASE'))
+    || file_exists(__DIR__.'/../bootstrap/cache/config.php')) {
+    throw new RuntimeException('Measurement requires explicit private test settings and uncached configuration.');
+}
+require __DIR__.'/../bootstrap/testing-environment.php';
+foreach (['DB_DATABASE' => getenv('TEST_DB_DATABASE'), 'DB_HOST' => 'postgres-test', 'DB_PORT' => '5432'] as $name => $value) {
+    putenv("{$name}={$value}");
+    $_ENV[$name] = $value;
+    $_SERVER[$name] = $value;
+}
 require __DIR__.'/../vendor/autoload.php';
 $app = require __DIR__.'/../bootstrap/app.php';
 $app->make(Kernel::class)->bootstrap();
