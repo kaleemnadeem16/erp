@@ -158,7 +158,10 @@ final class QuotationIssuingDemoSeeder extends Seeder
         $this->draft($admin, 'blocked', $header($month), [['source_kind' => 'DIRECT_ITEM', 'item_id' => $undeclared->id, 'offered_quantity' => '4', 'unit_price' => '8000.0000']]);
     }
 
-    /** @param list<array<string, mixed>> $lines */
+    /**
+     * @param  array<string, mixed>  $header
+     * @param  list<array<string, mixed>>  $lines
+     */
     private function draft(User $admin, string $marker, array $header, array $lines): QuotationRevision
     {
         $created = app(CreateQuotationDraft::class)($admin, "demo-iss-{$marker}", $header);
