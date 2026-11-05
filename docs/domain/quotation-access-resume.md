@@ -2,15 +2,17 @@
 
 # Quotation access completion — resume checkpoint
 
-**2026-11-03: incomplete, unpublished continuation.** This is a handoff after an editor interruption
-and a shared test-service failure, not feature sign-off. The test service was subsequently recovered under the owner’s one-time exception; see the recovery update below. Follow the original owner direction in
-[#77](https://github.com/kaleemnadeem16/erp/issues/77). Do not edit STATUS files or run anything
+**2026-11-05: advisory checkpoint published and CI-verified; overall completion remains outstanding.**
+Published develop `c7c55d99591bc93ce4c44955ba4d3ac0fda8e249` passed
+[Pipeline 41635175196](https://github.com/kaleemnadeem16/erp/actions/runs/41635175196): backend
+shards, browser shards, both linters and codegen all succeeded. QA4 holder recipe, QA5 and demo
+extension are not delivered by that checkpoint. Follow the original owner direction in
+[#77](https://github.com/kaleemnadeem16/erp/issues/77). Do not edit STATUS files or run commands
 against the owner's `erp` database. Production activation remains **BLOCKED**.
 
 ## Preserved work
 
-Safety commits through `50623859` are published. The following continuation commits are local
-on develop and have not been pushed as a finished slice:
+Safety commits through `50623859` are published. The following continuation commits are now included in published develop `c7c55d99`:
 
 - `9879758e`: owner-approved Estimating decimal-fixture false-positive correction, own commit;
   all original representation/serialisation checks retained and explicit secret-fixture checks added.
@@ -44,24 +46,22 @@ on postgres-test. No owner/dev/production database or running app endpoint was u
 | CompanyAccessFenceTest rerun | 14 passed; two failed during schema setup with SQLSTATE 53100, not a passing run |
 | Frontend | core-api/core-ui/main TypeScript checks and Vite production build passed |
 | New incoming rollback proofs | Passed: three tests, 25 assertions, after approved test-service recovery |
-| Final codegen/migration cycle/module regression/CI/demo/browser | Outstanding; no final-head green claim |
+| Published advisory CI at c7c55d99 | All backend/browser shards, lint and codegen passed; this verifies that checkpoint, not later QA4/QA5/demo changes |
 
-Logs under `/tmp/erp-quotation-`: `advisory-resume.log`, `integration-focused.log`,
-`ratchets-retry.log`, `fence-retry.log`, `inventory-phpstan-final.log`,
-`incoming-proof-phpstan.log`, `core-api-tsc.log`, `core-ui-tsc.log`, `main-tsc.log`, `vite.log`.
-The last published CI is upstream `f0f81854`,
-[run 41606304669](https://github.com/kaleemnadeem16/erp/actions/runs/41606304669), failed the
-missing tax route entries and editable shape now corrected locally. This run is not our final head.
+Historical local logs used `/tmp/erp-quotation-*`; those temporary files were lost across the
+later environment restart. Do not infer a result for the interrupted broad regression from the
+missing log. The published Pipeline result above supplies independent exact-SHA evidence.
+The fresh local continuation log `/tmp/erp-quotation-nov5-regression.log` records 615 tests passed,
+3,919 assertions, 317 seconds wrapper time and 39% tmpfs usage.
 
 ## Historical test-service failure and recovery
 
 [#84](https://github.com/kaleemnadeem16/erp/issues/84) records the shared postgres-test tmpfs
 exhaustion (1.3 GiB, 100%). Supported cleanup briefly recovered only our DB, then another run
 filled the remaining space. PostgreSQL reported a server-process crash and the service exited.
-**No restart/recreation, capacity change, other agent database deletion or PostgreSQL data-file
-modification was performed.** An owner question requests permission for coordinated test-service-only
-recovery with the exclusive stack lock and sufficient capacity. Do not run a wrapper that starts
-postgres-test until that approval or infrastructure-owner recovery is confirmed.
+During the initial investigation, no restart, capacity change, other agent database deletion or
+PostgreSQL data-file modification was performed. The later explicit owner exception and completed
+recovery are recorded below; it is not a blanket future reset permission.
 
 The synthetic access-operator bootstrap is now **approved with conditions** in
 [0155](../decisions/0155-bootstrap-only-the-synthetic-demo-access-operator.md). Implement only the
@@ -85,7 +85,10 @@ Original failure evidence: SQLSTATE 53100 disk exhaustion, checkpoint panic writ
 `pg_logical/replorigin_checkpoint.tmp`, failed B-tree WAL redo and exit 1; `OOMKilled=false`.
 Full old log is local at `/tmp/erp-postgres-test-failure-2026-11-03.log`. Outcome recorded on
 [#84](https://github.com/kaleemnadeem16/erp/issues/84) and #77.
-Broader module/ratchet regression is now running; no final-head verification claim yet.
+On 2026-11-05 Docker Desktop was initially unavailable; the owner started it. The isolated test
+service was started under the exclusive lock with no disk-backed mounts and the unchanged 1280 MB
+limit. It is healthy. A fresh quotation/Documents/ratchet regression passed 615 tests/3,919 assertions serially on
+`erp_testing_quotation_security`. Team-scope implementation is the next independent increment.
 
 ## Continue in order
 
