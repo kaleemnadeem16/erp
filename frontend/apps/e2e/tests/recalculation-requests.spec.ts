@@ -12,8 +12,9 @@ test('the recalculation list shows what each request has actually reached', asyn
   await page.goto('/recalculation-requests');
   await expect(page.getByRole('heading', { name: 'Stock Recalculation' })).toBeVisible();
 
+  // The on-screen table only: the list also carries a hidden Quick Print table with the same rows (Print / Print selected).
   const rowFor = (item: string, status: string) =>
-    page.locator('tbody tr', { hasText: item }).filter({ hasText: status });
+    page.getByRole('table').locator('tbody tr', { hasText: item }).filter({ hasText: status });
 
   await expect(rowFor('demo-recalc-titanium', 'Executed')).toHaveCount(1);
   await expect(rowFor('demo-recalc-enamel', 'Executed')).toHaveCount(1);

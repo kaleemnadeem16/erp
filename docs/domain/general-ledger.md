@@ -245,6 +245,8 @@ balance.
 
 ## Related
 
+- [reference-data-screens.md](reference-data-screens.md) — the screens that expose this (Settings → Exchange rates / Chart of accounts)
+
 - [receivables.md](receivables.md) · [multi-currency.md](multi-currency.md)
 - [stock.md](stock.md) · [job-costing.md](job-costing.md)
 - [items.md](items.md) — item/category GL mapping, the same account-resolution discipline

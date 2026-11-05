@@ -116,6 +116,10 @@ const rules: readonly Rule[] = [
       "parties.supplier-account.manage",
     ],
   },
+  // Settings → Money / Company reference data. Reading rates and accounts is a shared lookup for the documents that use them; these screens are for those who
+  // maintain them (default-deny: no maintenance duty, no screen).
+  { path: "/settings/exchange-rates", anyOf: ["currency.exchange-rate.manage"] },
+  { path: "/settings/chart-of-accounts", anyOf: ["accounting.chart-of-account.manage"] },
   { path: "/supplier-returns", anyOf: supplierReturn },
   { path: "/stock-scraps", anyOf: stockScrap },
   { path: "/inventory-cutovers", anyOf: cutover },

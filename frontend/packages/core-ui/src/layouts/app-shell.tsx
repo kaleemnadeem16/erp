@@ -45,6 +45,8 @@ import {
   UserRoundCog,
   Users,
   UsersRound,
+  BookText,
+  Coins,
   Contact,
   Warehouse,
   Wrench,
@@ -221,6 +223,18 @@ const settingsNavGroup: NavGroup = {
       icon: ListChecks,
     },
     {
+      to: "/settings/exchange-rates",
+      label: "Exchange rates",
+      icon: Coins,
+      permission: "currency.exchange-rate.manage",
+    },
+    {
+      to: "/settings/chart-of-accounts",
+      label: "Chart of accounts",
+      icon: BookText,
+      permission: "accounting.chart-of-account.manage",
+    },
+    {
       to: "/settings/document-numbering",
       label: "Document Numbering",
       icon: Hash,
@@ -296,6 +310,18 @@ const SETTINGS_MENU: { label: string; items: NavItem[] }[] = [
         icon: Hash,
       },
       { to: "/settings/numbers", label: "Numbers and rounding", icon: Percent },
+      {
+        to: "/settings/exchange-rates",
+        label: "Exchange rates",
+        icon: Coins,
+        permission: "currency.exchange-rate.manage",
+      },
+      {
+        to: "/settings/chart-of-accounts",
+        label: "Chart of accounts",
+        icon: BookText,
+        permission: "accounting.chart-of-account.manage",
+      },
       {
         to: "/settings/material-variance",
         label: "Material Variance",

@@ -239,12 +239,12 @@ export function OwnerCombobox({ onValueChange, ...props }: EntityComboboxProps<{
  * A general-ledger account, searched on the server by code or name (so a chart of any size works). `enabled` is false for someone who may not read account
  * mappings: the lookup is then not even requested and the control stays inert rather than showing a failed request as "no results".
  */
-export function AccountCombobox({ onValueChange, enabled = true, ...props }: EntityComboboxProps<ChartOfAccountResource> & { enabled?: boolean }) {
+export function AccountCombobox({ onValueChange, enabled = true, excludeId, ...props }: EntityComboboxProps<ChartOfAccountResource> & { enabled?: boolean; excludeId?: number }) {
   const [search, setSearch] = useState('');
   const delayed = useDelayed(search);
   const list = useChartOfAccountsIndex({ 'filter[search]': delayed || undefined, 'filter[status]': 'ACTIVE', per_page: PAGE, sort: 'code' }, { query: { enabled } });
   const chosen = useChartOfAccountsShow(chosenId(props.value), undefined, { query: { enabled: enabled && chosenId(props.value) > 0 } });
-  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const rows = (list.data?.status === 200 ? list.data.data.data : []).filter((account) => account.id !== excludeId);
   const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
   const label = (account: { code: string; name: string }) => `${account.code} — ${account.name}`;
 

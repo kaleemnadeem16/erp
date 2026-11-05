@@ -155,6 +155,19 @@ the sheet (`getByRole('dialog')`) because the list behind a sheet also shows sta
 Evidence: `docs/ui-evidence/stock-operations/`.
 Remaining on these screens: status chips still use `Badge` variants, not `StatusBadge` tones (a one-line mapping per screen, not done here).
 
+### Stage 3 — Exchange rates and Chart of accounts (Step 2)
+
+- **Built** as full vertical slices under Settings: Exchange rates (list with currency/type/date filters, create, rate-only edit, delete with its consequence stated) and
+  Chart of accounts (list with search/type/status/level/parent filters, create/edit, archive/activate singly and in bulk). Specification and coverage matrices:
+  [reference-data-screens.md](../domain/reference-data-screens.md).
+- **A gap found by the audit and closed:** the generated `exchange-rate` module was never re-exported from `@erp/core-api`'s hand-maintained `src/index.ts`, so no
+  screen could import its hooks; it is exported now (the generated files themselves are unchanged).
+- **Demo data:** none added — `CurrencyRatesDemoSeeder` (rates, through the guarded Action) and `AccountingDemoSeeder` (the chart) already seed both.
+- **Tests:** 8 pure unit specs; 22 browser tests (list standard, filter → request + chip, create/edit/delete with problems beside fields, duplicate refused, bulk
+  archive with an honest result, access, error + retry, Settings index, axe on four pages, 390 px with 44 px targets).
+- **Also fixed here:** `recalculation-requests.spec.ts` read rows from every `tbody` and so matched the hidden Quick Print table once the list gained Print (same
+  scoping fix as the override spec; the hosted run caught it).
+
 ## 5. Blocked (not built) and why
 
 | Item | Reason |
@@ -171,7 +184,10 @@ Remaining on these screens: status chips still use `Badge` variants, not `Status
 |---|---|---|
 | D1 | Customers sit in the **Sales** nav group (mirror of Suppliers in Purchasing); gate = the Parties capabilities already used by the API | taken (docs silent → mirror the existing pattern) |
 | D2 | AVCO pools and stock layers get no screen: `stock.md` records them as deliberately backend-only reference data | taken (existing accepted doc) |
-| D3 | Chart of accounts and Exchange rates are reached from **Settings → Company** (existing top-bar menu + settings index) rather than a new sidebar group, so no navigation structure that affects several modules is changed | **awaiting owner** — recommended default implemented; moving them is a one-array edit |
+| D3 | Chart of accounts and Exchange rates are reached from **Settings** (Company / Numbers, money and rounding: the existing top-bar menu, mobile More sheet and settings index) rather than a new sidebar group, so no navigation structure that affects several modules is changed | **awaiting owner** — recommended default implemented; moving them is a one-array edit |
+| D4 | Trading partners sit beside Customers in the Sales group (the identity is shared with Suppliers) | taken; one entry in `navGroups` |
+| D5 | Exchange rates and Chart of accounts have no separate read-only detail screen: the record sheet shows every fact and is the edit form for a person who may change it (a rate has five fields) | **awaiting owner** — the delivery contract wants owner agreement for departing from list + detail sheets |
+| D6 | The shared demo creates no customer account (the Sales demo guards that a prospect has none); archived / no-limit / dual-role customers are made by the specs through the API | taken; changing that guard is the owner's call |
 
 ## Related
 

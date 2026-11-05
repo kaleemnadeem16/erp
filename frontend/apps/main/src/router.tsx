@@ -38,6 +38,10 @@ import {
   GoodsReceiptEditScreen,
   SuppliersListScreen,
   CustomersListScreen,
+  ExchangeRatesListScreen,
+  ExchangeRateFormScreen,
+  ChartOfAccountsListScreen,
+  ChartOfAccountFormScreen,
   CustomerDetailScreen,
   CustomerFormScreen,
   PartiesListScreen,
@@ -144,6 +148,10 @@ const negativeStockOverrideCreateAsSheet = presentation.negativeStockOverrideCre
 const negativeStockOverrideDetailAsSheet = presentation.negativeStockOverrideDetail === "sheet";
 const recalculationRequestCreateAsSheet = presentation.recalculationRequestCreate === "sheet";
 const recalculationRequestDetailAsSheet = presentation.recalculationRequestDetail === "sheet";
+const exchangeRateCreateAsSheet = presentation.exchangeRateCreate === "sheet";
+const exchangeRateDetailAsSheet = presentation.exchangeRateDetail === "sheet";
+const chartOfAccountCreateAsSheet = presentation.chartOfAccountCreate === "sheet";
+const chartOfAccountDetailAsSheet = presentation.chartOfAccountDetail === "sheet";
 const customerCreateAsSheet = presentation.customerCreate === "sheet";
 const customerDetailAsSheet = presentation.customerDetail === "sheet";
 const customerEditAsSheet = presentation.customerEdit === "sheet";
@@ -949,6 +957,90 @@ export function AppRouter() {
               <ProtectedRoute>
                 <AppShell>
                   <PartyFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/settings/exchange-rates"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ExchangeRatesListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {exchangeRateCreateAsSheet && (
+            <Route path="new" element={<ExchangeRateFormScreen presentation="sheet" />} />
+          )}
+          {exchangeRateDetailAsSheet && (
+            <Route path=":id" element={<ExchangeRateFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!exchangeRateCreateAsSheet && (
+          <Route
+            path="/settings/exchange-rates/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ExchangeRateFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!exchangeRateDetailAsSheet && (
+          <Route
+            path="/settings/exchange-rates/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ExchangeRateFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/settings/chart-of-accounts"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ChartOfAccountsListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {chartOfAccountCreateAsSheet && (
+            <Route path="new" element={<ChartOfAccountFormScreen presentation="sheet" />} />
+          )}
+          {chartOfAccountDetailAsSheet && (
+            <Route path=":id" element={<ChartOfAccountFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!chartOfAccountCreateAsSheet && (
+          <Route
+            path="/settings/chart-of-accounts/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ChartOfAccountFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!chartOfAccountDetailAsSheet && (
+          <Route
+            path="/settings/chart-of-accounts/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ChartOfAccountFormScreen presentation="page" />
                 </AppShell>
               </ProtectedRoute>
             }

@@ -12,6 +12,7 @@ export * from "./generated/item/item";
 export * from "./generated/category/category";
 export * from "./generated/uom/uom";
 export * from "./generated/currency/currency";
+export * from "./generated/exchange-rate/exchange-rate";
 export * from "./generated/warehouse/warehouse";
 export * from "./generated/location/location";
 export * from "./generated/stock-move/stock-move";

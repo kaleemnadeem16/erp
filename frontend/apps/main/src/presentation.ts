@@ -59,6 +59,10 @@ export const presentation: {
   negativeStockOverrideDetail: Presentation;
   recalculationRequestCreate: Presentation;
   recalculationRequestDetail: Presentation;
+  exchangeRateCreate: Presentation;
+  exchangeRateDetail: Presentation;
+  chartOfAccountCreate: Presentation;
+  chartOfAccountDetail: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -112,6 +116,10 @@ export const presentation: {
   negativeStockOverrideDetail: "sheet",
   recalculationRequestCreate: "sheet",
   recalculationRequestDetail: "sheet",
+  exchangeRateCreate: "sheet",
+  exchangeRateDetail: "sheet",
+  chartOfAccountCreate: "sheet",
+  chartOfAccountDetail: "sheet",
 };
 
 /**
