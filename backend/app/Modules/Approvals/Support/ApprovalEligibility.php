@@ -44,7 +44,7 @@ final class ApprovalEligibility
             ->get();
         foreach ($delegations as $delegation) {
             $delegator = $delegation->delegator;
-            $grant = $this->directGrant($delegator, $request, $step);
+            $grant = $this->directGrant($delegator, $request, $step, true);
             if ($grant !== null) {
                 return new ApprovalGrant($delegator, $delegation, $grant->snapshot + ['delegation_id' => $delegation->id, 'acting_for' => $delegator->id]);
             }
@@ -53,7 +53,7 @@ final class ApprovalEligibility
         return null;
     }
 
-    private function directGrant(User $person, ApprovalRequest $request, ApprovalRequestStep $step): ?ApprovalGrant
+    private function directGrant(User $person, ApprovalRequest $request, ApprovalRequestStep $step, bool $delegated = false): ?ApprovalGrant
     {
         if ($person->company_id !== $request->company_id || ! $this->canAct($person)) {
             return null;
@@ -72,6 +72,11 @@ final class ApprovalEligibility
             } else {
                 return null;
             }
+        }
+
+        $subject = $this->subjects->get($request->subject_type);
+        if ($subject instanceof RecordScopedApprovalSubject && ! $subject->mayDecide($person, $request, $delegated)) {
+            return null;
         }
 
         $snapshot = ['permission' => $permission, 'escalation' => $viaEscalation, 'ceiling' => null, 'unlimited' => null];

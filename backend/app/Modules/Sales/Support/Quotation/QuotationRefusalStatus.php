@@ -55,6 +55,14 @@ final class QuotationRefusalStatus
         QuotationRefusal::OVERRIDE_NOT_ALLOWED => self::UNPROCESSABLE,
         QuotationRefusal::OVERRIDE_BASIS_CHANGED => self::UNPROCESSABLE,
         QuotationRefusal::TAX_DECLARATION_NOT_ALLOWED => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_NOT_NEEDED => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_NOT_CONFIGURED => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_ALREADY_GRANTED => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_REJECTED => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_NOT_PENDING => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_STALE => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_SELF_APPROVAL => self::UNPROCESSABLE,
+        QuotationRefusal::APPROVAL_NOT_ELIGIBLE => self::UNPROCESSABLE,
     ];
 
     public static function for(?string $reasonCode): int

@@ -6,11 +6,13 @@ namespace App\Modules\Sales\Support\Quotation\Issue;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Financial\Certainty;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
 use App\Support\CompanyContext;
 use App\Support\Status;
 
@@ -45,12 +47,47 @@ final class QuotationIssueAssessor
         $controls = $this->controls->assess($context, $revision, $nets);
         array_push($blockers, ...$tax->blockers, ...$controls->blockers);
 
+        [$blockers, $approval] = $this->applyApproval($revision, $blockers);
+
         $unique = [];
         foreach ($blockers as $blocker) {
             $unique[$blocker->code.'|'.$blocker->scope.'|'.$blocker->lineId] = $blocker;
         }
 
-        return new IssueAssessment(array_values($unique), $preview, $tax, $controls);
+        return new IssueAssessment(array_values($unique), $preview, $tax, $controls, $approval?->id, $approval === null ? null : (string) ($approval->facts['facts']['content_fingerprint'] ?? ''));
+    }
+
+    /**
+     * A concession that needs approval (the recorded `APPROVAL_REQUIRED` blockers) is judged against the revision's approval standing (ADR 0158): approved for exactly this draft
+     * lifts them and names the approval the issue will freeze; pending or rejected renames them so the screen can say which; anything else leaves them as they are. Nothing
+     * else is lifted - controls, tax, FX and rounding blockers are independent.
+     *
+     * @param  list<IssueBlocker>  $blockers
+     * @return array{0: list<IssueBlocker>, 1: ApprovalRequest|null}
+     */
+    private function applyApproval(QuotationRevision $revision, array $blockers): array
+    {
+        $needed = array_filter($blockers, fn (IssueBlocker $blocker): bool => $blocker->code === 'APPROVAL_REQUIRED');
+        if ($needed === []) {
+            return [$blockers, null];
+        }
+        $standing = app(QuotationApprovals::class)->standing($revision);
+        $code = match ($standing['state']) {
+            QuotationApprovals::APPROVED => null,
+            QuotationApprovals::PENDING => 'APPROVAL_PENDING',
+            QuotationApprovals::REJECTED => 'APPROVAL_REJECTED',
+            default => 'APPROVAL_REQUIRED',
+        };
+        $result = [];
+        foreach ($blockers as $blocker) {
+            if ($blocker->code !== 'APPROVAL_REQUIRED') {
+                $result[] = $blocker;
+            } elseif ($code !== null) {
+                $result[] = new IssueBlocker($code, $blocker->scope, $blocker->lineId);
+            }
+        }
+
+        return [$result, $standing['state'] === QuotationApprovals::APPROVED ? $standing['request'] : null];
     }
 
     /** @return list<IssueBlocker> */
@@ -96,7 +133,7 @@ final class QuotationIssueAssessor
                 $blockers[] = new IssueBlocker((string) ($line['net']['reasons'][0] ?? 'NET_UNKNOWN'), IssueBlocker::LINE, $id);
             }
             if (($line['adjustment']['approval_required'] ?? false) === true) {
-                // Recorded, not decided: no approval can be given yet, so a concession that needs one keeps the draft from being issued.
+                // Recorded here, decided by `applyApproval`: a concession that needs approval keeps the draft from being issued until an approval for exactly this draft stands.
                 $blockers[] = new IssueBlocker('APPROVAL_REQUIRED', IssueBlocker::LINE, $id);
             }
             if (($line['fx']['current'] ?? 'SAME') !== 'SAME') {

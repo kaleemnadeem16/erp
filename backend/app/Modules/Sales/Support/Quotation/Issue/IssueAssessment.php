@@ -14,7 +14,9 @@ final readonly class IssueAssessment
      * @param  list<IssueBlocker>  $blockers
      * @param  array<string, mixed>|null  $preview
      */
-    public function __construct(public array $blockers, public ?array $preview, public ?QuotationTaxOutcome $tax, public ?QuotationControlsOutcome $controls) {}
+    public function __construct(
+        public array $blockers, public ?array $preview, public ?QuotationTaxOutcome $tax, public ?QuotationControlsOutcome $controls,
+        public ?int $approvalRequestId = null, public ?string $approvalFingerprint = null) {}
 
     public function ready(): bool
     {

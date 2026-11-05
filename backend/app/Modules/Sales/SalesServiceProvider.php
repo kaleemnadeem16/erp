@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales;
 
 use App\Models\User;
+use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
 use App\Modules\Estimating\Support\CostEvidenceAuthorities;
 use App\Modules\Numbering\Support\NumberingRegistry;
@@ -20,6 +21,7 @@ use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
 use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\Issue\ConfiguredQuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\DraftQuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\Issue\Fr3QuotationTaxProvider;
@@ -59,6 +61,10 @@ class SalesServiceProvider extends ServiceProvider
         // Estimating opens cost evidence only for the authority the owning workflow registers: this is Sales' (active member + preparer duty, judged now).
         $this->app->afterResolving(CostEvidenceAuthorities::class, static function (CostEvidenceAuthorities $authorities): void {
             $authorities->register(new QuotationControlEvaluationAuthority);
+        });
+        // Quotation drafts are an approval subject: the recorded need for approval can be requested and decided through the shared engine (ADR 0158).
+        $this->app->afterResolving(ApprovalSubjectRegistry::class, static function (ApprovalSubjectRegistry $registry): void {
+            $registry->register(new QuotationApprovalSubject);
         });
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);

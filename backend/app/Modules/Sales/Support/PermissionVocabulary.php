@@ -115,6 +115,13 @@ final class PermissionVocabulary
     public const QUOTATION_COMMERCIAL_VIEW = 'sales.quotation.commercial.view';
 
     /**
+     * Approving or rejecting a draft's recorded need for approval (ADR 0158). STAGED like the other quotation duties: `DecideQuotationApproval` and the Approvals engine's eligibility ask for
+     * it, but `SalesAccess`/`QuotationAccess` refuse every caller until the manifest activates it with an owner-reviewed holder recipe. Sensitive, judged by the quotation-family
+     * record policy (OWN or ALL) with the independent view; never implied by prepare, discount, override or issue, and the preparer of a draft can never approve it. Not in `all()`.
+     */
+    public const QUOTATION_APPROVE = 'sales.quotation.approve';
+
+    /**
      * The registered Sales duties: the manifest's ACTIVE ones, today exactly the eight above. Every other Sales duty in the accepted matrix is specified
      * in `Authority\SalesDutyManifest` and deliberately has no constant here until the slice that delivers it.
      *

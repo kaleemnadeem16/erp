@@ -77,6 +77,23 @@ final class QuotationRefusal
 
     public const TAX_DECLARATION_NOT_ALLOWED = 'TAX_DECLARATION_NOT_ALLOWED';
 
+    /** Approval integration (ADR 0158). */
+    public const APPROVAL_NOT_NEEDED = 'APPROVAL_NOT_NEEDED';
+
+    public const APPROVAL_NOT_CONFIGURED = 'APPROVAL_NOT_CONFIGURED';
+
+    public const APPROVAL_ALREADY_GRANTED = 'APPROVAL_ALREADY_GRANTED';
+
+    public const APPROVAL_REJECTED = 'APPROVAL_REJECTED';
+
+    public const APPROVAL_NOT_PENDING = 'APPROVAL_NOT_PENDING';
+
+    public const APPROVAL_STALE = 'APPROVAL_STALE';
+
+    public const APPROVAL_SELF_APPROVAL = 'APPROVAL_SELF_APPROVAL';
+
+    public const APPROVAL_NOT_ELIGIBLE = 'APPROVAL_NOT_ELIGIBLE';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

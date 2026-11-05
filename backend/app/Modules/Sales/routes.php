@@ -2,6 +2,7 @@
 
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
+use App\Modules\Sales\Http\Controllers\Api\V1\QuotationApprovalController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationDocumentController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesOwnerController;
@@ -42,6 +43,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quotations/{revision}/preview', [QuotationController::class, 'preview'])->whereNumber('revision')->name('quotations.preview');
     Route::get('quotations/{revision}/issue-readiness', [QuotationController::class, 'readiness'])->whereNumber('revision')->name('quotations.issue-readiness');
     Route::post('quotations/{revision}/issue', [QuotationController::class, 'issue'])->whereNumber('revision')->name('quotations.issue');
+    Route::get('quotations/{revision}/approval', [QuotationApprovalController::class, 'show'])->whereNumber('revision')->name('quotations.approval.show');
+    Route::post('quotations/{revision}/approval', [QuotationApprovalController::class, 'store'])->whereNumber('revision')->name('quotations.approval.store');
+    Route::post('quotations/{revision}/approval/decision', [QuotationApprovalController::class, 'decide'])->whereNumber('revision')->name('quotations.approval.decide');
+    Route::post('quotations/{revision}/approval/withdrawal', [QuotationApprovalController::class, 'withdraw'])->whereNumber('revision')->name('quotations.approval.withdraw');
     Route::get('quotations/{revision}/issued', [QuotationController::class, 'issued'])->whereNumber('revision')->name('quotations.issued');
 
     Route::get('quotations/{revision}/document', [QuotationDocumentController::class, 'show'])->whereNumber('revision')->name('quotations.document.show');

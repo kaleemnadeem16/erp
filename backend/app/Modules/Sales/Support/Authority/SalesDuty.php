@@ -32,7 +32,7 @@ final readonly class SalesDuty
         if ($status === DutyStatus::Dormant && $class !== DutyClass::DormantSensitive) {
             throw new InvalidArgumentException("Only a dormant-sensitive duty [{$name}] can be dormant.");
         }
-        if ($scope === DutyScope::QuotationFamily && ! in_array($name, ['sales.quotation.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.issue', 'sales.quotation.withdraw', 'sales.quotation.discount', 'sales.quotation.price.override', 'sales.quotation.commercial.view'], true)) {
+        if ($scope === DutyScope::QuotationFamily && ! in_array($name, ['sales.quotation.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.issue', 'sales.quotation.withdraw', 'sales.quotation.discount', 'sales.quotation.price.override', 'sales.quotation.commercial.view', 'sales.quotation.approve'], true)) {
             throw new InvalidArgumentException("Quotation family scope is not supported for [{$name}].");
         }
         $this->scope = $scope;

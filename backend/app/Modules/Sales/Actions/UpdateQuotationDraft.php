@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Actions;
 
 use App\Models\Currency;
 use App\Models\User;
+use App\Modules\Approvals\Actions\InvalidateApprovals;
 use App\Modules\Sales\Models\Opportunity;
 use App\Modules\Sales\Models\QuotationChoiceGroup;
 use App\Modules\Sales\Models\QuotationDraftLine;
@@ -16,6 +17,7 @@ use App\Modules\Sales\Support\Financial\Policy\RoundingPolicyBinding;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Pricing\PricingSourceKind;
+use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\DraftChanges;
 use App\Modules\Sales\Support\Quotation\DraftHeader;
 use App\Modules\Sales\Support\Quotation\DraftSource;
@@ -136,6 +138,8 @@ final class UpdateQuotationDraft
         $this->applyDocumentDiscount($actor, $revision, $changes);
         $this->reassess($revision);
         $revision->refresh();
+        // An approval is given for the draft exactly as it was: any edit ends a pending or granted one (history stays; the derived standing would already ignore it, ADR 0158).
+        app(InvalidateApprovals::class)->forSubject(QuotationApprovalSubject::CODE, $revision->id, 'The draft was edited after approval was requested; it must be sent for approval again.');
 
         return QuotationDraftOutcome::result($revision->family_id, $revision->id, $revision->input_generation);
     }

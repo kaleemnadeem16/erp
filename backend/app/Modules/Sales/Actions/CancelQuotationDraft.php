@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Approvals\Actions\InvalidateApprovals;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationDraftOutcome;
 use App\Modules\Sales\Support\Quotation\QuotationOperation;
@@ -42,6 +44,7 @@ final class CancelQuotationDraft
                 if ($revision->input_generation !== $expectedGeneration) {
                     throw QuotationRefusal::make(QuotationRefusal::QUOTATION_DRAFT_STALE, "The draft is at generation {$revision->input_generation}, not {$expectedGeneration}; review it again before cancelling.", 'expected_generation');
                 }
+                app(InvalidateApprovals::class)->forSubject(QuotationApprovalSubject::CODE, $revision->id, 'The draft was cancelled.');
                 $revision->forceFill(['state' => 'CANCELLED_DRAFT', 'cancelled_at' => now(), 'cancelled_by' => $actor->id, 'cancellation_reason' => $reason])->save();
 
                 return QuotationDraftOutcome::result($revision->family_id, $revision->id, $revision->input_generation);
