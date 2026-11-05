@@ -1,12 +1,13 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+import { api } from './package-stock-support';
 import { pickCombobox } from './support';
 
 /**
- * Customers and Trading partners (the demo seeder PartnersAndContactsDemoSeeder provides the fixtures: cus-alpha with two contacts, cus-punjab as a customer
- * that is also a supplier, an archived customer, a customer with no credit limit and an individual with no role). Records this spec creates carry a unique
- * stamp; the customer it creates is archived at the end of its journey.
+ * Customers and Trading partners. The shared demo (PartnersAndContactsDemoSeeder) gives cus-alpha and cus-metro their contacts and adds partners with no role
+ * (it creates no customer account: the Sales demo guards that). Archived, no-limit and dual-role cases are therefore made here through the API with a unique
+ * stamp and removed in a `finally`; the customer the journey creates through the screen is archived at the end of it.
  */
 const stamp = Date.now().toString().slice(-7);
 
@@ -21,6 +22,41 @@ async function actAs(page: Page, permissions: string[]) {
 
 /** The identity link of a row/card in the on-screen list (the hidden print tables repeat the same text, so text alone is ambiguous). */
 const link = (page: Page, code: string) => page.locator('.ui-order-link', { hasText: code });
+
+/** A partner with a customer account (and optionally a supplier account), made through the API and removed again by `cleanup`. */
+async function makePartner(page: Page, label: string, options: { customer?: { archived?: boolean; creditLimit?: string }; supplier?: boolean } = {}) {
+  const code = `e2e-${label}-${stamp}`;
+  const party = (await api(page, 'POST', '/parties', { code, name: `E2E ${label} ${stamp}` })).data;
+  const accounts = (await api(page, 'GET', '/chart-of-accounts?filter[search]=1200&per_page=5')).data;
+  const payables = (await api(page, 'GET', '/chart-of-accounts?filter[search]=2100&per_page=5')).data;
+  const created: Array<{ path: string; id: number }> = [];
+  if (options.customer) {
+    const account = (
+      await api(page, 'POST', '/customer-accounts', {
+        party_id: party.id,
+        code,
+        payment_terms_days: 30,
+        receivable_account_id: accounts[0].id,
+        status: options.customer.archived ? 'ARCHIVED' : 'ACTIVE',
+        ...(options.customer.creditLimit ? { credit_limit: options.customer.creditLimit } : {}),
+      })
+    ).data;
+    created.push({ path: '/customer-accounts', id: account.id });
+  }
+  if (options.supplier) {
+    const account = (await api(page, 'POST', '/supplier-accounts', { party_id: party.id, code, payment_terms_days: 30, payable_account_id: payables[0].id })).data;
+    created.push({ path: '/supplier-accounts', id: account.id });
+  }
+
+  return {
+    code,
+    name: party.name as string,
+    async cleanup() {
+      for (const account of created.reverse()) await api(page, 'DELETE', `${account.path}/${account.id}`);
+      await api(page, 'DELETE', `/parties/${party.id}`);
+    },
+  };
+}
 
 const horizontalOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
@@ -55,23 +91,41 @@ test.describe('Customers list', () => {
     await expect(link(page, 'cus-metro')).toBeVisible();
   });
 
-  test('a filter is a request and a chip; the archived demo customer appears under Archived', async ({ page }) => {
-    await page.goto('/customers');
-    const request = page.waitForRequest((r) => r.url().includes('/api/v1/customer-accounts') && r.url().includes('filter%5Bstatus%5D=ARCHIVED'));
-    await page.getByRole('combobox', { name: 'Status', exact: true }).click();
-    await page.getByRole('option', { name: 'Archived' }).press('Enter');
-    await request;
-    await expect(page.locator('.ui-chip-active').filter({ hasText: 'Status: Archived' })).toBeVisible();
-    await expect(link(page, 'cus-lahore-paints')).toBeVisible();
-    await expect(link(page, 'cus-alpha')).toHaveCount(0);
-    await page.getByRole('button', { name: 'Clear all' }).click();
-    await expect(page.locator('.ui-chip-active')).toHaveCount(0);
+  test('the status filter is a request and a chip: Active hides an archived customer, Archived shows it', async ({ page }) => {
+    const archived = await makePartner(page, 'arch', { customer: { archived: true } });
+    try {
+      await page.goto(`/customers?filter.search=${archived.code}`);
+      // With no status filter every customer is listed, an archived one labelled as such.
+      await expect(page.getByRole('row', { name: new RegExp(archived.code) })).toContainText('Archived');
+
+      const setStatus = async (option: string, param: string) => {
+        const request = page.waitForRequest((r) => r.url().includes('/api/v1/customer-accounts') && r.url().includes(param));
+        await page.getByRole('combobox', { name: 'Status', exact: true }).click();
+        await page.getByRole('option', { name: option, exact: true }).press('Enter');
+        await request;
+      };
+      await setStatus('Active', 'filter%5Bstatus%5D=ACTIVE');
+      await expect(page.locator('.ui-chip-active').filter({ hasText: 'Status: Active' })).toBeVisible();
+      await expect(page.getByText('No customers match these filters.')).toBeVisible();
+      await setStatus('Archived', 'filter%5Bstatus%5D=ARCHIVED');
+      await expect(page.locator('.ui-chip-active').filter({ hasText: 'Status: Archived' })).toBeVisible();
+      await expect(link(page, archived.code)).toBeVisible();
+      await page.getByRole('button', { name: 'Clear all' }).click();
+      await expect(page.locator('.ui-chip-active')).toHaveCount(0);
+    } finally {
+      await archived.cleanup();
+    }
   });
 
   test('a customer with no credit limit says so instead of showing zero', async ({ page }) => {
-    await page.goto('/customers?filter.search=karachi');
-    await expect(link(page, 'cus-karachi-coatings')).toBeVisible();
-    await expect(page.getByRole('row', { name: /cus-karachi-coatings/ })).toContainText('No limit');
+    const unlimited = await makePartner(page, 'nolimit', { customer: {} });
+    try {
+      await page.goto(`/customers?filter.search=${unlimited.code}`);
+      await expect(link(page, unlimited.code)).toBeVisible();
+      await expect(page.getByRole('row', { name: new RegExp(unlimited.code) })).toContainText('No limit');
+    } finally {
+      await unlimited.cleanup();
+    }
   });
 
   test('a failed request shows its cause and a retry, never "0 customers"', async ({ page }) => {
@@ -234,11 +288,16 @@ test.describe('Customers permissions', () => {
 
 test.describe('Trading partners', () => {
   test('shows each partner’s roles independently, and offers the right next step', async ({ page }) => {
-    await page.goto('/parties?filter.search=punjab');
-    await expect(page.getByRole('heading', { name: 'Trading partners', exact: true })).toBeVisible();
-    const punjab = page.getByRole('row', { name: /Punjab Pigments/ });
-    await expect(punjab).toContainText('Customer');
-    await expect(punjab).toContainText('Supplier');
+    const both = await makePartner(page, 'both', { customer: { creditLimit: '1000' }, supplier: true });
+    try {
+      await page.goto(`/parties?filter.search=${both.code}`);
+      await expect(page.getByRole('heading', { name: 'Trading partners', exact: true })).toBeVisible();
+      const row = page.getByRole('row', { name: new RegExp(both.name) });
+      await expect(row).toContainText('Customer');
+      await expect(row).toContainText('Supplier');
+    } finally {
+      await both.cleanup();
+    }
 
     await page.goto('/parties?filter.search=zainab');
     const zainab = page.getByRole('row', { name: /Zainab Khan/ });
@@ -316,7 +375,8 @@ test.describe('phone width (390 px)', () => {
     await expect(detail.getByText('Imran Siddiqui')).toBeVisible();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     const box = await detail.boundingBox();
-    expect(box!.width).toBeLessThanOrEqual(390);
+    // 390.000003 px once happened to a sheet exactly as wide as the screen: allow sub-pixel rounding, not overflow.
+    expect(box!.width).toBeLessThanOrEqual(390.5);
   });
 
   test('the New customer sheet keeps its fields and primary action inside the phone screen', async ({ page }) => {
