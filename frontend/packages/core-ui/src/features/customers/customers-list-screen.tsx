@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
 import {
-  useChartOfAccountsShow,
   useCurrenciesIndex,
   useCustomerAccountsIndex,
   useCustomerAccountsUpdate,
@@ -41,6 +40,7 @@ import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
 import { apiSortToTableSorting, describeSort, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
 import { useDebouncedSearch } from '../../lib/use-debounced-search';
+import { useAccountsById } from '../../lib/use-records-by-id';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { getCustomerColumns } from './customers-columns';
 import { customerAuthority, customerStatusLabel } from './customer-rules';
@@ -81,18 +81,7 @@ export function CustomersListScreen() {
   const partyQuery = usePartiesShow(partyId, undefined, { query: { enabled: partyId > 0 } });
   const partyName = partyQuery.data?.status === 200 ? partyQuery.data.data.data.name : undefined;
   const accountId = Number(query.filters.receivable_account_id) || 0;
-  const accountQuery = useChartOfAccountsShow(accountId, undefined, { query: { enabled: mayViewMapping && accountId > 0 } });
-  const accountLabel = accountQuery.data?.status === 200 ? `${accountQuery.data.data.data.code} — ${accountQuery.data.data.data.name}` : undefined;
-  const accountLabels = useMemo(() => new Map(accountLabel && accountId ? [[accountId, accountLabel]] : []), [accountId, accountLabel]);
 
-  const columns = useMemo(
-    () => getCustomerColumns({ currencyLabels, accountLabels, mayViewCredit, mayViewMapping }),
-    [currencyLabels, accountLabels, mayViewCredit, mayViewMapping],
-  );
-  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
-    'customers-list',
-    Object.fromEntries(columns.map((column) => [column.key, isColumnVisibleByDefault(column)])),
-  );
 
   const [advancedOpen, setAdvancedOpen] = useState(() => Boolean(query.filters.party_id || query.filters.default_currency_id || query.filters.receivable_account_id));
 
@@ -110,6 +99,26 @@ export function CustomersListScreen() {
   });
   const customers = customersQuery.data?.status === 200 ? customersQuery.data.data.data : [];
   const meta = customersQuery.data?.status === 200 ? customersQuery.data.data.meta : undefined;
+
+  // Receivable accounts are named by their own ids (a chart can be larger than one page), for the rows shown and for the filtered account.
+  const accountIds = useMemo(
+    () => (mayViewMapping ? [...customers.map((customer) => customer.receivable_account_id).filter((id): id is number => Boolean(id)), ...(accountId > 0 ? [accountId] : [])] : []),
+    [customers, accountId, mayViewMapping],
+  );
+  const accounts = useAccountsById<{ id: number; code: string; name: string }>(accountIds, [], mayViewMapping);
+  const accountLabels = useMemo(() => new Map(accounts.map((account) => [account.id, `${account.code} — ${account.name}`])), [accounts]);
+  const accountLabel = accountLabels.get(accountId);
+
+  const columns = useMemo(
+    () => getCustomerColumns({ currencyLabels, accountLabels, mayViewCredit, mayViewMapping }),
+    [currencyLabels, accountLabels, mayViewCredit, mayViewMapping],
+  );
+  // Defaults come from the full column set, not the permitted one: permissions can still be loading on the first render, and a column absent from the
+  // defaults would otherwise appear switched on once it exists.
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
+    'customers-list',
+    Object.fromEntries(getCustomerColumns({ mayViewCredit: true, mayViewMapping: true }).map((column) => [column.key, isColumnVisibleByDefault(column)])),
+  );
 
   const update = useCustomerAccountsUpdate();
   const [rowNotice, setRowNotice] = useState<string | null>(null);

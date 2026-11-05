@@ -115,7 +115,21 @@ Per-screen detail for the fixed groups is recorded in section 4 when each group 
 
 ## 4. Done so far
 
-_(updated as each stage lands)_
+### Stage 1 — Customers and Trading partners (Step 2, first slice)
+
+- **Built:** Customers (`/customers`) and Trading partners (`/parties`) with contacts, as full vertical slices: list (search, filters, chips, selection + bulk bar, phone
+  cards, error/empty/loading), create/edit/detail as sheets, contacts add/edit, archive/activate, duplicate check on registration, "Make a customer" shortcut.
+  Specification and coverage matrix: [parties-screens.md](../domain/parties-screens.md).
+- **Backend (smallest additive change):** `GET /customer-accounts` gained the supplier index's search (partner name, tax id, registration), currency and
+  receivable-account filters (the latter only for a reader of the mapping, ADR 0084) and the extra sorts; Pest tests + regenerated client.
+- **Shared:** `list-controls.tsx` (search, chips, bulk bar, phone Filters sheet, advanced panel), `AccountCombobox`, `useAccountsById`.
+- **Demo data:** `PartnersAndContactsDemoSeeder` (real Actions, create-only, idempotent); tested on a fresh schema with a rerun.
+- **Evidence:** `docs/ui-evidence/customers/` (1280 px and 390 px of the list, the record sheets, the forms and the Filters sheet; no horizontal overflow).
+- **Verified locally:** `tsc` in core-api, core-ui and apps/main; `vite build`; 137 unit specs; the new 25-test browser spec (journey, filters, permissions via an
+  intercepted `/user`, error + retry, phone width with 44 px targets, axe, keyboard); 37 neighbouring browser specs; Pint on every PHP file touched; the
+  Parties, architecture/ratchet and seeder Pest suites; codegen reproduced with no drift.
+- **Not verified locally:** PHPStan/Larastan (the package is dist-only and this container cannot reach its download), the whole backend suite and the whole
+  Playwright suite (run by CI), real-browser screen-reader behaviour.
 
 ## 5. Blocked (not built) and why
 

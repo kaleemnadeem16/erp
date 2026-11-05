@@ -69,6 +69,13 @@ also requires Party maintenance. Retry retains a successfully created Party. Cus
 company/entity definitions; addresses reuse the supplier-site workflow. No new Parties permission,
 endpoint or approval transition is added. See [the screens](../../../../docs/domain/parties.md#supplier-registration-screens-2026-10-06).
 
+## Customers and Trading partners UI
+
+Sales → **Customers** (`/customers`) and **Trading partners** (`/parties`) expose the Party, party-contact and customer-account Actions: list, create/edit/detail
+sheets, contacts, archive and reactivate. `GET /customer-accounts` searches the partner's name, tax id and registration as well as the code and filters by default
+currency and (for someone who may read the mapping) receivable account, like the supplier index. No new capability, endpoint or approval step. Customer addresses
+have no endpoint yet. See [the screens](../../../../docs/domain/parties-screens.md); demo data is `PartnersAndContactsDemoSeeder`.
+
 ## Related
 
 - [domain/parties.md](../../../../docs/domain/parties.md)
