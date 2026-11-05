@@ -173,7 +173,7 @@ class QuotationOwnershipStorageTest extends TestCase
         $this->settleFixtures();
         $this->assertRefused(fn () => DB::table('quotation_ownership_events')->update(['reason' => 'rewritten']), 'append-only');
         $this->assertRefused(fn () => DB::table('quotation_ownership_events')->delete(), 'append-only');
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE quotation_ownership_events'), 'append-only');
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE quotation_ownership_events CASCADE'), 'append-only');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE quotation_families CASCADE'), 'append-only|cannot truncate');
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE users CASCADE'), 'append-only|cannot truncate');
         $this->assertSame(1, DB::table('quotation_ownership_events')->where('family_id', $family->id)->count());
@@ -284,11 +284,14 @@ class QuotationOwnershipStorageTest extends TestCase
         $this->settleFixtures();
 
         // A legacy-only store (no events, everything UNRESOLVED) rolls back and applies again, keeping the family.
+        $accessMigration = require base_path('database/migrations/2026_11_10_020000_create_quotation_access_events_and_shares.php');
+        $accessMigration->down();
         $migration->down();
         $this->assertFalse(Schema::hasTable('quotation_ownership_events'));
         $this->assertFalse(Schema::hasColumn('quotation_families', 'responsible_owner_id'));
         $this->assertSame(1, DB::table('quotation_families')->where('id', $legacy->id)->count());
         $migration->up();
+        $accessMigration->up();
         $this->assertTrue(Schema::hasTable('quotation_ownership_events'));
         $this->assertSame('UNRESOLVED', DB::table('quotation_families')->where('id', $legacy->id)->value('access_baseline_state'));
 
