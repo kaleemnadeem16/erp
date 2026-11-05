@@ -2,14 +2,30 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * The Estimating masters whose lists are on the screen standard so far: Rate dimensions and Assembly groups (search is the only filter their endpoints validate).
- * Formulations, Application rates, Assemblies and Resource rates still carry their earlier list layout; their create/edit forms are pages for all six
- * (docs/phases/screens-complete-log.md, remaining work).
+ * The six Estimating masters and the Resource rates list on the screen standard: the shared list template, URL-held search (where the endpoint has one) as a chip,
+ * selection with Print selected, error-with-retry, access, phone width. Their create/edit forms are sheets (estimating-records.spec.ts).
  */
-const SCREENS = [
-  { name: 'Rate dimensions', path: '/rate-dimensions', heading: 'Rate dimensions', search: 'Search rate dimensions', api: 'rate-dimensions', term: 'surface', noun: 'dimension' },
-  { name: 'Assembly groups', path: '/assembly-groups', heading: 'Assembly groups', search: 'Search assembly groups', api: 'assembly-groups', term: 'demo', noun: 'group' },
-] as const;
+interface Screen {
+  name: string;
+  path: string;
+  heading: string;
+  /** The search box, where the endpoint has a free-text search. */
+  search?: string;
+  api: string;
+  term?: string;
+  noun: string;
+  /** Permissions of someone who may not open the screen at all. */
+  denied: string[];
+}
+
+const SCREENS: Screen[] = [
+  { name: 'Rate dimensions', path: '/rate-dimensions', heading: 'Rate dimensions', search: 'Search rate dimensions', api: 'rate-dimensions', term: 'surface', noun: 'dimension', denied: ['estimating.recipe.view'] },
+  { name: 'Assembly groups', path: '/assembly-groups', heading: 'Assembly groups', search: 'Search assembly groups', api: 'assembly-groups', term: 'demo', noun: 'group', denied: ['estimating.recipe.view'] },
+  { name: 'Formulations', path: '/formulations', heading: 'Formulations', search: 'Search formulations', api: 'formulations', term: 'demo', noun: 'formulation', denied: ['purchasing.purchase-order.view'] },
+  { name: 'Application rates', path: '/application-rates', heading: 'Application rates', search: 'Search application rates', api: 'application-rates', term: 'paint', noun: 'rate', denied: ['purchasing.purchase-order.view'] },
+  { name: 'Assemblies', path: '/assemblies', heading: 'Assemblies', search: 'Search assemblies', api: 'assemblies', term: 'demo', noun: 'assembly', denied: ['purchasing.purchase-order.view'] },
+  { name: 'Resource rates', path: '/resource-rates', heading: 'Resource rates', api: 'resource-rates', noun: 'rate', denied: ['purchasing.purchase-order.view'] },
+];
 
 const horizontalOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
@@ -22,10 +38,12 @@ for (const screen of SCREENS) {
       const rows = page.getByRole('table').locator('tbody tr');
       await expect(rows.first()).toBeVisible();
 
-      await page.getByRole('searchbox', { name: screen.search }).fill(screen.term);
       const chip = page.locator('.ui-chip-active').filter({ hasText: `Search: "${screen.term}"` });
-      await expect(chip).toBeVisible();
-      await expect(page).toHaveURL(new RegExp(`search=${screen.term}`));
+      if (screen.search) {
+        await page.getByRole('searchbox', { name: screen.search }).fill(screen.term!);
+        await expect(chip).toBeVisible();
+        await expect(page).toHaveURL(new RegExp(`search=${screen.term}`));
+      }
 
       await page.getByRole('checkbox', { name: /Select row/i }).first().check();
       const bar = page.getByRole('region', { name: 'Bulk actions' });
@@ -34,9 +52,11 @@ for (const screen of SCREENS) {
       await bar.getByRole('button', { name: 'Clear selection' }).click();
       await expect(bar).toHaveCount(0);
 
-      await chip.getByRole('button', { name: /Remove filter/ }).click();
-      await expect(chip).toHaveCount(0);
-      await expect(page.getByRole('searchbox', { name: screen.search })).toHaveValue('');
+      if (screen.search) {
+        await chip.getByRole('button', { name: /Remove filter/ }).click();
+        await expect(chip).toHaveCount(0);
+        await expect(page.getByRole('searchbox', { name: screen.search })).toHaveValue('');
+      }
     });
 
     test('a failed request shows its cause and a retry, never an empty list', async ({ page }) => {
@@ -61,11 +81,11 @@ for (const screen of SCREENS) {
     });
 
     test('a person without the duty is shown the access message and nothing is requested', async ({ page }) => {
-      // These screens are open only to their maintainers (screen-access.ts), so there is no view-only state to test: without the duty there is no screen.
+      // Without any duty that opens the screen (screen-access.ts) there is no screen, and nothing is asked of the server.
       await page.route(/\/api\/v1\/user(?:\?.*)?$/, async (route) => {
         const response = await route.fetch();
         const body = await response.json();
-        await route.fulfill({ response, body: JSON.stringify({ ...body, data: { ...body.data, permissions: ['estimating.recipe.view'] } }) });
+        await route.fulfill({ response, body: JSON.stringify({ ...body, data: { ...body.data, permissions: screen.denied } }) });
       });
       let requests = 0;
       page.on('request', (request) => {
@@ -86,7 +106,7 @@ test.describe('phone width (390 px)', () => {
       await page.goto(screen.path);
       await expect(page.getByText('Select all on this page')).toBeVisible();
       expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-      expect((await page.getByRole('searchbox', { name: screen.search }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
+      if (screen.search) expect((await page.getByRole('searchbox', { name: screen.search }).boundingBox())!.height).toBeGreaterThanOrEqual(44);
       const filters = page.getByRole('button', { name: /Open filters/ });
       expect((await filters.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       await filters.click();
