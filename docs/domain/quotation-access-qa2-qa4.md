@@ -33,27 +33,27 @@ and retry behavior still require independent review.
 
 The conservative all-company barrier is a correctness-first implementation,
 not a scale claim. It serialises unrelated security and family writes and needs
-production contention and lock-order review. The user authorization generation
-column is reserved; individual-user epoch invalidation, sharing, team access,
-delegation and non-revival rules are not implemented here. Deployment-time
-changes to authority providers must be coordinated and reviewed before
-activation. Do not regard the presence of a counter as an allow decision.
+production contention and lock-order review. The actor-epoch prerequisite below advances the
+reserved user authorization generation on security changes; the team-scope increment applies
+explicit MY_UNITS grants. Named sharing/delegation consumers remain undelivered. Deployment-time
+changes to authority providers must be coordinated and reviewed before activation. A counter is
+invalidation evidence, never an allow decision.
 
 The index endpoint `GET /api/v1/quotations` applies the family selector
 before filtering, sorting, count and pagination. Rows contain only revision and
-family IDs, ordinal, state, recipient and currency IDs and creation time.
+family IDs, ordinal, state, recipient and currency IDs and creation time, with safe header metadata.
 Supported filters are state, recipient, owner and mine; supported sorts are ID,
-creation time and state, with a stable ID tie-break. No price, cost, margin,
-tax facts, source detail or hidden-record counts are included. The local demo
+creation time and state, with a stable ID tie-break. Recipient names and frozen issued net are
+independently authorised per row (see list summary below); no draft repricing, cost, margin,
+tax evidence, source detail or hidden-record counts are included. The local demo
 preparer is OWN-scoped; a separately authorised unrestricted local viewer can
 list all local-company quotations.
 
-Issue and withdrawal duties are not yet supported by this scope adapter. Their
-future Actions must register their own exact duties and enforce current family
-eligibility, Tax/source/control evidence and lock order before replay or
-mutation. The separate Tax facts work still needs a correction/supersession
-lifecycle, independent review and the issue consumer; illustrative demo data
-is not legal Tax configuration.
+Issue and withdrawal have exact quotation-family adapters and remain independently STAGED;
+current family eligibility does not bypass their Tax/source/control evidence or replay guards.
+They are not delegable through a preparation share. Tax source corrections now retain versioned
+supersession evidence in the separate Tax module. Illustrative demo data remains synthetic
+configuration, not a claim about applicable legal tax rules.
 
 Related: [QA1b scope](quotation-own-scope-qa1b.md),
 [record access design](quotation-record-access-design.md), and
@@ -122,6 +122,36 @@ removal, archived/null units, union/intersection, OWN parity and role-title/memb
 This is an unpublished backend increment of QA5, not completion of sharing, client/UI or demo work.
 The existing research/design is reused: [unit boundaries](quotation-record-access-design.md#teammanager-access).
 No new table, money field, endpoint, generated type or permission is introduced by this increment.
+
+## Actor epochs — sharing prerequisite
+
+Additive migration `2026_11_10_010000_advance_quotation_actor_authorization_epochs` uses the
+existing fields and security barriers; it creates no capability, grant or share.
+
+```text
+users.authorization_generation: bigint >= 0, monotone
+  status/company changes advance the actor; decreasing the counter is refused
+model_has_roles / model_has_permissions / access_scope_limits
+  row mutations advance affected User actor IDs in ascending order
+  TRUNCATE conservatively advances every actor (there are no row images)
+company_access_generations.organisation_generation / capability_generation
+  existing barriers already advance these for unit/catalogue changes
+```
+
+A revoke/regrant or suspend/reactivate cannot restore a former epoch. Ordinary name/login updates
+do not acquire the company fence or move the actor counter. The existing exclusive security fence
+runs before assignment statements; actor-row locks follow it. Trigger-acquired actor-row waits are
+bounded to at most 1,000 ms while preserving stricter caller settings. Raw clients still establish
+statement_timeout before their statement; setting it inside a trigger would not bound a statement
+already running. No new timeout or scale claim applies to production activation.
+
+The new functions capture the existing User morph identity. Changing authority providers or morph
+mapping requires coordinated deployment review; a code/provider change is not a fenced database
+mutation. Backout refuses while actor epochs are nonzero or share evidence exists, retaining the
+invalidation guards and counters. The later share consumer must pin/check both users' epochs plus
+organisation, capability and family ownership epochs; that consumer is not delivered by this step.
+`QuotationActorEpochTest` covers positive/negative/raw/tenant/rollback cases, and the independent-PDO
+concurrency test proves actor-row timeout rollback and stricter caller-bound preservation.
 
 ## QA4 read-only inventory checkpoint
 

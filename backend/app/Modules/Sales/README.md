@@ -73,6 +73,7 @@ A guarded Action must check its own duty and scope before calling the kernel and
 ## Non-obvious
 
 - **Access.** CRM and company-wide duties still use `SalesAccess` and refuse unsupported limited grants (403). Quotation reads/writes use `QuotationAccess` with exact-duty OWN, MY_UNITS or explicit ALL; supported own/unit paths union only for the same duty, required duties intersect. Parent/descendant reach needs an explicit quotation grant and active unit membership, never a role title or inferred owner membership. Ownership alone grants nothing. See [the team-scope backend increment](../../../../docs/domain/quotation-access-qa2-qa4.md#qa5-team-scope--backend-increment); sharing/UI/demo delivery remains outstanding.
+- **Quotation sharing prerequisite.** Actor epochs now advance on member status/company and role/direct/scope changes; profile/login writes do not. They permanently invalidate future pinned shares, never confer rights. See [epoch storage and backout](../../../../docs/domain/quotation-access-qa2-qa4.md#actor-epochs--sharing-prerequisite). Sharing, demo presets and the separately reviewed operator bootstrap remain outstanding.
 - **A closed opportunity is immutable** until reopened (database trigger); `sales_events` and `sales_notes` are append-only; stages and leads cannot be deleted.
 - **Unknown value stays unknown**: `expected_amount` and `expected_currency_id` are both set or both null.
 - **Numbering** (`LEAD`, `OPPORTUNITY`) is allocated when the record is created; the format is managed with `sales.numbering.manage`.

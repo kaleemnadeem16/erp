@@ -3,8 +3,8 @@
 # Quotation access completion — resume checkpoint
 
 **2026-11-05: advisory checkpoint published and CI-verified; overall completion remains outstanding.**
-Published develop `c7c55d99591bc93ce4c44955ba4d3ac0fda8e249` passed
-[Pipeline 41635175196](https://github.com/kaleemnadeem16/erp/actions/runs/41635175196): backend
+Published advisory/docs checkpoint `f3e7d0d29a40e4f8f38741ee7066328901d5ea05` passed
+[Pipeline 41979504734](https://github.com/kaleemnadeem16/erp/actions/runs/41979504734): backend
 shards, browser shards, both linters and codegen all succeeded. QA4 holder recipe, QA5 and demo
 extension are not delivered by that checkpoint. Follow the original owner direction in
 [#77](https://github.com/kaleemnadeem16/erp/issues/77). Do not edit STATUS files or run commands
@@ -26,6 +26,25 @@ Safety commits through `50623859` are published. The following continuation comm
   current persona table and intended preset/QA4 mapping. Demo implementation is not delivered.
 - `58a602e6`: QA4 read-only explicit-company inventory command and tests. This is only the
   inventory portion; no holder recipe is applied and no right is granted.
+
+## Unpublished QA5 increments
+
+- `b56dd0af` and `26d732c4`: quotation MY_UNITS, same-duty OWN/unit union, current unit reach and
+  legacy resolver parity. Broad regression passed 662 tests/4,141 assertions. The second commit
+  removes an obsolete import and corrects the preceding premature final-Pint claim; all paths pass.
+- Actor-epoch migration `2026_11_10_010000_advance_quotation_actor_authorization_epochs` and tests:
+  monotone/permanent user invalidation on status/company/assignment changes, bounded actor-row
+  waits, unchanged profile/login behaviour and populated safe refusal. Targeted tests passed
+  eight tests/45 assertions; broad quotation/Documents/Administration/warehouse/CRM/security
+  regression passed **693 tests/4,337 assertions**. Migration fresh/rollback/reapply, whole-project
+  PHPStan, Pint and codegen --check passed. No generated-client drift. Logs use
+  `/tmp/erp-quotation-epochs-*`. These changes are not published as a finished QA5 feature.
+
+Sharing, UI, demo presets and the separately reviewed bootstrap remain outstanding. The owner is
+being asked to choose how share mutations advance access generation: the original ownership
+constraint couples it to ownership events, whereas QA5 needs independent grant/revoke changes.
+No modification to that constraint or share implementation is authorised by elapsed waiting time.
+Continue independent QA4 preparation while that decision is pending.
 
 Three additional incoming-migration populated rollback proofs are prepared in
 `IncomingQuotationRollbackProofTest`. Pint and whole-project PHPStan passed. After recovery, all three tests passed (25 assertions) on the private test database.
@@ -103,8 +122,8 @@ finished QA5 feature; shares, UI, demo presets and bootstrap review remain outst
    until the advisory slice is verified. Watch every job on the exact pushed head and fix forward.
 4. Finish QA4 unapplied holder-recipe code, provenance ledger, dry-run/backout and populated tests.
    The inventory command alone does not complete QA4.
-5. MY_UNITS and same-duty OWN/unit union are implemented locally. Finish QA5 backend/client/UI:
-   named scope/delegation, security epochs,
+5. MY_UNITS, same-duty OWN/unit union and actor epochs are implemented locally. Await the
+   access-counter accounting decision, then finish QA5 backend/client/UI: named scope/delegation,
    append-only shares/revocations, real Actions, owner transfer and permission-aware UI with
    non-disclosing errors. Published pricing UI dependency is now satisfied. Preserve the existing
    gate, unrelated CRM semantics, issue/repair separation and independent view + prepare authority.
