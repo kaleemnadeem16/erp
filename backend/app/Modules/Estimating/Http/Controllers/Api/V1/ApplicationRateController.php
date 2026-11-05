@@ -17,6 +17,7 @@ use App\Modules\Estimating\Http\Requests\ApplicationRate\UpdateApplicationRateRe
 use App\Modules\Estimating\Http\Resources\ApplicationRateResource;
 use App\Modules\Estimating\Models\ApplicationRate;
 use App\Support\Concerns\AppliesApiQuery;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -38,6 +39,13 @@ class ApplicationRateController extends Controller
             if ($request->filled("filter.{$field}")) {
                 $query->where($field, $request->input("filter.{$field}"));
             }
+        }
+        // A rate has no name of its own: it is found by the item it is for.
+        if ($request->filled('filter.search')) {
+            $search = $request->string('filter.search')->toString();
+            $query->whereHas('item', fn (Builder $item) => $item->where(
+                fn (Builder $match) => $match->where('code', 'ilike', "%{$search}%")->orWhere('name', 'ilike', "%{$search}%"),
+            ));
         }
         $this->applySort($query, $request, self::SORTABLE, 'created_at');
 
