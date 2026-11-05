@@ -1,8 +1,8 @@
 import { useFieldArray, useFormContext, useWatch, type Control, type FieldPath, type FieldValues } from 'react-hook-form';
 import { Trash2 } from 'lucide-react';
 import { z } from 'zod';
-import { useApplicationRatesIndex, useFormulationsIndex, useUomsIndex } from '@erp/core-api';
-import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
+import { useUomsIndex } from '@erp/core-api';
+import { ApplicationRateCombobox, FormulationCombobox, ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Combobox } from '../../components/ui/combobox';
@@ -88,10 +88,6 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
 
   const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
   const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
-  const formulationsResult = useFormulationsIndex({ per_page: 100, sort: 'code' });
-  const formulations = formulationsResult.data?.status === 200 ? formulationsResult.data.data.data : [];
-  const applicationRatesResult = useApplicationRatesIndex({ per_page: 100 });
-  const applicationRates = applicationRatesResult.data?.status === 200 ? applicationRatesResult.data.data.data : [];
 
   const uomOptions = uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }));
 
@@ -100,7 +96,7 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
       {fields.map((field, index) => {
         const kind = watched?.[index]?.kind ?? 'MATERIAL';
         return (
-          <fieldset key={field.id} className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 sm:grid-cols-2 lg:grid-cols-4 [&>*]:min-w-0">
+          <fieldset key={field.id} className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 sm:grid-cols-2 @3xl:grid-cols-4 [&>*]:min-w-0">
             <legend className="px-1 text-sm font-medium">Component {index + 1}</legend>
             <FormField
               control={control}
@@ -167,16 +163,12 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Priced via formulation</FormLabel>
                     <FormControl>
-                      <Combobox {...lookupState(formulationsResult, 'formulations')}
-                        ref={formulationField.ref}
+                      <FormulationCombobox
+                        label="Priced via formulation"
+                        className="w-full"
+                        leadingOptions={[{ value: NONE, label: 'No — price from stock (AVCO)' }]}
                         value={formulationField.value}
                         onValueChange={formulationField.onChange}
-                        options={[
-                          { value: NONE, label: 'No — price from stock (AVCO)' },
-                          ...formulations.map((f) => ({ value: String(f.id), label: `${f.code} — ${f.name}` })),
-                        ]}
-                        searchPlaceholder="Search formulations…"
-                        emptyText="No formulations found."
                       />
                     </FormControl>
                     <FormMessage />
@@ -193,16 +185,12 @@ export function AssemblyComponentsFields<TFieldValues extends FieldValues & { co
                   <FormItem>
                     <FormLabel>Or, live quantity from an application rate</FormLabel>
                     <FormControl>
-                      <Combobox {...lookupState(applicationRatesResult, 'application rates')}
-                        ref={rateField.ref}
+                      <ApplicationRateCombobox
+                        label="Application rate"
+                        className="w-full"
+                        leadingOptions={[{ value: NONE, label: 'No — use the quantity below' }]}
                         value={rateField.value}
                         onValueChange={rateField.onChange}
-                        options={[
-                          { value: NONE, label: 'No — use the quantity below' },
-                          ...applicationRates.map((r) => ({ value: String(r.id), label: `#${r.id} — item ${r.item_id}, ${r.qty_per_work_unit}/unit` })),
-                        ]}
-                        searchPlaceholder="Search application rates…"
-                        emptyText="No application rates found."
                       />
                     </FormControl>
                     <FormMessage />

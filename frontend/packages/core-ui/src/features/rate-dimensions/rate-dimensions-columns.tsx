@@ -1,9 +1,10 @@
 import type { RateDimensionResource } from '@erp/core-api';
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 
 export const rateDimensionColumns: DataColumn<RateDimensionResource>[] = [
-  { key: 'code', header: 'Code', value: (row) => row.code, sortable: true, cardRole: 'title' },
+  { key: 'code', header: 'Code', value: (row) => row.code, cell: (row) => <RecordLink>{row.code}</RecordLink>, sortable: true, cardRole: 'title' },
   { key: 'name', header: 'Name', value: (row) => row.name, cardRole: 'subtitle' },
   { key: 'sort_order', header: 'Sort order', value: (row) => row.sort_order, sortable: true, align: 'right' },
   {

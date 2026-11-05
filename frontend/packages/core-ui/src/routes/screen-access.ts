@@ -322,6 +322,23 @@ export function canAccessScreen(
   ) {
     return permissions.has("estimating.application-rate.manage");
   }
+  // The recipe screens open to a reader (estimating.recipe.view); making or changing one still takes the maintaining duty.
+  if (
+    pathname === "/formulations/new" ||
+    /^\/formulations\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("estimating.formulation.manage");
+  }
+  if (
+    pathname === "/assemblies/new" ||
+    /^\/assemblies\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("estimating.assembly.manage");
+  }
+  // Rates open to someone who may read internal cost; adding one takes the maintaining duty.
+  if (pathname === "/resource-rates/new") {
+    return permissions.has("estimating.resource-rate.manage");
+  }
   // The Settings index is open to everyone, but only the index itself: as a rule it would prefix-match every /settings/* page that has no rule of
   // its own (or that comes after it) and open them all. Each page it links to is still judged by its own rule below.
   if (pathname === "/settings") return true;

@@ -1,15 +1,13 @@
 import { useForm, type UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useAssemblyGroupsIndex, useUomsIndex } from '@erp/core-api';
+import { AssemblyGroupCombobox, UomCombobox } from '../../components/lookups/entity-comboboxes';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
-import { Combobox } from '../../components/ui/combobox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
-import { lookupState } from '../../lib/api-errors';
 
 const NONE = 'NONE';
 
@@ -53,12 +51,14 @@ export function AssemblyForm({
   mode,
   defaultValues,
   onSubmit,
+  onCancel,
   isSubmitting,
   formError,
 }: {
   mode: 'create' | 'edit';
   defaultValues?: Partial<AssemblyFormValues>;
   onSubmit: (v: AssemblyFormValues, f: UseFormReturn<AssemblyFormValues>) => void;
+  onCancel: () => void;
   isSubmitting?: boolean;
   formError?: string | null;
 }) {
@@ -75,16 +75,11 @@ export function AssemblyForm({
       ...defaultValues,
     },
   });
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
-  const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
-  const groupsResult = useAssemblyGroupsIndex({ per_page: 100, sort: 'code' });
-  const groups = groupsResult.data?.status === 200 ? groupsResult.data.data.data : [];
-
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
+      <form className="space-y-6" noValidate aria-label={mode === 'create' ? 'New assembly' : 'Edit assembly'} onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
         {formError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
           </div>
         )}
@@ -96,7 +91,7 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Code</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -109,7 +104,7 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -135,15 +130,7 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Work unit</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(uomsResult, 'units')}
-                    ref={field.ref}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }))}
-                    placeholder="Select unit"
-                    searchPlaceholder="Search units…"
-                    emptyText="No units found."
-                  />
+                  <UomCombobox label="Work unit" placeholder="Select unit" className="h-11 w-full md:h-10" value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,16 +143,13 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Assembly group</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(groupsResult, 'assembly groups')}
-                    ref={field.ref}
+                  <AssemblyGroupCombobox
+                    label="Assembly group"
+                    placeholder="Ungrouped"
+                    className="h-11 w-full md:h-10"
+                    leadingOptions={[{ value: NONE, label: 'Ungrouped' }]}
                     value={field.value}
                     onValueChange={field.onChange}
-                    options={[
-                      { value: NONE, label: 'Ungrouped' },
-                      ...groups.map((g) => ({ value: String(g.id), label: `${g.code} — ${g.name}` })),
-                    ]}
-                    searchPlaceholder="Search groups…"
-                    emptyText="No groups found."
                   />
                 </FormControl>
                 <FormMessage />
@@ -180,7 +164,7 @@ export function AssemblyForm({
                 <FormLabel>Margin type</FormLabel>
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 md:h-10">
                       <SelectValue />
                     </SelectTrigger>
                   </FormControl>
@@ -200,15 +184,18 @@ export function AssemblyForm({
               <FormItem>
                 <FormLabel>Margin / markup %</FormLabel>
                 <FormControl>
-                  <Input inputMode="decimal" {...field} />
+                  <Input inputMode="decimal" className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </DetailSection>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-2 border-t bg-background px-4 py-3">
+          <Button type="button" variant="outline" className="h-11 md:h-9" disabled={isSubmitting} onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" className="h-11 md:h-9" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : mode === 'create' ? 'Create assembly' : 'Save assembly'}
           </Button>
         </div>

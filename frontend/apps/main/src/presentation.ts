@@ -63,6 +63,18 @@ export const presentation: {
   exchangeRateDetail: Presentation;
   chartOfAccountCreate: Presentation;
   chartOfAccountDetail: Presentation;
+  resourceRateCreate: Presentation;
+  resourceRateDetail: Presentation;
+  rateDimensionCreate: Presentation;
+  rateDimensionEdit: Presentation;
+  applicationRateCreate: Presentation;
+  applicationRateEdit: Presentation;
+  formulationCreate: Presentation;
+  formulationEdit: Presentation;
+  assemblyGroupCreate: Presentation;
+  assemblyGroupEdit: Presentation;
+  assemblyCreate: Presentation;
+  assemblyEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -120,6 +132,18 @@ export const presentation: {
   exchangeRateDetail: "sheet",
   chartOfAccountCreate: "sheet",
   chartOfAccountDetail: "sheet",
+  resourceRateCreate: "sheet",
+  resourceRateDetail: "sheet",
+  rateDimensionCreate: "sheet",
+  rateDimensionEdit: "sheet",
+  applicationRateCreate: "sheet",
+  applicationRateEdit: "sheet",
+  formulationCreate: "sheet",
+  formulationEdit: "sheet",
+  assemblyGroupCreate: "sheet",
+  assemblyGroupEdit: "sheet",
+  assemblyCreate: "sheet",
+  assemblyEdit: "sheet",
 };
 
 /**

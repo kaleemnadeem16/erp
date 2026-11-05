@@ -1,12 +1,16 @@
 import type { ApplicationRateResource } from '@erp/core-api';
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
+
+const itemLabel = (row: ApplicationRateResource) => (row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id));
 
 export const applicationRateColumns: DataColumn<ApplicationRateResource>[] = [
   {
     key: 'item',
     header: 'Item',
-    value: (row) => (row.item ? `${row.item.code} — ${row.item.name}` : row.item_id),
+    value: itemLabel,
+    cell: (row) => <RecordLink>{itemLabel(row)}</RecordLink>,
     filterable: true,
     cardRole: 'title',
   },

@@ -1,52 +1,60 @@
-import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
-import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Trash2 } from 'lucide-react';
-import type { SortingState } from '@tanstack/react-table';
-import {
-  useResourceRatesDestroy,
-  useResourceRatesIndex,
-  useResourceRatesStore,
-  useUomsIndex,
-  type ResourceRateResource,
-} from '@erp/core-api';
-import { PageHeader } from '../../components/page/page-header';
-import { DataTable, toTanStackColumns } from '../../components/data-table';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
-import { Combobox } from '../../components/ui/combobox';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
-import { DetailSection } from '../../components/detail/detail-page-layout';
-import { applyApiErrorsToForm, getApiErrorMessage, lookupState } from '../../lib/api-errors';
-import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
-import { resourceRateColumns } from './resource-rates-columns';
-import { usePermission } from '../../hooks/use-permission';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
+import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
+import { EllipsisVertical, FileText, Trash2 } from 'lucide-react';
+import { useItemsShow, useResourceRatesDestroy, useResourceRatesIndex, type ResourceRateResource } from '@erp/core-api';
 
-const schema = z.object({
-  item_id: z.string().min(1, 'Item is required'),
-  rate: z.string().refine((v) => /^\d{1,9}(\.\d{1,6})?$/.test(v) && Number(v) >= 0, 'Enter a rate of 0 or more'),
-  rate_uom_id: z.string().min(1, 'Unit is required'),
-  effective_from: z.string().min(1, 'Effective date is required'),
-});
-type FormValues = z.infer<typeof schema>;
-const FORM_FIELDS = ['item_id', 'rate', 'rate_uom_id', 'effective_from'] as const;
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
+import { PageHeader } from '../../components/page/page-header';
+import { ScreenTemplate } from '../../components/page/screen-template';
+import { Button } from '../../components/ui/button';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../../components/ui/dropdown-menu';
+import {
+  ActiveFilterChips,
+  BulkActionBar,
+  DataTable,
+  FilterField,
+  ListFiltersSheet,
+  isColumnVisibleByDefault,
+  selectionColumn,
+  toTanStackColumns,
+  type FilterChip,
+} from '../../components/data-table';
+import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
+import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
+import { usePermission } from '../../hooks/use-permission';
+import { apiSortToTableSorting, describeSort, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
+import { useListViewPreference } from '../../lib/use-view-preference';
+import { resourceRateColumns } from './resource-rates-columns';
 
 interface Filters {
+  item_id: string;
   [key: string]: string;
 }
 
 /**
- * Flat, item-keyed master data with no update endpoint — a rate change is
- * always a new dated row, see ResourceRateController. No dedicated edit
- * screen for the same reason; delete is the only row action.
+ * The standard estimating rate for a LABOUR or PLANT item, effective as of a date. Flat, item-keyed master data with no update endpoint — a rate change is
+ * always a new dated row (ResourceRateController) — so a row opens a read-only record with *Delete* as its only change, and *New rate* opens a form sheet.
+ * On the screen standard (`erp-blue-design-standard.md` §List): URL-held item filter, chip, selection with *Print selected*, phone cards, Filters sheet.
+ * The endpoint takes no free-text search, so there is no search box.
  */
 export function ResourceRatesListScreen() {
   const mayManage = usePermission('estimating.resource-rate.manage');
+  const navigate = useNavigate();
+  const { search: listSearch } = useLocation();
+  const queryClient = useQueryClient();
   const query = useListQueryState<Filters>({ defaultSort: '-effective_from' });
+  const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference('resource-rates-list', Object.fromEntries(resourceRateColumns.map((column) => [column.key, isColumnVisibleByDefault(column)])));
+  const { view, setView } = useListViewPreference('resource-rates-list');
+
+  const itemId = Number(query.filters.item_id) || 0;
+  const itemQuery = useItemsShow(itemId, undefined, { query: { enabled: itemId > 0 } });
+  const item = itemQuery.data?.status === 200 ? itemQuery.data.data.data : undefined;
+
   const result = useResourceRatesIndex({
+    'filter[item_id]': itemId > 0 ? itemId : undefined,
     include: 'item,rateUom',
     sort: query.sort as 'effective_from' | '-effective_from' | 'created_at' | '-created_at' | undefined,
     per_page: query.perPage,
@@ -54,173 +62,165 @@ export function ResourceRatesListScreen() {
   });
   const rows = result.data?.status === 200 ? result.data.data.data : [];
   const total = result.data?.status === 200 ? result.data.data.meta.total : 0;
-  const columns = useMemo(() => toTanStackColumns(resourceRateColumns), []);
+  const tanStackColumns = useMemo(() => [selectionColumn<ResourceRateResource>(), ...toTanStackColumns(resourceRateColumns)], []);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  // A selection belongs to the rows it was made on: any change of page, sort, size or filter (all in the URL) clears it.
+  useEffect(() => setRowSelection({}), [listSearch]);
+  const selected = useMemo(() => rows.filter((row) => rowSelection[String(row.id)]), [rows, rowSelection]);
   const sorting: SortingState = apiSortToTableSorting(query.sort, resourceRateColumns);
+  const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
+  const { contentRef, print } = useQuickPrint({ documentTitle: 'Resource Rates' });
+  const { contentRef: selectedRef, print: printSelected } = useQuickPrint({ documentTitle: 'Resource Rates (Selected)' });
 
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
-  const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
+  const destroy = useResourceRatesDestroy();
+  const [deleting, setDeleting] = useState<ResourceRateResource | null>(null);
 
-  const storeMutation = useResourceRatesStore();
-  const deleteMutation = useResourceRatesDestroy();
-  const [formError, setFormError] = useState<string | null>(null);
+  const chips: FilterChip[] = [];
+  if (itemId > 0) chips.push({ id: 'item', label: `Item: ${item ? `${item.code} — ${item.name}` : `#${itemId}`}`, onRemove: () => query.setFilter('item_id', undefined) });
+  const clearAll = () => query.setFilters({ item_id: undefined });
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
-    defaultValues: { item_id: '', rate: '', rate_uom_id: '', effective_from: new Date().toISOString().slice(0, 10) },
-  });
-
-  function submit(values: FormValues) {
-    setFormError(null);
-    storeMutation.mutate(
-      {
-        data: {
-          item_id: Number(values.item_id), rate: values.rate.trim(),
-          rate_uom_id: Number(values.rate_uom_id), effective_from: values.effective_from,
-        },
-      },
-      {
-        onSuccess: () => {
-          form.reset({ item_id: '', rate: '', rate_uom_id: '', effective_from: values.effective_from });
-          void result.refetch();
-        },
-        onError: (e) => setFormError(applyApiErrorsToForm(e, form.setError, FORM_FIELDS)),
-      }
-    );
-  }
-
-  function renderRowActions(row: ResourceRateResource) {
-    return (
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            aria-label="Delete"
-            onClick={() =>
-              deleteMutation.mutate({ resourceRate: row.id }, { onSuccess: () => void result.refetch() })
-            }
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>Delete</TooltipContent>
-      </Tooltip>
-    );
-  }
+  const itemPicker = (id: string, className: string) => (
+    <ItemCombobox
+      id={id}
+      label="Item"
+      allLabel="All items"
+      placeholder="All labour and plant items"
+      types={['LABOUR', 'PLANT']}
+      className={className}
+      value={query.filters.item_id ?? 'all'}
+      onValueChange={(value) => query.setFilter('item_id', value === 'all' ? undefined : value)}
+    />
+  );
+  const open = (row: ResourceRateResource) => navigate({ pathname: `/resource-rates/${row.id}`, search: listSearch });
 
   return (
-    <div className="space-y-4 p-4 pb-24 md:p-6">
+    <ScreenTemplate kind="list" className="erp-screen">
       <PageHeader
         title="Resource rates"
         description="The standard estimating rate for a LABOUR or PLANT item, effective as of a date — the source Assembly component costing resolves from. A correction is a new dated row, not an edit to an old one."
+        primaryAction={mayManage ? { label: 'New rate', onClick: () => navigate({ pathname: '/resource-rates/new', search: listSearch }) } : undefined}
       />
 
-      {mayManage && <DetailSection title="Add a rate">
-        {formError && (
-          <div className="sm:col-span-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-            {formError}
-          </div>
-        )}
-        <Form {...form}>
-          <form className="col-span-full grid gap-3 sm:grid-cols-4" onSubmit={form.handleSubmit(submit)}>
-            <FormField
-              control={form.control}
-              name="item_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Item</FormLabel>
-                  <FormControl>
-                    <ItemCombobox
-                      label="Item"
-                      placeholder="Select LABOUR/PLANT item"
-                      types={['LABOUR', 'PLANT']}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="rate"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Rate</FormLabel>
-                  <FormControl>
-                    <Input inputMode="decimal" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="rate_uom_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Per unit</FormLabel>
-                  <FormControl>
-                    <Combobox {...lookupState(uomsResult, 'units')}
-                      ref={field.ref}
-                      value={field.value}
-                      onValueChange={field.onChange}
-                      options={uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }))}
-                      placeholder="Select unit"
-                      searchPlaceholder="Search units…"
-                      emptyText="No units found."
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="effective_from"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Effective from</FormLabel>
-                  <FormControl>
-                    <Input type="date" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex justify-end sm:col-span-4">
-              <Button type="submit" disabled={storeMutation.isPending}>
-                {storeMutation.isPending ? 'Saving…' : 'Add rate'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </DetailSection>}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="hidden items-center gap-2 md:flex md:flex-wrap">
+          {itemPicker('inline-item', 'h-10 w-72')}
+          <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
+        </div>
+        <ListFiltersSheet activeCount={itemId > 0 ? 1 : 0} onClear={clearAll}>
+          <FilterField label="Item" htmlFor="sheet-item">
+            {itemPicker('sheet-item', 'h-11 w-full')}
+          </FilterField>
+          <PrintTrigger onPrint={() => print()} className="h-11 w-full justify-center" />
+        </ListFiltersSheet>
+      </div>
+
+      <ActiveFilterChips chips={chips} onClearAll={clearAll} />
+
+      <BulkActionBar count={selected.length} noun="rate" onClear={() => setRowSelection({})}>
+        <PrintTrigger onPrint={() => printSelected()} label="Print selected" className="h-9 md:h-8" />
+      </BulkActionBar>
 
       <DataTable
-        columns={columns}
+        columns={tanStackColumns}
         data={rows}
         rowCount={total}
-        pagination={{ pageIndex: query.page - 1, pageSize: query.perPage }}
-        onPaginationChange={(u) => {
-          const pagination = { pageIndex: query.page - 1, pageSize: query.perPage };
-          const n = typeof u === 'function' ? u(pagination) : u;
-          n.pageSize !== pagination.pageSize ? query.setPerPage(n.pageSize) : query.setPage(n.pageIndex + 1);
+        recordNoun="resource rates"
+        pagination={pagination}
+        onPaginationChange={(updater) => {
+          const next = typeof updater === 'function' ? updater(pagination) : updater;
+          if (next.pageSize !== pagination.pageSize) query.setPerPage(next.pageSize);
+          else query.setPage(next.pageIndex + 1);
         }}
         sorting={sorting}
-        onSortingChange={(u) =>
-          query.setSort(tableSortingToApiSort(typeof u === 'function' ? u(sorting) : u, resourceRateColumns))
-        }
-        rowActions={mayManage ? renderRowActions : undefined}
+        onSortingChange={(updater) => query.setSort(tableSortingToApiSort(typeof updater === 'function' ? updater(sorting) : updater, resourceRateColumns))}
+        columnVisibility={columnVisibility}
+        onColumnVisibilityChange={setColumnVisibility}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row) => String(row.id)}
+        onRowClick={open}
         isLoading={result.isLoading}
         isError={result.isError}
         error={result.error}
         onRetry={() => void result.refetch()}
-        errorMessage={getApiErrorMessage(result.error) ?? "Couldn't load resource rates."}
-        emptyMessage="No resource rates yet."
+        errorMessage="Couldn't load resource rates."
+        emptyMessage={chips.length > 0 ? 'No resource rates match this filter.' : 'No resource rates yet.'}
+        view={view}
+        onViewChange={setView}
+        cardColumns={resourceRateColumns}
+        actionsHeader="Actions"
+        rowActions={(row: ResourceRateResource) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-11 w-11 md:h-8 md:w-8" aria-label={`Actions for ${row.item?.code ?? `rate ${row.id}`} from ${row.effective_from}`} onClick={(event) => event.stopPropagation()}>
+                <EllipsisVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuItem
+                onClick={(event) => {
+                  event.stopPropagation();
+                  open(row);
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4 text-muted-foreground" />
+                View rate
+              </DropdownMenuItem>
+              {mayManage && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDeleting(row);
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4 text-muted-foreground" />
+                    Delete rate
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       />
-    </div>
+
+      {deleting && (
+        <ConfirmActionDialog
+          open
+          onOpenChange={(next) => !next && setDeleting(null)}
+          title="Delete this resource rate?"
+          description="The rate is removed and cannot be brought back. Costing from now on uses the most recent rate dated on or before the costing date; if this was the only one, that item has no rate until another is entered."
+          confirmLabel="Delete rate"
+          pendingLabel="Deleting…"
+          failureMessage="The rate could not be deleted."
+          testId="delete-resource-rate-dialog"
+          onConfirm={async () => {
+            await destroy.mutateAsync({ resourceRate: deleting.id });
+            await queryClient.invalidateQueries();
+          }}
+        />
+      )}
+
+      <div className="hidden">
+        <div ref={contentRef}>
+          <PrintLayout
+            title="RESOURCE RATES"
+            printedAt={new Date()}
+            recordCount={rows.length}
+            meta={[...(query.sort ? [{ label: 'Sort', value: describeSort(query.sort, resourceRateColumns) ?? query.sort }] : []), ...chips.map((chip) => ({ label: 'Filter', value: chip.label }))]}
+          >
+            <PrintableTable columns={resourceRateColumns} rows={rows} getRowKey={(row) => row.id} />
+          </PrintLayout>
+        </div>
+      </div>
+      <div className="hidden">
+        <div ref={selectedRef}>
+          <PrintLayout title="RESOURCE RATES (SELECTED)" printedAt={new Date()} recordCount={selected.length} meta={[{ label: 'Selection', value: `${selected.length} selected resource rates` }]}>
+            <PrintableTable columns={resourceRateColumns} rows={selected} getRowKey={(row) => row.id} />
+          </PrintLayout>
+        </div>
+      </div>
+    </ScreenTemplate>
   );
 }

@@ -7,10 +7,13 @@ import {
   OverheadPolicyStatus,
   OverheadScopeType,
   useOverheadPoliciesActivate,
+  useOverheadPoliciesDestroy,
   useOverheadPoliciesIndex,
   useOverheadPoliciesStore,
+  useOverheadPoliciesUpdate,
   type OverheadPolicyResource,
 } from '@erp/core-api';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
@@ -66,6 +69,8 @@ const FORM_FIELDS = ['driver_type', 'rate', 'reason'] as const;
  */
 export function OverheadPolicyPanel({ scopeType, scopeId }: { scopeType: OverheadScopeType; scopeId: number | null }) {
   const [creating, setCreating] = useState(false);
+  const [editing, setEditing] = useState<OverheadPolicyResource | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ kind: 'activate' | 'delete'; policy: OverheadPolicyResource } | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
 
   const query = useOverheadPoliciesIndex(
@@ -85,37 +90,49 @@ export function OverheadPolicyPanel({ scopeType, scopeId }: { scopeType: Overhea
   const history = rows.filter((r) => r.status === OverheadPolicyStatus.SUPERSEDED);
 
   const storeMutation = useOverheadPoliciesStore();
+  const updateMutation = useOverheadPoliciesUpdate();
   const activateMutation = useOverheadPoliciesActivate();
+  const destroyMutation = useOverheadPoliciesDestroy();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: { driver_type: OverheadDriverType.PCT_DIRECT_COST, rate: '0', reason: '' },
   });
 
-  function submitDraft(values: FormValues) {
+  const blank: FormValues = { driver_type: OverheadDriverType.PCT_DIRECT_COST, rate: '0', reason: '' };
+  const closeForm = () => {
+    setCreating(false);
+    setEditing(null);
+    form.reset(blank);
+  };
+
+  function openForCreate() {
     setActionError(null);
-    storeMutation.mutate(
-      { data: { scope_type: scopeType, scope_id: scopeId ?? undefined, ...values } },
-      {
-        onSuccess: () => {
-          setCreating(false);
-          form.reset({ driver_type: OverheadDriverType.PCT_DIRECT_COST, rate: '0', reason: '' });
-          void query.refetch();
-        },
-        onError: (e) => setActionError(applyApiErrorsToForm(e, form.setError, FORM_FIELDS)),
-      }
-    );
+    setEditing(null);
+    form.reset(blank);
+    setCreating(true);
   }
 
-  function activate(policy: OverheadPolicyResource) {
+  function openForEdit(policy: OverheadPolicyResource) {
     setActionError(null);
-    activateMutation.mutate(
-      { overheadPolicy: policy.id },
-      {
-        onSuccess: () => void query.refetch(),
-        onError: (e) => setActionError(getApiErrorMessage(e) ?? 'Could not activate this policy.'),
-      }
-    );
+    setCreating(false);
+    setEditing(policy);
+    form.reset({ driver_type: policy.driver_type as OverheadDriverType, rate: policy.rate ?? '0', reason: policy.reason });
+  }
+
+  function submitDraft(values: FormValues) {
+    setActionError(null);
+    const onError = (e: unknown) => setActionError(applyApiErrorsToForm(e, form.setError, FORM_FIELDS));
+    const onSuccess = () => {
+      closeForm();
+      void query.refetch();
+    };
+    if (editing) {
+      // Only a draft can be edited; the scope it belongs to never changes.
+      updateMutation.mutate({ overheadPolicy: editing.id, data: values }, { onSuccess, onError });
+    } else {
+      storeMutation.mutate({ data: { scope_type: scopeType, scope_id: scopeId ?? undefined, ...values } }, { onSuccess, onError });
+    }
   }
 
   if (query.isLoading) {
@@ -174,17 +191,25 @@ export function OverheadPolicyPanel({ scopeType, scopeId }: { scopeType: Overhea
                   <div className="font-medium">{policySummary(draft.driver_type, draft.rate)}</div>
                   <div className="text-xs text-muted-foreground">"{draft.reason}"</div>
                 </div>
-                <Button type="button" size="sm" onClick={() => activate(draft)} disabled={activateMutation.isPending}>
-                  Activate
-                </Button>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => openForEdit(draft)} aria-label={`Edit draft ${policySummary(draft.driver_type, draft.rate)}`}>
+                    Edit
+                  </Button>
+                  <Button type="button" size="sm" className="h-11 md:h-8" onClick={() => setPendingAction({ kind: 'activate', policy: draft })}>
+                    Activate
+                  </Button>
+                  <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setPendingAction({ kind: 'delete', policy: draft })} aria-label={`Delete draft ${policySummary(draft.driver_type, draft.rate)}`}>
+                    Delete
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        {creating ? (
+        {creating || editing ? (
           <Form {...form}>
-            <form className="space-y-3 rounded-md border p-3" onSubmit={form.handleSubmit(submitDraft)}>
+            <form className="space-y-3 rounded-md border p-3" noValidate aria-label={editing ? 'Edit draft overhead policy' : 'New overhead policy'} onSubmit={form.handleSubmit(submitDraft)}>
               <FormField
                 control={form.control}
                 name="driver_type"
@@ -193,7 +218,7 @@ export function OverheadPolicyPanel({ scopeType, scopeId }: { scopeType: Overhea
                     <FormLabel>Driver</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-11 md:h-10">
                           <SelectValue />
                         </SelectTrigger>
                       </FormControl>
@@ -216,7 +241,7 @@ export function OverheadPolicyPanel({ scopeType, scopeId }: { scopeType: Overhea
                   <FormItem>
                     <FormLabel>Rate</FormLabel>
                     <FormControl>
-                      <Input inputMode="decimal" {...field} />
+                      <Input inputMode="decimal" className="h-11 md:h-10" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -229,26 +254,50 @@ export function OverheadPolicyPanel({ scopeType, scopeId }: { scopeType: Overhea
                   <FormItem>
                     <FormLabel>Reason</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Why is this policy being set?" />
+                      <Input className="h-11 md:h-10" {...field} placeholder="Why is this policy being set?" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
               <div className="flex justify-end gap-2">
-                <Button type="button" variant="ghost" onClick={() => setCreating(false)}>
+                <Button type="button" variant="ghost" className="h-11 md:h-9" onClick={closeForm}>
                   Cancel
                 </Button>
-                <Button type="submit" disabled={storeMutation.isPending}>
-                  {storeMutation.isPending ? 'Saving…' : 'Save as draft'}
+                <Button type="submit" className="h-11 md:h-9" disabled={storeMutation.isPending || updateMutation.isPending}>
+                  {storeMutation.isPending || updateMutation.isPending ? 'Saving…' : editing ? 'Save draft' : 'Save as draft'}
                 </Button>
               </div>
             </form>
           </Form>
         ) : (
-          <Button type="button" variant="outline" onClick={() => setCreating(true)}>
+          <Button type="button" variant="outline" className="h-11 md:h-9" onClick={openForCreate}>
             Set a new policy
           </Button>
+        )}
+
+        {pendingAction && (
+          <ConfirmActionDialog
+            open
+            onOpenChange={(next) => !next && setPendingAction(null)}
+            title={pendingAction.kind === 'activate' ? 'Activate this policy?' : 'Delete this draft?'}
+            description={
+              pendingAction.kind === 'activate'
+                ? `${policySummary(pendingAction.policy.driver_type, pendingAction.policy.rate)} becomes the policy for this scope from today. The policy active now (if any) is superseded and kept in the history; costing from now on uses the new one.`
+                : `The draft ${policySummary(pendingAction.policy.driver_type, pendingAction.policy.rate)} is removed for good. Only a draft can be deleted; an active or superseded policy is kept as history.`
+            }
+            confirmLabel={pendingAction.kind === 'activate' ? 'Activate policy' : 'Delete draft'}
+            pendingLabel={pendingAction.kind === 'activate' ? 'Activating…' : 'Deleting…'}
+            cancelLabel="Not now"
+            destructive={pendingAction.kind === 'delete'}
+            failureMessage={pendingAction.kind === 'activate' ? 'Could not activate this policy.' : 'Could not delete this draft.'}
+            testId={`${pendingAction.kind}-overhead-policy-dialog`}
+            onConfirm={async () => {
+              if (pendingAction.kind === 'activate') await activateMutation.mutateAsync({ overheadPolicy: pendingAction.policy.id });
+              else await destroyMutation.mutateAsync({ overheadPolicy: pendingAction.policy.id });
+              await query.refetch();
+            }}
+          />
         )}
 
         {history.length > 0 && (

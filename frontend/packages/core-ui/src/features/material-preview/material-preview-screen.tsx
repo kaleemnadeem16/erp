@@ -27,6 +27,7 @@ import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { PageHeader } from '../../components/page/page-header';
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
 import { CostEvidence, CostReadiness } from '../costing/cost-evidence';
@@ -240,17 +241,17 @@ export function MaterialPreviewScreen() {
 
   if (!mayRun) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
+      <ScreenTemplate kind="form" className="erp-screen">
         <PageHeader title="Material Preview" description="Resolve the technical material requirement for a hypothetical quantity of work." />
-        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
+        <div role="alert" className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
           You do not have permission to run material previews. Ask an administrator for <code>estimating.material_preview.run</code>.
         </div>
-      </div>
+      </ScreenTemplate>
     );
   }
 
   return (
-    <div className="space-y-6 p-4 pb-24 md:p-6">
+    <ScreenTemplate kind="form" className="erp-screen">
       <PageHeader
         title="Material Preview"
         description="See what an Assembly technically requires for a customer, quantity and rate context. This preview does not reserve stock."
@@ -435,7 +436,7 @@ export function MaterialPreviewScreen() {
           onRecheck={lastRequest ? () => run(lastRequest, preview) : undefined}
         />
       )}
-    </div>
+    </ScreenTemplate>
   );
 }
 

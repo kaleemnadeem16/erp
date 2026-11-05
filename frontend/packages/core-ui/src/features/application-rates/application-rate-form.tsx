@@ -1,8 +1,8 @@
 import { useForm, type UseFormReturn } from 'react-hook-form';
-import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
+import { ItemCombobox, UomCombobox } from '../../components/lookups/entity-comboboxes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useRateDimensionsIndex, useUomsIndex } from '@erp/core-api';
+import { useRateDimensionsIndex } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Checkbox } from '../../components/ui/checkbox';
 import { Input } from '../../components/ui/input';
@@ -25,7 +25,8 @@ const schema = z.object({
     ),
   uom_id: z.string().min(1, 'Consumption unit is required'),
   is_default: z.boolean(),
-  dimension_values: z.record(z.string(), z.string()),
+  // A dimension the person never touched has no entry at all (the picker shows "Not tagged"), which is not an error.
+  dimension_values: z.record(z.string(), z.string().optional()),
 });
 
 export type ApplicationRateFormValues = z.infer<typeof schema>;
@@ -46,7 +47,7 @@ export function applicationRatePayload(v: ApplicationRateFormValues) {
     uom_id: Number(v.uom_id),
     is_default: v.is_default,
     dimension_value_ids: Object.values(v.dimension_values)
-      .filter((value) => value !== NONE)
+      .filter((value): value is string => Boolean(value) && value !== NONE)
       .map(Number),
   };
 }
@@ -55,12 +56,14 @@ export function ApplicationRateForm({
   mode,
   defaultValues,
   onSubmit,
+  onCancel,
   isSubmitting,
   formError,
 }: {
   mode: 'create' | 'edit';
   defaultValues?: Partial<ApplicationRateFormValues>;
   onSubmit: (v: ApplicationRateFormValues, f: UseFormReturn<ApplicationRateFormValues>) => void;
+  onCancel: () => void;
   isSubmitting?: boolean;
   formError?: string | null;
 }) {
@@ -76,17 +79,14 @@ export function ApplicationRateForm({
       ...defaultValues,
     },
   });
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
-  const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
   const dimensionsResult = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
   const dimensions = dimensionsResult.data?.status === 200 ? dimensionsResult.data.data.data : [];
-  const uomOptions = uoms.map((u) => ({ value: String(u.id), label: `${u.name} (${u.code})` }));
 
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
+      <form className="space-y-6" noValidate aria-label={mode === 'create' ? 'New application rate' : 'Edit application rate'} onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
         {formError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
           </div>
         )}
@@ -105,7 +105,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Item</FormLabel>
                 <FormControl>
-                  <ItemCombobox label="Item" placeholder="Select item" value={field.value} onValueChange={field.onChange} />
+                  <ItemCombobox label="Item" placeholder="Select item" className="h-11 w-full md:h-10" disabled={mode === 'edit'} value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -118,16 +118,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Work unit</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(uomsResult, 'units')}
-                    ref={field.ref}
-                    disabled={mode === 'edit'}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={uomOptions}
-                    placeholder="Select work unit"
-                    searchPlaceholder="Search units…"
-                    emptyText="No units found."
-                  />
+                  <UomCombobox label="Work unit" placeholder="Select work unit" className="h-11 w-full md:h-10" disabled={mode === 'edit'} value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -140,7 +131,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Quantity consumed per work unit</FormLabel>
                 <FormControl>
-                  <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} />
+                  <DecimalInput className="h-11 md:h-10" rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -153,15 +144,7 @@ export function ApplicationRateForm({
               <FormItem>
                 <FormLabel>Consumption unit</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(uomsResult, 'units')}
-                    ref={field.ref}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={uomOptions}
-                    placeholder="Select unit"
-                    searchPlaceholder="Search units…"
-                    emptyText="No units found."
-                  />
+                  <UomCombobox label="Consumption unit" placeholder="Select unit" className="h-11 w-full md:h-10" value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -171,7 +154,7 @@ export function ApplicationRateForm({
             control={form.control}
             name="is_default"
             render={({ field }) => (
-              <FormItem className="flex items-center gap-3 space-y-0">
+              <FormItem className="flex items-center gap-3 space-y-0 sm:col-span-2">
                 <FormControl>
                   <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(!!v)} />
                 </FormControl>
@@ -200,6 +183,7 @@ export function ApplicationRateForm({
                     <FormControl>
                       <Combobox {...lookupState(dimensionsResult, 'rate dimensions')}
                         ref={field.ref}
+                        className="h-11 w-full md:h-10"
                         value={field.value ?? NONE}
                         onValueChange={field.onChange}
                         options={[
@@ -220,8 +204,11 @@ export function ApplicationRateForm({
             ))}
           </DetailSection>
         )}
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-background px-4 py-3">
+          <Button type="button" variant="outline" className="h-11 md:h-9" disabled={isSubmitting} onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" className="h-11 md:h-9" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : mode === 'create' ? 'Create rate' : 'Save rate'}
           </Button>
         </div>

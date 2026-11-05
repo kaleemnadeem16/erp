@@ -220,6 +220,7 @@ export {
   NumberingSettingsScreen,
 } from "./features/numbering/numbering-settings-screen";
 export { ResourceRatesListScreen } from "./features/resource-rates/resource-rates-list-screen";
+export { ResourceRateFormScreen } from "./features/resource-rates/resource-rate-form-screen";
 export { StockLedgerScreen } from "./features/stock-ledger/stock-ledger-screen";
 export { StockMoveDetailScreen } from "./features/stock-ledger/stock-move-detail-screen";
 export { PhysicalCountsListScreen } from "./features/physical-counts/physical-counts-list-screen";

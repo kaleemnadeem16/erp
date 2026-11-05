@@ -38,12 +38,14 @@ export function RateDimensionForm({
   mode,
   defaultValues,
   onSubmit,
+  onCancel,
   isSubmitting,
   formError,
 }: {
   mode: 'create' | 'edit';
   defaultValues?: Partial<RateDimensionFormValues>;
   onSubmit: (v: RateDimensionFormValues, f: UseFormReturn<RateDimensionFormValues>) => void;
+  onCancel: () => void;
   isSubmitting?: boolean;
   formError?: string | null;
 }) {
@@ -53,9 +55,9 @@ export function RateDimensionForm({
   });
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
+      <form className="space-y-6" noValidate aria-label={mode === 'create' ? 'New rate dimension' : 'Edit rate dimension'} onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
         {formError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
           </div>
         )}
@@ -70,7 +72,7 @@ export function RateDimensionForm({
               <FormItem>
                 <FormLabel>Code</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -83,7 +85,7 @@ export function RateDimensionForm({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -96,7 +98,7 @@ export function RateDimensionForm({
               <FormItem>
                 <FormLabel>Sort order</FormLabel>
                 <FormControl>
-                  <Input type="number" min="0" max="65535" {...field} />
+                  <Input type="number" min="0" max="65535" className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -106,7 +108,7 @@ export function RateDimensionForm({
             control={form.control}
             name="is_required"
             render={({ field }) => (
-              <FormItem className="flex items-center gap-3 space-y-0">
+              <FormItem className="flex items-center gap-3 space-y-0 sm:col-span-2">
                 <FormControl>
                   <Checkbox checked={field.value} onCheckedChange={(v) => field.onChange(!!v)} />
                 </FormControl>
@@ -116,8 +118,11 @@ export function RateDimensionForm({
             )}
           />
         </DetailSection>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-background px-4 py-3">
+          <Button type="button" variant="outline" className="h-11 md:h-9" disabled={isSubmitting} onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" className="h-11 md:h-9" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : mode === 'create' ? 'Create dimension' : 'Save dimension'}
           </Button>
         </div>

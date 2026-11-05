@@ -1,15 +1,21 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import type { UseFormReturn } from 'react-hook-form';
-import { OverheadScopeType, useAssembliesShow, useAssembliesUpdate, useOverheadPoliciesResolve } from '@erp/core-api';
+import { Archive } from 'lucide-react';
+import { OverheadScopeType, useAssembliesDestroy, useAssembliesShow, useAssembliesUpdate, useOverheadPoliciesResolve } from '@erp/core-api';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
-import { PageHeader } from '../../components/page/page-header';
-import { DetailPageLayout } from '../../components/detail/detail-page-layout';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import { RecordUnavailable } from '../../components/page/record-unavailable';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
+import type { Presentation } from '../../lib/presentation';
+import { RecipeStatusBadge } from '../estimating/estimating-status';
 import { OverheadPolicyPanel } from '../overhead-policies/overhead-policy-panel';
 import { ASSEMBLY_FORM_FIELDS, AssemblyForm, assemblyPayload, type AssemblyFormValues } from './assembly-form';
 import { AssemblyVersionsSection } from './assembly-versions-section';
+
+const LIST = '/assemblies';
 
 const RESOLUTION_LABELS: Record<string, string> = {
   ASSEMBLY: 'this assembly',
@@ -18,51 +24,79 @@ const RESOLUTION_LABELS: Record<string, string> = {
   NONE: 'no policy',
 };
 
-export function AssemblyEditScreen() {
+/**
+ * `/assemblies/:id/edit`: the assembly's header, its versions (revise, edit a draft, activate, delete a draft, view cost), its overhead policy and *Archive*.
+ * A workspace, so a wide sheet (decision D7: forms are sheets).
+ */
+export function AssemblyEditScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const query = useAssembliesShow(id, { include: 'workUom,assemblyGroup,versions,versions.components' });
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
   const mutation = useAssembliesUpdate();
+  const archiveMutation = useAssembliesDestroy();
   const [error, setError] = useState<string | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState(false);
   const resolveQuery = useOverheadPoliciesResolve({ assembly_id: id }, { query: { enabled: !!row, retry: false } });
   const resolution = resolveQuery.data?.status === 200 ? resolveQuery.data.data.data : undefined;
+  const back = () => navigate({ pathname: LIST, search: window.location.search });
 
   const submit = (v: AssemblyFormValues, form: UseFormReturn<AssemblyFormValues>) => {
     setError(null);
     mutation.mutate(
       { assembly: id, data: assemblyPayload(v) },
-      { onError: (e) => setError(applyApiErrorsToForm(e, form.setError, ASSEMBLY_FORM_FIELDS)) }
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries();
+          back();
+        },
+        onError: (e) => setError(applyApiErrorsToForm(e, form.setError, ASSEMBLY_FORM_FIELDS)),
+      }
     );
   };
 
-  if (query.isLoading)
+  if (!row) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <RecordPresenter presentation={presentation} title="Assembly" listPath={LIST} listLabel="Assemblies" size="xl" form>
+        <RecordUnavailable isLoading={query.isLoading} error={query.error} noun="assembly" />
+      </RecordPresenter>
     );
-  if (!row || query.isError)
-    return (
-      <div className="p-6">
-        <Button variant="outline" onClick={() => navigate('/assemblies')}>
-          Back to assemblies
-        </Button>
-      </div>
-    );
+  }
 
-  if (row.margin_type == null || row.margin_pct == null)
-    return <div className="p-6 text-sm text-destructive">You cannot edit this assembly without access to its margin settings.</div>;
+  if (row.margin_type == null || row.margin_pct == null) {
+    return (
+      <RecordPresenter presentation={presentation} title={row.name} description={row.code} listPath={LIST} listLabel="Assemblies" size="xl">
+        <p role="alert" className="text-sm text-destructive">
+          You cannot edit this assembly without access to its margin settings.
+        </p>
+      </RecordPresenter>
+    );
+  }
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={row.name}
-        description={`${row.code} — ${row.status}`}
-        breadcrumbs={[{ label: 'Assemblies', to: '/assemblies' }, { label: row.code }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title={row.name}
+      description={row.code}
+      actions={
+        <>
+          <RecipeStatusBadge status={row.status} />
+          {row.status !== 'ARCHIVED' && (
+            <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setConfirmArchive(true)}>
+              <Archive aria-hidden="true" className="mr-1.5 h-4 w-4" />
+              Archive
+            </Button>
+          )}
+        </>
+      }
+      listPath={LIST}
+      listLabel="Assemblies"
+      size="xl"
+      form
+    >
       <AssemblyForm
+        key={`${row.id}-${row.updated_at}`}
         mode="edit"
         defaultValues={{
           code: row.code,
@@ -74,6 +108,7 @@ export function AssemblyEditScreen() {
           margin_pct: row.margin_pct,
         }}
         onSubmit={submit}
+        onCancel={back}
         isSubmitting={mutation.isPending}
         formError={error}
       />
@@ -83,10 +118,25 @@ export function AssemblyEditScreen() {
           {resolution.method !== 'NONE' && resolution.policy?.rate != null && ` (${resolution.policy.rate} ${resolution.policy.driver_type})`}.
         </p>
       )}
-      <AssemblyVersionsSection assemblyId={row.id} versions={row.versions ?? []} />
-      <DetailPageLayout>
-        <OverheadPolicyPanel scopeType={OverheadScopeType.ASSEMBLY} scopeId={row.id} />
-      </DetailPageLayout>
-    </div>
+      <AssemblyVersionsSection assemblyId={row.id} versions={row.versions ?? []} onChanged={() => void query.refetch()} />
+      <OverheadPolicyPanel scopeType={OverheadScopeType.ASSEMBLY} scopeId={row.id} />
+
+      <ConfirmActionDialog
+        open={confirmArchive}
+        onOpenChange={setConfirmArchive}
+        title={`Archive ${row.name}?`}
+        description="The assembly is retired and marked Archived; its versions stay on record. There is no way to un-archive it: to use this unit of work again, create a new assembly."
+        confirmLabel="Archive assembly"
+        pendingLabel="Archiving…"
+        cancelLabel="Keep it active"
+        failureMessage="The assembly could not be archived."
+        testId="archive-assembly-dialog"
+        onConfirm={async () => {
+          await archiveMutation.mutateAsync({ assembly: id });
+          await queryClient.invalidateQueries();
+          back();
+        }}
+      />
+    </RecordPresenter>
   );
 }
