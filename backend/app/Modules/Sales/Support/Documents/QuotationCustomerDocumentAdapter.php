@@ -131,7 +131,7 @@ final class QuotationCustomerDocumentAdapter implements DocumentAccess, Document
             return false;
         }
         try {
-            $revision = DB::transaction(fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, (int) $m[1], [PermissionVocabulary::QUOTATION_VIEW]));
+            $revision = DB::transaction(fn (): QuotationRevision => app(QuotationAccess::class)->requireRevision($actor, (int) $m[1], [PermissionVocabulary::QUOTATION_VIEW], false, false));
         } catch (\Throwable) {
             return false;
         }

@@ -9,6 +9,7 @@ use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
+use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Support\Scope\CompanyAccessFence;
 use App\Support\Scope\RecordScope;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -18,7 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Quotation-family eligibility for exact duties. The caller holds the enclosing transaction
  * through query execution and safe projection; a builder is not a durable authorisation.
  *
- * @internal Not wired to quotation entry points until the whole QA3 adoption is complete.
+ * Shared by the adopted quotation entry points; named paths are limited to ordinary view/prepare.
  */
 final class QuotationAccess
 {
@@ -41,6 +42,9 @@ final class QuotationAccess
             throw new AuthorizationException('You are not permitted to access quotations.');
         }
 
+        // Named sharing is purpose-bound to ordinary VIEW/PREPARE. A separate special-duty
+        // operation must independently reach the family, even when that duty has an ALL scope.
+        $allowNamedDelegation = $allowNamedDelegation && array_diff($duties, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]) === [];
         $query = QuotationFamily::query();
         foreach (array_unique($duties) as $duty) {
             if (! $this->manifest->isActive($duty) || ! $current->can($duty)) {
@@ -57,9 +61,9 @@ final class QuotationAccess
     }
 
     /** @param list<string> $duties */
-    public function requireRevision(User $actor, int $revisionId, array $duties, bool $forUpdate = false): QuotationRevision
+    public function requireRevision(User $actor, int $revisionId, array $duties, bool $forUpdate = false, bool $allowNamedDelegation = true): QuotationRevision
     {
-        $eligible = $this->queryFor($actor, $duties)->select('quotation_families.id');
+        $eligible = $this->queryFor($actor, $duties, $allowNamedDelegation)->select('quotation_families.id');
         $query = QuotationRevision::query()->whereKey($revisionId)->whereIn('family_id', $eligible);
         if ($forUpdate) {
             $query->lockForUpdate();

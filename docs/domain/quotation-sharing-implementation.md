@@ -17,6 +17,11 @@ QuotationOperation fence, family-lock, current-authority, receipt and stale-gene
 Management requires independently scoped, non-delegated view plus the relevant management duty;
 PREPARE grants also require non-delegated prepare. Receiving a share never supplies management
 eligibility. The existing ownership Actions now explicitly select the same non-delegated view path.
+Named paths apply only to operation duty sets consisting of ordinary view/prepare. Special-duty
+operations independently reach the family; document adapters explicitly refuse the named path.
+An isolated negative fixture proves ordinary named preparation works while issue/document
+eligibility refuses non-disclosingly, even with independently held special-duty rows. No demo or
+production holder receives issue/repair from this feature.
 
 A recipient must be active in the company and independently hold each required active capability.
 An unreachable duty must have explicit OWN_OR_DELEGATED opt-in. OWN and MY_UNITS remain bounded;

@@ -51,7 +51,7 @@ final class QuotationDocumentLocator
             throw new AuthorizationException("You are not permitted to {$doing}.");
         }
         try {
-            app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW]);
+            app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW], false, false);
         } catch (DomainInvariantException $refusal) {
             // Hidden, foreign and unknown revisions are one answer here: the same "not found" as an unissued one.
             throw $refusal->reasonCode === QuotationRefusal::QUOTATION_NOT_FOUND ? $this->notFound() : $refusal;
