@@ -6,6 +6,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Collapse } from '../ui/collapse';
 import { Input } from '../ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../ui/sheet';
 
 /**
@@ -269,5 +270,54 @@ export function FilterField({ label, htmlFor, children }: { label: string; htmlF
       </label>
       {children}
     </div>
+  );
+}
+
+/** `MATERIAL_CONSUMPTION` → `Material consumption`: an enum code in the operator's words, for a filter option or a chip (the value stays the code). */
+export function humanizeCode(code: string): string {
+  const words = code.toLowerCase().replace(/_/g, ' ').trim();
+
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+/**
+ * A bounded enum as a filter: "All …" first, then the fixed values, 44 px tall on a phone and 40 px from `md`. For growing references use a server-searched
+ * combobox instead (ui-building-blocks.md §Lookups that survive large datasets).
+ */
+export function FilterSelect({
+  label,
+  allLabel,
+  value,
+  options,
+  onChange,
+  className,
+}: {
+  /** The control's accessible name, e.g. "Status". */
+  label: string;
+  allLabel: string;
+  /** The chosen value, or undefined/'' for none. */
+  value: string | undefined;
+  options: ReadonlyArray<string | { value: string; label: string }>;
+  onChange: (value: string | undefined) => void;
+  className?: string;
+}) {
+  return (
+    <Select value={value || 'all'} onValueChange={(next) => onChange(next === 'all' ? undefined : next)}>
+      <SelectTrigger className={cn('h-11 w-full md:h-10 md:w-48', className)} aria-label={label}>
+        <SelectValue placeholder={label} />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">{allLabel}</SelectItem>
+        {options.map((option) => {
+          const item = typeof option === 'string' ? { value: option, label: humanizeCode(option) } : option;
+
+          return (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          );
+        })}
+      </SelectContent>
+    </Select>
   );
 }

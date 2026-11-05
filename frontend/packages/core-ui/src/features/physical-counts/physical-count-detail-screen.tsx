@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react';
 import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
-import { useParams, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { Check, Plus } from 'lucide-react';
 import {
   useLocationsIndex,
@@ -19,7 +19,6 @@ import { Skeleton } from '../../components/ui/skeleton';
 import { Combobox } from '../../components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../../components/ui/tooltip';
-import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
@@ -32,6 +31,8 @@ import { formatLocation } from '../../lib/format-location';
 import { GroupedCountedCell, countVerdict } from '../package-stock/grouped-count-line';
 import { FoundCostField } from '../package-stock/found-cost-field';
 import { usePermission } from '../../hooks/use-permission';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import type { Presentation } from '../../lib/presentation';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -56,9 +57,10 @@ const isLoss = (variance: string | null) => variance !== null && compareDecimal(
  * since the truth (variance, whether every line is counted) always comes
  * from the server, not from re-deriving it client-side.
  */
-export function PhysicalCountDetailScreen() {
+export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const mayCreate = usePermission('inventory.physical_count.create');
   const mayCount = usePermission('inventory.physical_count.count');
   const mayPost = usePermission('inventory.physical_count.post');
@@ -166,31 +168,42 @@ export function PhysicalCountDetailScreen() {
 
   if (countQuery.isLoading) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Physical count"
+        listPath="/physical-counts"
+        listLabel="Physical Counts"
+        size="xl"
+      >
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-40 w-full" />
-      </div>
+      </RecordPresenter>
     );
   }
 
   if (countQuery.isError || !count) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Physical count"
+        listPath="/physical-counts"
+        listLabel="Physical Counts"
+        size="xl"
+      >
         <p className="text-sm text-destructive">Couldn't load this physical count.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/physical-counts')}>
+        <Button variant="outline" size="sm" onClick={() => navigate({ pathname: '/physical-counts', search })}>
           Back to physical counts
         </Button>
-      </div>
+      </RecordPresenter>
     );
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={`Physical count #${count.id}`}
-        description={count.reference ?? undefined}
-        breadcrumbs={[{ label: 'Physical Counts', to: '/physical-counts' }, { label: `#${count.id}` }]}
-        actions={
+    <RecordPresenter
+      presentation={presentation}
+      title={`Physical count #${count.id}`}
+      description={count.reference ?? undefined}
+      actions={
           isDraft && (mayCreate || mayPost) && (
             <>
               {mayCreate && <Button variant="outline" onClick={handleCancel} disabled={cancelCount.isPending}>
@@ -222,7 +235,10 @@ export function PhysicalCountDetailScreen() {
             </>
           )
         }
-      />
+      listPath="/physical-counts"
+      listLabel="Physical Counts"
+      size="xl"
+    >
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>
@@ -393,6 +409,6 @@ export function PhysicalCountDetailScreen() {
           )}
         </DetailSection>
       </DetailPageLayout>
-    </div>
+    </RecordPresenter>
   );
 }

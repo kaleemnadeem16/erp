@@ -1,6 +1,8 @@
 import type { InventoryCutoverResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
+import { humanizeCode } from '../../components/data-table/list-controls';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 
@@ -17,6 +19,7 @@ export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
     key: 'id',
     header: 'Cutover',
     value: (cutover) => `#${cutover.id}`,
+    cell: (cutover) => <RecordLink>#{cutover.id}</RecordLink>,
     cardRole: 'title',
   },
   {
@@ -28,7 +31,7 @@ export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
   {
     key: 'mode',
     header: 'Mode',
-    value: (cutover) => cutover.mode,
+    value: (cutover) => humanizeCode(cutover.mode),
   },
   {
     key: 'status',

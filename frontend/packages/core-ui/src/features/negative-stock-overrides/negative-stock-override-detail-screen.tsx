@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   useNegativeStockOverrideRequestsShow,
   useNegativeStockOverrideRequestsDecide,
@@ -13,7 +13,6 @@ import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
@@ -21,6 +20,8 @@ import { formatDateTime } from '../../lib/format-date';
 import { overrideStatus } from './negative-stock-override-columns';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import type { Presentation } from '../../lib/presentation';
 
 /**
  * The workspace for one override request: header/shortage evidence, plus
@@ -30,9 +31,10 @@ import { formatLocation } from '../../lib/format-location';
  * mutation refetches rather than patching local state, matching physical
  * counts and inventory cutover.
  */
-export function NegativeStockOverrideDetailScreen() {
+export function NegativeStockOverrideDetailScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const overrideId = Number(params.id);
 
   const overrideQuery = useNegativeStockOverrideRequestsShow(overrideId, { include: 'item,location,batch,approval,review' });
@@ -86,21 +88,33 @@ export function NegativeStockOverrideDetailScreen() {
 
   if (overrideQuery.isLoading) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Negative-stock override request"
+        listPath="/negative-stock-overrides"
+        listLabel="Negative-Stock Overrides"
+        size="xl"
+      >
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-40 w-full" />
-      </div>
+      </RecordPresenter>
     );
   }
 
   if (overrideQuery.isError || !override) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Negative-stock override request"
+        listPath="/negative-stock-overrides"
+        listLabel="Negative-Stock Overrides"
+        size="xl"
+      >
         <p className="text-sm text-destructive">Couldn't load this negative-stock override request.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/negative-stock-overrides')}>
+        <Button variant="outline" size="sm" onClick={() => navigate({ pathname: '/negative-stock-overrides', search })}>
           Back to negative-stock overrides
         </Button>
-      </div>
+      </RecordPresenter>
     );
   }
 
@@ -113,12 +127,14 @@ export function NegativeStockOverrideDetailScreen() {
   const cannotReview = isOwnRequest && !override.allow_self_review;
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={`Negative-stock override #${override.id}`}
-        description={override.item ? `${override.item.code} — ${override.item.name}` : undefined}
-        breadcrumbs={[{ label: 'Negative-Stock Overrides', to: '/negative-stock-overrides' }, { label: `#${override.id}` }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title={`Negative-stock override #${override.id}`}
+      description={override.item ? `${override.item.code} — ${override.item.name}` : undefined}
+      listPath="/negative-stock-overrides"
+      listLabel="Negative-Stock Overrides"
+      size="xl"
+    >
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>
@@ -230,6 +246,6 @@ export function NegativeStockOverrideDetailScreen() {
           </DetailSection>
         )}
       </DetailPageLayout>
-    </div>
+    </RecordPresenter>
   );
 }

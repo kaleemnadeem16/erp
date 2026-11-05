@@ -51,6 +51,14 @@ export const presentation: {
   partyCreate: Presentation;
   partyDetail: Presentation;
   partyEdit: Presentation;
+  physicalCountCreate: Presentation;
+  physicalCountDetail: Presentation;
+  inventoryCutoverCreate: Presentation;
+  inventoryCutoverDetail: Presentation;
+  negativeStockOverrideCreate: Presentation;
+  negativeStockOverrideDetail: Presentation;
+  recalculationRequestCreate: Presentation;
+  recalculationRequestDetail: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -96,6 +104,14 @@ export const presentation: {
   partyCreate: "sheet",
   partyDetail: "sheet",
   partyEdit: "sheet",
+  physicalCountCreate: "sheet",
+  physicalCountDetail: "sheet",
+  inventoryCutoverCreate: "sheet",
+  inventoryCutoverDetail: "sheet",
+  negativeStockOverrideCreate: "sheet",
+  negativeStockOverrideDetail: "sheet",
+  recalculationRequestCreate: "sheet",
+  recalculationRequestDetail: "sheet",
 };
 
 /**

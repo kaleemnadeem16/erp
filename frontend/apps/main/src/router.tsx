@@ -136,6 +136,14 @@ const packCreateAsSheet = presentation.packConversionCreate === "sheet";
 const packDetailAsSheet = presentation.packConversionDetail === "sheet";
 const packEditAsSheet = presentation.packConversionEdit === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
+const physicalCountCreateAsSheet = presentation.physicalCountCreate === "sheet";
+const physicalCountDetailAsSheet = presentation.physicalCountDetail === "sheet";
+const inventoryCutoverCreateAsSheet = presentation.inventoryCutoverCreate === "sheet";
+const inventoryCutoverDetailAsSheet = presentation.inventoryCutoverDetail === "sheet";
+const negativeStockOverrideCreateAsSheet = presentation.negativeStockOverrideCreate === "sheet";
+const negativeStockOverrideDetailAsSheet = presentation.negativeStockOverrideDetail === "sheet";
+const recalculationRequestCreateAsSheet = presentation.recalculationRequestCreate === "sheet";
+const recalculationRequestDetailAsSheet = presentation.recalculationRequestDetail === "sheet";
 const customerCreateAsSheet = presentation.customerCreate === "sheet";
 const customerDetailAsSheet = presentation.customerDetail === "sheet";
 const customerEditAsSheet = presentation.customerEdit === "sheet";
@@ -1141,30 +1149,42 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <PhysicalCountsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/physical-counts/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PhysicalCountCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/physical-counts/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PhysicalCountDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {physicalCountCreateAsSheet && (
+            <Route path="new" element={<PhysicalCountCreateScreen presentation="sheet" />} />
+          )}
+          {physicalCountDetailAsSheet && (
+            <Route path=":id" element={<PhysicalCountDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!physicalCountCreateAsSheet && (
+          <Route
+            path="/physical-counts/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PhysicalCountCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!physicalCountDetailAsSheet && (
+          <Route
+            path="/physical-counts/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PhysicalCountDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/supplier-returns"
           element={
@@ -1441,90 +1461,126 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <InventoryCutoversListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/inventory-cutovers/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <InventoryCutoverCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/inventory-cutovers/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <InventoryCutoverDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {inventoryCutoverCreateAsSheet && (
+            <Route path="new" element={<InventoryCutoverCreateScreen presentation="sheet" />} />
+          )}
+          {inventoryCutoverDetailAsSheet && (
+            <Route path=":id" element={<InventoryCutoverDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!inventoryCutoverCreateAsSheet && (
+          <Route
+            path="/inventory-cutovers/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <InventoryCutoverCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!inventoryCutoverDetailAsSheet && (
+          <Route
+            path="/inventory-cutovers/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <InventoryCutoverDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/negative-stock-overrides"
           element={
             <ProtectedRoute>
               <AppShell>
                 <NegativeStockOverridesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/negative-stock-overrides/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <NegativeStockOverrideCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/negative-stock-overrides/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <NegativeStockOverrideDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {negativeStockOverrideCreateAsSheet && (
+            <Route path="new" element={<NegativeStockOverrideCreateScreen presentation="sheet" />} />
+          )}
+          {negativeStockOverrideDetailAsSheet && (
+            <Route path=":id" element={<NegativeStockOverrideDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!negativeStockOverrideCreateAsSheet && (
+          <Route
+            path="/negative-stock-overrides/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <NegativeStockOverrideCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!negativeStockOverrideDetailAsSheet && (
+          <Route
+            path="/negative-stock-overrides/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <NegativeStockOverrideDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/recalculation-requests"
           element={
             <ProtectedRoute>
               <AppShell>
                 <RecalculationRequestsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/recalculation-requests/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <RecalculationRequestCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recalculation-requests/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <RecalculationRequestDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {recalculationRequestCreateAsSheet && (
+            <Route path="new" element={<RecalculationRequestCreateScreen presentation="sheet" />} />
+          )}
+          {recalculationRequestDetailAsSheet && (
+            <Route path=":id" element={<RecalculationRequestDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!recalculationRequestCreateAsSheet && (
+          <Route
+            path="/recalculation-requests/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RecalculationRequestCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!recalculationRequestDetailAsSheet && (
+          <Route
+            path="/recalculation-requests/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RecalculationRequestDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/settings/purchasing"
           element={

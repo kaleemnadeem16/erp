@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   useRecalculationRequestsShow,
   useRecalculationImpactVersionsDecide,
@@ -14,7 +14,6 @@ import { Badge } from '../../components/ui/badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage } from '../../lib/api-errors';
@@ -23,6 +22,8 @@ import { currentVersion, latestVersion, recalculationStatus } from './recalculat
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
 import { usePermission } from '../../hooks/use-permission';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import type { Presentation } from '../../lib/presentation';
 
 const RISK_VARIANT: Record<string, 'secondary' | 'destructive'> = { NORMAL_RISK: 'secondary', HIGH_RISK: 'destructive' };
 
@@ -38,9 +39,10 @@ const RISK_VARIANT: Record<string, 'secondary' | 'destructive'> = { NORMAL_RISK:
  * throws) — so every mutation refetches on both success and error, not
  * just success.
  */
-export function RecalculationRequestDetailScreen() {
+export function RecalculationRequestDetailScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const mayDecide = usePermission('inventory.recalculation.approve');
   const mayExecute = usePermission('inventory.recalculation.execute');
   const mayResume = usePermission('inventory.recalculation.review-regeneration');
@@ -117,21 +119,33 @@ export function RecalculationRequestDetailScreen() {
 
   if (requestQuery.isLoading) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Stock recalculation request"
+        listPath="/recalculation-requests"
+        listLabel="Stock Recalculation"
+        size="xl"
+      >
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-40 w-full" />
-      </div>
+      </RecordPresenter>
     );
   }
 
   if (requestQuery.isError || !request) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Stock recalculation request"
+        listPath="/recalculation-requests"
+        listLabel="Stock Recalculation"
+        size="xl"
+      >
         <p className="text-sm text-destructive">Couldn't load this stock recalculation request.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/recalculation-requests')}>
+        <Button variant="outline" size="sm" onClick={() => navigate({ pathname: '/recalculation-requests', search })}>
           Back to stock recalculation
         </Button>
-      </div>
+      </RecordPresenter>
     );
   }
 
@@ -143,12 +157,14 @@ export function RecalculationRequestDetailScreen() {
   const isOwnRequest = !!currentUser && currentUser.id === request.requested_by;
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={`Recalculation request #${request.id}`}
-        description={request.item ? `${request.item.code} — ${request.item.name}` : undefined}
-        breadcrumbs={[{ label: 'Stock Recalculation', to: '/recalculation-requests' }, { label: `#${request.id}` }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title={`Recalculation request #${request.id}`}
+      description={request.item ? `${request.item.code} — ${request.item.name}` : undefined}
+      listPath="/recalculation-requests"
+      listLabel="Stock Recalculation"
+      size="xl"
+    >
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>
@@ -325,6 +341,6 @@ export function RecalculationRequestDetailScreen() {
           </DetailSection>
         )}
       </DetailPageLayout>
-    </div>
+    </RecordPresenter>
   );
 }

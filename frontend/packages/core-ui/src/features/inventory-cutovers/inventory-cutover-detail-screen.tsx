@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
-import { useParams, useNavigate } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import {
   useInventoryCutoversShow,
   useInventoryCutoversBatchesStore,
@@ -23,7 +23,6 @@ import { Badge } from '../../components/ui/badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Combobox } from '../../components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
-import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
@@ -32,6 +31,8 @@ import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
 import { usePermission } from '../../hooks/use-permission';
 import { DecimalInput } from '../../components/ui/decimal-input';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import type { Presentation } from '../../lib/presentation';
 
 const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
   DRAFT: 'secondary',
@@ -58,9 +59,10 @@ const NEGATIVE_OPENING_STATUS_VARIANT: Record<string, 'secondary' | 'success'> =
  * negative-opening request form's "Responsible owner" is a raw numeric User
  * ID for the same reason — there is no user-picker endpoint yet either.
  */
-export function InventoryCutoverDetailScreen() {
+export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { search } = useLocation();
   const mayStage = usePermission('inventory.cutover.stage');
   const mayValidate = usePermission('inventory.cutover.validate');
   const mayApprove = usePermission('inventory.cutover.approve');
@@ -182,21 +184,33 @@ export function InventoryCutoverDetailScreen() {
 
   if (cutoverQuery.isLoading) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Inventory cutover"
+        listPath="/inventory-cutovers"
+        listLabel="Inventory Cutovers"
+        size="xl"
+      >
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-40 w-full" />
-      </div>
+      </RecordPresenter>
     );
   }
 
   if (cutoverQuery.isError || !cutover) {
     return (
-      <div className="space-y-4 p-6">
+      <RecordPresenter
+        presentation={presentation}
+        title="Inventory cutover"
+        listPath="/inventory-cutovers"
+        listLabel="Inventory Cutovers"
+        size="xl"
+      >
         <p className="text-sm text-destructive">Couldn't load this inventory cutover.</p>
-        <Button variant="outline" size="sm" onClick={() => navigate('/inventory-cutovers')}>
+        <Button variant="outline" size="sm" onClick={() => navigate({ pathname: '/inventory-cutovers', search })}>
           Back to inventory cutovers
         </Button>
-      </div>
+      </RecordPresenter>
     );
   }
 
@@ -213,12 +227,11 @@ export function InventoryCutoverDetailScreen() {
   const preview = previewQuery.data?.status === 200 ? previewQuery.data.data.data : undefined;
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={`Inventory cutover #${cutover.id}`}
-        description={cutover.source_system}
-        breadcrumbs={[{ label: 'Inventory Cutovers', to: '/inventory-cutovers' }, { label: `#${cutover.id}` }]}
-        actions={
+    <RecordPresenter
+      presentation={presentation}
+      title={`Inventory cutover #${cutover.id}`}
+      description={cutover.source_system}
+      actions={
           <>
             <Button variant="outline" onClick={() => previewQuery.refetch()} disabled={previewQuery.isFetching}>
               {previewQuery.isFetching ? 'Loading…' : 'Preview'}
@@ -269,7 +282,10 @@ export function InventoryCutoverDetailScreen() {
             )}
           </>
         }
-      />
+      listPath="/inventory-cutovers"
+      listLabel="Inventory Cutovers"
+      size="xl"
+    >
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>
@@ -462,6 +478,6 @@ export function InventoryCutoverDetailScreen() {
           ))}
         </DetailSection>
       </DetailPageLayout>
-    </div>
+    </RecordPresenter>
   );
 }

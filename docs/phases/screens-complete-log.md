@@ -131,6 +131,30 @@ Per-screen detail for the fixed groups is recorded in section 4 when each group 
 - **Not verified locally:** PHPStan/Larastan (the package is dist-only and this container cannot reach its download), the whole backend suite and the whole
   Playwright suite (run by CI), real-browser screen-reader behaviour.
 
+### Stage 2 — Stock operations group to the standard (Step 3, first group)
+
+Screens: Physical counts, Inventory cutovers, Negative-stock overrides, Stock recalculation (4 lists, 4 create forms, 4 record screens).
+
+| Standard rule | Before | After |
+|---|---|---|
+| S1 template | bare `<div className="space-y-4 p-4 pb-24 md:p-6">` | `ScreenTemplate kind="list"` + `PageHeader` (the template owns spacing and the phone's bottom clearance) |
+| S2 URL state | kept (already `useListQueryState`); record navigation dropped the query string | search/filter/sort/page stay in the URL and **every open/close/create carries it** |
+| S3 filters | enum codes as option text, `h-9` controls, hand-made search without a clear control | shared `ListSearchInput` / `FilterSelect` (words, not codes), 44 px on a phone, named clear control, one Filters sheet with the active count |
+| S4 chips / states | none; "0 records" style empty text | active-filter chips with named removers + Clear all; empty vs filtered-empty vs error-with-retry |
+| S5 selection | none | checkboxes (table and phone cards) + a bulk bar with count; **only *Print selected*** — a decision, post, approval or recalculation is a per-record judgement, so no common bulk transition is offered (recorded in each list's doc comment) |
+| S6 records | full pages at `/x/new` and `/x/:id` | right-hand sheets over the list through `RecordPresenter`; the page alternative is kept in `presentation.ts`; same URLs |
+| S8 permissions | override "New request" always shown | gated by the two duties the API accepts (`negative-stock.request` or `.override`) |
+| Operator language | `MATERIAL_CONSUMPTION`, `PRIOR_APPROVAL` | "Material consumption", "Prior approval" in filters, chips, cells, cards and print |
+
+Behaviour unchanged: every query, include, mutation, permission gate on the detail actions and every refetch is as before.
+Tests: `stock-operations-standard.spec.ts` (33 browser tests: template, filter → request + chip, selection and bulk bar, record sheet keeps the list
+context, create sheet is not dismissed by an outside click, error + retry, axe, create hidden without the duty, 390 px with 44 px targets).
+Existing tests changed only where the standard deliberately changes the markup, each with its reason: `negative-stock-overrides.spec.ts` now reads the on-screen
+table (`getByRole('table')`) because the list carries a hidden Quick Print table with the same rows; `package-count.spec.ts` looks for the posted status inside
+the sheet (`getByRole('dialog')`) because the list behind a sheet also shows statuses. Neither assertion was weakened (same counts and same texts).
+Evidence: `docs/ui-evidence/stock-operations/`.
+Remaining on these screens: status chips still use `Badge` variants, not `StatusBadge` tones (a one-line mapping per screen, not done here).
+
 ## 5. Blocked (not built) and why
 
 | Item | Reason |
