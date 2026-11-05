@@ -6,6 +6,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Sales\Actions\CorrectManualQuotationDelivery;
 use App\Modules\Sales\Actions\IssueQuotation;
+use App\Modules\Sales\Actions\RecordManualQuotationDelivery;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
 use App\Modules\Sales\Support\Authority\SalesDuty;
@@ -162,5 +163,23 @@ class QuotationDeliveryCorrectionTest extends TestCase
         $this->assertSame(['actor_id'], array_keys($history->json('data.1.detail')));
         $this->assertStringNotContainsString('renderer', (string) $history->getContent());
         $this->assertStringNotContainsString('document-pdf', (string) $history->getContent());
+    }
+
+    /** The demo seeder's journeys, run twice with its fixed keys: the second run is a pure replay and adds nothing. */
+    public function test_the_demo_journeys_are_create_only_and_replay_without_new_rows(): void
+    {
+        $journey = function (): array {
+            $fields = ['channel' => 'COURIER', 'delivered_on' => $this->today(), 'recipient_name' => 'Wrong branch office'];
+            $wrong = app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, $fields, 'demo-doc-delivery-courier')['delivery'];
+            $fixed = app(CorrectManualQuotationDelivery::class)($this->clerk, $this->revision, $wrong->id, [...$fields, 'recipient_name' => 'Head office reception'], 'Entered wrongly', 'demo-doc-courier-correction')['delivery'];
+            $never = app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, [...$fields, 'channel' => 'POST'], 'demo-doc-delivery-post')['delivery'];
+            $withdrawn = app(CorrectManualQuotationDelivery::class)($this->clerk, $this->revision, $never->id, null, 'Never sent', 'demo-doc-post-withdrawal')['delivery'];
+
+            return [$wrong->id, $fixed->id, $never->id, $withdrawn->id];
+        };
+        $first = $journey();
+        $this->assertSame(4, DB::table('quotation_document_deliveries')->count());
+        $this->assertSame($first, $journey());
+        $this->assertSame(4, DB::table('quotation_document_deliveries')->count());
     }
 }
