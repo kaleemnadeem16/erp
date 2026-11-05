@@ -45,6 +45,12 @@ export const presentation: {
   warehouseCreate: Presentation;
   warehouseDetail: Presentation;
   warehouseEdit: Presentation;
+  customerCreate: Presentation;
+  customerDetail: Presentation;
+  customerEdit: Presentation;
+  partyCreate: Presentation;
+  partyDetail: Presentation;
+  partyEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -84,6 +90,12 @@ export const presentation: {
   warehouseCreate: "sheet",
   warehouseDetail: "sheet",
   warehouseEdit: "sheet",
+  customerCreate: "sheet",
+  customerDetail: "sheet",
+  customerEdit: "sheet",
+  partyCreate: "sheet",
+  partyDetail: "sheet",
+  partyEdit: "sheet",
 };
 
 /**

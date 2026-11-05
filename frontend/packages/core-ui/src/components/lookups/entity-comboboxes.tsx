@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
+  useChartOfAccountsIndex,
+  useChartOfAccountsShow,
   useItemsIndex,
   useItemsShow,
   useLocationsIndex,
@@ -9,6 +11,7 @@ import {
   useSalesOwnersIndex,
   useSupplierAccountsIndex,
   useSupplierAccountsShow,
+  type ChartOfAccountResource,
   type ItemResource,
   type LocationResource,
   type PartyResource,
@@ -228,6 +231,34 @@ export function OwnerCombobox({ onValueChange, ...props }: EntityComboboxProps<{
       searching={search !== delayed || (search !== '' && list.isFetching)}
       selectedLabel={selected?.name}
       options={rows.map((person) => ({ value: String(person.id), label: person.name }))}
+    />
+  );
+}
+
+/**
+ * A general-ledger account, searched on the server by code or name (so a chart of any size works). `enabled` is false for someone who may not read account
+ * mappings: the lookup is then not even requested and the control stays inert rather than showing a failed request as "no results".
+ */
+export function AccountCombobox({ onValueChange, enabled = true, ...props }: EntityComboboxProps<ChartOfAccountResource> & { enabled?: boolean }) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useChartOfAccountsIndex({ 'filter[search]': delayed || undefined, 'filter[status]': 'ACTIVE', per_page: PAGE, sort: 'code' }, { query: { enabled } });
+  const chosen = useChartOfAccountsShow(chosenId(props.value), undefined, { query: { enabled: enabled && chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (account: { code: string; name: string }) => `${account.code} — ${account.name}`;
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'accounts')}
+      {...props}
+      disabled={props.disabled || !enabled}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : undefined}
+      options={rows.map((account) => ({ value: String(account.id), label: label(account) }))}
     />
   );
 }

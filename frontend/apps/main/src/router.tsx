@@ -37,6 +37,12 @@ import {
   GoodsReceiptCreateScreen,
   GoodsReceiptEditScreen,
   SuppliersListScreen,
+  CustomersListScreen,
+  CustomerDetailScreen,
+  CustomerFormScreen,
+  PartiesListScreen,
+  PartyDetailScreen,
+  PartyFormScreen,
   SupplierDetailScreen,
   SupplierFormScreen,
   CustomFieldsSettingsScreen,
@@ -130,6 +136,12 @@ const packCreateAsSheet = presentation.packConversionCreate === "sheet";
 const packDetailAsSheet = presentation.packConversionDetail === "sheet";
 const packEditAsSheet = presentation.packConversionEdit === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
+const customerCreateAsSheet = presentation.customerCreate === "sheet";
+const customerDetailAsSheet = presentation.customerDetail === "sheet";
+const customerEditAsSheet = presentation.customerEdit === "sheet";
+const partyCreateAsSheet = presentation.partyCreate === "sheet";
+const partyDetailAsSheet = presentation.partyDetail === "sheet";
+const partyEditAsSheet = presentation.partyEdit === "sheet";
 const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
 const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
 const goodsReceiptEditAsSheet = presentation.goodsReceiptEdit === "sheet";
@@ -815,6 +827,120 @@ export function AppRouter() {
               <ProtectedRoute>
                 <AppShell>
                   <SupplierFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CustomersListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {customerCreateAsSheet && (
+            <Route path="new" element={<CustomerFormScreen presentation="sheet" />} />
+          )}
+          {customerDetailAsSheet && (
+            <Route path=":id" element={<CustomerDetailScreen presentation="sheet" />} />
+          )}
+          {customerEditAsSheet && (
+            <Route path=":id/edit" element={<CustomerFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!customerCreateAsSheet && (
+          <Route
+            path="/customers/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CustomerFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!customerDetailAsSheet && (
+          <Route
+            path="/customers/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CustomerDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!customerEditAsSheet && (
+          <Route
+            path="/customers/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CustomerFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/parties"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PartiesListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {partyCreateAsSheet && (
+            <Route path="new" element={<PartyFormScreen presentation="sheet" />} />
+          )}
+          {partyDetailAsSheet && (
+            <Route path=":id" element={<PartyDetailScreen presentation="sheet" />} />
+          )}
+          {partyEditAsSheet && (
+            <Route path=":id/edit" element={<PartyFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!partyCreateAsSheet && (
+          <Route
+            path="/parties/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PartyFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!partyDetailAsSheet && (
+          <Route
+            path="/parties/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PartyDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!partyEditAsSheet && (
+          <Route
+            path="/parties/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PartyFormScreen presentation="page" />
                 </AppShell>
               </ProtectedRoute>
             }

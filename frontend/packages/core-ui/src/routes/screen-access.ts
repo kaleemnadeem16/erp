@@ -102,6 +102,20 @@ const rules: readonly Rule[] = [
   { path: "/quotations", anyOf: ["sales.quotation.view", "sales.quotation.prepare"] },
   { path: "/leads", anyOf: salesRead },
   { path: "/sales-stages", anyOf: [...salesRead, "sales.stage.manage"] },
+  // Customers and trading partners (docs/domain/parties.md): reading is a shared reference lookup, but the screens are for those who maintain
+  // partners/accounts or work the Sales pipeline that chooses them. Creating/editing is judged separately below.
+  {
+    path: "/customers",
+    anyOf: ["parties.customer-account.manage", "parties.party.manage", ...salesRead],
+  },
+  {
+    path: "/parties",
+    anyOf: [
+      "parties.party.manage",
+      "parties.customer-account.manage",
+      "parties.supplier-account.manage",
+    ],
+  },
   { path: "/supplier-returns", anyOf: supplierReturn },
   { path: "/stock-scraps", anyOf: stockScrap },
   { path: "/inventory-cutovers", anyOf: cutover },
@@ -253,6 +267,18 @@ export function canAccessScreen(
   }
   if (/^\/suppliers\/[^/]+\/edit$/.test(pathname))
     return permissions.has("parties.supplier-account.manage");
+  // Registering a customer needs account maintenance plus the two field authorities the API requires on create (terms, receivable mapping).
+  if (pathname === "/customers/new") {
+    return (
+      permissions.has("parties.customer-account.manage") &&
+      permissions.has("parties.payment-terms.manage") &&
+      permissions.has("accounting.account-mapping.manage")
+    );
+  }
+  if (/^\/customers\/[^/]+\/edit$/.test(pathname))
+    return permissions.has("parties.customer-account.manage");
+  if (pathname === "/parties/new" || /^\/parties\/[^/]+\/edit$/.test(pathname))
+    return permissions.has("parties.party.manage");
   if (pathname === "/recalculation-requests/new") {
     return permissions.has("inventory.recalculation.request");
   }
