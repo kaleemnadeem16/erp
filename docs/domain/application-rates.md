@@ -108,7 +108,7 @@ Creating, changing or deleting a rate dimension or one of its values requires
 Action, so a job or other non-HTTP caller cannot bypass it. Listing dimensions and values remains
 available to authenticated company users because application-rate and assembly forms need them
 as shared lookups. The Rate Dimensions setup screen is shown only to holders of the manage
-capability; no read-only detail screen exists yet. The permission is additive and company-scoped,
+capability; its record is the edit sheet (no separate read-only detail). A dimension and a value can be deleted from it; the database refuses while a value or a rate still uses them and the screen shows that reason ([estimating-screens.md](estimating-screens.md)). The permission is additive and company-scoped,
 not tied to a hardcoded role name. Administrators must grant it to existing roles or members who
 maintain dimensions before deploying this gate; registration by itself does not assign it.
 The Rate Dimensions list exposes its API code/name search through URL-backed state and
@@ -127,13 +127,15 @@ tester but not the New/edit forms; managers can use both. Existing maintainers n
 role or direct grant before deployment. The configured administrator receives new capabilities
 through normal deploy-time permission sync; no other role gains one simply because it is named
 Estimator or Master Data Steward.
-The list exposes the API's item, work-unit and default-status filters as URL-backed
-controls. On mobile, filters sit in a bottom sheet and the list defaults to cards.
+The list exposes the API's item-name search and its item, work-unit and default-status filters as URL-backed
+controls (`filter[search]` matches the code or name of the rate's item: a rate has no name of its own). On mobile, filters sit in a bottom sheet and the list defaults to cards.
 The `is_default=false` choice explicitly selects context-specific rates rather
 than clearing the filter. The Item and work-unit filters search their respective
 APIs as the user types, so choices beyond the first 100 results can still be
-selected; ID-based show reads preserve their labels on bookmarked URLs. Other
-Estimating pickers need the same scale treatment in later slices.
+selected; ID-based show reads preserve their labels on bookmarked URLs. The same server-searched pickers
+(`ItemCombobox`, `UomCombobox`, `FormulationCombobox`, `ApplicationRateCombobox`, `AssemblyGroupCombobox`, `CustomerCombobox`) are used in the
+Estimating forms, so no Estimating picker is limited to the first page any more except the assembly-component and formulation-line unit lists, which are
+narrowed to the units compatible with the chosen item. A rate can be deleted from its sheet; it is refused while an assembly component points to it.
 The resolution tester's Item and Work unit pickers use the same server-search
 pattern, retaining selected labels while the tester stays open. It remains a
 read-only test of the existing resolution rule, not a saved rate change.

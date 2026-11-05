@@ -79,7 +79,7 @@ Method: every file under `backend/app/Modules/*/routes.php` and `backend/routes/
 | Group | Screens | What is missing |
 |---|---|---|
 | **Stock operations** | Physical counts, Inventory cutovers, Negative-stock overrides, Stock recalculation (each: list + create page + detail page) | no `ScreenTemplate` (S1); no active-filter chips / Clear all (S4); no mobile Filters sheet (S3); no selection + bulk bar (S5, see per-screen note); create/detail are full pages not sheets (S6); `h-9`-sized controls (S7) |
-| **Estimating masters** | Rate dimensions, Application rates, Formulations, Assembly groups, Assemblies, Resource rates (lists + create/edit pages) | same list gaps; create/edit are pages (S6). **Lists for Rate dimensions and Assembly groups are now on the standard (stage 5); the other four lists and all create/edit pages remain** |
+| **Estimating masters** | Rate dimensions, Application rates, Formulations, Assembly groups, Assemblies, Resource rates (lists + create/edit pages), Material Preview | same list gaps; create/edit are pages (S6). **All six lists and all create/edit forms are now on the standard, the forms as sheets (stages 5 and 6); Material Preview is on `ScreenTemplate`** |
 | **Settings** | Company, Purchasing, Inventory, Estimating, Material selection, Material variance, Numbers, Printing, Account, Custom fields, Organisation, Approvals settings, Members, Roles | no `ScreenTemplate` (settings are forms, not lists: S1 only) |
 | Auth | Login, Accept invitation, Change password | out of scope (not workspace screens) |
 | On the standard (reference or adopted) | Purchase orders, Goods receipts, Items, Item suppliers, Suppliers, Categories, Warehouses, Pack conversions, Inventory overview, Stock ledger, Scrap/Supplier returns, Leads, Opportunities, Pipeline stages, Approvals inbox | — |
@@ -101,7 +101,8 @@ Per-screen detail for the fixed groups is recorded in section 4 when each group 
 | Member "issue temporary password" | complete (ADR 0065) | **already present** on the Members screen (called through the plain generated function, so the hook-name analysis missed it) |
 | Forgot-password (`POST /forgot-password`) | no mail channel specified; ADR 0065 chose manual credential recovery | listed, not built (ambiguous) |
 | AVCO pools / stock layers | read-only reference data | deliberately no screen (D2) |
-| Estimating `destroy` endpoints, Item/Location hard delete | guards differ / documented as not exposed one-click | listed, not built |
+| Item/Location hard delete | documented as deliberately not exposed one-click | listed, not built |
+| Estimating (full audit of `Modules/Estimating` routes, requests, actions, guards — stage 6) | see the table at the head of stage 6 | **built** (G1–G9) |
 | Quotation approvals, owner/transfer/share, delivery correction, branding, customer acceptance, jobs, finance | backend incomplete or owned by other agents | **blocked — see section 5** |
 
 ## 3. Plan and order of work
@@ -193,10 +194,46 @@ chip + Clear all, selection with Print selected, phone cards and Filters sheet, 
 on a phone. Their rows still open the existing edit pages. Spec: `estimating-lists-standard.spec.ts` (11 tests); `estimating-list-filters.spec.ts` (Formulations /
 Assemblies) re-run unchanged and green. Evidence: `docs/ui-evidence/estimating/`.
 
-**Not done (remaining work, deliberately, not hidden):** the Formulations, Application rates, Assemblies and Resource rates lists (each has a richer filter surface that
-`estimating-list-filters.spec.ts` and the material-preview specs depend on by label, so converting them needs its own pass with those specs), and the create/edit
-pages of all six masters (they are full pages; formulation and assembly editing include version management that is a workspace, which the delivery contract allows as
-a page exception only with the owner's agreement — decision D7 below). Wiring them through `RecordPresenter` is mechanical once D7 is answered.
+*Superseded by stage 6: the remaining four lists and all six masters' forms were done there once the owner answered D7 (sheets).*
+
+### Stage 6 — Estimating group completed (backend audit, four lists, sheets, missing features)
+
+The owner asked for the whole Estimating group to follow the standard, for D7 to be answered "sheets", and for the backend to be checked in full first. Spec and
+coverage matrix: [estimating-screens.md](../domain/estimating-screens.md).
+
+**Audit of `Modules/Estimating` (routes, form requests, actions, resources, migrations, permissions) against the screens.** Backend contracts that had no screen or
+an incomplete one, and what was done:
+
+| # | Gap found | Done |
+|---|---|---|
+| G1 | Rate dimension `DELETE` (hard delete; the FK from its values restricts) | *Delete dimension* with a confirmation; the server's refusal is shown |
+| G2 | Dimension value `PATCH` (name, code, sort order) | inline *Rename* on the value row |
+| G3 | Application rate `DELETE` (hard delete; an assembly component's FK restricts it) | *Delete rate*; refusal shown and tested against a real component |
+| G4 | Assembly group `DELETE` (refused while an assembly belongs to it) | *Delete group*; refusal shown (tested on the demo group) |
+| G5 | Formulation `DELETE` = archive (no un-archive endpoint) | *Archive* behind a confirmation that says so |
+| G6 | Assembly `DELETE` = archive (same) | same |
+| G7 | Assembly version `PATCH` (notes + components of a DRAFT) | *Edit draft* opens the editor on the stored values; new versions also carry notes |
+| G8 | `GET /formulations/resolve` | *Test resolution* above the Formulations list |
+| G9 | Overhead policy `PATCH` and `DELETE` of a DRAFT | *Edit* and *Delete* on each draft (company, group and assembly panels); activation asks first |
+| — | Application rates had no search; the assembly-component pickers (formulation, application rate) silently stopped at the first 100 records | **backend, smallest additive:** `GET /application-rates?filter[search]=` (item code or name; Pest test; client regenerated by `codegen.sh`/orval, `codegen-check` stays green) → a search box on the list and server-searched pickers |
+
+Also fixed on the way: the Application rate form could not be saved unless every dimension picker had been touched (an untouched picker showed "Not tagged" but held
+no value, which the schema rejected — found by the new spec, existed before); its item picker was editable although the item cannot change; a resource rate was deleted
+from the list with no confirmation; `screen-access` let a reader (`estimating.recipe.view`) open `/formulations/new` and `/assemblies/new` (the API refused, the screen
+did not) — now they need the maintaining duty, and `/resource-rates/new` needs `estimating.resource-rate.manage`.
+
+**Lists (Step 3):** Formulations, Application rates, Assemblies and Resource rates on the shared list furniture, with every label the existing specs rely on kept
+(`Search formulations`, `Output item`, `Customer`, `Status`, `Assembly group`, `Default status`, `Item`, `Work unit`). Bulk is print only (see the doc: deletes are
+refused while in use, archives have no way back, activation supersedes the live version).
+
+**Forms as sheets (D7 resolved):** all six masters' create/edit forms open over their lists via `RecordPresenter` (`presentation.*`, page alternative kept, same URLs).
+Resource rates, which have no update, get a read-only record sheet with *Delete*. New shared pieces: `ConfirmActionDialog`, `RecordUnavailable`,
+`CustomerCombobox`, `UomCombobox`, `AssemblyGroupCombobox`, `FormulationCombobox`, `ApplicationRateCombobox`. Material Preview adopts `ScreenTemplate` (behaviour unchanged).
+
+**Specs:** `estimating-lists-standard.spec.ts` now covers all six lists (template, chip, selection, retry, axe, access, phone); new `estimating-records.spec.ts` (sheets, every
+G1–G9 feature and its refusal, phone width, Material Preview a11y). The existing `estimating-list-filters`, `application-rate-resolution-lookup`, `cost-evidence`,
+`recipe-access`, `material-preview`, `material-*-settings` and `lookup-load-error` specs pass unchanged. The first run of the new spec caught an include the assembly
+screen is not allowed to ask for (the whole sheet showed "Couldn't load this assembly") and the dimension-picker bug above.
 
 ## 5. Blocked (not built) and why
 
@@ -216,9 +253,11 @@ a page exception only with the owner's agreement — decision D7 below). Wiring 
 | D2 | AVCO pools and stock layers get no screen: `stock.md` records them as deliberately backend-only reference data | taken (existing accepted doc) |
 | D3 | Chart of accounts and Exchange rates are reached from **Settings** (Company / Numbers, money and rounding: the existing top-bar menu, mobile More sheet and settings index) rather than a new sidebar group, so no navigation structure that affects several modules is changed | **awaiting owner** — recommended default implemented; moving them is a one-array edit |
 | D4 | Trading partners sit beside Customers in the Sales group (the identity is shared with Suppliers) | taken; one entry in `navGroups` |
-| D5 | Exchange rates and Chart of accounts have no separate read-only detail screen: the record sheet shows every fact and is the edit form for a person who may change it (a rate has five fields) | **awaiting owner** — the delivery contract wants owner agreement for departing from list + detail sheets |
+| D5 | Exchange rates and Chart of accounts have no separate read-only detail screen: the record sheet shows every fact and is the edit form for a person who may change it (a rate has five fields) | taken as recommended (owner asked what other ERPs do and did not object to keeping the combined sheet); owner may still reverse |
 | D6 | The shared demo creates no customer account (the Sales demo guards that a prospect has none); archived / no-limit / dual-role customers are made by the specs through the API | taken; changing that guard is the owner's call |
-| D7 | Estimating create/edit forms (formulation and assembly versions especially) are version-managing workspaces; whether they stay full pages (the contract's workspace exception) or become sheets is the owner's call | **awaiting owner** — left as pages, nothing changed |
+| D7 | Estimating create/edit forms (formulation and assembly versions especially) are version-managing workspaces; pages (the contract's workspace exception) or sheets | **resolved by the owner: sheets**. Formulations and Assemblies use the wide sheet; `presentation.ts` can still switch any one back to a page |
+| D8 | Estimating bulk actions are print-only; archive/delete/activate stay on the record, where the consequence is stated and the server's refusal is shown | taken (contract: do not infer bulk safety from a single-record endpoint) |
+| D9 | Application rates are searched by their item (code or name) — the one backend filter added in stage 6 | taken (smallest additive change, tested, no authorisation change) |
 
 ## 7. Not verified
 
@@ -230,12 +269,14 @@ a page exception only with the owner's agreement — decision D7 below). Wiring 
   first-page assumptions, but that is design, not measurement.
 - **Backend suite and PHPStan locally.** PHPStan/Larastan could not be installed here (its package is dist-only and unreachable), so they ran only in CI; the whole backend suite also
   ran only in CI. Locally: the Parties, architecture/ratchet and demo-seeder suites, Pint on the whole backend, and a fresh-schema `demo:seed`.
+- **Estimating sheets: dark mode, Ocean/Amber accents, widths other than 1280/390, keyboard order inside the wide Formulation/Assembly sheets beyond what axe checks** (the same limits as above).
 - **The whole Playwright suite locally.** A full local run was started and stopped (it blocks the stack for over an hour); CI runs it in three shards. Locally every spec that touches
   a changed screen or shared component was run.
 
 ## 8. Remaining work
 
-1. **Estimating masters:** the Formulations, Application rates, Assemblies and Resource rates lists, and the create/edit pages of all six masters (decision D7).
+1. **Estimating:** done in stage 6. What is left there: the Estimating, Material selection and Material variance *Settings* screens (item 2), and there is no endpoint to
+   bring an archived formulation or assembly back (the screens say so; whether one should exist is a product call).
 2. **Settings screens** (Company, Purchasing, Inventory, Estimating, Material selection, Material variance, Numbers, Printing, Account, Custom fields, Organisation, Approvals,
    Members, Roles): adopt `ScreenTemplate` (they are forms, not lists); the Members and Roles *lists* also lack chips / selection.
 3. **Stock operations status chips** still use `Badge` variants rather than `StatusBadge` tones.
@@ -243,7 +284,7 @@ a page exception only with the owner's agreement — decision D7 below). Wiring 
 5. **A product rule is missing for archiving a trading partner that has roles:** the API refuses until both role accounts are *deleted* (soft delete), but the screens only
    archive a role by status, so such a partner can never be archived from the UI. The screen says so up front; an ADR should decide the intended path.
 6. **Supplier address edit/remove** is on the supplier record only, not on the supplier edit form's address list.
-7. **Owner decisions D3, D5 and D7** (navigation placement, no separate read-only detail for two reference screens, Estimating forms as pages or sheets).
+7. **Owner decisions still open: D3** (Exchange rates / Chart of accounts live under Settings, not a new sidebar group) **and D5** (taken as recommended, may be reversed). D7 is resolved.
 
 ## Related
 
