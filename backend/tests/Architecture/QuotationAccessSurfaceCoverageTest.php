@@ -32,6 +32,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
         'POST api/v1/quotations/{revision}/document/check' => ['RepairQuotationDocument', 'locator', 'document.repair + quotation.view', 'outcome code', 'QuotationDocumentApiTest'],
         'GET api/v1/quotations/{revision}/deliveries' => ['ReadQuotationDocumentDeliveries', 'locator', 'delivery.view + quotation.view', 'safe delivery evidence', 'QuotationDocumentApiTest'],
         'POST api/v1/quotations/{revision}/deliveries' => ['RecordManualQuotationDelivery', 'locator', 'delivery.record + quotation.view', 'safe delivery evidence', 'QuotationDocumentApiTest'],
+        'POST api/v1/quotations/{revision}/deliveries/{delivery}/correction' => ['CorrectManualQuotationDelivery', 'locator', 'delivery.record + quotation.view', 'safe delivery evidence', 'QuotationDeliveryCorrectionTest'],
     ];
 
     public function test_every_quotation_route_has_a_request_action_policy_projection_and_behaviour_inventory(): void
