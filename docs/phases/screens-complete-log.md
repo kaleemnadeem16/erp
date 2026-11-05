@@ -5,6 +5,7 @@
 Working log for the branch `cloud/screens-complete` (cut from `origin/develop` at `f3e7d0d2`). It records the rules applied, the audit,
 what was built or brought to the standard, what was blocked and why, and the decisions taken. It is **not** a status page
 ([STATUS.md](../STATUS.md) is not touched by this branch). The owner and the integrator review and merge; nothing here is merged by the author.
+**To pick the work up, start at the [handoff](screens-complete-handoff.md)** (where the branch stands, what is done, what remains in order, how to check and push).
 
 ## 1. Rules applied (Step 0 — read before coding)
 
@@ -288,4 +289,4 @@ screen is not allowed to ask for (the whole sheet showed "Couldn't load this ass
 
 ## Related
 
-- [Phases index](README.md) · [Screen design standard](../architecture/erp-blue-design-standard.md) · [Screen delivery contract](../architecture/screen-delivery-contract.md)
+- [Handoff — start here to continue](screens-complete-handoff.md) · [Phases index](README.md) · [Screen design standard](../architecture/erp-blue-design-standard.md) · [Screen delivery contract](../architecture/screen-delivery-contract.md)
