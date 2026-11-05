@@ -20,7 +20,7 @@ on develop and have not been pushed as a finished slice:
 - `219dc99b`: normal merge of published pricing/tax work through upstream `f0f81854`;
   retains per-row recipient/commercial projection and snapshot pagination.
 - `a6846c65`: exact tax declaration route registrations and updated exact editable field shape.
-- `fb60d250`: owner demo decisions in ADR 0154, partial supersession of ADR 0129's status,
+- `fb60d250`: owner demo decisions in ADR 0156, partial supersession of ADR 0129's status,
   current persona table and intended preset/QA4 mapping. Demo implementation is not delivered.
 - `58a602e6`: QA4 read-only explicit-company inventory command and tests. This is only the
   inventory portion; no holder recipe is applied and no right is granted.
@@ -101,7 +101,7 @@ Broader module/ratchet regression is now running; no final-head verification cla
    append-only shares/revocations, real Actions, owner transfer and permission-aware UI with
    non-disclosing errors. Published pricing UI dependency is now satisfied. Preserve the existing
    gate, unrelated CRM semantics, issue/repair separation and independent view + prepare authority.
-6. Implement approved demo extension under the approved first-holder conditions, using ADR 0154 and the
+6. Implement approved demo extension under the approved first-holder conditions, using ADR 0156 and the
    persona/preset contract: exact guards, shared role definitions, real Actions/scenarios, create-only
    reruns, no issue/repair and no real-holder production activation. Complete exact-head CI.
 

@@ -1,6 +1,6 @@
 [← Decisions](README.md)
 
-# 0154 — Bound quotation demo access and preserve activation gates
+# 0156 — Bound quotation demo access and preserve activation gates
 
 - **Status:** accepted (owner decisions; implementation and verification incomplete); supersedes [0129](0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md) only for the interim create-only demo seeding and shared-password rules
 - **Date:** 2026-11-03

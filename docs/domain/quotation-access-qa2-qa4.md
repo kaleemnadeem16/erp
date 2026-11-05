@@ -112,7 +112,7 @@ activated or applied. Do not run it against the owner's database during developm
 
 The command is only the inventory portion of QA4. Holder-recipe code, origin ledger, dry-run/backout
 proofs and staging sign-off remain outstanding. The approved demo exception is separately recorded
-in [0154](../decisions/0154-quotation-demo-access-and-activation-boundaries.md) and the
+in [0156](../decisions/0156-quotation-demo-access-and-activation-boundaries.md) and the
 [persona/preset contract](quotation-access-demo.md); it is not real-holder activation.
 
 ## Related

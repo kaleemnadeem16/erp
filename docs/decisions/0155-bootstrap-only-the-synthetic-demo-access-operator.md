@@ -4,7 +4,7 @@
 
 - **Status:** accepted (owner conditions); implementation, exact-SHA review and CI pending
 - **Date:** 2026-11-03
-- **Affects:** Sales demo access bootstrap; supplements [0154](0154-quotation-demo-access-and-activation-boundaries.md)
+- **Affects:** Sales demo access bootstrap; supplements [0156](0156-quotation-demo-access-and-activation-boundaries.md)
 
 ## Context
 
@@ -57,7 +57,7 @@ owner explicitly selected the narrowly scoped bootstrap option instead.
 ## Research basis
 
 This is a local security bootstrap decision, not new ERP business behaviour. It reuses the existing
-[authorisation contract](../architecture/authorization.md) and [0154](0154-quotation-demo-access-and-activation-boundaries.md).
+[authorisation contract](../architecture/authorization.md) and [0156](0156-quotation-demo-access-and-activation-boundaries.md).
 
 ## Related
 

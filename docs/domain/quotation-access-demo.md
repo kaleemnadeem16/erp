@@ -2,7 +2,7 @@
 
 # Quotation access demo contract
 
-**Accepted contract; not yet delivered.** [0154](../decisions/0154-quotation-demo-access-and-activation-boundaries.md)
+**Accepted contract; not yet delivered.** [0156](../decisions/0156-quotation-demo-access-and-activation-boundaries.md)
 records the owner's decisions. The tables below distinguish source-defined legacy personas from
 the intended QA4 recipe; they are not an inventory of grants on the owner's database. No owner
 database has been seeded or inspected by this implementation work.
@@ -82,7 +82,7 @@ parameterised contention harness can establish representative capacity.
 
 ## Related
 
-- [0154 owner decision](../decisions/0154-quotation-demo-access-and-activation-boundaries.md)
+- [0156 owner decision](../decisions/0156-quotation-demo-access-and-activation-boundaries.md)
 - [0129 original demo deployment decision](../decisions/0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md)
 - [Record access architecture](quotation-record-access-design.md)
 - [Ordered slices](../phases/phase-4-quotation-record-access-slices.md)
