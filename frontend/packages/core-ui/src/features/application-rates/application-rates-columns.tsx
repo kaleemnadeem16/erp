@@ -3,7 +3,7 @@ import { Badge } from '../../components/ui/badge';
 import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 
-const itemLabel = (row: ApplicationRateResource) => (row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id));
+const itemLabel = (row: ApplicationRateResource) => (row.item ? `${row.item.code} — ${row.item.name}` : `Item #${row.item_id}`);
 
 export const applicationRateColumns: DataColumn<ApplicationRateResource>[] = [
   {

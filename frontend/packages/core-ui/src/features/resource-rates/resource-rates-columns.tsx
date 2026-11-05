@@ -3,7 +3,7 @@ import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDate } from '../../lib/format-date';
 
-const itemLabel = (row: ResourceRateResource) => (row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id));
+const itemLabel = (row: ResourceRateResource) => (row.item ? `${row.item.code} — ${row.item.name}` : `Item #${row.item_id}`);
 
 export const resourceRateColumns: DataColumn<ResourceRateResource>[] = [
   {

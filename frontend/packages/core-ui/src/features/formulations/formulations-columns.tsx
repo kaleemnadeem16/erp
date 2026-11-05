@@ -10,7 +10,7 @@ export const formulationColumns: DataColumn<FormulationResource>[] = [
   {
     key: 'output_item',
     header: 'Output item',
-    value: (row) => (row.output_item ? `${row.output_item.code} — ${row.output_item.name}` : row.output_item_id),
+    value: (row) => (row.output_item ? `${row.output_item.code} — ${row.output_item.name}` : `Item #${row.output_item_id}`),
   },
   {
     key: 'customer',

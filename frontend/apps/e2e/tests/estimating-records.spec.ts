@@ -220,6 +220,10 @@ test.describe('Application rates', () => {
       await dialog.getByRole('button', { name: 'Keep it' }).click();
       expect(((await api(page, 'GET', `/application-rates/${rate.id}`)).data as { id: number }).id).toBe(rate.id);
     } finally {
+      // Free the rate again: delete the draft version that points to it, then the rate, then archive the assembly (assemblies are never deleted).
+      const versions = (await api(page, 'GET', `/assemblies/${assembly.id}?include=versions`)).data.versions as Array<{ id: number }>;
+      for (const version of versions) await api(page, 'DELETE', `/assembly-versions/${version.id}`);
+      await api(page, 'DELETE', `/application-rates/${rate.id}`);
       await api(page, 'DELETE', `/assemblies/${assembly.id}`);
     }
   });
