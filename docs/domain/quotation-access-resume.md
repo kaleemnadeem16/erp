@@ -137,6 +137,7 @@ its single-host/synthetic/no-real-concurrency limitations; invent no targets.
 
 ## Related
 
+- [Pending access-generation choice](quotation-access-generation-extension.md)
 - [Advisory decisions](quotation-access-advisories.md)
 - [Demo contract and persona/preset tables](quotation-access-demo.md)
 - [Safety harness and rollback evidence](quotation-access-safety-proofs.md)
