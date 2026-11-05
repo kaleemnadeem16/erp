@@ -28,7 +28,7 @@ class SalesDutyManifestTest extends TestCase
         $manifest = SalesDutyManifest::shipped();
         $names = array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->all());
 
-        $this->assertCount(59, $names, 'The 58 Sales-owned rows of the 78-row matrix plus the owner-authorised STAGED sales.quotation.assign (QA1a, #59); the other 20 belong to other modules.');
+        $this->assertCount(61, $names, 'The 58 Sales-owned rows of the 78-row matrix plus the owner-authorised STAGED sales.quotation.assign (QA1a, #59); the other 20 belong to other modules.');
         $this->assertSame($names, array_values(array_unique($names)));
         foreach ($names as $name) {
             $this->assertMatchesRegularExpression('/^sales\.[a-z][a-z0-9.-]*$/', $name);
@@ -58,7 +58,7 @@ class SalesDutyManifestTest extends TestCase
     {
         $manifest = SalesDutyManifest::shipped();
 
-        $this->assertCount(51, array_filter($manifest->all(), fn (SalesDuty $duty): bool => ! $duty->class->isExisting()));
+        $this->assertCount(53, array_filter($manifest->all(), fn (SalesDuty $duty): bool => ! $duty->class->isExisting()));
         $this->assertCount(8, $manifest->withStatus(DutyStatus::Active));
         $this->assertCount(5, $manifest->withStatus(DutyStatus::Dormant), 'delivery.send, delivery.reconcile, pricing exception, pricing agreement departure and claim-release');
         foreach ($manifest->withStatus(DutyStatus::Dormant) as $duty) {
@@ -69,7 +69,7 @@ class SalesDutyManifestTest extends TestCase
             $this->assertFalse($manifest->isActive($duty->name));
         }
         $this->assertCount(30, $manifest->withStatus(DutyStatus::Specified), 'discount, price.override and commercial.view moved from SPECIFIED to STAGED with the PR4/PR5 draft concessions');
-        $this->assertSame(['sales.quotation.view', 'sales.quotation.commercial.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.issue', 'sales.quotation.withdraw', 'sales.quotation.discount', 'sales.quotation.price.override', 'sales.financial.configure', 'sales.customer-decision.evidence.record', 'sales.document.view', 'sales.document.generate', 'sales.document.repair', 'sales.document.download', 'sales.delivery.view', 'sales.delivery.record'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The staged duties: their Actions exist, the duties are disabled.');
+        $this->assertSame(['sales.quotation.view', 'sales.quotation.commercial.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.access.delegate', 'sales.quotation.access.revoke', 'sales.quotation.issue', 'sales.quotation.withdraw', 'sales.quotation.discount', 'sales.quotation.price.override', 'sales.financial.configure', 'sales.customer-decision.evidence.record', 'sales.document.view', 'sales.document.generate', 'sales.document.repair', 'sales.document.download', 'sales.delivery.view', 'sales.delivery.record'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The staged duties: their Actions exist, the duties are disabled.');
         $this->assertFalse($manifest->isActive('sales.quotation.view'));
         $this->assertFalse($manifest->isActive('sales.quotation.prepare'));
         $this->assertFalse($manifest->isActive('sales.quotation.assign'));
@@ -81,6 +81,20 @@ class SalesDutyManifestTest extends TestCase
         $this->assertSame(DutyClass::Sensitive, $manifest->find('sales.financial.configure')->class);
         $this->assertFalse($manifest->isActive('sales.*'));
         $this->assertFalse($manifest->isActive('sales'));
+    }
+
+    public function test_both_added_access_management_duties_are_staged_sensitive_and_not_automatically_grantable(): void
+    {
+        $manifest = SalesDutyManifest::shipped();
+        foreach ([Sales::QUOTATION_ACCESS_DELEGATE, Sales::QUOTATION_ACCESS_REVOKE] as $name) {
+            $duty = $manifest->find($name);
+            $this->assertSame(DutyStatus::Staged, $duty->status);
+            $this->assertSame(DutyClass::Sensitive, $duty->class);
+            $this->assertFalse($manifest->isActive($name));
+            $this->assertFalse($duty->automaticallyGrantable());
+            $this->assertNotContains($name, $manifest->activeNames());
+            $this->assertNotContains($name, Sales::all());
+        }
     }
 
     public function test_an_unsound_duty_or_manifest_is_refused(): void

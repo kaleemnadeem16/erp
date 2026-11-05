@@ -25,7 +25,7 @@ class UpdateMemberAccessRequest extends FormRequest
             'scope_limits' => ['sometimes', 'array'],
             'scope_limits.*.role_id' => ['nullable', 'integer'],
             'scope_limits.*.permission' => ['nullable', 'string'],
-            'scope_limits.*.scope' => ['required', Rule::in([AccessScopeLimit::MY_UNITS, AccessScopeLimit::OWN])],
+            'scope_limits.*.scope' => ['required', Rule::in([AccessScopeLimit::MY_UNITS, AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED])],
             'reason' => ['sometimes', 'nullable', 'string', 'max:1000'],
         ];
     }

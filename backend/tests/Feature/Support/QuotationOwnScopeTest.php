@@ -51,7 +51,7 @@ class QuotationOwnScopeTest extends TestCase
         $user->givePermissionTo(PermissionVocabulary::QUOTATION_VIEW);
         $limit = AccessScopeLimit::create(['user_id' => $user->id, 'permission' => PermissionVocabulary::QUOTATION_VIEW, 'scope' => 'OWN_OR_DELEGATED']);
         $resolver = app(RecordScope::class);
-        $this->assertTrue($resolver->resolveForResource($user, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->isNone());
+        $this->assertTrue($resolver->resolveForResource($user, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->allowsNamedDelegation());
         $this->assertTrue($resolver->resolve($user, PermissionVocabulary::QUOTATION_VIEW)->isNone());
         $limit->update(['scope' => 'MY_UNITS']);
         $this->assertTrue($resolver->resolveForResource($user, PermissionVocabulary::QUOTATION_VIEW, 'quotation_family')->isNone());

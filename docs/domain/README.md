@@ -152,6 +152,7 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 - [Quotation access resume checkpoint](quotation-access-resume.md) — preserved commits, verified checks, test-service blocker and remaining completion work.
 - [Quotation access demo contract](quotation-access-demo.md) — approved persona/preset mapping, demo guard and create-only constraints; implementation incomplete.
 - [Quotation access advisory corrections](quotation-access-advisories.md) — current-duty checks, retry budgets, consistent list snapshots and safe document history.
+- [Quotation sharing implementation](quotation-sharing-implementation.md) — local, incomplete.
 
 ## Related
 

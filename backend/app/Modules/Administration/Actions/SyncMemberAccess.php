@@ -72,17 +72,17 @@ final class SyncMemberAccess
                 continue; // a stale limit from before the role or permission was removed
             }
             $scope = $limit['scope'] ?? AccessScopeLimit::MY_UNITS;
-            if (! in_array($scope, [AccessScopeLimit::MY_UNITS, AccessScopeLimit::OWN], true)) {
+            if (! in_array($scope, [AccessScopeLimit::MY_UNITS, AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED], true)) {
                 throw new DomainInvariantException('This scope mode is not supported.', 'scope_limits');
             }
-            if ($scope === AccessScopeLimit::OWN) {
+            if (in_array($scope, [AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED], true)) {
                 $role = $roleId === null ? null : Role::query()->whereKey($roleId)->lockForUpdate()->firstOrFail();
                 $duties = $role === null ? [$permission] : $role->permissions()->pluck('name')->all();
                 if ($duties === []) {
                     throw new DomainInvariantException('An OWN role needs supported duties.', 'scope_limits');
                 }
                 foreach ($duties as $duty) {
-                    if (! is_string($duty) || ! app(ResourceScopeAdapters::class)->supportsAssignment($duty, AccessScopeLimit::OWN)) {
+                    if (! is_string($duty) || ! app(ResourceScopeAdapters::class)->supportsAssignment($duty, $scope)) {
                         throw new DomainInvariantException('OWN cannot restrict an unsupported or mixed-duty assignment.', 'scope_limits');
                     }
                 }

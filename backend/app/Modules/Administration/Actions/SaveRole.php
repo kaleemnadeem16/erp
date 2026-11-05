@@ -35,14 +35,14 @@ final class SaveRole
         return DB::transaction(function () use ($role, $attributes, $actor): Role {
             if ($role !== null) {
                 $role = Role::query()->whereKey($role->id)->lockForUpdate()->firstOrFail();
-                $hasOwnLimits = AccessScopeLimit::query()->where('role_id', $role->id)->where('scope', AccessScopeLimit::OWN)->exists();
-                if ($hasOwnLimits) {
+                $limitedScopes = AccessScopeLimit::query()->where('role_id', $role->id)->whereIn('scope', [AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED])->distinct()->pluck('scope');
+                foreach ($limitedScopes as $scope) {
                     $duties = $attributes['permissions'];
                     if ($duties === []) {
                         throw new DomainInvariantException('An OWN role needs supported duties.', 'permissions');
                     }
                     foreach ($duties as $duty) {
-                        if (! is_string($duty) || ! app(ResourceScopeAdapters::class)->supportsAssignment($duty, AccessScopeLimit::OWN)) {
+                        if (! is_string($duty) || ! app(ResourceScopeAdapters::class)->supportsAssignment($duty, $scope)) {
                             throw new DomainInvariantException('A role limited to OWN cannot acquire unsupported duties.', 'permissions');
                         }
                     }

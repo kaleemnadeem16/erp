@@ -33,7 +33,7 @@ final class QuotationAccess
      * @param  list<string>  $duties
      * @return Builder<QuotationFamily>
      */
-    public function queryFor(User $actor, array $duties): Builder
+    public function queryFor(User $actor, array $duties, bool $allowNamedDelegation = true): Builder
     {
         $this->fence->lock();
         $current = ActiveActor::require($actor, 'access quotations');
@@ -50,7 +50,7 @@ final class QuotationAccess
             if ($resolved->isNone()) {
                 throw new AuthorizationException('You are not permitted to access quotations.');
             }
-            $query = $this->adapter->apply($query, $resolved, (int) $current->id);
+            $query = $this->adapter->apply($query, $resolved, (int) $current->id, $duty, $allowNamedDelegation);
         }
 
         return $query;
@@ -69,9 +69,9 @@ final class QuotationAccess
     }
 
     /** @param list<string> $duties */
-    public function requireFamily(User $actor, int $familyId, array $duties, bool $forUpdate = false): QuotationFamily
+    public function requireFamily(User $actor, int $familyId, array $duties, bool $forUpdate = false, bool $allowNamedDelegation = true): QuotationFamily
     {
-        $query = $this->queryFor($actor, $duties)->where('quotation_families.id', $familyId);
+        $query = $this->queryFor($actor, $duties, $allowNamedDelegation)->where('quotation_families.id', $familyId);
         if ($forUpdate) {
             $query->lockForUpdate();
         }

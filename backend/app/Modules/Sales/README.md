@@ -79,6 +79,12 @@ A guarded Action must check its own duty and scope before calling the kernel and
 - **Numbering** (`LEAD`, `OPPORTUNITY`) is allocated when the record is created; the format is managed with `sales.numbering.manage`.
 - Parties' candidate search lets Sales users (`sales.lead.manage`, `sales.opportunity.manage`) ask whether an identity already exists.
 
+## Quotation sharing implementation checkpoint
+
+Local, unpublished QA5 work adds named VIEW/PREPARE record paths and guarded, receipt-backed grant/revoke Actions.
+The duties remain STAGED; no permission activation, real holder grant, API/UI or demo extension is delivered by this increment.
+Current behaviour, limitations and verification: [quotation sharing checkpoint](../../../../docs/domain/quotation-sharing-implementation.md).
+
 ## Related
 
 - **Quotation draft review, read adapters (QL1b-1, [#30](https://github.com/kaleemnadeem16/erp/issues/30)).** `GET quotations/{revision}` (`QuotationController::show` -> `ReadQuotationDraft`, `sales.quotation.view`) and `GET quotations/{revision}/preview` (`preview` -> `PreviewQuotation`, independent `sales.quotation.view` + `sales.quotation.prepare`): Request guard plus the Action's own guard, Resources pass the Actions' safe projections through unchanged. Both duties are still **STAGED**, so every caller, administrators and full-access mandate holders included, gets 403; nothing is activated and no holder recipe is applied. View alone cannot preview or edit; prepare without view cannot read metadata, preview or edit (independent duties, reaffirmed by the owner on 3 November 2026). Another company's revision, like an unknown id, is a 404 (looked up through the company-scoped model after the capability guard), never data.

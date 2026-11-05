@@ -68,7 +68,9 @@ byte for byte, test strict source/counter chains and tenant/epoch pins, expiry r
 append-only/TRUNCATE and populated rollback refusal. The combined old/new storage run passed
 21 tests/176 assertions; the broader regression passed 706 tests/4,430 assertions. PHPStan and
 Pint passed. A further two-connection ownership/share contention proof passed (one test/11
-assertions), and the private fresh → rollback → reapply migration cycle passed. Action replay, delegation-consumer scope and HTTP acceptance are still outstanding.
+assertions), and the private fresh → rollback → reapply migration cycle passed. Named-share Action replay and delegation-consumer scope are now tested in the local
+[sharing increment](quotation-sharing-implementation.md); family management API/UI and full
+concurrency/scale acceptance remain outstanding.
 
 The owner subsequently approved two existing fixture corrections, separately committed: CASCADE
 lets ownership TRUNCATE reach its append-only trigger through the new FK, and empty migration

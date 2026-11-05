@@ -40,7 +40,9 @@ Safety commits through `50623859` are published. The following continuation comm
   PHPStan, Pint and codegen --check passed. No generated-client drift. Logs use
   `/tmp/erp-quotation-epochs-*`. These changes are not published as a finished QA5 feature.
 
-Sharing Actions/consumers, UI, demo presets and the separately reviewed bootstrap remain outstanding.
+Named-share Actions/consumers are implemented locally as an incomplete backend increment;
+API/UI, demo presets and the separately reviewed bootstrap remain outstanding. See the
+[sharing checkpoint](quotation-sharing-implementation.md) for exact behaviour and verification.
 The owner approved the audited ledger in [0157](../decisions/0157-audit-quotation-access-generation-with-an-append-only-ledger.md).
 The local storage implementation uses the single additive migration
 `2026_11_10_020000_create_quotation_access_events_and_shares`, preserving old ownership history.
@@ -62,6 +64,15 @@ denial, tenant and unknown-resource assertions must remain unchanged, with real-
 
 Three additional incoming-migration populated rollback proofs are prepared in
 `IncomingQuotationRollbackProofTest`. Pint and whole-project PHPStan passed. After recovery, all three tests passed (25 assertions) on the private test database.
+
+Local named-share backend increment: guarded grant/revoke Actions, permanent epoch-pinned eligibility,
+opt-in scope and compatible Administration assignments are implemented; no public family access
+surface or demo extension yet. Broad regression passed 722 tests/4,528 assertions; final focused
+checks passed 26/151. Owner-approved inventory/assignment/registration proofs passed 13/299 with
+one unchanged pre-existing skip. Whole-project PHPStan passed serially after a parallel timeout;
+Pint, generated-client drift check, all three frontend typechecks and production build passed.
+The generated enum change is committed with its request source. Full exact-head CI and the overall
+feature remain outstanding. See [the implementation checkpoint](quotation-sharing-implementation.md).
 
 ## Verification evidence
 
@@ -102,7 +113,7 @@ exact synthetic Company 1 target and approved staged assignment/share set, trans
 idempotently and auditable, unavailable in production. After success refuse added/altered grants.
 No public route/UI, broad grant, issue/repair or permission activation. Ordinary access flows and
 guards remain unchanged. Submit implementation for exact-SHA review and CI **before merging**;
-this replaces the previous pending first-holder question. Sharing consumers are not delivered yet:
+this replaces the previous pending first-holder question. The complete sharing workflow is not delivered yet:
 do not bootstrap an incomplete set now and silently expand it later.
 
 The owner subsequently approved a **one-time fresh initialisation of postgres-test only**.

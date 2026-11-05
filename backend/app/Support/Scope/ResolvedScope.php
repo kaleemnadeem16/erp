@@ -21,7 +21,7 @@ final readonly class ResolvedScope
     private const RECORDS = 'RECORDS';
 
     /** @param  list<int>  $unitIds */
-    private function __construct(private string $kind, private array $unitIds = [], private bool $ownPath = false) {}
+    private function __construct(private string $kind, private array $unitIds = [], private bool $ownPath = false, private bool $namedPath = false) {}
 
     public static function all(): self
     {
@@ -47,13 +47,13 @@ final readonly class ResolvedScope
     /** Same-duty alternatives for a resource-aware adapter; legacy resolution never returns this union.
      * @param  list<int>  $unitIds
      */
-    public static function records(bool $ownsRecords, array $unitIds): self
+    public static function records(bool $ownsRecords, array $unitIds, bool $namedDelegation = false): self
     {
-        if (! $ownsRecords && $unitIds === []) {
+        if (! $ownsRecords && $unitIds === [] && ! $namedDelegation) {
             return self::none();
         }
 
-        return new self(self::RECORDS, array_values(array_unique($unitIds)), $ownsRecords);
+        return new self(self::RECORDS, array_values(array_unique($unitIds)), $ownsRecords, $namedDelegation);
     }
 
     public function ownsRecords(): bool
@@ -63,7 +63,7 @@ final readonly class ResolvedScope
 
     public function allowsNamedDelegation(): bool
     {
-        return false;
+        return $this->namedPath;
     }
 
     public function isAll(): bool

@@ -73,9 +73,10 @@ final class RecordScope
         }
         $ownPath = false;
         $unitPath = false;
+        $namedPath = false;
         foreach ($grants as $grant) {
             $scope = $grant['scope'];
-            if (! in_array($scope, ['OWN', 'MY_UNITS'], true) || ! $adapters->supports($resource, $duty, $scope)) {
+            if (! in_array($scope, ['OWN', 'MY_UNITS', 'OWN_OR_DELEGATED'], true) || ! $adapters->supports($resource, $duty, $scope)) {
                 return ResolvedScope::none();
             }
             foreach ($grant['permissions'] as $permission) {
@@ -83,11 +84,12 @@ final class RecordScope
                     return ResolvedScope::none();
                 }
             }
-            $ownPath = $ownPath || $scope === 'OWN';
+            $ownPath = $ownPath || in_array($scope, ['OWN', 'OWN_OR_DELEGATED'], true);
+            $namedPath = $namedPath || $scope === 'OWN_OR_DELEGATED';
             $unitPath = $unitPath || $scope === 'MY_UNITS';
         }
 
-        return ResolvedScope::records($ownPath, $unitPath ? $this->memberUnitIds($user) : []);
+        return ResolvedScope::records($ownPath, $unitPath ? $this->memberUnitIds($user) : [], $namedPath);
     }
 
     /**

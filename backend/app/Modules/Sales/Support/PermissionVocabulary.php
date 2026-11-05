@@ -62,6 +62,11 @@ final class PermissionVocabulary
      */
     public const QUOTATION_ASSIGN = 'sales.quotation.assign';
 
+    /** Sensitive, STAGED family access management; never implied by receiving a share. */
+    public const QUOTATION_ACCESS_DELEGATE = 'sales.quotation.access.delegate';
+
+    public const QUOTATION_ACCESS_REVOKE = 'sales.quotation.access.revoke';
+
     /**
      * Official issue of a quotation revision (QL3, ADR 0123). STAGED like the other quotation duties: `IssueQuotation` exists and is guarded, but `SalesAccess` refuses every caller
      * until the manifest activates it with a reviewed holder recipe. It is the checker half of the routine maker/checker split — a smaller group than the preparers, never implied by

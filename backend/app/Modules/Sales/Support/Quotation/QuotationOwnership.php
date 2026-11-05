@@ -30,12 +30,12 @@ final class QuotationOwnership
         if ($actor === null) {
             throw new AuthorizationException('You are not permitted to change who is responsible for a quotation.');
         }
-        DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW]));
+        DB::transaction(fn () => app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW], false));
     }
 
     public static function lockFamily(int $familyId, User $actor): QuotationFamily
     {
-        return app(QuotationAccess::class)->requireFamily($actor, $familyId, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW], true);
+        return app(QuotationAccess::class)->requireFamily($actor, $familyId, [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_VIEW], true, false);
     }
 
     public static function requireResolved(QuotationFamily $family): void
