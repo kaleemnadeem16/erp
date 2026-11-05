@@ -38,6 +38,7 @@ import {
   formatBytes,
   historyLabel,
   type Delivery,
+  type DeliveryCorrectionInput,
   type DeliveryChannel,
   type DeliveryInput,
   type DocumentHistoryEntry,
@@ -205,13 +206,18 @@ export function QuotationDocumentHistoryView({
 
 export function QuotationDeliveriesView({
   deliveries,
+  onCorrect,
+  onWithdraw,
 }: {
   deliveries: Delivery[];
+  /** Offered only for the record that currently stands, and only to someone who may record deliveries. */
+  onCorrect?: (delivery: Delivery) => void;
+  onWithdraw?: (delivery: Delivery) => void;
 }) {
   return (
     <DetailSection
       title="Manual delivery record"
-      description="A person’s statement that the PDF was handed over. It is not proof the customer received, read or accepted it."
+      description="A person’s statement that the PDF was handed over. It is not proof the customer received, read or accepted it. Records are never edited: a mistake is corrected or withdrawn by adding a new record."
       fullWidth
     >
       {deliveries.length === 0 ? (
@@ -229,18 +235,240 @@ export function QuotationDeliveriesView({
               </p>
               {d.recipient_detail && <p>{d.recipient_detail}</p>}
               {d.note && <p>{d.note}</p>}
-              {d.corrects_id !== null && (
+              {d.kind === "WITHDRAWAL" ? (
                 <p className="text-muted-foreground">
-                  Corrects an earlier record.
+                  Withdrawn: this delivery did not happen as recorded.
+                </p>
+              ) : (
+                d.corrects_id !== null && (
+                  <p className="text-muted-foreground">
+                    Corrects an earlier record.
+                  </p>
+                )
+              )}
+              {d.correction_reason && (
+                <p className="text-muted-foreground">
+                  Reason: {d.correction_reason}
+                </p>
+              )}
+              {d.superseded_by_id !== null && (
+                <p className="text-muted-foreground">
+                  Replaced by a later record.
                 </p>
               )}
               <p className="text-muted-foreground">
                 Recorded {formatDateTime(d.recorded_at)}
               </p>
+              {d.is_current && (onCorrect || onWithdraw) && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {onCorrect && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={() => onCorrect(d)}
+                    >
+                      Correct this record
+                    </Button>
+                  )}
+                  {onWithdraw && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11"
+                      onClick={() => onWithdraw(d)}
+                    >
+                      Withdraw this record
+                    </Button>
+                  )}
+                </div>
+              )}
             </li>
           ))}
         </ul>
       )}
+    </DetailSection>
+  );
+}
+
+/**
+ * Corrects or withdraws one recorded delivery by adding a new record with a reason; the earlier record stays as it is.
+ * `withdraw` hides the replacement values: the delivery did not happen as recorded.
+ */
+export function DeliveryCorrectionForm({
+  delivery,
+  withdraw,
+  onSubmit,
+  onCancel,
+  pending,
+  error,
+}: {
+  delivery: Delivery;
+  withdraw: boolean;
+  onSubmit: (input: DeliveryCorrectionInput) => void;
+  onCancel: () => void;
+  pending: boolean;
+  error?: unknown;
+}) {
+  const [channel, setChannel] = useState<DeliveryChannel>(
+    (DELIVERY_CHANNELS as readonly string[]).includes(delivery.channel)
+      ? (delivery.channel as DeliveryChannel)
+      : "OTHER",
+  );
+  const [deliveredOn, setDeliveredOn] = useState(delivery.delivered_on);
+  const [name, setName] = useState(delivery.recipient_name);
+  const [detail, setDetail] = useState(delivery.recipient_detail ?? "");
+  const [note, setNote] = useState(delivery.note ?? "");
+  const [reason, setReason] = useState("");
+  const [problem, setProblem] = useState<string | null>(null);
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (!reason.trim()) {
+      setProblem("Say why the earlier record is being replaced.");
+      return;
+    }
+    if (!withdraw && (!deliveredOn || !name.trim())) {
+      setProblem("Enter the delivery date and who received it.");
+      return;
+    }
+    setProblem(null);
+    onSubmit({
+      deliveryId: delivery.id,
+      withdraw,
+      reason: reason.trim(),
+      // A withdrawal repeats the record it withdraws; the server ignores any other values.
+      body: withdraw
+        ? {
+            channel: delivery.channel as DeliveryChannel,
+            delivered_on: delivery.delivered_on,
+            recipient_name: delivery.recipient_name,
+            recipient_detail: delivery.recipient_detail,
+            note: delivery.note,
+          }
+        : {
+            channel,
+            delivered_on: deliveredOn,
+            recipient_name: name.trim(),
+            recipient_detail: detail.trim() || null,
+            note: note.trim() || null,
+          },
+    });
+  }
+  return (
+    <DetailSection
+      title={
+        withdraw ? "Withdraw a delivery record" : "Correct a delivery record"
+      }
+      description={
+        withdraw
+          ? "Use this when the delivery did not happen as recorded. The earlier record stays visible, marked as withdrawn."
+          : "The earlier record stays visible; this adds a new record that replaces it."
+      }
+      fullWidth
+    >
+      <form
+        className="col-span-full grid gap-4 sm:grid-cols-2"
+        onSubmit={submit}
+        noValidate
+      >
+        {!withdraw && (
+          <>
+            <div className="space-y-2">
+              <Label htmlFor="correction-channel">How it was delivered</Label>
+              <Select
+                value={channel}
+                onValueChange={(v) => setChannel(v as DeliveryChannel)}
+              >
+                <SelectTrigger id="correction-channel" className="min-h-11">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {DELIVERY_CHANNELS.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {CHANNEL_LABELS[c]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="correction-date">Delivered on</Label>
+              <Input
+                className="min-h-11"
+                id="correction-date"
+                type="date"
+                value={deliveredOn}
+                onChange={(e) => setDeliveredOn(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="correction-name">Received by</Label>
+              <Input
+                className="min-h-11"
+                id="correction-name"
+                maxLength={200}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="correction-detail">
+                Contact detail (optional)
+              </Label>
+              <Input
+                className="min-h-11"
+                id="correction-detail"
+                maxLength={200}
+                value={detail}
+                onChange={(e) => setDetail(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <Label htmlFor="correction-note">Note (optional)</Label>
+              <Textarea
+                id="correction-note"
+                maxLength={1000}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+              />
+            </div>
+          </>
+        )}
+        <div className="space-y-2 sm:col-span-2">
+          <Label htmlFor="correction-reason">Reason</Label>
+          <Textarea
+            id="correction-reason"
+            maxLength={500}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            required
+          />
+        </div>
+        {(problem || (error !== undefined && error !== null)) && (
+          <p role="alert" className="text-sm text-destructive sm:col-span-2">
+            {problem ?? documentRefusalMessage(error)}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2 sm:col-span-2">
+          <Button className="min-h-11" type="submit" disabled={pending}>
+            {pending
+              ? "Saving…"
+              : withdraw
+                ? "Withdraw record"
+                : "Save correction"}
+          </Button>
+          <Button
+            className="min-h-11"
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+          >
+            Cancel
+          </Button>
+        </div>
+      </form>
     </DetailSection>
   );
 }
@@ -426,7 +654,12 @@ function GatedDocument({
   // definitive refusal ends it, and different delivery details always get a new key.
   const generateKey = useRef(new IntentKey());
   const deliveryKey = useRef(new IntentKey());
+  const correctionKey = useRef(new IntentKey());
   const [deliveryForm, setDeliveryForm] = useState(0);
+  const [correcting, setCorrecting] = useState<{
+    delivery: Delivery;
+    withdraw: boolean;
+  } | null>(null);
   const generate = useMutation({
     mutationFn: () =>
       gateway.generate({
@@ -478,6 +711,22 @@ function GatedDocument({
     },
     onError: (e) => deliveryKey.current.settle(e),
   });
+  const correct = useMutation({
+    mutationFn: (correction: DeliveryCorrectionInput) =>
+      gateway.correctDelivery({
+        revisionId,
+        correction,
+        requestKey: correctionKey.current.for({ revisionId, correction }),
+      }),
+    onSuccess: () => {
+      correctionKey.current.settle();
+      setCorrecting(null);
+      void client.invalidateQueries({
+        queryKey: ["quotation-deliveries", revisionId],
+      });
+    },
+    onError: (e) => correctionKey.current.settle(e),
+  });
   const busy = generate.isPending || download.isPending || check.isPending;
   return (
     <DetailPageLayout>
@@ -515,9 +764,38 @@ function GatedDocument({
           />
         ) : (
           deliveries.data && (
-            <QuotationDeliveriesView deliveries={deliveries.data} />
+            <QuotationDeliveriesView
+              deliveries={deliveries.data}
+              onCorrect={
+                access.recordDelivery
+                  ? (delivery) => {
+                      correct.reset();
+                      setCorrecting({ delivery, withdraw: false });
+                    }
+                  : undefined
+              }
+              onWithdraw={
+                access.recordDelivery
+                  ? (delivery) => {
+                      correct.reset();
+                      setCorrecting({ delivery, withdraw: true });
+                    }
+                  : undefined
+              }
+            />
           )
         ))}
+      {access.recordDelivery && correcting && (
+        <DeliveryCorrectionForm
+          key={`${correcting.delivery.id}-${correcting.withdraw}`}
+          delivery={correcting.delivery}
+          withdraw={correcting.withdraw}
+          onSubmit={(input) => correct.mutate(input)}
+          onCancel={() => setCorrecting(null)}
+          pending={correct.isPending}
+          error={correct.error}
+        />
+      )}
       {access.recordDelivery && (
         <DeliveryForm
           key={deliveryForm}
