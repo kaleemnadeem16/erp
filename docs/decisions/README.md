@@ -174,7 +174,9 @@ in the same commit.
 
 | [0156](0156-quotation-demo-access-and-activation-boundaries.md) | Bound quotation demo access and preserve activation gates | accepted; implementation incomplete; partly supersedes 0129 | 2026-11-03 |
 
-**Next number: 0157**
+| [0160](0160-correct-manual-quotation-deliveries-by-appending-reasoned-records.md) | Correct manual quotation deliveries by appending reasoned records | accepted (safest default; owner may refine) | 2026-11-05 |
+
+**Next number: 0157** (0160 was taken by the documents completion work to avoid a collision with 0157-0159 in flight)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
