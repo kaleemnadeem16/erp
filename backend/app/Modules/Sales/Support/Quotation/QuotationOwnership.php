@@ -16,9 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * The one writer of quotation ownership: the locked family projection and its event are always written together, so the database's commit-time check (the family
- * equals the end of its chain) holds. Authority is a currently active member of this company holding the dedicated STAGED duty AND an independent view of quotations, each judged by its own scope through
- * `SalesAccess` (which today accepts only an unrestricted grant and refuses every caller while the duties are staged). Ownership is responsibility, not access:
- * naming an owner grants that person nothing, and no unit is inferred or read for visibility.
+ * equals the end of its chain) holds. Authority is a current active company member holding assign AND independent view, each judged by its own family scope through
+ * QuotationAccess. Shipped duties remain STAGED. Ownership is responsibility, not a grant: naming an owner grants nothing, and no access unit is inferred.
  */
 final class QuotationOwnership
 {

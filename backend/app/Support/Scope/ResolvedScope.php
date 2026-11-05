@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Support\Scope;
 
 /**
- * Which records a person may reach for a capability (ADR 0089): all of the company's, none, or those of a set of organisation units.
- * "Units" with an empty list is a restricted person who belongs to no unit: they reach nothing, never everything.
+ * Records reached for a capability: ALL/NONE/units for legacy adapters, with explicit own/unit alternatives for resource-aware adapters.
+ * An empty unit set reaches nothing, never everything. RecordScope keeps unsupported variants out of legacy callers.
  */
 final readonly class ResolvedScope
 {
@@ -18,8 +18,10 @@ final readonly class ResolvedScope
 
     private const OWN = 'OWN';
 
+    private const RECORDS = 'RECORDS';
+
     /** @param  list<int>  $unitIds */
-    private function __construct(private string $kind, private array $unitIds = []) {}
+    private function __construct(private string $kind, private array $unitIds = [], private bool $ownPath = false) {}
 
     public static function all(): self
     {
@@ -42,9 +44,21 @@ final readonly class ResolvedScope
         return new self(self::OWN);
     }
 
+    /** Same-duty alternatives for a resource-aware adapter; legacy resolution never returns this union.
+     * @param  list<int>  $unitIds
+     */
+    public static function records(bool $ownsRecords, array $unitIds): self
+    {
+        if (! $ownsRecords && $unitIds === []) {
+            return self::none();
+        }
+
+        return new self(self::RECORDS, array_values(array_unique($unitIds)), $ownsRecords);
+    }
+
     public function ownsRecords(): bool
     {
-        return $this->kind === self::OWN;
+        return $this->kind === self::OWN || $this->ownPath;
     }
 
     public function allowsNamedDelegation(): bool

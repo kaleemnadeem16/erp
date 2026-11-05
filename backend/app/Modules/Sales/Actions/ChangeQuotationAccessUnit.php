@@ -13,8 +13,8 @@ use App\Modules\Sales\Support\Quotation\QuotationOwnership;
 use App\Modules\Sales\Support\Quotation\QuotationOwnershipOutcome;
 
 /**
- * Sets or clears the family's reserved access unit. This is storage and evidence only: no unit is inferred from memberships, nothing reads the unit for visibility
- * and a unit confers no manager access. The owner is untouched. Same authority, generation, reason and replay protocol as `ReassignQuotationOwner`; naming the
+ * Sets or clears the family's explicit access unit. Exact MY_UNITS quotation grants reach it through active membership/descendants; membership alone grants nothing.
+ * No unit is inferred from the owner, and the owner is untouched. Same authority, generation, reason and replay protocol as `ReassignQuotationOwner`; naming the
  * current unit (or none when none is set) changes nothing and records nothing.
  */
 final class ChangeQuotationAccessUnit

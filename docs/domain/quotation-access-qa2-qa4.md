@@ -10,7 +10,7 @@ duty, the actual persisted grant and the supported family scope for that duty.
 Required duties are intersected. OWN reaches only a family's current responsible
 owner, excluding unresolved historical ownership; unrestricted ALL reaches
 every family in the same company, including unresolved families. An unrelated
-duty, a team membership, creator identity or a named share never enlarges that
+duty, team membership without an explicit scoped grant, creator identity or an unsupported named share never enlarges that
 reach. Edit, preview and draft updates require both view and prepare. Assignment
 and baseline recovery independently require assign and view.
 
@@ -99,6 +99,29 @@ unrelated duty never widens, anything else default-deny).
   Only frozen issued net is projected; draft previews are never recomputed by the list. Commercial-view remains STAGED. Eligibility, count and page
   share one SQL snapshot; counts never include hidden families.
 - **Fence reads are pure SELECTs.** `CompanyAccessFence::lock()` inserts a company's barrier row only when it is missing.
+
+## QA5 team scope — backend increment
+
+The quotation-family adapter supports exact-duty MY_UNITS using the existing active unit tree.
+An active parent-unit member reaches active descendants; a leaf never reaches a parent/sibling.
+The family must explicitly name its unit. Null units and unresolved legacy families have no team
+path; membership in the owner's units is never inferred. No active unit plus no OWN alternative
+is a scope denial (403), preserving default-deny. Hidden/foreign/unknown records remain identical
+404s once a supported scope exists.
+
+For the same duty, supported OWN and unit role/direct paths form a union; an explicit unrestricted
+conferring path still means ALL. Different required duties are intersected independently. Mixed
+roles containing unsupported duties fail closed. Fresh membership is resolved under the existing
+company fence, so removing a member or archiving a unit changes the next decision. Generic
+RecordScope resolution and warehouse/CRM semantics are unchanged; they do not inherit the new
+own/unit union. Shipped quotation duties remain STAGED and no holder is assigned by this code.
+
+`QuotationTeamAccessTest` exercises parent/leaf boundaries, pagination counts, full non-disclosing
+HTTP parity, foreign records, real preparation Actions, refused writes without receipts, membership
+removal, archived/null units, union/intersection, OWN parity and role-title/membership-only denial.
+This is an unpublished backend increment of QA5, not completion of sharing, client/UI or demo work.
+The existing research/design is reused: [unit boundaries](quotation-record-access-design.md#teammanager-access).
+No new table, money field, endpoint, generated type or permission is introduced by this increment.
 
 ## QA4 read-only inventory checkpoint
 

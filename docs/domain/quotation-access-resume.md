@@ -88,7 +88,10 @@ Full old log is local at `/tmp/erp-postgres-test-failure-2026-11-03.log`. Outcom
 On 2026-11-05 Docker Desktop was initially unavailable; the owner started it. The isolated test
 service was started under the exclusive lock with no disk-backed mounts and the unchanged 1280 MB
 limit. It is healthy. A fresh quotation/Documents/ratchet regression passed 615 tests/3,919 assertions serially on
-`erp_testing_quotation_security`. Team-scope implementation is the next independent increment.
+`erp_testing_quotation_security`. The MY_UNITS/OWN-union backend increment is implemented locally. Its focused tests passed; the
+broader quotation/Documents/warehouse/CRM/security regression passed 662 tests/4,141 assertions
+(333 seconds, 39% tmpfs). Log: `/tmp/erp-quotation-team-regression.log`. It is not published as a
+finished QA5 feature; shares, UI, demo presets and bootstrap review remain outstanding.
 
 ## Continue in order
 
@@ -100,7 +103,8 @@ limit. It is healthy. A fresh quotation/Documents/ratchet regression passed 615 
    until the advisory slice is verified. Watch every job on the exact pushed head and fix forward.
 4. Finish QA4 unapplied holder-recipe code, provenance ledger, dry-run/backout and populated tests.
    The inventory command alone does not complete QA4.
-5. Finish QA5 backend/client/UI: MY_UNITS and structured scope/delegation, security epochs,
+5. MY_UNITS and same-duty OWN/unit union are implemented locally. Finish QA5 backend/client/UI:
+   named scope/delegation, security epochs,
    append-only shares/revocations, real Actions, owner transfer and permission-aware UI with
    non-disclosing errors. Published pricing UI dependency is now satisfied. Preserve the existing
    gate, unrelated CRM semantics, issue/repair separation and independent view + prepare authority.
