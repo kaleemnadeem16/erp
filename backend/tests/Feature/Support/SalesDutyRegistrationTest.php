@@ -276,6 +276,8 @@ class SalesDutyRegistrationTest extends TestCase
             'api/v1/quotations/{revision}/document/history' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/document/check' => ['POST'],
             'api/v1/quotations/{revision}/deliveries' => ['GET', 'HEAD', 'POST'],
+            // Append a reasoned correction or withdrawal of a recorded delivery (default-deny, STAGED delivery.record): QuotationDeliveryCorrectionTest.
+            'api/v1/quotations/{revision}/deliveries/{delivery}/correction' => ['POST'],
         ];
 
         foreach (Route::getRoutes() as $route) {
