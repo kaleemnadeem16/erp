@@ -17,6 +17,14 @@ export type CustomerAccountsIndexParams = {
    * @maxLength 255
    */
   "filter[search]"?: string;
+  /**
+   * @minimum 1
+   */
+  "filter[default_currency_id]"?: number;
+  /**
+   * @minimum 1
+   */
+  "filter[receivable_account_id]"?: number;
   sort?: CustomerAccountsIndexSort;
   include?: string;
   /**
