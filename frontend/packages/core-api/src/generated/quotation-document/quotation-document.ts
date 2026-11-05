@@ -23,6 +23,11 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  CorrectQuotationDeliveryRequest,
+  QuotationsDeliveriesCorrect200,
+  QuotationsDeliveriesCorrect201,
+  QuotationsDeliveriesCorrect409,
+  QuotationsDeliveriesCorrectHeaders,
   QuotationsDeliveriesIndex200,
   QuotationsDeliveriesStore200,
   QuotationsDeliveriesStore201,
@@ -1423,6 +1428,203 @@ export const useQuotationsDeliveriesStore = <
   TContext
 > => {
   const mutationOptions = getQuotationsDeliveriesStoreMutationOptions(options);
+
+  return useMutation(mutationOptions, queryClient);
+};
+/**
+ * @summary Corrects or withdraws a recorded delivery by appending a new record that names it and gives the reason; the earlier record is never edited or deleted. A statement by a person, not receipt by the customer
+ */
+export type quotationsDeliveriesCorrectResponse200 = {
+  data: QuotationsDeliveriesCorrect200;
+  status: 200;
+};
+
+export type quotationsDeliveriesCorrectResponse201 = {
+  data: QuotationsDeliveriesCorrect201;
+  status: 201;
+};
+
+export type quotationsDeliveriesCorrectResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type quotationsDeliveriesCorrectResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type quotationsDeliveriesCorrectResponse409 = {
+  data: QuotationsDeliveriesCorrect409;
+  status: 409;
+};
+
+export type quotationsDeliveriesCorrectResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type quotationsDeliveriesCorrectResponseSuccess = (
+  | quotationsDeliveriesCorrectResponse200
+  | quotationsDeliveriesCorrectResponse201
+) & {
+  headers: Headers;
+};
+export type quotationsDeliveriesCorrectResponseError = (
+  | quotationsDeliveriesCorrectResponse401
+  | quotationsDeliveriesCorrectResponse403
+  | quotationsDeliveriesCorrectResponse409
+  | quotationsDeliveriesCorrectResponse422
+) & {
+  headers: Headers;
+};
+
+export type quotationsDeliveriesCorrectResponse =
+  | quotationsDeliveriesCorrectResponseSuccess
+  | quotationsDeliveriesCorrectResponseError;
+
+export const getQuotationsDeliveriesCorrectUrl = (
+  revision: number,
+  delivery: number,
+) => {
+  return `/v1/quotations/${revision}/deliveries/${delivery}/correction`;
+};
+
+export const quotationsDeliveriesCorrect = async (
+  revision: number,
+  delivery: number,
+  correctQuotationDeliveryRequest: CorrectQuotationDeliveryRequest,
+  headers: QuotationsDeliveriesCorrectHeaders,
+  options?: RequestInit,
+): Promise<quotationsDeliveriesCorrectResponse> => {
+  return fetchClient<quotationsDeliveriesCorrectResponse>(
+    getQuotationsDeliveriesCorrectUrl(revision, delivery),
+    {
+      ...options,
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...headers,
+        ...options?.headers,
+      },
+      body: JSON.stringify(correctQuotationDeliveryRequest),
+    },
+  );
+};
+
+export const getQuotationsDeliveriesCorrectMutationOptions = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsDeliveriesCorrect409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof quotationsDeliveriesCorrect>>,
+    TError,
+    {
+      revision: number;
+      delivery: number;
+      data: CorrectQuotationDeliveryRequest;
+      headers: QuotationsDeliveriesCorrectHeaders;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof fetchClient>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof quotationsDeliveriesCorrect>>,
+  TError,
+  {
+    revision: number;
+    delivery: number;
+    data: CorrectQuotationDeliveryRequest;
+    headers: QuotationsDeliveriesCorrectHeaders;
+  },
+  TContext
+> => {
+  const mutationKey = ["quotationsDeliveriesCorrect"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof quotationsDeliveriesCorrect>>,
+    {
+      revision: number;
+      delivery: number;
+      data: CorrectQuotationDeliveryRequest;
+      headers: QuotationsDeliveriesCorrectHeaders;
+    }
+  > = (props) => {
+    const { revision, delivery, data, headers } = props ?? {};
+
+    return quotationsDeliveriesCorrect(
+      revision,
+      delivery,
+      data,
+      headers,
+      requestOptions,
+    );
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type QuotationsDeliveriesCorrectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof quotationsDeliveriesCorrect>>
+>;
+export type QuotationsDeliveriesCorrectMutationBody =
+  CorrectQuotationDeliveryRequest;
+export type QuotationsDeliveriesCorrectMutationError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | QuotationsDeliveriesCorrect409
+  | ValidationExceptionResponse;
+
+/**
+ * @summary Corrects or withdraws a recorded delivery by appending a new record that names it and gives the reason; the earlier record is never edited or deleted. A statement by a person, not receipt by the customer
+ */
+export const useQuotationsDeliveriesCorrect = <
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | QuotationsDeliveriesCorrect409
+    | ValidationExceptionResponse,
+  TContext = unknown,
+>(
+  options?: {
+    mutation?: UseMutationOptions<
+      Awaited<ReturnType<typeof quotationsDeliveriesCorrect>>,
+      TError,
+      {
+        revision: number;
+        delivery: number;
+        data: CorrectQuotationDeliveryRequest;
+        headers: QuotationsDeliveriesCorrectHeaders;
+      },
+      TContext
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseMutationResult<
+  Awaited<ReturnType<typeof quotationsDeliveriesCorrect>>,
+  TError,
+  {
+    revision: number;
+    delivery: number;
+    data: CorrectQuotationDeliveryRequest;
+    headers: QuotationsDeliveriesCorrectHeaders;
+  },
+  TContext
+> => {
+  const mutationOptions =
+    getQuotationsDeliveriesCorrectMutationOptions(options);
 
   return useMutation(mutationOptions, queryClient);
 };
