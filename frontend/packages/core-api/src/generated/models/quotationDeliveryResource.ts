@@ -7,6 +7,9 @@
 import type { QuotationDeliveryResourceRecipientDetail } from "./quotationDeliveryResourceRecipientDetail";
 import type { QuotationDeliveryResourceNote } from "./quotationDeliveryResourceNote";
 import type { QuotationDeliveryResourceCorrectsId } from "./quotationDeliveryResourceCorrectsId";
+import type { QuotationDeliveryResourceKind } from "./quotationDeliveryResourceKind";
+import type { QuotationDeliveryResourceCorrectionReason } from "./quotationDeliveryResourceCorrectionReason";
+import type { QuotationDeliveryResourceSupersededById } from "./quotationDeliveryResourceSupersededById";
 
 export interface QuotationDeliveryResource {
   id: number;
@@ -18,5 +21,9 @@ export interface QuotationDeliveryResource {
   recipient_detail: QuotationDeliveryResourceRecipientDetail;
   note: QuotationDeliveryResourceNote;
   corrects_id: QuotationDeliveryResourceCorrectsId;
+  kind: QuotationDeliveryResourceKind;
+  correction_reason: QuotationDeliveryResourceCorrectionReason;
+  superseded_by_id: QuotationDeliveryResourceSupersededById;
+  is_current: string;
   recorded_at: string;
 }

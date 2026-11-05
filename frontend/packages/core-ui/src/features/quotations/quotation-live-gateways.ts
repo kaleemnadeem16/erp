@@ -1,6 +1,7 @@
 import {
   fetchBlob,
   getQuotationsDocumentDownloadUrl,
+  quotationsDeliveriesCorrect,
   quotationsDeliveriesIndex,
   quotationsDeliveriesStore,
   quotationsDocumentCheck,
@@ -96,6 +97,26 @@ export const liveDocumentGateway: QuotationDocumentGateway = {
         await quotationsDeliveriesStore(revisionId, input, {
           "Idempotency-Key": requestKey,
         }),
+      ),
+    ),
+  // A withdrawal still sends the old values (the server ignores them and repeats the record it withdraws).
+  correctDelivery: async ({ revisionId, correction, requestKey }) =>
+    readDelivery(
+      body(
+        await quotationsDeliveriesCorrect(
+          revisionId,
+          correction.deliveryId,
+          {
+            channel: correction.body.channel,
+            delivered_on: correction.body.delivered_on,
+            recipient_name: correction.body.recipient_name,
+            recipient_detail: correction.body.recipient_detail ?? null,
+            note: correction.body.note ?? null,
+            reason: correction.reason,
+            withdraw: correction.withdraw,
+          },
+          { "Idempotency-Key": requestKey },
+        ),
       ),
     ),
 };

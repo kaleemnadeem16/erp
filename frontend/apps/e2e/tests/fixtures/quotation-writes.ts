@@ -119,6 +119,15 @@ const documentGateway: QuotationDocumentGateway = {
   deliveries: (revisionId) => call("deliveries", { revisionId }, () => []),
   recordDelivery: (input) =>
     call("recordDelivery", input, () => mockDelivery()),
+  correctDelivery: (input) =>
+    call("correctDelivery", input, () =>
+      mockDelivery({
+        id: 2,
+        corrects_id: input.correction.deliveryId,
+        kind: input.correction.withdraw ? "WITHDRAWAL" : "CORRECTION",
+        correction_reason: input.correction.reason,
+      }),
+    ),
 };
 
 const client = new QueryClient({

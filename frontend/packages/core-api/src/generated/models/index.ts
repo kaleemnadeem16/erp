@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 179 schemas that export a runtime value use `export *`.
+ * only the 181 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -492,6 +492,11 @@ export type * from "./convertLeadRequestPartyContactId";
 export type * from "./convertLeadRequestPartyId";
 export type * from "./convertLeadRequestSource";
 export type * from "./convertLeadRequestStageId";
+export type * from "./correctQuotationDeliveryRequest";
+export * from "./correctQuotationDeliveryRequestChannel";
+export type * from "./correctQuotationDeliveryRequestNote";
+export type * from "./correctQuotationDeliveryRequestRecipientDetail";
+export type * from "./correctQuotationDeliveryRequestWithdraw";
 export type * from "./costResolutionResource";
 export type * from "./costResolutionResourceBasisItem";
 export type * from "./costResolutionResourceCoverageItem";
@@ -1673,9 +1678,12 @@ export type * from "./quotationApprovalResourceRequestAnyOfDecisionsItemReason";
 export type * from "./quotationApprovalResourceRequestAnyOfRequestedBy";
 export type * from "./quotationApprovalResourceRequestAnyOfRequestedByAnyOf";
 export type * from "./quotationDeliveryResource";
+export type * from "./quotationDeliveryResourceCorrectionReason";
 export type * from "./quotationDeliveryResourceCorrectsId";
+export * from "./quotationDeliveryResourceKind";
 export type * from "./quotationDeliveryResourceNote";
 export type * from "./quotationDeliveryResourceRecipientDetail";
+export type * from "./quotationDeliveryResourceSupersededById";
 export type * from "./quotationDocumentHistoryResource";
 export type * from "./quotationDocumentHistoryResourceDetail";
 export type * from "./quotationDocumentStatusResource";
@@ -1742,6 +1750,11 @@ export type * from "./quotationsApprovalWithdraw404";
 export type * from "./quotationsApprovalWithdraw409";
 export type * from "./quotationsApprovalWithdraw409Errors";
 export type * from "./quotationsApprovalWithdrawHeaders";
+export type * from "./quotationsDeliveriesCorrect200";
+export type * from "./quotationsDeliveriesCorrect201";
+export type * from "./quotationsDeliveriesCorrect409";
+export type * from "./quotationsDeliveriesCorrect409Errors";
+export type * from "./quotationsDeliveriesCorrectHeaders";
 export type * from "./quotationsDeliveriesIndex200";
 export type * from "./quotationsDeliveriesStore200";
 export type * from "./quotationsDeliveriesStore201";

@@ -106,6 +106,10 @@ Customer acknowledgement alone creates no claim reservation, operational hold or
 
 ## Expiry, withdrawal, resend and correction
 
+**Delivered (manual delivery correction, [0160](../decisions/0160-correct-manual-quotation-deliveries-by-appending-reasoned-records.md)):** a recorded manual delivery is corrected or
+withdrawn by appending a record that names it and gives a required reason; only the current record of a chain can be corrected and a withdrawn record is final. The earlier record is never
+edited. This is the person's statement only. Email, portal and provider delivery are not delivered.
+
 An ordinary send needs currently actionable eligible scope; expired/withdrawn/replaced scope cannot
 be presented as current. Explicit HISTORICAL_COPY is separately authorised, labelled by a cover with
 current status/time and preserves exact archived original unmodified. Historical resend cannot extend

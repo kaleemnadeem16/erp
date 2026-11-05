@@ -56,6 +56,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotations/{revision}/document/check', [QuotationDocumentController::class, 'check'])->whereNumber('revision')->name('quotations.document.check');
     Route::get('quotations/{revision}/deliveries', [QuotationDocumentController::class, 'deliveries'])->whereNumber('revision')->name('quotations.deliveries.index');
     Route::post('quotations/{revision}/deliveries', [QuotationDocumentController::class, 'recordDelivery'])->whereNumber('revision')->name('quotations.deliveries.store');
+    Route::post('quotations/{revision}/deliveries/{delivery}/correction', [QuotationDocumentController::class, 'correctDelivery'])->whereNumber(['revision', 'delivery'])->name('quotations.deliveries.correct');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');
     Route::get('sales-stages', [SalesStageController::class, 'index'])->name('sales-stages.index');

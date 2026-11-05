@@ -11,7 +11,7 @@ use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Support\Facades\DB;
 
-/** The manual delivery history of one issued quotation: who recorded what, when, with corrections shown as such. Needs `sales.delivery.view` and the right to see the quotation. */
+/** The manual delivery history of one issued quotation: who recorded what, when, with corrections shown as such (each row says which later record replaced it, if any). Needs `sales.delivery.view` and the right to see the quotation. */
 final class ReadQuotationDocumentDeliveries
 {
     public function __construct(private readonly QuotationDocumentLocator $locator) {}
@@ -24,7 +24,18 @@ final class ReadQuotationDocumentDeliveries
             $this->locator->authorise($actor, $revisionId, 'see quotation deliveries');
             $this->locator->manifest($revisionId);
 
-            return QuotationDocumentDelivery::query()->where('revision_id', $revisionId)->orderBy('id')->get()->all();
+            $rows = QuotationDocumentDelivery::query()->where('revision_id', $revisionId)->orderBy('id')->get()->all();
+            $replacedBy = [];
+            foreach ($rows as $row) {
+                if ($row->corrects_id !== null) {
+                    $replacedBy[$row->corrects_id] = $row->id;
+                }
+            }
+            foreach ($rows as $row) {
+                $row->setAttribute('superseded_by_id', $replacedBy[$row->id] ?? null);
+            }
+
+            return $rows;
         });
     }
 }
