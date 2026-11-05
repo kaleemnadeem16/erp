@@ -38,3 +38,25 @@ Problems and rules applied:
 
 Verified: `QuotationApprovalApiTest` (13), `tests/Feature/Modules/Sales` (511), `tests/Unit/Modules/Sales`, `tests/Architecture`, `--filter=Approval` (160), Pint, PHPStan (no errors),
 `migrate-cycle.sh`, codegen regenerated (`QUOTATION_REVISION` now appears in the Approvals subject-type enums, which is why three existing generated enum files changed).
+
+### Slice 2 — frontend
+`quotation-approval-contract.ts` (zod schemas, plain wording, mocks), `quotation-approval-access.ts` (prepare/approve each with view, behind the existing gate: production stays OFF),
+`quotation-approval-screen.tsx` (status badge, decision history, request / approve / reject / withdraw with reason dialogs, 44px targets, fixed refusal wording by reason code, one
+`IntentKey` per intent so an uncertain failure replays), route `/quotations/:revision/approval` (`screen-access.ts`, `router.tsx`, `QuotationApprovalRoute`), link from the detail and readiness
+pages, `APPROVAL_PENDING` / `APPROVAL_REJECTED` wording. The generated `quotation-approval` module was missing from `core-api/src/index.ts` (hand-maintained barrel): added.
+Verified: three `tsc --noEmit`, `vite build`, the whole Playwright `unit` project (126, including the new `quotation-approval.unit.spec.ts`).
+
+### Slice 3 — demo data
+`QuotationApprovalsDemoSeeder` (after `QuotationIssuingDemoSeeder`; local preview only like it): approval mode REQUIRED and one policy only when absent; demo approver persona
+`demo-quote-approver@erp.x1techs.com` (view + approve permission rows, nothing added to the dev preview); scenarios WAITING, APPROVED, ISSUED (names its approval), REJECTED (reason), WITHDRAWN,
+CHANGED-after-approval. Tested by `QuotationApprovalsDemoSeederTest` (skips outside local preview; in local preview builds every state, rerun adds nothing, duties back to STAGED).
+Problem: a 25% discount is both above the limit (needs approval) and fails the company's 10% mandatory reduction control; approval does not lift a failed control, so the REJECTED scenario is the
+only discount one and the issuable scenarios use small overrides. Rule: controls and approval are independent (ADR 0158 §6).
+
+## Remaining work
+- Owner decisions: thresholds by discount size (needs a base-currency concession measure routed as an engine fact), expiry, delegation, the holder recipe for `sales.quotation.approve`, and whether
+  the local dev preview should also switch on `approve` (and discount/override) so the browser can decide as the demo approver.
+- Notifications to approvers (deliberately deferred ERP-wide, Q33).
+- A first-class "approvals waiting on me" entry on the Quotes list (the generic `/approvals` inbox lists the request only if the approver also passes the record policy; it does, but has no quotation deep link).
+- Approval of a replacement revision (`IssueQuotationReplacement` consumes the same assessor, so a replacement with concessions needs its own approval; not exercised by a dedicated test).
+- Browser (Playwright e2e) coverage with a signed-in approver, once the owner decides the preview question.
