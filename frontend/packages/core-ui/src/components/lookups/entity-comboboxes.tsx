@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 import {
+  useApplicationRatesIndex,
+  useApplicationRatesShow,
+  useAssemblyGroupsIndex,
+  useAssemblyGroupsShow,
   useChartOfAccountsIndex,
   useChartOfAccountsShow,
+  useCustomerAccountsIndex,
+  useCustomerAccountsShow,
+  useFormulationsIndex,
+  useFormulationsShow,
   useItemsIndex,
   useItemsShow,
   useLocationsIndex,
@@ -11,11 +19,18 @@ import {
   useSalesOwnersIndex,
   useSupplierAccountsIndex,
   useSupplierAccountsShow,
+  useUomsIndex,
+  useUomsShow,
+  type ApplicationRateResource,
+  type AssemblyGroupResource,
   type ChartOfAccountResource,
+  type CustomerAccountResource,
+  type FormulationResource,
   type ItemResource,
   type LocationResource,
   type PartyResource,
   type SupplierAccountResource,
+  type UomResource,
 } from '@erp/core-api';
 
 import { lookupState } from '../../lib/api-errors';
@@ -259,6 +274,131 @@ export function AccountCombobox({ onValueChange, enabled = true, excludeId, ...p
       searching={search !== delayed || (search !== '' && list.isFetching)}
       selectedLabel={selected ? label(selected) : undefined}
       options={rows.map((account) => ({ value: String(account.id), label: label(account) }))}
+    />
+  );
+}
+
+/** A customer account, searched on the server by code, partner name or tax number, and named `CODE — Partner name`. */
+export function CustomerCombobox({ onValueChange, leadingOptions, ...props }: EntityComboboxProps<CustomerAccountResource> & { leadingOptions?: { value: string; label: string }[] }) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useCustomerAccountsIndex({ 'filter[search]': delayed || undefined, include: 'party', per_page: PAGE, sort: 'code' });
+  const chosen = useCustomerAccountsShow(chosenId(props.value), { include: 'party' }, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (customer: { code: string; party?: { name: string } | null }) => (customer.party?.name ? `${customer.code} — ${customer.party.name}` : customer.code);
+  const leading = leadingOptions ?? [];
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'customers')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : leading.find((option) => option.value === props.value)?.label}
+      options={[...leading, ...rows.map((customer) => ({ value: String(customer.id), label: label(customer) }))]}
+    />
+  );
+}
+
+/** A unit of measure, searched on the server by code or name. */
+export function UomCombobox({ onValueChange, ...props }: EntityComboboxProps<UomResource>) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useUomsIndex({ 'filter[search]': delayed || undefined, per_page: PAGE, sort: 'name' });
+  const chosen = useUomsShow(chosenId(props.value), { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (uom: { code: string; name: string }) => `${uom.name} (${uom.code})`;
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'units')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : undefined}
+      options={rows.map((uom) => ({ value: String(uom.id), label: label(uom) }))}
+    />
+  );
+}
+
+/** An assembly group, searched on the server by code or name. */
+export function AssemblyGroupCombobox({ onValueChange, leadingOptions, ...props }: EntityComboboxProps<AssemblyGroupResource> & { leadingOptions?: { value: string; label: string }[] }) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useAssemblyGroupsIndex({ 'filter[search]': delayed || undefined, per_page: PAGE, sort: 'code' });
+  const chosen = useAssemblyGroupsShow(chosenId(props.value), undefined, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (group: { code: string; name: string }) => `${group.code} — ${group.name}`;
+  const leading = leadingOptions ?? [];
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'assembly groups')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : leading.find((option) => option.value === props.value)?.label}
+      options={[...leading, ...rows.map((group) => ({ value: String(group.id), label: label(group) }))]}
+    />
+  );
+}
+
+/** A formulation (recipe), searched on the server by code or name, named `CODE — Name`. */
+export function FormulationCombobox({ onValueChange, leadingOptions, ...props }: EntityComboboxProps<FormulationResource> & { leadingOptions?: { value: string; label: string }[] }) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useFormulationsIndex({ 'filter[search]': delayed || undefined, per_page: PAGE, sort: 'code' });
+  const chosen = useFormulationsShow(chosenId(props.value), undefined, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (formulation: { code: string; name: string }) => `${formulation.code} — ${formulation.name}`;
+  const leading = leadingOptions ?? [];
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'formulations')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : leading.find((option) => option.value === props.value)?.label}
+      options={[...leading, ...rows.map((formulation) => ({ value: String(formulation.id), label: label(formulation) }))]}
+    />
+  );
+}
+
+/** An application rate, searched on the server by the code or name of its item, named `ITEM — qty unit per work unit`. */
+export function ApplicationRateCombobox({ onValueChange, leadingOptions, ...props }: EntityComboboxProps<ApplicationRateResource> & { leadingOptions?: { value: string; label: string }[] }) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useApplicationRatesIndex({ 'filter[search]': delayed || undefined, include: 'item,workUom,uom', per_page: PAGE });
+  const chosen = useApplicationRatesShow(chosenId(props.value), { include: 'item,workUom,uom' }, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (rate: ApplicationRateResource) =>
+    `${rate.item ? `${rate.item.code} — ${rate.item.name}` : `Item #${rate.item_id}`}: ${rate.qty_per_work_unit} ${rate.uom?.code ?? ''} per ${rate.work_uom?.code ?? 'work unit'}${rate.is_default ? ' (default)' : ''}`.replace(/\s+/g, ' ');
+  const leading = leadingOptions ?? [];
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'application rates')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : leading.find((option) => option.value === props.value)?.label}
+      options={[...leading, ...rows.map((rate) => ({ value: String(rate.id), label: label(rate) }))]}
     />
   );
 }
