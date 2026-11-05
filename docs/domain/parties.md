@@ -298,7 +298,8 @@ reuse an existing identity. Edit requires supplier maintenance; terms/mapping co
 keys follow their separate management capabilities. Identity stays fixed on account edit.
 The existing Request/Action and company guards enforce all writes; no new Parties capability or
 approval step is introduced. Edit also lists addresses; **Add address** uses the existing
-`parties.supplier-site.manage` workflow. Contacts and the independent Party and customer forms are separate screens
+`parties.supplier-site.manage` workflow, and the supplier record's address cards offer **Edit** and **Remove** to the same capability (2026-11-05). Removing an
+address deletes only its supplier role join and says so: the underlying shared address is kept, because a customer role may still use it. Contacts and the independent Party and customer forms are separate screens
 ([parties-screens.md](parties-screens.md)), not implied by supplier registration.
 
 ## Related

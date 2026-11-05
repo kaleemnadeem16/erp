@@ -98,7 +98,7 @@ Per-screen detail for the fixed groups is recorded in section 4 when each group 
 | Chart of accounts | complete (`accounting.chart-of-account.manage`) | **built** — Chart of accounts |
 | Warehouse-location roles | complete (`inventory.location.manage`) | Step 4 (structured-mode panel in the warehouse sheet) |
 | Supplier site edit/remove | complete (`parties.supplier-site.manage`) | Step 4 |
-| Member "issue temporary password" | complete (ADR 0065) | Step 4 if the contract is unambiguous |
+| Member "issue temporary password" | complete (ADR 0065) | **already present** on the Members screen (called through the plain generated function, so the hook-name analysis missed it) |
 | Forgot-password (`POST /forgot-password`) | no mail channel specified; ADR 0065 chose manual credential recovery | listed, not built (ambiguous) |
 | AVCO pools / stock layers | read-only reference data | deliberately no screen (D2) |
 | Estimating `destroy` endpoints, Item/Location hard delete | guards differ / documented as not exposed one-click | listed, not built |
@@ -167,6 +167,24 @@ Remaining on these screens: status chips still use `Badge` variants, not `Status
   archive with an honest result, access, error + retry, Settings index, axe on four pages, 390 px with 44 px targets).
 - **Also fixed here:** `recalculation-requests.spec.ts` read rows from every `tbody` and so matched the hidden Quick Print table once the list gained Print (same
   scoping fix as the override spec; the hosted run caught it).
+
+### Stage 4 — backend features wired into the UI (Step 4)
+
+- **Supplier addresses: edit and remove** on the supplier record (`parties.supplier-site.manage`): the shared `SupplierSiteDialog` gained an edit mode (create
+  behaviour unchanged; the purchase-order form still uses it as before); removal states that only the supplier role join goes and the shared address is kept.
+- **Warehouse location roles** panel in the warehouse sheet, STRUCTURED mode only (ADR 0041): read for anyone who can open the warehouse; assign / change / clear
+  for `inventory.location.manage`, with the picker limited to the warehouse's own locations.
+- **Barrel gap closed:** `warehouse-location-assignment` (like `exchange-rate`) was generated but never exported from `@erp/core-api`'s hand-maintained `src/index.ts`.
+  The only remaining unexported module is `avco-pool`, deliberately (no screen, decision D2).
+- **Tests:** `wired-features.spec.ts` (edit with the stored values, remove with its stated consequence, no controls without the duty, 44 px phone targets, roles
+  shown / changed / cleared with the demo assignment restored, no role controls without the duty, nothing role-related in SIMPLE mode). Known property: the API
+  has no endpoint that deletes a shared `party_sites` row, so the stamped sites these specs create leave unlisted orphan rows (invisible in every screen).
+- **Audit correction:** the hook-name analysis of step 1c listed *member issue temporary password* as unused, but the Members screen already offers it (create-without-mail
+  and *Issue temporary password* with a one-time reveal) through the plain generated function `membersIssueTemporaryPassword`; it is present and needs nothing. The same
+  check found the quotation hooks used the same way (not touched: other agents' area).
+- **Not wired, with reasons:** forgot-password link (no product decision: ADR 0065 chose manual, administrator-issued recovery; section 5), estimating `destroy`
+  endpoints (their referential guards differ per resource and none is documented as safe to expose one-click), item/location hard delete (documented as deliberately
+  not exposed), AVCO pools / stock layers (reference data, deliberately backend-only, decision D2).
 
 ## 5. Blocked (not built) and why
 

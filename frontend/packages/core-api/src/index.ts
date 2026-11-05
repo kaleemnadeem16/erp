@@ -15,6 +15,7 @@ export * from "./generated/currency/currency";
 export * from "./generated/exchange-rate/exchange-rate";
 export * from "./generated/warehouse/warehouse";
 export * from "./generated/location/location";
+export * from "./generated/warehouse-location-assignment/warehouse-location-assignment";
 export * from "./generated/stock-move/stock-move";
 export * from "./generated/physical-count/physical-count";
 export * from "./generated/item-package-tracking/item-package-tracking";

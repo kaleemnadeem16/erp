@@ -324,6 +324,13 @@ reference data, not a document workflow, unlike every other Phase 2 close-out ar
 `location`/`batch` (layers) and `item`/`warehouse`/`batch` (pools) are opt-in via `include`, same
 convention as `stock_moves`.
 
+### Location roles in the warehouse sheet (2026-11-05)
+
+In `STRUCTURED` mode the warehouse record's **Location roles** panel lists the six operational roles (receiving, quarantine, dispatch, returns, in transit,
+production) with the location that plays each, one location per role. A person with `inventory.location.manage` can assign, change or clear one (the picker
+offers only that warehouse's own locations, as the API requires); everyone who can open the warehouse can read them. In `SIMPLE` mode nothing role-related is
+shown (ADR 0041). The panel only records which location plays which role; it adds no behaviour of its own.
+
 ## Landmines
 
 **Negative stock.** Live stock is blocked by default, with a company-configurable authorised
