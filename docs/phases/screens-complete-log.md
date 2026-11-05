@@ -217,8 +217,33 @@ a page exception only with the owner's agreement — decision D7 below). Wiring 
 | D3 | Chart of accounts and Exchange rates are reached from **Settings** (Company / Numbers, money and rounding: the existing top-bar menu, mobile More sheet and settings index) rather than a new sidebar group, so no navigation structure that affects several modules is changed | **awaiting owner** — recommended default implemented; moving them is a one-array edit |
 | D4 | Trading partners sit beside Customers in the Sales group (the identity is shared with Suppliers) | taken; one entry in `navGroups` |
 | D5 | Exchange rates and Chart of accounts have no separate read-only detail screen: the record sheet shows every fact and is the edit form for a person who may change it (a rate has five fields) | **awaiting owner** — the delivery contract wants owner agreement for departing from list + detail sheets |
-| D7 | Estimating create/edit forms (formulation and assembly versions especially) are version-managing workspaces; whether they stay full pages (the contract's workspace exception) or become sheets is the owner's call | **awaiting owner** — left as pages, nothing changed |
 | D6 | The shared demo creates no customer account (the Sales demo guards that a prospect has none); archived / no-limit / dual-role customers are made by the specs through the API | taken; changing that guard is the owner's call |
+| D7 | Estimating create/edit forms (formulation and assembly versions especially) are version-managing workspaces; whether they stay full pages (the contract's workspace exception) or become sheets is the owner's call | **awaiting owner** — left as pages, nothing changed |
+
+## 7. Not verified
+
+- **Visual states beyond light mode at the default accent.** Screenshots and the axe checks are default light; dark mode and the Ocean/Amber accents were not looked at for the new
+  screens (they use only semantic tokens, so no per-screen colour exists to retune, but nobody has seen them).
+- **Widths other than 1280 px and 390 px** (320 px, tablets) and any real touch device; real-browser keyboard/focus beyond Playwright's Chromium (no Firefox/Safari), and
+  any screen reader. Focus is asserted (it lands in a sheet, returns on Escape, goes to the first invalid field), not heard.
+- **Performance.** No timing, large-dataset or slow-network measurements were made. Pagination is server-side everywhere, pickers are server-searched, and the lookups avoid
+  first-page assumptions, but that is design, not measurement.
+- **Backend suite and PHPStan locally.** PHPStan/Larastan could not be installed here (its package is dist-only and unreachable), so they ran only in CI; the whole backend suite also
+  ran only in CI. Locally: the Parties, architecture/ratchet and demo-seeder suites, Pint on the whole backend, and a fresh-schema `demo:seed`.
+- **The whole Playwright suite locally.** A full local run was started and stopped (it blocks the stack for over an hour); CI runs it in three shards. Locally every spec that touches
+  a changed screen or shared component was run.
+
+## 8. Remaining work
+
+1. **Estimating masters:** the Formulations, Application rates, Assemblies and Resource rates lists, and the create/edit pages of all six masters (decision D7).
+2. **Settings screens** (Company, Purchasing, Inventory, Estimating, Material selection, Material variance, Numbers, Printing, Account, Custom fields, Organisation, Approvals,
+   Members, Roles): adopt `ScreenTemplate` (they are forms, not lists); the Members and Roles *lists* also lack chips / selection.
+3. **Stock operations status chips** still use `Badge` variants rather than `StatusBadge` tones.
+4. **Backend-blocked:** customer addresses (no `customer-sites` / `party-sites` endpoint), contact removal (no archive rule), forgot-password (no product decision).
+5. **A product rule is missing for archiving a trading partner that has roles:** the API refuses until both role accounts are *deleted* (soft delete), but the screens only
+   archive a role by status, so such a partner can never be archived from the UI. The screen says so up front; an ADR should decide the intended path.
+6. **Supplier address edit/remove** is on the supplier record only, not on the supplier edit form's address list.
+7. **Owner decisions D3, D5 and D7** (navigation placement, no separate read-only detail for two reference screens, Estimating forms as pages or sheets).
 
 ## Related
 
