@@ -148,7 +148,7 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 - [Quotation record access (#45)](quotation-record-access-design.md) — own/team/delegated architecture, storage and ordered slices; proposed, no implementation or activation.
 - [Quotation access safety proofs](quotation-access-safety-proofs.md) — bounded waits, synthetic contention harness, deadlock and populated rollback evidence; activation remains blocked.
-- [Quotation access generation proposal](quotation-access-generation-extension.md) — concrete ledger versus separate-counter choice for sharing; owner decision pending.
+- [Quotation access generation proposal](quotation-access-generation-extension.md) — approved audited counter-ledger contract for sharing; implementation in progress.
 - [Quotation access resume checkpoint](quotation-access-resume.md) — preserved commits, verified checks, test-service blocker and remaining completion work.
 - [Quotation access demo contract](quotation-access-demo.md) — approved persona/preset mapping, demo guard and create-only constraints; implementation incomplete.
 - [Quotation access advisory corrections](quotation-access-advisories.md) — current-duty checks, retry budgets, consistent list snapshots and safe document history.

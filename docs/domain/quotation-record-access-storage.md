@@ -87,6 +87,17 @@ quotation_access_revocations
   FK(company_id,family_id,grant_id) -> grant(company_id,family_id,id)
   -- grant must expose that composite unique target
 
+quotation_access_events
+  id, company_id, family_id, generation > 0, previous_event_id nullable
+  kind OWNERSHIP_CHANGE | SHARE_GRANTED | SHARE_REVOKED
+  ownership_event_id | grant_id | revocation_id  -- exactly one typed source
+  origin BACKFILL | LIVE, recorded_at database clock
+  UNIQUE(company_id,family_id,generation), unique per typed source
+  FK(company_id,family_id,previous_event_id) -> event(company_id,family_id,id)
+  -- same-company/family typed-source FKs; strict next generation/predecessor
+  -- append-only including TRUNCATE; family.access_generation equals ledger tail
+  -- old owner/unit history is preserved, backfill derives only immutable old ticks
+
 quotation_access_rollout_entries
   id, company_id, rollout_key, entry_no, subject_user_id nullable, role_id nullable
   permission_name, permission_id -> existing registered permission
@@ -223,7 +234,8 @@ sets before joining facts. Never add together scopes or authority ceilings from 
 |---|---|
 | `add_quotation_ownership_and_evidence` | Nullable legacy owner/unit, baseline marker, generations, typed FKs/indexes, event table and immutable/deferred guards. New creation native owner required. No guessed historical reassignment. Populated evidence rollback refuses. |
 | `extend_record_scope_for_quotation_families` | Explicit scope CHECK variants, supported-mode validation/registry, structured resolver; existing grants unchanged. Rollback refuses if new scope values remain referenced; never delete limits to make it succeed. |
-| `create_quotation_access_grants_and_security_epochs` | Security counters, user epoch, grant/revocation tables, triggers, all registered writer integration. Fresh/upgrade/rollback-reapply and raw-DML fencing tests. Refuse destructive rollback after evidence. |
+| `2026_11_10_010000_advance_quotation_actor_authorization_epochs` | Permanent actor epochs; implemented locally, populated rollback refuses. |
+| `2026_11_10_020000_create_quotation_access_events_and_shares` | [0157](../decisions/0157-audit-quotation-access-generation-with-an-append-only-ledger.md): one additive ledger/grant/revocation migration, immutable source backfill, strict counter chain, append-only/TRUNCATE guards. Populated rollback refuses; empty rollback restores old guards. Local storage implementation; Action/consumer/concurrency acceptance remains outstanding. |
 | `capture_quotation_access_baselines` | Separate rerunnable per-company approved mapping: owner/unit, source/approval reference and CAPTURED_BASELINE event at actual capture time. Keep unresolved families quarantined, not creator-as-historical-owner backfill. No live grants here. |
 | `roll_out_reviewed_quotation_access` | Only separately authorised R9 slice: origin ledger, exact holder/scope mapping, approved mandate handling, registration/status activation and safe backout. Revoke only unchanged migration-introduced grants; retain history/necessary vocabulary. |
 

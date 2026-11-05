@@ -40,11 +40,25 @@ Safety commits through `50623859` are published. The following continuation comm
   PHPStan, Pint and codegen --check passed. No generated-client drift. Logs use
   `/tmp/erp-quotation-epochs-*`. These changes are not published as a finished QA5 feature.
 
-Sharing, UI, demo presets and the separately reviewed bootstrap remain outstanding. The owner is
-being asked to choose how share mutations advance access generation: the original ownership
-constraint couples it to ownership events, whereas QA5 needs independent grant/revoke changes.
-No modification to that constraint or share implementation is authorised by elapsed waiting time.
-Continue independent QA4 preparation while that decision is pending.
+Sharing Actions/consumers, UI, demo presets and the separately reviewed bootstrap remain outstanding.
+The owner approved the audited ledger in [0157](../decisions/0157-audit-quotation-access-generation-with-an-append-only-ledger.md).
+The local storage implementation uses the single additive migration
+`2026_11_10_020000_create_quotation_access_events_and_shares`, preserving old ownership history.
+Focused old/new storage and upgrade tests passed 21 tests/176 assertions, including exact SQLSTATE
+23514 and the original append-only guard message for ownership TRUNCATE CASCADE. Whole-project
+PHPStan and Pint passed. The broader quotation/Documents/Administration/CRM/security regression
+passed 706 tests/4,430 assertions (445 seconds wrapper time, 69% tmpfs); log
+`/tmp/erp-ledger-full-regression.log`. The additional two-connection ownership/share contention test passed (one test/11 assertions),
+including bounded refusal, stale-pin rejection after commit and continued history. The private
+fresh → rollback → reapply migration cycle passed. Codegen --check passed with no generated-client drift.
+This is storage progress, not completed QA5 acceptance.
+
+The owner also approved two narrowly scoped existing storage-fixture corrections in their own
+commit: TRUNCATE CASCADE reaches the append-only guard through the new composite FK, and the
+empty rollback/reapply removes/reinstalls child schema in dependency order. All original assertions
+remain unchanged. The later delegation consumer has separate approval to change only the assertion
+that pins OWN_OR_DELEGATED as unsupported, in the same commit implementing that feature; generic
+denial, tenant and unknown-resource assertions must remain unchanged, with real-share denial tests.
 
 Three additional incoming-migration populated rollback proofs are prepared in
 `IncomingQuotationRollbackProofTest`. Pint and whole-project PHPStan passed. After recovery, all three tests passed (25 assertions) on the private test database.
@@ -122,8 +136,8 @@ finished QA5 feature; shares, UI, demo presets and bootstrap review remain outst
    until the advisory slice is verified. Watch every job on the exact pushed head and fix forward.
 4. Finish QA4 unapplied holder-recipe code, provenance ledger, dry-run/backout and populated tests.
    The inventory command alone does not complete QA4.
-5. MY_UNITS, same-duty OWN/unit union and actor epochs are implemented locally. Await the
-   access-counter accounting decision, then finish QA5 backend/client/UI: named scope/delegation,
+5. MY_UNITS, same-duty OWN/unit union and actor epochs are implemented locally. Use the
+   approved access ledger, then finish QA5 backend/client/UI: named scope/delegation,
    append-only shares/revocations, real Actions, owner transfer and permission-aware UI with
    non-disclosing errors. Published pricing UI dependency is now satisfied. Preserve the existing
    gate, unrelated CRM semantics, issue/repair separation and independent view + prepare authority.
@@ -137,7 +151,7 @@ its single-host/synthetic/no-real-concurrency limitations; invent no targets.
 
 ## Related
 
-- [Pending access-generation choice](quotation-access-generation-extension.md)
+- [Approved access-generation extension](quotation-access-generation-extension.md)
 - [Advisory decisions](quotation-access-advisories.md)
 - [Demo contract and persona/preset tables](quotation-access-demo.md)
 - [Safety harness and rollback evidence](quotation-access-safety-proofs.md)
