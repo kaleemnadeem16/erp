@@ -9,7 +9,6 @@ use App\Modules\Administration\Models\OrganisationUnit;
 use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Models\QuotationOwnershipEvent;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\SalesRecords;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
