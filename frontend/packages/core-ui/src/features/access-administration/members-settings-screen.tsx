@@ -18,7 +18,13 @@ import {
 } from "@erp/core-api";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
-import { DataTable, toTanStackColumns } from "../../components/data-table";
+import {
+  ActiveFilterChips,
+  DataTable,
+  toTanStackColumns,
+  type FilterChip,
+} from "../../components/data-table";
+import { ScreenTemplate } from "../../components/page/screen-template";
 import type { DataColumn } from "../../components/data-table/types";
 import {
   Dialog,
@@ -471,8 +477,42 @@ export function MembersSettingsScreen() {
     }
   }
 
+  const statusLabels: Record<string, string> = {
+    ACTIVE: "Active",
+    INVITED: "Invited",
+    SUSPENDED: "Suspended",
+  };
+  const filterChips: FilterChip[] = [
+    ...(search
+      ? [
+          {
+            id: "search",
+            label: `Search: ${search}`,
+            onRemove: () => {
+              setSearch("");
+              setPage(1);
+              setSelectedId(null);
+            },
+          },
+        ]
+      : []),
+    ...(status !== "ALL"
+      ? [
+          {
+            id: "status",
+            label: `Status: ${statusLabels[status] ?? status}`,
+            onRemove: () => {
+              setStatus("ALL");
+              setPage(1);
+              setSelectedId(null);
+            },
+          },
+        ]
+      : []),
+  ];
+
   return (
-    <div className="space-y-4 p-4 pb-24 md:p-6">
+    <ScreenTemplate kind="list" className="space-y-4 p-4 pb-24 md:p-6">
       <PageHeader
         title="Members"
         description="Create users, assign roles and manage company access."
@@ -530,6 +570,15 @@ export function MembersSettingsScreen() {
           <option value="SUSPENDED">Suspended</option>
         </select>
       </div>
+      <ActiveFilterChips
+        chips={filterChips}
+        onClearAll={() => {
+          setSearch("");
+          setStatus("ALL");
+          setPage(1);
+          setSelectedId(null);
+        }}
+      />
       <DataTable
         view={view}
         onViewChange={setView}
@@ -1126,6 +1175,6 @@ export function MembersSettingsScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </ScreenTemplate>
   );
 }

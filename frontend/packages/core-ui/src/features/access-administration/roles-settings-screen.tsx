@@ -19,6 +19,7 @@ import {
 } from "../../components/ui/dialog";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
 import { Skeleton } from "../../components/ui/skeleton";
 import { Textarea } from "../../components/ui/textarea";
@@ -189,7 +190,7 @@ export function RolesSettingsScreen() {
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="list" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Roles & permissions"
         description="Build reusable job-function roles from the company’s registered capabilities."
@@ -429,6 +430,6 @@ export function RolesSettingsScreen() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </ScreenTemplate>
   );
 }
