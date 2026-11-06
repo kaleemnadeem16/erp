@@ -81,8 +81,10 @@ final class QuotationIssuingDemoSeeder extends Seeder
         foreach ([...self::SALES_DUTIES, TaxDutyManifest::CONFIGURE] as $duty) {
             Permission::findOrCreate($duty, 'web');
         }
-        $held = $admin->getAllPermissions()->pluck('name')->all();
-        $admin->givePermissionTo([...self::SALES_DUTIES, TaxDutyManifest::CONFIGURE]);
+        // Exactly what the login holds DIRECTLY now (not through a role), so the finally block can put it back precisely, on success and on failure.
+        $granted = [...self::SALES_DUTIES, TaxDutyManifest::CONFIGURE];
+        $heldBefore = $admin->getDirectPermissions()->pluck('name')->all();
+        $admin->givePermissionTo($granted);
         $sales = app(SalesDutyManifest::class);
         $tax = app(TaxDutyManifest::class);
         $staged = array_values(array_filter(self::SALES_DUTIES, fn (string $duty): bool => ! $sales->isActive($duty)));
@@ -96,9 +98,10 @@ final class QuotationIssuingDemoSeeder extends Seeder
         } finally {
             app()->instance(SalesDutyManifest::class, $sales);
             app()->instance(TaxDutyManifest::class, $tax);
-            // The Tax duty was granted for this run only; the Sales duties are the demo administrator's, as QuotationDemoSeeder grants them.
-            if (! in_array(TaxDutyManifest::CONFIGURE, $held, true)) {
-                $admin->revokePermissionTo(TaxDutyManifest::CONFIGURE);
+            // Every direct grant this run added is taken away again; a grant the login already held directly (QuotationDemoSeeder's own) is left exactly as it was.
+            $added = array_values(array_diff($granted, $heldBefore));
+            if ($added !== []) {
+                $admin->revokePermissionTo($added);
             }
         }
     }

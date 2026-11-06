@@ -21,7 +21,7 @@ final class SalesDevPreview
 
     /**
      * The quotation document feature, so the dev admin can generate, download and record delivery of an issued quotation's PDF on a developer's machine. Never the
-     * sensitive operator duty `sales.document.repair`, and never anything that issues, assigns or sends.
+     * sensitive operator duty `sales.document.repair`, and never anything that assigns or sends.
      *
      * @var list<string>
      */
@@ -30,10 +30,18 @@ final class SalesDevPreview
         PermissionVocabulary::DELIVERY_VIEW, PermissionVocabulary::DELIVERY_RECORD,
     ];
 
+    /**
+     * The issue duty, owner-approved for the local preview only (#76 review): the checker half of maker/checker, so a developer's explicitly granted login can use the Issue
+     * button on localhost. It needs an independent `sales.quotation.view` (already in DUTIES). Production stays STAGED: this list is read only when the local switch is on.
+     *
+     * @var list<string>
+     */
+    public const ISSUE_DUTIES = [PermissionVocabulary::QUOTATION_ISSUE];
+
     /** @return list<string> every duty the local preview turns on */
     public static function all(): array
     {
-        return [...self::DUTIES, ...self::DOCUMENT_DUTIES];
+        return [...self::DUTIES, ...self::DOCUMENT_DUTIES, ...self::ISSUE_DUTIES];
     }
 
     public static function requested(): bool

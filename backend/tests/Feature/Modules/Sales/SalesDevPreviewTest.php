@@ -70,7 +70,7 @@ class SalesDevPreviewTest extends TestCase
         return ['production' => ['production'], 'staging' => ['staging'], 'testing' => ['testing'], 'an unnamed environment' => ['dev']];
     }
 
-    public function test_in_a_local_environment_only_view_and_prepare_become_active_and_the_shipped_manifest_is_unchanged(): void
+    public function test_in_a_local_environment_only_the_preview_duties_become_active_and_the_shipped_manifest_is_unchanged(): void
     {
         $this->environment('local', true);
 
@@ -78,9 +78,11 @@ class SalesDevPreviewTest extends TestCase
         $this->assertTrue(SalesDevPreview::enabled());
         $this->assertTrue($manifest->isActive(self::VIEW));
         $this->assertTrue($manifest->isActive(self::PREPARE));
-        foreach ([PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::DOCUMENT_REPAIR, 'sales.quotation.issue', 'sales.quotation.assign'] as $other) {
+        $this->assertTrue($manifest->isActive('sales.quotation.issue'), 'issue is part of the local preview (owner decision, #76 review)');
+        foreach ([PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::DOCUMENT_REPAIR, 'sales.quotation.assign'] as $other) {
             $this->assertFalse($manifest->isActive($other), "{$other} stays off");
         }
+        $this->assertFalse(SalesDutyManifest::shipped()->isActive('sales.quotation.issue'), 'issue stays STAGED in the shipped manifest');
         $this->assertFalse(SalesDutyManifest::shipped()->isActive(self::VIEW), 'The shipped manifest is untouched.');
         $this->assertNotContains(self::VIEW, PermissionVocabulary::all(), 'The shipped vocabulary helper is unchanged.');
         $registry = app(PermissionRegistry::class);
@@ -153,5 +155,16 @@ class SalesDevPreviewTest extends TestCase
         $this->getJson("/api/v1/quotations/{$revision}")->assertOk()->assertJsonPath('data.state', 'DRAFT');
         $this->getJson("/api/v1/quotations/{$revision}/preview")->assertOk();
         $this->assertSame(1, QuotationRevision::query()->count());
+    }
+
+    public function test_the_local_preview_includes_issue_and_only_the_local_switch_can_activate_it(): void
+    {
+        $this->assertContains(PermissionVocabulary::QUOTATION_ISSUE, SalesDevPreview::all());
+        $this->assertNotContains(PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::all(), 'the shipped vocabulary is unchanged: issue stays STAGED');
+        config(['sales.dev_preview.quotation_duties' => true]);
+        $this->app->detectEnvironment(fn (): string => 'production');
+        $this->assertFalse(SalesDevPreview::manifest()->isActive(PermissionVocabulary::QUOTATION_ISSUE), 'outside a local environment the flag is ignored');
+        $this->app->detectEnvironment(fn (): string => 'local');
+        $this->assertTrue(SalesDevPreview::manifest()->isActive(PermissionVocabulary::QUOTATION_ISSUE));
     }
 }
