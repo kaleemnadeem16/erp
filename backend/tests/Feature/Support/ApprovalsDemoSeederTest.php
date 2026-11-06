@@ -104,7 +104,7 @@ final class ApprovalsDemoSeederTest extends TestCase
         $paint = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
         $leaf = ['item' => ['id' => $paint->id, 'code' => $paint->code, 'name' => $paint->name], 'standard_quantity' => '10.0000', 'uom' => ['id' => $paint->stock_uom_id, 'code' => 'kg', 'name' => 'Kilogram']];
 
-        [$data] = app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $paint->id, 'planned_quantity' => '25', 'uom_id' => $paint->stock_uom_id]], PermissionedActor::grant(User::factory()->create(), ['estimating.material_preview.run']));
+        [$data] = app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $paint->id, 'planned_quantity' => '25', 'uom_id' => $paint->stock_uom_id]], PermissionedActor::grant(User::factory()->create(), ['estimating.material_preview.run', 'estimating.internal_cost.view']));
         $item = $data['items'][0];
 
         $this->assertSame('APPROVAL_REQUIRED', $item['effect']);
