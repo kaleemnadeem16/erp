@@ -94,10 +94,10 @@ final class DemoDatabaseSeeder extends Seeder
                 QuotationDemoSeeder::class,
                 // After QuotationDemoSeeder: the drafts judge their discounts against the control set it publishes.
                 QuotationConcessionsDemoSeeder::class,
-                // After QuotationDemoSeeder: issuing the demo document needs the published control set (local dev preview only).
-                QuotationDocumentsDemoSeeder::class,
                 // After QuotationDemoSeeder (control set) and QuotationTaxFactsDemoSeeder (declared facts): issued/expiring/withdrawn/cancelled/blocked quotations, local preview only.
                 QuotationIssuingDemoSeeder::class,
+                // After QuotationDemoSeeder (control set) and QuotationIssuingDemoSeeder (the fictitious demo tax declaration): issuing the demo document needs both (local dev preview only).
+                QuotationDocumentsDemoSeeder::class,
                 // After QuotationIssuingDemoSeeder (declared demo tax) and the approvals engine: discount/override approval scenarios (waiting, approved, issued, rejected, withdrawn, changed), local preview only.
                 QuotationApprovalsDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,

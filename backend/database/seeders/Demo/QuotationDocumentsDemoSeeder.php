@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Demo;
 
+use App\Models\Currency;
 use App\Models\User;
+use App\Modules\Company\Actions\SaveCompanyBranding;
+use App\Modules\Company\Models\CompanyBrandVersion;
+use App\Modules\Company\Support\CompanyDutyManifest;
+use App\Modules\Inventory\Models\Item;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Actions\CorrectManualQuotationDelivery;
 use App\Modules\Sales\Actions\CreateQuotationDraft;
@@ -19,6 +24,7 @@ use App\Support\CompanyContext;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\Models\Permission;
 use Throwable;
 
 /**
@@ -31,6 +37,12 @@ use Throwable;
 final class QuotationDocumentsDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
+
+    /** What the demo login must hold: ordinary quotation work, the issue duty and the document and delivery duties (all granted by `sales:dev-grant-quotation`). */
+    private const DUTIES = [
+        PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_ISSUE,
+        PermissionVocabulary::DOCUMENT_GENERATE, PermissionVocabulary::DOCUMENT_VIEW, PermissionVocabulary::DELIVERY_VIEW, PermissionVocabulary::DELIVERY_RECORD,
+    ];
 
     public function run(): void
     {
@@ -51,29 +63,41 @@ final class QuotationDocumentsDemoSeeder extends Seeder
 
             return;
         }
-        $maker = User::query()->where('company_id', $companyId)->orderBy('id')->first();
-        $customer = Party::query()->where('company_id', $companyId)->orderBy('id')->first();
-        if ($maker === null || $customer === null) {
-            $this->say('Quotation documents demo skipped: no login or customer exists yet.');
+        // The named demo login, exactly as the other quotation demo seeders do: it is the login `sales:dev-grant-quotation` grants the preview duties to. "The first
+        // user" is not it once other demo logins exist, and that login has no quotation duties or record access.
+        $maker = User::query()->where('company_id', $companyId)->where('email', strtolower((string) config('demo.user.email')))->first();
+        $customer = Party::query()->where('company_id', $companyId)->where('code', 'cus-alpha')->first();
+        $service = Item::query()->where('company_id', $companyId)->where('code', 'demo-site-application')->first();
+        $pkr = Currency::query()->where('code', 'PKR')->first();
+        if ($maker === null || $customer === null || $service === null || $pkr === null) {
+            $this->say('Quotation documents demo skipped: the demo login, customer or service item does not exist yet (run the demo seed first).');
 
             return;
         }
-        if (! $maker->can(PermissionVocabulary::QUOTATION_ISSUE)) {
-            $this->say('Quotation documents demo skipped: the first login does not hold sales.quotation.issue (issuing is not part of the local preview).');
+        if (! DB::table('tax_quotation_declaration_versions')->where('company_id', $companyId)->where('code', 'demo-illustrative')->exists()) {
+            $this->say('Quotation documents demo skipped: the fictitious demo tax declaration does not exist yet (QuotationIssuingDemoSeeder builds it; this seeder runs after it).');
 
             return;
         }
+        $missing = array_values(array_filter(self::DUTIES, fn (string $duty): bool => ! $maker->can($duty)));
+        if ($missing !== []) {
+            $this->say('Quotation documents demo skipped: '.$maker->email.' does not hold '.implode(', ', $missing).' (run sales:dev-grant-quotation, which grants the preview duties, then seed again).');
+
+            return;
+        }
+
+        $this->brand($maker);
 
         try {
-            DB::transaction(function () use ($maker, $customer): void {
-                $created = app(CreateQuotationDraft::class)($maker, 'demo-doc-draft', ['recipient_party_id' => $customer->id, 'pricing_date' => now()->format('Y-m-d'),
+            DB::transaction(function () use ($maker, $customer, $service, $pkr): void {
+                $created = app(CreateQuotationDraft::class)($maker, 'demo-doc-draft', ['recipient_party_id' => $customer->id, 'currency_id' => $pkr->id, 'pricing_date' => now()->format('Y-m-d'),
                     'tax_estimate_date' => now()->format('Y-m-d'), 'valid_through_local_date' => now()->addMonth()->format('Y-m-d')]);
                 $revision = QuotationRevision::query()->findOrFail($created->revisionId);
                 if ($revision->isDraft()) {
                     app(UpdateQuotationDraft::class)($maker, $revision->id, $revision->input_generation, 'demo-doc-lines', ['add_lines' => [
-                        ['source_kind' => 'MANUAL', 'description' => 'Site survey and measurement', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '15000.0000'],
-                        ['source_kind' => 'MANUAL', 'description' => 'Two-coat interior painting, living areas', 'manual_measure' => 'room', 'offered_quantity' => '4', 'unit_price' => '42000.0000'],
-                        ['source_kind' => 'MANUAL', 'description' => 'Optional: exterior wall sealing', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '30000.0000', 'membership' => 'OPTIONAL'],
+                        ['source_kind' => 'SERVICE_ITEM', 'item_id' => $service->id, 'offered_quantity' => '1', 'unit_price' => '15000.0000'],
+                        ['source_kind' => 'SERVICE_ITEM', 'item_id' => $service->id, 'offered_quantity' => '4', 'unit_price' => '42000.0000'],
+                        ['source_kind' => 'SERVICE_ITEM', 'item_id' => $service->id, 'offered_quantity' => '1', 'unit_price' => '30000.0000', 'membership' => 'OPTIONAL'],
                     ]]);
                     $revision->refresh();
                     app(IssueQuotation::class)($maker, $revision->id, $revision->input_generation, 'demo-doc-issue');
@@ -94,6 +118,38 @@ final class QuotationDocumentsDemoSeeder extends Seeder
             $this->say('Quotation documents demo: one issued quotation with its official PDF, a manual delivery record, a corrected delivery and a withdrawn one.');
         } catch (Throwable $e) {
             $this->say('Quotation documents demo not built: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * The demo company's branding (a name, tagline and a small drawn logo), made once through the real Action so the demo PDF is branded. The branding duty is STAGED and stays STAGED:
+     * it is switched on in the container and granted to the login only while this runs, and both are put back exactly afterwards. Create-only: a company that already has any brand
+     * version is left alone, and the first demo document pins whatever brand exists when it is generated.
+     */
+    private function brand(User $maker): void
+    {
+        $path = __DIR__.'/assets/xyz-paints-logo.png';
+        if (CompanyBrandVersion::query()->exists() || ! is_file($path)) {
+            return;
+        }
+        Permission::findOrCreate(CompanyDutyManifest::BRANDING, 'web');
+        $held = $maker->getDirectPermissions()->pluck('name')->all();
+        $manifest = app(CompanyDutyManifest::class);
+        $maker->givePermissionTo(CompanyDutyManifest::BRANDING);
+        app()->instance(CompanyDutyManifest::class, new CompanyDutyManifest([CompanyDutyManifest::BRANDING => 'ACTIVE']));
+        $stream = fopen($path, 'rb');
+        try {
+            app(SaveCompanyBranding::class)($maker, ['display_name' => 'XYZ Paints', 'tagline' => 'Colour done right'], $stream, 'Demo branding (illustrative logo drawn for the demo)');
+        } catch (Throwable $e) {
+            $this->say('Quotation documents demo: the demo branding was not made: '.$e->getMessage());
+        } finally {
+            if (is_resource($stream)) {
+                fclose($stream);
+            }
+            app()->instance(CompanyDutyManifest::class, $manifest);
+            if (! in_array(CompanyDutyManifest::BRANDING, $held, true)) {
+                $maker->revokePermissionTo(CompanyDutyManifest::BRANDING);
+            }
         }
     }
 
