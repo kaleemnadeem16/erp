@@ -58,7 +58,7 @@ class PurchaseOrder extends Model
     {
         static::updating(function (PurchaseOrder $purchaseOrder): void {
             if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft
-                && $purchaseOrder->isDirty(['replaces_purchase_order_id', 'supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id'])) {
+                && $purchaseOrder->isDirty(['replaces_purchase_order_id', 'supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'fx_governed_rate', 'fx_governed_rate_date', 'fx_override_reason', 'fx_override_by', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id'])) {
                 throw new DomainInvariantException('Issued purchase-order commercial data is immutable.', 'status');
             }
         });
@@ -100,6 +100,8 @@ class PurchaseOrder extends Model
             'status' => PurchaseOrderStatus::class,
             'fx_policy' => PurchaseOrderFxPolicy::class,
             'fx_rate' => 'decimal:9',
+            'fx_governed_rate' => 'decimal:9',
+            'fx_governed_rate_date' => 'date',
             'order_date' => 'date',
             'expected_delivery_date' => 'date',
             'fx_rate_date' => 'date',

@@ -26,6 +26,7 @@ class StorePurchaseOrderRequest extends FormRequest
             'supplier_site_id' => ['nullable', 'integer', Rule::exists('supplier_sites', 'id')->where(fn ($q) => $q->where('supplier_account_id', $this->input('supplier_account_id')))],
             'currency_id' => ['required', 'integer', 'exists:currencies,id'],
             'fx_policy' => ['sometimes', Rule::enum(PurchaseOrderFxPolicy::class)],
+            'fx_override_reason' => ['nullable', 'string', 'max:2000'],
             'fx_rate' => ['required', 'decimal:0,9', 'gt:0', 'max:9999999999.999999999'],
             'fx_rate_date' => ['required', 'date_format:Y-m-d'], 'fx_rate_type' => ['required', 'string', 'max:50'],
             'fx_rate_source' => ['required', 'string', 'max:100'], 'order_date' => ['required', 'date_format:Y-m-d'],

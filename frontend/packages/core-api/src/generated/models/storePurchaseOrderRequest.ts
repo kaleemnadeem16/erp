@@ -7,6 +7,7 @@
 import type { StorePurchaseOrderRequestReplacesPurchaseOrderId } from "./storePurchaseOrderRequestReplacesPurchaseOrderId";
 import type { StorePurchaseOrderRequestSupplierSiteId } from "./storePurchaseOrderRequestSupplierSiteId";
 import type { PurchaseOrderFxPolicy } from "./purchaseOrderFxPolicy";
+import type { StorePurchaseOrderRequestFxOverrideReason } from "./storePurchaseOrderRequestFxOverrideReason";
 import type { StorePurchaseOrderRequestExpectedDeliveryDate } from "./storePurchaseOrderRequestExpectedDeliveryDate";
 import type { StorePurchaseOrderRequestNotes } from "./storePurchaseOrderRequestNotes";
 import type { StorePurchaseOrderRequestLinesItem } from "./storePurchaseOrderRequestLinesItem";
@@ -17,6 +18,8 @@ export interface StorePurchaseOrderRequest {
   supplier_site_id?: StorePurchaseOrderRequestSupplierSiteId;
   currency_id: number;
   fx_policy?: PurchaseOrderFxPolicy;
+  /** @maxLength 2000 */
+  fx_override_reason?: StorePurchaseOrderRequestFxOverrideReason;
   /** @maxLength 10000000000 */
   fx_rate: string;
   fx_rate_date: string;

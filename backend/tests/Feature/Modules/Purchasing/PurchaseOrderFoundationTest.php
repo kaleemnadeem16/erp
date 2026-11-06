@@ -3,7 +3,9 @@
 namespace Tests\Feature\Modules\Purchasing;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
 use App\Models\Currency;
+use App\Models\ExchangeRate;
 use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Accounting\Models\ChartOfAccount;
@@ -20,6 +22,7 @@ use App\Modules\Purchasing\Models\PurchasingSetting;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\RateType;
 use App\Support\UomDimension;
 use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use Illuminate\Database\QueryException;
@@ -110,9 +113,27 @@ class PurchaseOrderFoundationTest extends TestCase
         PurchaseOrderLine::create($this->lineAttributes($order, $item, $uom, 32768));
     }
 
+    /**
+     * Gives the company a base currency (PKR) and one governed USD to PKR rate on the fixtures' rate date, which is what a purchase order's typed rate is
+     * reconciled with (issue #90). Calling it again with another rate replaces that rate.
+     */
+    protected function governFx(string $rate = '1.000000000'): void
+    {
+        $pkr = Currency::firstOrCreate(['code' => 'PKR'], ['name' => 'Pakistani Rupee', 'symbol' => 'Rs']);
+        Company::query()->findOrFail(1)->update(['base_currency_id' => $pkr->id]);
+        $usd = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        ExchangeRate::query()->updateOrCreate(
+            ['from_currency_id' => $usd->id, 'to_currency_id' => $pkr->id, 'rate_date' => '2026-09-02', 'rate_type' => RateType::Spot->value],
+            ['rate' => $rate, 'source' => 'manual'],
+        );
+    }
+
     /** @return array{PurchaseOrder, Item, Uom} */
     protected function makeOrder(): array
     {
+        if (! ExchangeRate::query()->exists()) {
+            $this->governFx();
+        }
         $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
         [$supplier, $site] = $this->makeSupplier('SUP');
         $uom = Uom::create(['code' => 'ea', 'name' => 'Each', 'dimension' => UomDimension::Count, 'factor_to_base' => '1']);

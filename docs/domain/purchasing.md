@@ -196,6 +196,11 @@ line short-close endpoints. Issue allocates the gapless number and freezes item/
 quantity/UoM, monetary and FX snapshots. Company purchasing defaults use one typed settings row;
 reading that singleton initialises its database defaults through an Action when necessary.
 
+**FX rate governance (issue #90, [ADR 0165](../decisions/0165-reconcile-purchase-order-fx-with-the-governed-rate.md)).** The rate typed on a PO is
+checked against the Currency module's governed `exchange_rates` (same rate type, order currency to base, latest on or before the rate date, at most 7 days old; base currency = 1).
+Within 0.5% (`config/purchasing.php`) it is accepted; a different rate is accepted only as a `FIXED` rate with a written contract/forward reason by a person holding the STAGED
+`purchasing.purchase-order.fx-override`; otherwise 422 on `fx_rate`. The governed rate, override reason and person are stored on the order and the reason travels in the approval evidence. Cutover orders are not checked.
+
 Purchase-order approval is **optional and company-configured** through the shared approval engine
 ([ADR 0070](../decisions/0070-shared-configurable-approval-engine.md), [approvals.md](approvals.md)). The order keeps its
 `DRAFT`/`ISSUED` status; approval lives on a request beside it. With the company's approval mode for `PURCHASE_ORDER` at its

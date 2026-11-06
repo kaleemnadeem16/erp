@@ -64,6 +64,7 @@ final class PurchaseOrderApprovalSubject implements ApprovalSubject
                 'original_amount' => (string) $sum('line_amount'), 'currency_code' => $order->currency->code,
                 'fx_rate' => $order->fx_rate, 'fx_rate_date' => $order->fx_rate_date->toDateString(),
                 'fx_rate_type' => $order->fx_rate_type, 'fx_rate_source' => $order->fx_rate_source, 'base_amount' => $base,
+                'fx_governed_rate' => $order->fx_governed_rate, 'fx_override_reason' => $order->fx_override_reason,
             ],
             ['number' => $order->number ?? "Draft #{$order->id}", 'supplier' => $order->supplierAccount->party->name ?? $order->supplierAccount->code, 'order_date' => $order->order_date->toDateString()],
         );

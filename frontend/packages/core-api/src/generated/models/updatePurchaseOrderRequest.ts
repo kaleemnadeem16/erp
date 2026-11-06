@@ -7,6 +7,7 @@
 import type { UpdatePurchaseOrderRequestReplacesPurchaseOrderId } from "./updatePurchaseOrderRequestReplacesPurchaseOrderId";
 import type { UpdatePurchaseOrderRequestSupplierSiteId } from "./updatePurchaseOrderRequestSupplierSiteId";
 import type { PurchaseOrderFxPolicy } from "./purchaseOrderFxPolicy";
+import type { UpdatePurchaseOrderRequestFxOverrideReason } from "./updatePurchaseOrderRequestFxOverrideReason";
 import type { UpdatePurchaseOrderRequestExpectedDeliveryDate } from "./updatePurchaseOrderRequestExpectedDeliveryDate";
 import type { UpdatePurchaseOrderRequestNotes } from "./updatePurchaseOrderRequestNotes";
 import type { UpdatePurchaseOrderRequestLinesItem } from "./updatePurchaseOrderRequestLinesItem";
@@ -17,6 +18,8 @@ export interface UpdatePurchaseOrderRequest {
   supplier_site_id?: UpdatePurchaseOrderRequestSupplierSiteId;
   currency_id?: number;
   fx_policy?: PurchaseOrderFxPolicy;
+  /** @maxLength 2000 */
+  fx_override_reason?: UpdatePurchaseOrderRequestFxOverrideReason;
   /** @maxLength 10000000000 */
   fx_rate?: string;
   fx_rate_date?: string;

@@ -12,14 +12,15 @@ use Illuminate\Support\Facades\DB;
 
 final class CreatePurchaseOrder
 {
-    public function __construct(private readonly BuildPurchaseOrderLineAttributes $buildLine) {}
+    public function __construct(private readonly BuildPurchaseOrderLineAttributes $buildLine, private readonly ReconcilePurchaseOrderFx $reconcileFx) {}
 
     /** @param array<string, mixed> $attributes */
     public function __invoke(array $attributes, User $actor): PurchaseOrder
     {
         ActionAuthorization::require($actor, 'purchasing.purchase-order.create', 'create a purchase order');
 
-        return $this->forWorkflow($attributes);
+        // The typed rate decides base amounts, the approval band and receipt valuation, so it is checked against the governed rate first (issue #90).
+        return $this->forWorkflow(array_merge($attributes, ($this->reconcileFx)($attributes, $actor)));
     }
 
     /**

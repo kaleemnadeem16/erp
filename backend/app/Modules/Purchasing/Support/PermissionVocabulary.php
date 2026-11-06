@@ -17,6 +17,8 @@ final class PermissionVocabulary
             'purchasing.purchase-order.submit',
             'purchasing.purchase-order.approve',
             'purchasing.purchase-order.issue',
+            // Declares a contractually fixed exchange rate that differs from the governed one (ADR 0165). STAGED: granted to no role.
+            'purchasing.purchase-order.fx-override',
             'purchasing.purchase-order.cancel',
             'purchasing.purchase-order.short-close',
             'purchasing.goods-receipt.view',

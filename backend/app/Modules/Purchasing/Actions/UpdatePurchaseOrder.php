@@ -23,6 +23,7 @@ final class UpdatePurchaseOrder
     public function __construct(
         private readonly BuildPurchaseOrderLineAttributes $buildLine,
         private readonly InvalidateApprovals $invalidateApprovals,
+        private readonly ReconcilePurchaseOrderFx $reconcileFx,
     ) {}
 
     /** @param array<string, mixed> $attributes */
@@ -30,7 +31,7 @@ final class UpdatePurchaseOrder
     {
         ActionAuthorization::require($actor, 'purchasing.purchase-order.create', 'edit a purchase order');
 
-        return DB::transaction(function () use ($order, $attributes): PurchaseOrder {
+        return DB::transaction(function () use ($order, $attributes, $actor): PurchaseOrder {
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft) {
                 throw new DomainInvariantException('Only a draft purchase order can be edited.', 'status');
@@ -43,6 +44,10 @@ final class UpdatePurchaseOrder
             $this->invalidateApprovals->forSubject(PurchaseOrderApprovalSubject::CODE, $order->id, 'The order was edited after it was approved.');
             $lines = Arr::pull($attributes, 'lines');
             $order->fill($attributes);
+            if ($order->isDirty(['currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_policy', 'fx_override_reason'])) {
+                // A changed rate is checked against the governed rate exactly as a new order's is (issue #90); an unrelated edit is not re-litigated.
+                $order->fill(($this->reconcileFx)($order->only(['currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_policy', 'fx_override_reason']), $actor));
+            }
             $baseAmountsChanged = $order->isDirty(['currency_id', 'fx_rate']);
             $order->save();
             if (is_array($lines)) {

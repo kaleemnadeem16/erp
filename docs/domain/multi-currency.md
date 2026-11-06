@@ -12,6 +12,8 @@ carry-forward, refusal on missing/overage/unsupported route. Actual dates/age/so
 See [financial contract](quotation-financial-calculation.md); no global Purchasing/accounting FX or
 cast change is authorised. MoneyCast minor-unit integration remains a required scoped investigation.
 
+> **2026-11-06:** a Purchase Order's client-typed rate is now reconciled with the governed rate at entry (tolerance, evidenced fixed-rate override, refusal) — [ADR 0165](../decisions/0165-reconcile-purchase-order-fx-with-the-governed-rate.md); goods-receipt and other Purchasing rates still copy the order's pinned rate.
+
 ## Where it sits
 
 Affects every table holding money: [receivables.md](receivables.md),
