@@ -1088,3 +1088,14 @@ ADR 0164 proposes the common lock order for coordinator review before integratio
 migration, permission grant/activation or UI delivered by this specification commit. Real business
 configuration remains separate; demo values/sources only. Family lineage covers revisions and
 replacements, not yet orders/jobs or unrelated families.
+
+### Discount-authority stage 1 — internal governed references
+
+Immutable governed reference proposals, independent activations, family/economic-source bindings,
+configuration generation/receipts and line-pinned FX validation are implemented. New duty
+`sales.pricing.reference.approve` is STAGED with no registration or grant; no route, UI or ordinary
+quotation behaviour changes. Migration `2026_12_03_000000_create_sales_governed_price_references`
+passed the isolated cycle. Sales regression: 628 passed, one existing docs-path skip. Focused
+reference/registration run: 26 passed; schema/writer/permission/route/scope ratchets, Pint and
+whole-project PHPStan passed. Private test bootstrap fixes only the inherited preview flag; private
+PHPStan cache avoids a root-owned shared directory. No dev DB write.

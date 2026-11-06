@@ -144,3 +144,12 @@ codes that say why not. See [Tax](../../../../docs/domain/tax.md#corrections-and
 Quotation access preparation: `sales:audit-quotation-access --company=<id>` is a read-only, explicit-company role/direct/mandate-path inventory; it grants nothing. See [the QA4 checkpoint](../../../../docs/domain/quotation-access-qa2-qa4.md#qa4-read-only-inventory-checkpoint) and [approved demo contract](../../../../docs/domain/quotation-access-demo.md). Holder recipe and demo implementation remain outstanding.
 
 **Issuing, lifecycle read model and demo (#76).** The issued record (`GET …/issued`) and each list row (`GET /quotations`) carry a derived `availability` (DRAFT, CANCELLED_DRAFT, AVAILABLE, EXPIRED, WITHDRAWN, REPLACED — `QuotationAvailability`, database clock, never stored, says nothing about acceptance); list rows also carry `official_number` (null until issued) and the `state` filter covers DRAFT / CANCELLED_DRAFT / ISSUED. Readiness reports `APPROVAL_REQUIRED` for a discount or override that needs approval. The earlier sentences above that say nothing can be issued describe the state before the real tax-facts binding landed; with Tax's declared sources and a published control set a draft can now be issued through the Actions (duties stay STAGED). `Database\Seeders\Demo\Sales\QuotationIssuingDemoSeeder` builds ready / issued / expiring-today / withdrawn / cancelled / tax-blocked quotations through the real Actions, only under `APP_ENV=local` + `SALES_DEV_QUOTATION_DUTIES=true` (owner decision, #76); decisions, remaining work and sizes: [phase-4-issuing-quotations-log.md](../../../../docs/phases/phase-4-issuing-quotations-log.md).
+
+## Governed discount references (#86, stage 1 internal)
+
+`ProposeSalesPriceReference`, `ApproveSalesPriceReference` and `BindQuotationAuthorityReferences`
+record independently approved source versions and immutable family/economic-source bindings.
+`PinnedAuthorityFx` validates existing QuotationMoney evidence without querying rates. Only the
+new ungranted STAGED `sales.pricing.reference.approve` can activate another person's proposal;
+proposal uses `sales.financial.configure`. No HTTP entry point or routine clearance exists yet.
+[Specification and verification](../../../../docs/domain/quotation-discount-authority.md).

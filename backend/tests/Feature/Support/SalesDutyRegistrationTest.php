@@ -31,6 +31,17 @@ class SalesDutyRegistrationTest extends TestCase
 
     private const FUTURE_SENSITIVE = 'sales.financial.configure';
 
+    public function test_governed_reference_approval_is_staged_and_never_automatically_granted(): void
+    {
+        $shipped = SalesDutyManifest::shipped();
+        $this->assertSame(DutyStatus::Staged, $shipped->find(Sales::PRICE_REFERENCE_APPROVE)->status);
+        $this->assertNotContains(Sales::PRICE_REFERENCE_APPROVE, $this->freshRegistry($shipped)->all());
+        $fixture = $shipped->withActivated([Sales::PRICE_REFERENCE_APPROVE]);
+        $registry = $this->freshRegistry($fixture);
+        $this->assertContains(Sales::PRICE_REFERENCE_APPROVE, $registry->notAutomaticallyGranted());
+        $this->assertNotContains(Sales::PRICE_REFERENCE_APPROVE, $registry->automaticGrants());
+    }
+
     protected function setUp(): void
     {
         parent::setUp();

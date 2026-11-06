@@ -75,6 +75,16 @@ is proposed for coordinator review. Four ordered implementation commits/stages f
 the preceding stage is green. UI is a contract handoff; one new demo seeder is permitted, existing
 Sales seeders are reserved. This entry records specification only, not delivered authority.
 
+## Discount-authority stage 1 — internal reference foundation
+
+Implemented governed reference versions, independent approval, exact-intent configuration receipts,
+family/economic-source bindings and pinned-FX validation. Migration:
+`2026_12_03_000000_create_sales_governed_price_references`; no dev database migration was run.
+New duty `sales.pricing.reference.approve` stays STAGED, unregistered and ungranted. No new route,
+ordinary quotation behaviour, grant, activation or UI. Tests exercise missing/unapproved references,
+independence, edits/splits/revisions, ambiguity, dates, tenancy, replay/revocation, raw immutability,
+precision and pinned FX. [Delivery evidence](../domain/quotation-discount-authority.md#stage-1-delivery-evidence).
+
 ## Related
 
 - [Domain specification](../domain/quotation-discount-authority.md)

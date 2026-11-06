@@ -2,7 +2,7 @@
 
 # Quotation discount authority
 
-**Owner-authorised specification, 2026-11-06, issue #86. Implementation is not yet delivered.**
+**Owner-authorised specification, 2026-11-06, issue #86. Stage 1 is internal; stages 2–4 are pending.**
 Decisions: [0163](../decisions/0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)
 and proposed [lock order 0164](../decisions/0164-order-discount-authority-locks-before-quotation-and-approval-records.md).
 This is one backend milestone delivered in four green stages. Configuration screens are a separate
@@ -204,6 +204,25 @@ final-SHA evidence must distinguish shared working-tree checks from committed-so
 - Rich substitution, automatic out-of-office delegation/escalation and notifications. Existing
   quotation no-delegation remains; do not introduce a new substitute mechanism implicitly.
 - Automatic reuse of unchanged approval steps. Full reapproval is the initial safe behaviour.
+
+## Stage 1 delivery evidence
+
+The internal reference foundation uses `sales_price_reference_versions`,
+`sales_price_reference_activations`, `sales_quotation_reference_bindings`,
+`sales_authority_heads` and `sales_authority_operation_receipts` (migration
+`2026_12_03_000000_create_sales_governed_price_references`). ProposeSalesPriceReference uses the
+existing STAGED financial-configuration duty; ApproveSalesPriceReference adds the ungranted STAGED
+`sales.pricing.reference.approve`. BindQuotationAuthorityReferences uses view/prepare and the
+existing governed quotation operation. No route or ordinary quotation behaviour is added yet.
+Bindings are immutable at this stage; an incompatible established baseline refuses rather than
+being replaced implicitly. The later integration must provide independently authorised replacement
+evidence before exposing a baseline-change operation.
+
+Verified: 14 focused reference tests; Sales module 628 passed with one existing docs-path skip;
+reference/schema/writer/route/permission/scope ratchets passed; whole-project PHPStan passed;
+fresh/rollback/reapply passed. The local runner needs a private bootstrap setting the preview flag
+false to reproduce its tested default, and PHPStan uses a private cache because the shared cache
+is root-owned. Neither workaround changes `.env`, product behaviour or a test assertion.
 
 ## Related
 

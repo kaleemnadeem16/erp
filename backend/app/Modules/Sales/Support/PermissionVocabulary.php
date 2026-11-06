@@ -46,6 +46,9 @@ final class PermissionVocabulary
      */
     public const FINANCIAL_CONFIGURE = 'sales.financial.configure';
 
+    /** Independent activation of a proposed governed reference; STAGED, no grants. */
+    public const PRICE_REFERENCE_APPROVE = 'sales.pricing.reference.approve';
+
     /**
      * Quotation draft preparation (QL1a). STAGED like FINANCIAL_CONFIGURE: `ReadQuotationDraft` (view) and `CreateQuotationDraft`, `UpdateQuotationDraft`,
      * `PreviewQuotation` (prepare) exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates them with a reviewed holder recipe.

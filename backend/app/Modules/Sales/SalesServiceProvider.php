@@ -11,6 +11,7 @@ use App\Modules\Estimating\Support\CostEvidenceAuthorities;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Modules\Sales\Models\QuotationDraftLine;
+use App\Modules\Sales\Models\SalesPriceReference;
 use App\Modules\Sales\Numbering\LeadNumbering;
 use App\Modules\Sales\Numbering\OpportunityNumbering;
 use App\Modules\Sales\Numbering\QuotationNumbering;
@@ -80,6 +81,7 @@ class SalesServiceProvider extends ServiceProvider
         });
         // A draft line with an entered price carries a pinned base-currency amount, so it locks the company's base currency (invariant 10). A draft with no price holds no money.
         $this->app->afterResolving(FinancialActivity::class, static function (FinancialActivity $activity): void {
+            $activity->register(new ExistsProbe('governed sales price references', fn (): bool => SalesPriceReference::query()->exists()));
             $activity->register(new ExistsProbe('quotation draft prices', fn (): bool => QuotationDraftLine::query()->whereNotNull('unit_price')->exists()));
         });
     }

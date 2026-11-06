@@ -30,7 +30,7 @@ class QuotationShareWriterCoverageTest extends TestCase
             'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline',
             'Access/GrantQuotationAccess', 'Access/RevokeQuotationAccess',
             // Approvals integration (ADR 0158): the approval Actions take the same governed quotation operation.
-            'RequestQuotationApproval', 'DecideQuotationApproval', 'WithdrawQuotationApproval',
+            'RequestQuotationApproval', 'DecideQuotationApproval', 'WithdrawQuotationApproval', 'BindQuotationAuthorityReferences',
         ], $found);
         foreach (['GrantQuotationAccess', 'RevokeQuotationAccess'] as $action) {
             $source = (string) file_get_contents($root.'/Access/'.$action.'.php');
