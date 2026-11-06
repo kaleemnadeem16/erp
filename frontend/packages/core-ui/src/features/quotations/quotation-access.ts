@@ -9,8 +9,18 @@ export function quotationAccess(
 ) {
   return {
     detail: enabled && permissions.has(QUOTATION_VIEW),
-    review: enabled && permissions.has(QUOTATION_PREPARE),
+    review:
+      enabled &&
+      permissions.has(QUOTATION_VIEW) &&
+      permissions.has(QUOTATION_PREPARE),
   };
+}
+/** Creation keeps its original prepare capability gate; review/edit require view + prepare. */
+export function quotationCreationAccess(
+  permissions: ReadonlySet<string>,
+  enabled: boolean = QUOTATION_UI_ENABLED || quotationDevModeEnabled(),
+): boolean {
+  return enabled && permissions.has(QUOTATION_PREPARE);
 }
 export const QUOTATION_DISCOUNT = "sales.quotation.discount";
 export const QUOTATION_PRICE_OVERRIDE = "sales.quotation.price.override";

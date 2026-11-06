@@ -1,4 +1,7 @@
-import { quotationAccess } from "../features/quotations/quotation-access";
+import {
+  quotationAccess,
+  quotationCreationAccess,
+} from "../features/quotations/quotation-access";
 import { quotationMilestoneAccess } from "../features/quotations/quotation-milestone-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
@@ -99,7 +102,10 @@ const rules: readonly Rule[] = [
   { path: "/stock-moves", anyOf: ["inventory.movement.view"] },
   { path: "/physical-counts", anyOf: physicalCount },
   { path: "/opportunities", anyOf: salesRead },
-  { path: "/quotations", anyOf: ["sales.quotation.view", "sales.quotation.prepare"] },
+  {
+    path: "/quotations",
+    anyOf: ["sales.quotation.view", "sales.quotation.prepare"],
+  },
   { path: "/leads", anyOf: salesRead },
   { path: "/sales-stages", anyOf: [...salesRead, "sales.stage.manage"] },
   { path: "/supplier-returns", anyOf: supplierReturn },
@@ -187,7 +193,10 @@ const rules: readonly Rule[] = [
   { path: "/settings/roles", anyOf: ["administration.role.view"] },
   {
     path: "/settings/organisation",
-    anyOf: ["administration.organisation.view", "administration.organisation.manage"],
+    anyOf: [
+      "administration.organisation.view",
+      "administration.organisation.manage",
+    ],
   },
   {
     path: "/suppliers/new",
@@ -228,14 +237,18 @@ export function canAccessScreen(
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
     if (pathname === "/quotations") return access.detail || access.review;
-    if (pathname === "/quotations/new" || /^\/quotations\/[1-9]\d*\/edit$/.test(pathname)) return access.review;
+    if (pathname === "/quotations/new")
+      return quotationCreationAccess(permissions);
+    if (/^\/quotations\/[1-9]\d*\/edit$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*\/review$/.test(pathname)) return access.review;
     if (/^\/quotations\/[1-9]\d*$/.test(pathname)) return access.detail;
     // The list, issue and document screens: production-denied behind the same gate (quotationMilestoneAccess).
     const milestone = quotationMilestoneAccess(permissions);
     if (pathname === "/quotations/all") return milestone.list;
-    if (/^\/quotations\/[1-9]\d*\/issue$/.test(pathname)) return milestone.readiness || milestone.issue;
-    if (/^\/quotations\/[1-9]\d*\/document$/.test(pathname)) return milestone.documents || milestone.deliveries;
+    if (/^\/quotations\/[1-9]\d*\/issue$/.test(pathname))
+      return milestone.readiness || milestone.issue;
+    if (/^\/quotations\/[1-9]\d*\/document$/.test(pathname))
+      return milestone.documents || milestone.deliveries;
     return false;
   }
   // A view-only grant must not mount an edit form through a bookmarked URL.

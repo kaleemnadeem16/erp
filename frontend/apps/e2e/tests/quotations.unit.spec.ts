@@ -235,6 +235,12 @@ test("staged screens deny even supplied quotation grants; capability policies st
   });
   expect(quotationAccess(new Set([QUOTATION_PREPARE]), true)).toEqual({
     detail: false,
+    review: false,
+  });
+  expect(
+    quotationAccess(new Set([QUOTATION_VIEW, QUOTATION_PREPARE]), true),
+  ).toEqual({
+    detail: true,
     review: true,
   });
   expect(quotationAccess(new Set(), true)).toEqual({

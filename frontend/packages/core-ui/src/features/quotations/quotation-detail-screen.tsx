@@ -6,6 +6,10 @@ import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
 import { Skeleton } from "../../components/ui/skeleton";
 import { quotationAccess } from "./quotation-access";
+import {
+  QuotationFamilyAccessPanel,
+  useFamilyAccessData,
+} from "./quotation-family-access-panel";
 import { quotationMilestoneAccess } from "./quotation-milestone-access";
 import { readDraft, readPreview, revisionId } from "./quotation-contract";
 import {
@@ -73,6 +77,26 @@ export function QuotationRecord({
         response.status === 200 ? readPreview(response.data.data) : undefined,
     },
   });
+  const liveAccess = quotationAccess(
+    new Set(
+      (user?.permissions ?? []).filter(
+        (permission): permission is string => typeof permission === "string",
+      ),
+    ),
+  );
+  const family = (review ? preview.data : detail.data)?.family_id ?? null;
+  const familyAccess = useFamilyAccessData(
+    family,
+    {},
+    undefined,
+    liveAccess.detail,
+  );
+  const freshScope = familyAccess.isSuccess && !familyAccess.isFetching;
+  const recordMayReview = liveAccess.detail
+    ? freshScope && familyAccess.data.allowed_actions.prepare
+    : mayReview;
+  const recordMaySpecial =
+    freshScope && familyAccess.data.record_scope !== "DELEGATED";
   const query = review ? preview : detail;
   return (
     <ScreenTemplate kind="detail" className="space-y-4 p-4 md:p-6">
@@ -89,7 +113,7 @@ export function QuotationRecord({
                 Quotation details
               </Link>
             )}
-            {id && mayReview && !review && (
+            {id && recordMayReview && !review && (
               <Link
                 className="ui-link-action inline-flex min-h-11 items-center"
                 to={`/quotations/${id}/review${search}`}
@@ -97,15 +121,17 @@ export function QuotationRecord({
                 Review quotation
               </Link>
             )}
-            {id && (milestone.readiness || milestone.issue) && (
-              <Link
-                className="ui-link-action inline-flex min-h-11 items-center"
-                to={`/quotations/${id}/issue`}
-              >
-                Issue readiness
-              </Link>
-            )}
-            {id && milestone.documents && (
+            {id &&
+              recordMaySpecial &&
+              (milestone.readiness || milestone.issue) && (
+                <Link
+                  className="ui-link-action inline-flex min-h-11 items-center"
+                  to={`/quotations/${id}/issue`}
+                >
+                  Issue readiness
+                </Link>
+              )}
+            {id && recordMaySpecial && milestone.documents && (
               <Link
                 className="ui-link-action inline-flex min-h-11 items-center"
                 to={`/quotations/${id}/document`}
@@ -136,10 +162,21 @@ export function QuotationRecord({
           <Skeleton className="h-48 w-full" />
           <span className="sr-only">Loading quotation…</span>
         </div>
+      ) : review && liveAccess.detail && !recordMayReview ? (
+        familyAccess.isPending || familyAccess.isFetching ? (
+          <div role="status">Loading current quotation access…</div>
+        ) : (
+          <QuotationFailure
+            error={Object.assign(new Error(), { status: 404 })}
+          />
+        )
       ) : review && preview.data ? (
         <QuotationReview preview={preview.data} />
       ) : detail.data && !review ? (
-        <QuotationMetadata draft={detail.data} />
+        <>
+          <QuotationMetadata draft={detail.data} />
+          <QuotationFamilyAccessPanel familyId={detail.data.family_id} />
+        </>
       ) : (
         <QuotationFailure
           error={

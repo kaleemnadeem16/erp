@@ -8,7 +8,7 @@ import {
   type StoreQuotationDraftRequest,
 } from "@erp/core-api";
 import { useAuthStore } from "../../stores/auth-store";
-import { quotationAccess } from "./quotation-access";
+import { quotationCreationAccess } from "./quotation-access";
 import { AccessDenied } from "../../routes/permission-route";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
@@ -53,14 +53,14 @@ const STORAGE = "quotation-create";
 
 export function QuotationCreateScreen() {
   const user = useAuthStore((s) => s.user);
-  const access = quotationAccess(
+  const mayCreate = quotationCreationAccess(
     new Set(
       (user?.permissions ?? []).filter(
         (x): x is string => typeof x === "string",
       ),
     ),
   );
-  return access.review ? <QuotationCreateForm /> : <AccessDenied />;
+  return mayCreate ? <QuotationCreateForm /> : <AccessDenied />;
 }
 
 export function QuotationCreateForm() {

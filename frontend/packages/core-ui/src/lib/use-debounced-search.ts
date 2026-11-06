@@ -50,6 +50,8 @@ export function useDebouncedSearch(
   return {
     /** What the box shows right now. */
     input,
+    /** Value-based controls such as a remote combobox share the same debounce/clear rules. */
+    onValueChange: setInput,
     searchProps: {
       value: input,
       onChange: (event: ChangeEvent<HTMLInputElement>) => setInput(event.target.value),

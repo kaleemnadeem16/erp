@@ -137,6 +137,29 @@ broader quotation/Documents/warehouse/CRM/security regression passed 662 tests/4
 (333 seconds, 39% tmpfs). Log: `/tmp/erp-quotation-team-regression.log`. It is not published as a
 finished QA5 feature; shares, UI, demo presets and bootstrap review remain outstanding.
 
+## Local continuation — 5 November family API/UI
+
+The local access ledger and named-share consumer are committed through `3e9ba12f`; these are not
+the published exact-CI baseline. Local checkpoint `cb6e4bf7` implements the six family access routes, safe Resources, generated
+client and bounded directory/history projection. The following local UI checkpoint integrates
+the access/responsibility workspace; neither is a published finished slice.
+Focused backend checks passed 12 tests/207 assertions; after recovery the API/security/ratchet
+run passed 82 tests/476 assertions. Isolated browser/model/existing quotation checks passed 37
+tests together (14 browser journeys plus 23 contract/model/existing tests). Typechecks and Vite build passed. Whole-project
+PHPStan passed using a private temporary cache after the normal cache was unwritable. Broader
+regression failed after PostgreSQL backend exits and recovery: 564 passed, 134 failed, one existing
+skip (4,280 assertions). It is not passing evidence. Logs show backend exit code 2 and SQLSTATE
+08006/recovery mode, tracked in #13; exact cause remains unknown. No restart/reset was performed.
+The recovered healthy test service passed the focused security/ratchet rerun; a fresh broader
+regression is running serially. Client regeneration/drift and the final frontend build also passed. No owner
+database/application was used.
+
+Approved existing-test alignment: exact six-route inventory plus no-baseline-route assertion, with
+receipt assertions retained; PREPARE-without-VIEW review false plus both-duties-positive case.
+Production remains off. QA4 provenance/recipe/backout and demo/presets/bootstrap are not complete.
+The proposed quotation-only patch path for preserving the main demo user’s unrelated access is
+awaiting owner decision; no dependent access-Action change has been implemented.
+
 ## Continue in order
 
 1. Test-service recovery is complete. Monitor capacity and keep private test runs serial; do not restart the shared app.

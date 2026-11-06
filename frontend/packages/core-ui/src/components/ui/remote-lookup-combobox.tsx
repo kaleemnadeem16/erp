@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { forwardRef, useState, type ReactNode, type KeyboardEventHandler } from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 
 import { describeLoadError, type LookupState } from '../../lib/api-errors';
@@ -24,10 +24,17 @@ interface RemoteLookupComboboxProps extends LookupState {
   disabled?: boolean;
   /** True while the typed text has not yet been answered by the server: the previous results are withheld rather than offered as if they matched. */
   searching?: boolean;
+  /** Optional cursor-pagination controls, kept inside the open lookup. */
+  footer?: ReactNode;
+  onSearchKeyDown?: KeyboardEventHandler<HTMLInputElement>;
+  'aria-describedby'?: string;
+  'aria-labelledby'?: string;
+  'aria-invalid'?: boolean;
+
 }
 
 /** A server-filtered single-select lookup. The selected label is independent of the current results page. */
-export function RemoteLookupCombobox({
+export const RemoteLookupCombobox = forwardRef<HTMLButtonElement, RemoteLookupComboboxProps>(function RemoteLookupCombobox({
   label,
   id,
   searchPlaceholder,
@@ -44,7 +51,12 @@ export function RemoteLookupCombobox({
   loadError,
   disabled,
   searching,
-}: RemoteLookupComboboxProps) {
+  footer,
+  onSearchKeyDown,
+  'aria-describedby': describedBy,
+  'aria-labelledby': labelledBy,
+  'aria-invalid': invalid,
+}, ref) {
   const [open, setOpen] = useState(false);
   const displayLabel =
     value === 'all' && allLabel ? allLabel : (options.find((option) => option.value === value)?.label ?? selectedLabel);
@@ -59,13 +71,16 @@ export function RemoteLookupCombobox({
     >
       <PopoverTrigger asChild>
         <button
+          ref={ref}
           type="button"
           id={id}
           disabled={disabled}
           role="combobox"
           aria-label={label}
           aria-expanded={open}
-          aria-invalid={loadError ? true : undefined}
+          aria-invalid={invalid || (loadError ? true : undefined)}
+          aria-describedby={describedBy}
+          aria-labelledby={labelledBy}
           className={cn(
             'flex h-9 min-w-0 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50',
             className,
@@ -92,6 +107,7 @@ export function RemoteLookupCombobox({
               placeholder={searchPlaceholder ?? `Search ${label.toLowerCase()}…`}
               value={search}
               onValueChange={onSearchChange}
+              onKeyDown={onSearchKeyDown}
             />
             <CommandList>
               <CommandGroup>
@@ -131,9 +147,10 @@ export function RemoteLookupCombobox({
                 ))}
               </CommandGroup>
             </CommandList>
+            {footer}
           </Command>
         )}
       </PopoverContent>
     </Popover>
   );
-}
+});

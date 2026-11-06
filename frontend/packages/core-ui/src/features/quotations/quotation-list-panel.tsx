@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useQuotationsShow, useQuotationsPreview } from "@erp/core-api";
 import { RecordSheet } from "../../components/page/record-sheet";
@@ -6,6 +6,10 @@ import { Button } from "../../components/ui/button";
 import { Skeleton } from "../../components/ui/skeleton";
 import { useAuthStore } from "../../stores/auth-store";
 import { quotationAccess } from "./quotation-access";
+import {
+  QuotationFamilyAccessPanel,
+  useFamilyAccessData,
+} from "./quotation-family-access-panel";
 import { readDraft, readPreview } from "./quotation-contract";
 import {
   QuotationFailure,
@@ -58,7 +62,13 @@ export function QuotationPanelBody({
       </div>
     );
   if (review && preview.data) return <QuotationReview preview={preview.data} />;
-  if (!review && detail.data) return <QuotationMetadata draft={detail.data} />;
+  if (!review && detail.data)
+    return (
+      <>
+        <QuotationMetadata draft={detail.data} />
+        <QuotationFamilyAccessPanel familyId={detail.data.family_id} />
+      </>
+    );
   return (
     <QuotationFailure
       error={
@@ -85,6 +95,23 @@ export function QuotationListPanel({
     ),
   );
   const [tab, setTab] = useState<PanelTab>("details");
+  const header = useQuotationsShow(revisionId, {
+    query: {
+      enabled: access.detail,
+      select: (response) =>
+        response.status === 200 ? readDraft(response.data.data) : undefined,
+    },
+  });
+  const scope = useFamilyAccessData(
+    header.data?.family_id ?? null,
+    {},
+    undefined,
+    access.detail,
+  );
+  useEffect(() => {
+    if (scope.data?.allowed_actions.prepare === false) setTab("details");
+  }, [scope.data?.allowed_actions.prepare]);
+
   if (!access.detail) return null;
   return (
     <RecordSheet
@@ -94,16 +121,19 @@ export function QuotationListPanel({
       onClose={onClose}
       actions={
         <>
-          {access.review && (
-            <Button
-              type="button"
-              variant="outline"
-              aria-pressed={tab === "review"}
-              onClick={() => setTab(tab === "review" ? "details" : "review")}
-            >
-              {tab === "review" ? "Show details" : "Review quotation"}
-            </Button>
-          )}
+          {access.review &&
+            scope.isSuccess &&
+            !scope.isFetching &&
+            scope.data.allowed_actions.prepare && (
+              <Button
+                type="button"
+                variant="outline"
+                aria-pressed={tab === "review"}
+                onClick={() => setTab(tab === "review" ? "details" : "review")}
+              >
+                {tab === "review" ? "Show details" : "Review quotation"}
+              </Button>
+            )}
           <Link
             className="ui-link-action inline-flex min-h-11 items-center"
             to={`/quotations/${revisionId}`}
@@ -113,7 +143,22 @@ export function QuotationListPanel({
         </>
       }
     >
-      <QuotationPanelBody revisionId={revisionId} tab={tab} />
+      {tab === "review" &&
+      !(
+        scope.isSuccess &&
+        !scope.isFetching &&
+        scope.data.allowed_actions.prepare
+      ) ? (
+        scope.isPending || scope.isFetching ? (
+          <div role="status">Loading current quotation access…</div>
+        ) : (
+          <QuotationFailure
+            error={Object.assign(new Error(), { status: 404 })}
+          />
+        )
+      ) : (
+        <QuotationPanelBody revisionId={revisionId} tab={tab} />
+      )}
     </RecordSheet>
   );
 }

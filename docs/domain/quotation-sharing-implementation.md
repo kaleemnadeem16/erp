@@ -48,7 +48,7 @@ that evidence. Default starts are calculated after receipt lookup, so retrying a
 retains the original intent. Scheduled same-level overlaps refuse. Revocation after expiry appends
 normally, and repeating it does not append another event.
 
-## Verification and remaining gates
+## Earlier consumer verification (before the API/UI increment)
 
 The broader quotation/Documents/Administration/CRM/security regression passed 722 tests/4,528
 assertions. Final focused Action/consumer/assignment/storage-contention/writer checks passed 26
@@ -71,13 +71,19 @@ nonempty ordinary grants make that test non-vacuous. The inventory/assignment/wr
 tests/299 assertions, with one unchanged pre-existing skip. Programmatic comparison confirms only
 the approved old expectations changed. No existing guard was weakened.
 
-Not delivered: family access API/resources/client/UI, candidate/history projection, complete
-concurrency/scale acceptance, QA4 provenance recipe/backout, demo presets/scenarios and the approved
-operator bootstrap. The bootstrap requires its own exact-SHA review and CI before merge. New
+The earlier consumer checkpoint did not include the API/UI. The following local increment now
+implements the six guarded family routes, explicit safe resources, bounded candidate/history
+projections, generated client and integrated access/responsibility UI. See the [API contract](quotation-family-access-api.md)
+and [interaction contract](quotation-family-access-ui.md) for exact fields and acceptance coverage.
+This remains unpublished and incomplete as an end-to-end feature. Outstanding: complete
+concurrency/representative capacity acceptance, QA4 provenance recipe/backout, demo presets/scenarios
+and the approved operator bootstrap. The bootstrap requires its own exact-SHA review and CI before merge. New
 features must remain unpublished as completed slices until their usable demo and checks exist.
 
 ## Related
 
+- [Family API contract](quotation-family-access-api.md)
+- [Family UI contract](quotation-family-access-ui.md)
 - [Accepted record-access design](quotation-record-access-design.md)
 - [Storage and Action contract](quotation-record-access-storage.md)
 - [Demo personas and presets](quotation-access-demo.md)
