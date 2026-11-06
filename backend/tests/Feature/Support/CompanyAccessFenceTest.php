@@ -344,6 +344,8 @@ class CompanyAccessFenceTest extends TestCase
             'approval_delegations' => 'approval engine delegation, a different authority domain than quotation family access',
             'quotation_ownership_events' => 'append-only history of a change; the change itself updates quotation_families, which is fenced',
             'approval_rules' => 'approval routing configuration, not a record-access grant',
+            'sales_discount_policy_versions' => 'discount limit configuration with an approver role; it bounds a price concession and never grants or removes access to a quotation family',
+            'sales_discount_assignments' => 'maps an employee to a discount band; it bounds a price concession and never grants or removes access to a quotation family',
         ];
         $unfenced = array_values(array_diff($referencing, $fenced, array_keys($exempt)));
         sort($unfenced);
