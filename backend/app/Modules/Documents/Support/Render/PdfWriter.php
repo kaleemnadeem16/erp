@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Documents\Support\Render;
 
 /**
- * A minimal, deterministic PDF 1.4 writer: pages of drawing operators over two standard fonts, nothing else. No compression, no JavaScript, no actions, no
+ * A minimal, deterministic PDF 1.4 writer: pages of drawing operators over two standard fonts and, when a brand pinned one, a single logo image, nothing else. No compression, no JavaScript, no actions, no
  * attachments, no external references and no random or wall-clock input — the same pages, title and creation time always give the same bytes. The renderer owns
  * layout; this class only serialises it.
  */
@@ -14,7 +14,7 @@ final class PdfWriter
     /** @var list<array{width: float, height: float, content: string}> */
     private array $pages = [];
 
-    public function __construct(private readonly string $title, private readonly string $producer, private readonly \DateTimeInterface $created, private readonly string $fileId) {}
+    public function __construct(private readonly string $title, private readonly string $producer, private readonly \DateTimeInterface $created, private readonly string $fileId, private readonly ?PdfImage $logo = null) {}
 
     public function addPage(float $width, float $height, string $content): void
     {
@@ -44,10 +44,13 @@ final class PdfWriter
         $objects = [];
         $kids = [];
         $number = 6;
+        // The logo (when there is one) is object number N after the last page's content stream, its soft mask the next; every page can name it as /Im1.
+        $imageId = 6 + 2 * count($this->pages);
+        $xobject = $this->logo === null ? '' : " /XObject << /Im1 {$imageId} 0 R >>";
         foreach ($this->pages as $page) {
             $kids[] = $number.' 0 R';
-            $objects[$number] = sprintf('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %s %s] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents %d 0 R >>',
-                self::number($page['width']), self::number($page['height']), $number + 1);
+            $objects[$number] = sprintf('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 %s %s] /Resources << /Font << /F1 4 0 R /F2 5 0 R >>%s >> /Contents %d 0 R >>',
+                self::number($page['width']), self::number($page['height']), $xobject, $number + 1);
             $objects[$number + 1] = '<< /Length '.strlen($page['content'])." >>\nstream\n".$page['content']."\nendstream";
             $number += 2;
         }
@@ -56,6 +59,23 @@ final class PdfWriter
         $objects[3] = '<< /Title ('.self::escape(StandardFontMetrics::encode($this->title)).') /Producer ('.self::escape($this->producer).') /CreationDate (D:'.$this->created->format('YmdHis').'Z) >>';
         $objects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
         $objects[5] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>';
+        if ($this->logo !== null) {
+            $image = $this->logo;
+            $extra = '';
+            if ($image->mask !== null) {
+                $extra .= ' /SMask '.($imageId + 1).' 0 R';
+                $objects[$imageId + 1] = sprintf("<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /FlateDecode /Length %d >>\nstream\n%s\nendstream",
+                    $image->mask['width'], $image->mask['height'], strlen($image->mask['data']), $image->mask['data']);
+            }
+            if ($image->colourKey !== null) {
+                $extra .= ' /Mask ['.implode(' ', $image->colourKey).']';
+            }
+            if ($image->decodeParms !== null) {
+                $extra .= ' /DecodeParms '.$image->decodeParms;
+            }
+            $objects[$imageId] = sprintf("<< /Type /XObject /Subtype /Image /Width %d /Height %d /ColorSpace %s /BitsPerComponent %d /Filter %s%s /Length %d >>\nstream\n%s\nendstream",
+                $image->width, $image->height, $image->colourSpace, $image->bitsPerComponent, $image->filter, $extra, strlen($image->data), $image->data);
+        }
         ksort($objects);
 
         $out = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";

@@ -29,6 +29,7 @@ use Illuminate\Support\Carbon;
  * @property int|null $template_version_id
  * @property int|null $page_policy_version_id
  * @property string $brand_state
+ * @property array<string, mixed>|null $brand the pinned company brand text and version, when brand_state is PINNED (ADR 0162)
  * @property list<mixed> $asset_manifest
  * @property list<mixed> $fonts
  * @property string $renderer_contract
@@ -53,7 +54,7 @@ class DocumentManifest extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['frozen_payload' => 'array', 'resolved_template' => 'array', 'resolved_page_policy' => 'array', 'asset_manifest' => 'array', 'fonts' => 'array',
+        return ['frozen_payload' => 'array', 'resolved_template' => 'array', 'resolved_page_policy' => 'array', 'brand' => 'array', 'asset_manifest' => 'array', 'fonts' => 'array',
             'locale_formatting' => 'array', 'recorded_at' => 'datetime'];
     }
 

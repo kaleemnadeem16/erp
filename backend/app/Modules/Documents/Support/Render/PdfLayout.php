@@ -16,6 +16,9 @@ final class PdfLayout
 {
     private const MM = 72 / 25.4;
 
+    /** The first-page header band when the manifest pinned a company brand: logo and name above the title line. */
+    private const BRAND_HEADER = 64.0;
+
     public readonly float $width;
 
     public readonly float $height;
@@ -49,7 +52,7 @@ final class PdfLayout
      * @param  array<string, mixed>  $page
      * @param  array<string, mixed>  $template
      */
-    public function __construct(private readonly RenderInput $input, private readonly array $page, private readonly array $template, bool $compact)
+    public function __construct(private readonly RenderInput $input, private readonly array $page, private readonly array $template, bool $compact, private readonly ?PdfImage $logo = null)
     {
         $this->width = round((float) $page['width_mm'] * self::MM, 2);
         $this->height = round((float) $page['height_mm'] * self::MM, 2);
@@ -86,7 +89,7 @@ final class PdfLayout
         $headerMode = (string) ($first ? $this->page['first_header'] : $this->page['continuation_header']);
         $footerMode = (string) ($first ? $this->page['first_footer'] : $this->page['continuation_footer']);
         $headerHeight = match ($headerMode) {
-            'FULL' => 38.0,
+            'FULL' => $this->input->brand === null ? 38.0 : self::BRAND_HEADER,
             'COMPACT' => 20.0,
             default => 0.0,
         };
@@ -111,15 +114,58 @@ final class PdfLayout
         $full = $mode === 'FULL';
         $size = $full ? 14.0 : 9.0;
         $top = $this->height - $this->mTop;
-        $ops = $this->text($this->mLeft, $top - ($full ? 14 : 8), $this->input->title, $size, true);
+        $branded = $full && $this->input->brand !== null;
+        // Branded: the brand sits at the top and the title line moves down by the brand's height; otherwise the header is exactly what it always was.
+        $drop = $branded ? self::BRAND_HEADER - 38.0 : 0.0;
+        $ops = $branded ? $this->brandBlock($top) : '';
+        $ops .= $this->text($this->mLeft, $top - $drop - ($full ? 14 : 8), $this->input->title, $size, true);
         if ($this->draft) {
             $label = 'DRAFT - NOT AN OFFICIAL DOCUMENT';
             $encoded = StandardFontMetrics::encode($label);
             $x = $this->width - $this->mRight - StandardFontMetrics::width($encoded, 8, true);
-            $ops .= $this->text($x, $top - ($full ? 12 : 7), $label, 8, true, '0.75 0 0');
+            $ops .= $this->text($x, $top - $drop - ($full ? 12 : 7), $label, 8, true, '0.75 0 0');
         }
 
-        return $ops.$this->rule($this->mLeft, $top - ($full ? 24 : 14), $this->width - $this->mRight, 0.5);
+        return $ops.$this->rule($this->mLeft, $top - $drop - ($full ? 24 : 14), $this->width - $this->mRight, 0.5);
+    }
+
+    /** The company's logo (scaled to fit 36 x 130 points, never stretched) with its display name and tagline beside it. Text is cut to the line rather than overflow. */
+    private function brandBlock(float $top): string
+    {
+        $ops = '';
+        $x = $this->mLeft;
+        if ($this->logo !== null) {
+            $scale = min(36.0 / $this->logo->height, 130.0 / $this->logo->width);
+            $w = $this->logo->width * $scale;
+            $h = $this->logo->height * $scale;
+            $ops .= sprintf("q %s 0 0 %s %s %s cm /Im1 Do Q\n", PdfWriter::number($w), PdfWriter::number($h), PdfWriter::number($this->mLeft), PdfWriter::number($top - $h));
+            $x += $w + 10.0;
+        }
+        $room = $this->width - $this->mRight - $x;
+        $name = $this->input->brand['display_name'] ?? null;
+        $tagline = $this->input->brand['tagline'] ?? null;
+        if ($name !== null) {
+            $ops .= $this->text($x, $top - 13, $this->fit($name, 13.0, true, $room), 13.0, true);
+        }
+        if ($tagline !== null) {
+            $ops .= $this->text($x, $top - ($name !== null ? 26 : 13), $this->fit($tagline, 8.5, false, $room), 8.5, false, '0.35');
+        }
+
+        return $ops;
+    }
+
+    private function fit(string $text, float $size, bool $bold, float $room): string
+    {
+        $encoded = StandardFontMetrics::encode($text);
+        if (StandardFontMetrics::width($encoded, $size, $bold) <= $room) {
+            return $text;
+        }
+        $chars = mb_str_split($text);
+        while ($chars !== [] && StandardFontMetrics::width(StandardFontMetrics::encode(implode('', $chars).'...'), $size, $bold) > $room) {
+            array_pop($chars);
+        }
+
+        return implode('', $chars).'...';
     }
 
     private function footer(string $mode, int $number, int $total): string

@@ -14,7 +14,8 @@ use App\Modules\Documents\Support\FieldType;
  * sections in the template's order — a repeating section as a table whose header row repeats on every page and whose rows are kept whole, anything else as labelled
  * values — with the page policy's margins and header and footer bands, and "page n of N". A DRAFT_PREVIEW is conspicuously marked on every page and can be mistaken for
  * nothing official. Money and quantities are printed exactly as the frozen strings; nothing is computed. Standard fonts only (Helvetica, not embedded), English, left to right.
- * Deterministic: no clock, no randomness, no compression.
+ * A manifest that pinned a company brand (ADR 0162) adds a taller first-page header band with the logo, display name and tagline; without one the output is byte-for-byte what it always was.
+ * Deterministic: no clock, no randomness; the page streams are not compressed (a PNG logo's own compressed pixel data is carried as it is).
  */
 final class PdfDocumentRenderer implements DocumentRenderer
 {
@@ -47,10 +48,11 @@ final class PdfDocumentRenderer implements DocumentRenderer
         if (! is_array($page) || ! is_array($template) || ! isset($page['width_mm'], $template['layout_id'])) {
             throw new DocumentException('The manifest does not carry a resolved template and page policy.', null, 'manifest_unrenderable');
         }
-        $layout = new PdfLayout($input, $page, $template, $template['layout_id'] === DocumentLayouts::COMPACT);
+        $logo = $input->logo === null ? null : PdfImage::fromBytes($input->logo['media_type'], $input->logo['bytes']);
+        $layout = new PdfLayout($input, $page, $template, $template['layout_id'] === DocumentLayouts::COMPACT, $logo);
         $pages = $layout->pages();
 
-        $writer = new PdfWriter($input->title, 'ERP document renderer '.self::CONTRACT.' '.self::VERSION, \DateTimeImmutable::createFromInterface($input->created)->setTimezone(new \DateTimeZone('UTC')), $input->manifestDigest);
+        $writer = new PdfWriter($input->title, 'ERP document renderer '.self::CONTRACT.' '.self::VERSION, \DateTimeImmutable::createFromInterface($input->created)->setTimezone(new \DateTimeZone('UTC')), $input->manifestDigest, $logo);
         foreach ($pages as $content) {
             $writer->addPage($layout->width, $layout->height, $content);
         }

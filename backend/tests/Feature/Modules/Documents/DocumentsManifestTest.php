@@ -560,6 +560,8 @@ class DocumentsManifestTest extends TestCase
     public function test_rollback_refuses_while_manifests_exist_and_works_when_empty(): void
     {
         // Artefacts reference manifests and intents, so they go first and come back last.
+        $pin = require base_path('database/migrations/2026_12_02_110000_allow_pinned_brand_in_document_manifests.php');
+        $pin->down();
         $deliveries = require base_path('database/migrations/2026_10_30_130000_create_quotation_document_deliveries.php');
         $deliveries->down();
         $access = require base_path('database/migrations/2026_10_30_120000_create_document_access_events.php');
@@ -576,6 +578,7 @@ class DocumentsManifestTest extends TestCase
         $artefacts->up();
         $access->up();
         $deliveries->up();
+        $pin->up();
         $this->assertTrue(Schema::hasTable('document_manifests'));
 
         $this->bind();

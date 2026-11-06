@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\DB;
  * The owner's snapshot event: freezes one document into a manifest and records the durable intent to generate it, in the owner's own transaction (the same
  * connection), so a failure after binding rolls the owner's snapshot back with it. Fails closed on the owner's access (a denial or a throw refuses, and is logged
  * without content) and on a payload outside the adapter's schema. The template and page policy are resolved at this moment and pinned as configuration, the brand
- * as NOT_AVAILABLE, assets as an empty list (none exist yet) and the renderer contract, version and fonts of the renderer bound at this moment (DF3); nothing is rendered here.
+ * as Company's contract gives it (PINNED with the logo reference, or NOT_AVAILABLE with no assets when the company has no brand, ADR 0162) and the renderer contract, version and fonts of the renderer bound at this moment (DF3); nothing is rendered here.
  *
  * Identity: one manifest per (binding, purpose, stable generation identity), and at most ONE ORIGINAL per binding (a changed document is a new source generation, hence
  * a new binding); an ORIGINAL is authorised as its own operation (`bind_manifest_original`) with the purpose, source generation and snapshot reference in the context. A fresh key for the same identity and the same frozen content resolves the ORIGINAL
@@ -140,15 +140,19 @@ final class BindDocumentManifest
             $template = PinnedConfiguration::of($resolved->template);
             $page = PinnedConfiguration::of($resolved->pagePolicy);
             $pinned = [
-                'input_digest' => $inputDigest, 'template' => $template, 'page_policy' => $page, 'brand_state' => $resolved->brand, 'asset_manifest' => [], 'fonts' => $this->renderer->fonts(),
+                'input_digest' => $inputDigest, 'template' => $template, 'page_policy' => $page, 'brand_state' => $resolved->brand, 'asset_manifest' => $resolved->brandAssets, 'fonts' => $this->renderer->fonts(),
                 'renderer_contract' => $this->renderer->contract(), 'renderer_version' => $this->renderer->version(), 'locale_formatting' => self::FORMATTING,
             ];
+            // A manifest without a brand keeps exactly the pinned shape it always had; only a pinned brand adds its text to what the digest covers.
+            if ($resolved->brandPin !== null) {
+                $pinned['brand'] = $resolved->brandPin;
+            }
             $manifest = DocumentManifest::create([
                 'subject_binding_id' => $binding->id, 'purpose' => $purpose, 'stable_generation_identity' => $stableGenerationIdentity, 'input_digest' => $inputDigest,
                 'frozen_payload' => $projection->payload, 'schema_version' => $projection->schemaVersion, 'source_generation' => $sourceGeneration,
                 'source_snapshot_reference' => $sourceSnapshotReference, 'resolved_template' => $template, 'resolved_page_policy' => $page,
                 'template_version_id' => $resolved->template->versionId, 'page_policy_version_id' => $resolved->pagePolicy->versionId, 'brand_state' => $resolved->brand,
-                'asset_manifest' => [], 'fonts' => $this->renderer->fonts(), 'renderer_contract' => $this->renderer->contract(), 'renderer_version' => $this->renderer->version(), 'locale_formatting' => self::FORMATTING,
+                'brand' => $resolved->brandPin, 'asset_manifest' => $resolved->brandAssets, 'fonts' => $this->renderer->fonts(), 'renderer_contract' => $this->renderer->contract(), 'renderer_version' => $this->renderer->version(), 'locale_formatting' => self::FORMATTING,
                 'pinned_manifest_digest' => PinnedConfiguration::digest($pinned), 'initiator_id' => $actorId, 'recorded_at' => now(),
             ])->refresh();
             $intent = DocumentGenerationIntent::create([

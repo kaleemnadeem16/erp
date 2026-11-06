@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Documents\Actions;
 
+use App\Modules\Company\Actions\ReadCompanyBrandLogo;
+use App\Modules\Company\Support\Brand\CompanyBrandLogo;
 use App\Modules\Documents\Models\DocumentArtefact;
 use App\Modules\Documents\Models\DocumentArtefactHead;
 use App\Modules\Documents\Models\DocumentGenerationIntent;
@@ -126,8 +128,38 @@ final class GenerateDocumentArtefact
         $parts = explode('.', $typeKey);
         $title = ucfirst(str_replace('-', ' ', $parts[1] ?? $parts[0]));
 
+        [$brand, $logo] = $this->pinnedBrand($manifest);
+
         return $this->renderer->render(new RenderInput($title, $manifest->purpose, $manifest->frozen_payload, $schema, $manifest->resolved_template, $manifest->resolved_page_policy,
-            $manifest->recorded_at, $manifest->pinned_manifest_digest));
+            $manifest->recorded_at, $manifest->pinned_manifest_digest, $brand, $logo));
+    }
+
+    /**
+     * The brand a manifest pinned (ADR 0162) and the bytes of the logo it pinned, read through Company's contract and checked against the pinned hash. A manifest without a brand
+     * renders exactly as before. A pinned logo that cannot be read back is a failed generation (`brand_asset_unavailable`), never a quietly unbranded original.
+     *
+     * @return array{0: array{version: int, display_name: string|null, tagline: string|null}|null, 1: array{media_type: string, bytes: string}|null}
+     */
+    private function pinnedBrand(DocumentManifest $manifest): array
+    {
+        if ($manifest->brand_state !== 'PINNED' || $manifest->brand === null) {
+            return [null, null];
+        }
+        $asset = collect($manifest->asset_manifest)->first(fn (mixed $a): bool => is_array($a) && ($a['role'] ?? null) === 'logo');
+        if ($asset === null) {
+            return [$manifest->brand, null];
+        }
+        try {
+            $bytes = app(ReadCompanyBrandLogo::class)->execute(new CompanyBrandLogo((int) $asset['blob_id'], (string) $asset['sha256'], (string) $asset['media_type'],
+                (int) $asset['width'], (int) $asset['height'], (int) $asset['size_bytes']), null);
+        } catch (FileException) {
+            throw new DocumentException('The company logo this document pinned is not available.', null, 'brand_asset_unavailable');
+        }
+        if (hash('sha256', $bytes) !== $asset['sha256']) {
+            throw new DocumentException('The company logo this document pinned is not available.', null, 'brand_asset_unavailable');
+        }
+
+        return [$manifest->brand, ['media_type' => (string) $asset['media_type'], 'bytes' => $bytes]];
     }
 
     private function store(DocumentManifest $manifest, RenderedDocument $rendered, int $intentId, int $fence, ?int $actorId): FileBlob

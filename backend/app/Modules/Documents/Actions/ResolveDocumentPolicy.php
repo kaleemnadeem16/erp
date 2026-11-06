@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Documents\Actions;
 
+use App\Modules\Company\Actions\ReadCompanyBrand;
 use App\Modules\Documents\Models\DocumentCompanyDefault;
 use App\Modules\Documents\Models\DocumentPagePolicyVersion;
 use App\Modules\Documents\Models\DocumentTemplateVersion;
@@ -22,11 +23,11 @@ use App\Modules\Documents\Support\TemplateConfiguration;
  * Resolves the template and page policy for a document type: shipped default, then the Company-wide ('*') default, then the type's own default, then an
  * explicit choice. A default that the type's constraints or the already-resolved layout do not allow is skipped and noted (the type overrides it); an
  * explicit choice that does not fit is refused. Reads current configuration only: no user preference, locale or request input can change the result, and
- * the brand is reported NOT_AVAILABLE, never substituted. Pure read; writes nothing.
+ * the brand comes only from Company's typed contract (`ReadCompanyBrand`, ADR 0162): PINNED with its text and logo reference when the company has one, NOT_AVAILABLE when it has none, never substituted. Pure read; writes nothing.
  */
 final class ResolveDocumentPolicy
 {
-    public function __construct(private readonly DocumentTypeRegistry $registry) {}
+    public function __construct(private readonly DocumentTypeRegistry $registry, private readonly ?ReadCompanyBrand $brands = null) {}
 
     public function execute(string $typeKey, ?int $explicitTemplateVersionId = null, ?int $explicitPagePolicyVersionId = null): ResolvedDocumentPolicy
     {
@@ -77,7 +78,12 @@ final class ResolveDocumentPolicy
             $page = $this->pageComponent('EXPLICIT', $version);
         }
 
-        return new ResolvedDocumentPolicy($typeKey, $template, $page, $notes);
+        $brand = $this->brands?->current();
+        if ($brand === null) {
+            return new ResolvedDocumentPolicy($typeKey, $template, $page, $notes);
+        }
+
+        return new ResolvedDocumentPolicy($typeKey, $template, $page, $notes, ResolvedDocumentPolicy::BRAND_PINNED, $brand->pinned(), $brand->assets());
     }
 
     private function assertPageFits(string $typeKey, DocumentPagePolicyVersion $version, LayoutConstraints $constraints, TemplateConfiguration $template): void
