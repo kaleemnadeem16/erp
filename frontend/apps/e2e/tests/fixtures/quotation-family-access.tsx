@@ -1,7 +1,7 @@
 // Standalone intercepted fixture: never imported by application routes or used for permission handout.
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter, useLocation } from "react-router";
+import { MemoryRouter, Routes, Route, useLocation } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { configureCoreApi } from "../../../../packages/core-api/src/index";
 import { ScreenTemplate } from "../../../../packages/core-ui/src/components/page/screen-template";
@@ -9,8 +9,18 @@ import {
   FamilyAccessWorkspace,
   QuotationFamilyAccessPanel,
 } from "../../../../packages/core-ui/src/features/quotations/quotation-family-access-panel";
+import { QuotationDetailScreen } from "../../../../packages/core-ui/src/features/quotations/quotation-detail-screen";
+import { QuotationListPanel } from "../../../../packages/core-ui/src/features/quotations/quotation-list-panel";
+import { configureQuotationDevMode } from "../../../../packages/core-ui/src/lib/quotation-dev-mode";
 import { useAuthStore } from "../../../../packages/core-ui/src/stores/auth-store";
 
+const entry = new URLSearchParams(location.search).get("entry");
+if (entry === "record" || entry === "sheet")
+  configureQuotationDevMode({
+    development: true,
+    flag: "1",
+    hostname: "localhost",
+  });
 configureCoreApi({ baseUrl: `${location.origin}/api` });
 useAuthStore.setState({
   user: {
@@ -32,6 +42,34 @@ const client = new QueryClient({
 });
 function Fixture() {
   const current = useLocation();
+  if (entry === "record" || entry === "sheet")
+    return createElement(
+      "div",
+      null,
+      createElement(
+        "button",
+        {
+          onClick: () =>
+            void client.invalidateQueries({
+              queryKey: ["quotation-family-access"],
+            }),
+        },
+        "Refresh fixture authority",
+      ),
+      entry === "sheet"
+        ? createElement(QuotationListPanel, {
+            revisionId: 12,
+            onClose: () => {},
+          })
+        : createElement(
+            Routes,
+            null,
+            createElement(Route, {
+              path: "/quotations/:revision",
+              element: createElement(QuotationDetailScreen),
+            }),
+          ),
+    );
   const publicEntry =
     new URLSearchParams(location.search).get("entry") === "public";
   return createElement(

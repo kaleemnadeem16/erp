@@ -162,7 +162,7 @@ export function QuotationRecord({
           <Skeleton className="h-48 w-full" />
           <span className="sr-only">Loading quotation…</span>
         </div>
-      ) : review && liveAccess.detail && !recordMayReview ? (
+      ) : liveAccess.detail && (!freshScope || (review && !recordMayReview)) ? (
         familyAccess.isPending || familyAccess.isFetching ? (
           <div role="status">Loading current quotation access…</div>
         ) : (
@@ -175,7 +175,6 @@ export function QuotationRecord({
       ) : detail.data && !review ? (
         <>
           <QuotationMetadata draft={detail.data} />
-          <QuotationFamilyAccessPanel familyId={detail.data.family_id} />
         </>
       ) : (
         <QuotationFailure
@@ -186,6 +185,11 @@ export function QuotationRecord({
             void query.refetch();
           }}
         />
+      )}
+      {family !== null && liveAccess.detail && (
+        <div hidden={review || !freshScope}>
+          <QuotationFamilyAccessPanel familyId={family} />
+        </div>
       )}
     </ScreenTemplate>
   );

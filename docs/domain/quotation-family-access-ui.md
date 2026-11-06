@@ -60,15 +60,17 @@ owner/unit; their labels are already supplied by the family response.
 ## Local verification and remaining gates
 
 The integrated implementation uses the real generated client behind the existing quotation gate.
-Fourteen intercepted browser fixtures passed: production gate/no query, named VIEW/PREPARE without
+Sixteen intercepted browser fixtures passed: production gate/no query, named VIEW/PREPARE without
 management, confirmed owner change, exact uncertain retry, stale refresh, cursor directory selection,
 explicit unit clearing/dirty dismissal, optional PREPARE periods, expired-share revocation, independent
-history context, invalid links, uniform hidden-family display, and light/dark phone accessibility.
+history context, invalid links, uniform hidden-family display, light/dark phone accessibility, and cached metadata denial in both full-page and sheet containers.
 Twenty-three model and existing quotation unit checks passed. Core-api/core-ui/main typechecks and
 the Vite production build passed. Browser traffic is fully intercepted at a synthetic origin; these
 checks do not exercise the owner application or constitute representative concurrency evidence.
 
-Response family identity is checked before projection. Fresh denied access hides cached preparation.
+Response family identity is checked before projection. Full-page and sheet containers wait for
+current family eligibility before showing cached metadata or preparation. Their shared access panel
+stays mounted during refetch so hiding stale content cannot create a mount/refetch loop.
 Creation keeps its original prepare gate; review/edit require view and prepare. The approved existing
 unit assertion change is limited to that rule, with a both-duties-positive case. No existing assertion
 is removed or skipped. Current directory names label immutable ownership/share evidence; they are

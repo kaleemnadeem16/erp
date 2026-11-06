@@ -144,21 +144,23 @@ the published exact-CI baseline. Local checkpoint `cb6e4bf7` implements the six 
 client and bounded directory/history projection. The following local UI checkpoint integrates
 the access/responsibility workspace; neither is a published finished slice.
 Focused backend checks passed 12 tests/207 assertions; after recovery the API/security/ratchet
-run passed 82 tests/476 assertions. Isolated browser/model/existing quotation checks passed 37
-tests together (14 browser journeys plus 23 contract/model/existing tests). Typechecks and Vite build passed. Whole-project
+run passed 82 tests/476 assertions. Isolated browser/model/existing quotation checks passed 39
+tests together (16 browser journeys plus 23 contract/model/existing tests), including cached
+metadata denial in both full-page and sheet containers. Typechecks and Vite build passed. Whole-project
 PHPStan passed using a private temporary cache after the normal cache was unwritable. Broader
 regression failed after PostgreSQL backend exits and recovery: 564 passed, 134 failed, one existing
 skip (4,280 assertions). It is not passing evidence. Logs show backend exit code 2 and SQLSTATE
 08006/recovery mode, tracked in #13; exact cause remains unknown. No restart/reset was performed.
-The recovered healthy test service passed the focused security/ratchet rerun; a fresh broader
-regression is running serially. Client regeneration/drift and the final frontend build also passed. No owner
+The recovered healthy test service passed the focused security/ratchet rerun; the fresh broader regression subsequently passed 745 tests/5,023 assertions, with one unchanged
+existing skip; no infrastructure reset was used. Client regeneration/drift and the final frontend build also passed. No owner
 database/application was used.
 
 Approved existing-test alignment: exact six-route inventory plus no-baseline-route assertion, with
 receipt assertions retained; PREPARE-without-VIEW review false plus both-duties-positive case.
 Production remains off. QA4 provenance/recipe/backout and demo/presets/bootstrap are not complete.
-The proposed quotation-only patch path for preserving the main demo user’s unrelated access is
-awaiting owner decision; no dependent access-Action change has been implemented.
+The owner approved the narrow quotation-only patch path on 6 November. Preserve unrelated main-user
+access, audit quotation changes and retain self-management/grant-ceiling checks. Implementation
+and tests are next; no dependent access-Action change has yet been implemented.
 
 ## Continue in order
 

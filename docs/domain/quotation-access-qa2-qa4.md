@@ -35,7 +35,9 @@ The conservative all-company barrier is a correctness-first implementation,
 not a scale claim. It serialises unrelated security and family writes and needs
 production contention and lock-order review. The actor-epoch prerequisite below advances the
 reserved user authorization generation on security changes; the team-scope increment applies
-explicit MY_UNITS grants. Named sharing/delegation consumers remain undelivered. Deployment-time
+explicit MY_UNITS grants. The local named-sharing consumer and guarded family API/UI are now
+implemented; see the [sharing checkpoint](quotation-sharing-implementation.md). QA4 rollout, demo
+delivery and representative production activation remain incomplete. Deployment-time
 changes to authority providers must be coordinated and reviewed before activation. A counter is
 invalidation evidence, never an allow decision.
 

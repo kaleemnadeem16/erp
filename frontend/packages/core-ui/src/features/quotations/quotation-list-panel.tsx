@@ -66,7 +66,6 @@ export function QuotationPanelBody({
     return (
       <>
         <QuotationMetadata draft={detail.data} />
-        <QuotationFamilyAccessPanel familyId={detail.data.family_id} />
       </>
     );
   return (
@@ -143,21 +142,19 @@ export function QuotationListPanel({
         </>
       }
     >
-      {tab === "review" &&
-      !(
-        scope.isSuccess &&
-        !scope.isFetching &&
-        scope.data.allowed_actions.prepare
-      ) ? (
-        scope.isPending || scope.isFetching ? (
-          <div role="status">Loading current quotation access…</div>
-        ) : (
-          <QuotationFailure
-            error={Object.assign(new Error(), { status: 404 })}
-          />
-        )
+      {header.isError || scope.isError ? (
+        <QuotationFailure error={header.error ?? scope.error} />
+      ) : header.isPending || scope.isPending || scope.isFetching ? (
+        <div role="status">Loading current quotation access…</div>
+      ) : tab === "review" && !scope.data.allowed_actions.prepare ? (
+        <QuotationFailure error={Object.assign(new Error(), { status: 404 })} />
       ) : (
         <QuotationPanelBody revisionId={revisionId} tab={tab} />
+      )}
+      {header.data && (
+        <div hidden={tab === "review" || !scope.isSuccess || scope.isFetching}>
+          <QuotationFamilyAccessPanel familyId={header.data.family_id} />
+        </div>
       )}
     </RecordSheet>
   );

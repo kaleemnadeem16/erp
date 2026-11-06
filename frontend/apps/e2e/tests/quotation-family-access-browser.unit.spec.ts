@@ -703,3 +703,50 @@ test("foreign unknown and hidden family responses have the same non-disclosing d
     await expect(page.locator("body")).not.toContainText(secret);
   }
 });
+
+for (const entry of ["record", "sheet"])
+  test(`${entry} hides cached metadata after a fresh family denial`, async ({
+    page,
+  }) => {
+    let allowed = true;
+    await mount(
+      page,
+      (request) =>
+        request.path.endsWith("/access")
+          ? allowed
+            ? { status: 200, body: { data: snapshot() } }
+            : { status: 404, body: { message: "Not found." } }
+          : {
+              status: 200,
+              body: {
+                data: {
+                  revision_id: 12,
+                  family_id: 11,
+                  revision_ordinal: 1,
+                  state: "DRAFT",
+                  input_generation: 2,
+                  recipient_party_id: 23999,
+                  currency_id: 3,
+                  pricing_date: "2026-10-27",
+                  tax_estimate_date: null,
+                  valid_through_local_date: null,
+                  current_opportunity_id: null,
+                  line_count: 1,
+                  created_by: 5,
+                },
+              },
+            },
+      `?entry=${entry}`,
+    );
+    await expect(page.getByText("Party #23999", { exact: true })).toBeVisible();
+    allowed = false;
+    await page
+      .getByText("Refresh fixture authority", { exact: true })
+      .click({ force: entry === "sheet" });
+    await expect(page.getByText("Party #23999", { exact: true })).toHaveCount(
+      0,
+    );
+    await expect(
+      page.getByRole("button", { name: "Share quotation", exact: true }),
+    ).toHaveCount(0);
+  });
