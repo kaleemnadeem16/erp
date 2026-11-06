@@ -11,6 +11,7 @@ use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyContext;
 use App\Support\Scope\CompanyAccessFence;
 use Closure;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 /** Configuration receipts and the common fence. Never confers authority on a caller. */
@@ -30,6 +31,9 @@ final class AuthorityOperation
         return DB::transaction(function () use ($actor, $duty, $key, $expectedGeneration, $intent, $work): array {
             app(CompanyAccessFence::class)->lockAll();
             $actor = ActiveActor::require($actor, 'configure discount authority');
+            if ($actor->must_change_password) {
+                throw new AuthorizationException('Change your temporary password before configuring discount authority.');
+            }
             SalesAccess::require($actor, $duty, 'configure discount authority');
             $generation = app(AuthorityFence::class)->lock();
             $company = app(CompanyContext::class)->id();

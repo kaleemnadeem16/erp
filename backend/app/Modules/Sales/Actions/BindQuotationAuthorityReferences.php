@@ -40,6 +40,9 @@ final class BindQuotationAuthorityReferences
                     $economicKey = GovernedReferences::economicKey($line);
                     DB::table('sales_quotation_reference_bindings')->insertOrIgnore(['company_id' => $revision->company_id, 'family_id' => $revision->family_id,
                         'economic_key' => $economicKey, 'reference_id' => $reference->id, 'bound_by' => $actor->id]);
+                    $bindingId = DB::table('sales_quotation_reference_bindings')->where('company_id', $revision->company_id)->where('family_id', $revision->family_id)->where('economic_key', $economicKey)->value('id');
+                    DB::table('sales_quotation_reference_anchors')->insertOrIgnore(['company_id' => $revision->company_id, 'family_id' => $revision->family_id,
+                        'logical_scope_id' => $line->logical_scope_id, 'binding_id' => $bindingId, 'economic_key' => $economicKey]);
                     $ids[(string) $line->id] = $reference->id;
                 }
 

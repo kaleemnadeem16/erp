@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Actions;
 
-use App\Models\Company;
 use App\Models\User;
 use App\Modules\Sales\Models\SalesPriceReference;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityOperation;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
 use App\Modules\Sales\Support\PermissionVocabulary;
-use App\Support\CompanyContext;
+use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\DB;
 
 final class ApproveSalesPriceReference
@@ -25,8 +24,8 @@ final class ApproveSalesPriceReference
             if (trim($reason) === '' || mb_strlen($reason) > 1000) {
                 throw AuthorityRefusal::make('AUTHORITY_INPUT_INVALID', 'Give a reason of up to 1000 characters.', 'reason');
             }
-            $company = Company::query()->findOrFail(app(CompanyContext::class)->id());
-            if ($reference->effective_from < now($company->timezone)->format('Y-m-d')) {
+            $zone = app(CurrentCompany::class)->timezone();
+            if ($reference->effective_from < now($zone)->format('Y-m-d')) {
                 throw AuthorityRefusal::make('REFERENCE_BACKDATE_REFUSED', 'A new reference activation cannot be backdated.', 'effective_from');
             }
             $active = DB::table('sales_price_reference_activations')->where('company_id', $reference->company_id)->where('reference_id', $reference->id)->exists();

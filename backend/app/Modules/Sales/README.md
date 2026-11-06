@@ -153,3 +153,12 @@ record independently approved source versions and immutable family/economic-sour
 new ungranted STAGED `sales.pricing.reference.approve` can activate another person's proposal;
 proposal uses `sales.financial.configure`. No HTTP entry point or routine clearance exists yet.
 [Specification and verification](../../../../docs/domain/quotation-discount-authority.md).
+
+**Discount authority stage 2 (internal).** Immutable policy/band versions, independent source/scope
+anchors, named employee assignments/revocations, mode events and evaluations are implemented.
+`CreateDiscountAuthorityPolicy`, `ActivateDiscountAuthorityPolicy`, `AssignDiscountAuthority`,
+`RevokeDiscountAuthority`, `SetDiscountAuthorityMode` use STAGED financial configuration;
+`EvaluateQuotationDiscountAuthority` uses scoped view/prepare and existing quotation receipts.
+`AssessDiscountAuthority` is a read-only internal collaborator; routine clearance is based on
+stored concession entrants, not the issuer. No route or issuing integration is delivered yet.
+See the [specification and current gate](../../../../docs/domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).

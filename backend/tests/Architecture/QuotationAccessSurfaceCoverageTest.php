@@ -73,7 +73,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
     {
         $registered = ['CreateQuotationDraft', 'UpdateQuotationDraft', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
             'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline',
-            'RequestQuotationApproval', 'DecideQuotationApproval', 'WithdrawQuotationApproval', 'BindQuotationAuthorityReferences'];
+            'RequestQuotationApproval', 'DecideQuotationApproval', 'WithdrawQuotationApproval', 'BindQuotationAuthorityReferences', 'EvaluateQuotationDiscountAuthority'];
         $found = [];
         foreach (glob(app_path('Modules/Sales/Actions/*.php')) as $file) {
             if (str_contains((string) file_get_contents($file), 'QuotationOperation')) {

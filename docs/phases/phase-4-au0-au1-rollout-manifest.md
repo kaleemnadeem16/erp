@@ -69,7 +69,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.quotation.access.delegate` | Sensitive | STAGED | Grant named quotation VIEW/PREPARE access using non-delegated authority | Access | QA5 |
 | `sales.quotation.access.revoke` | Sensitive | STAGED | Revoke named quotation access using non-delegated authority | Access | QA5 |
 | `sales.pricing.reference.approve` | Sensitive | STAGED | Independently approve a governed reference proposal | Protected reference terms | AU3 / ADR 0163; no holder grants or activation |
-| `sales.financial.configure` | Sensitive | STAGED | Sales FX/rounding policy | Config | FR1/4 |
+| `sales.financial.configure` | Sensitive | STAGED | Sales financial, governed-reference and discount-authority configuration | Protected company configuration | FR1/4 + AU3 internal foundation; no holder grants or activation |
 | `sales.customer-decision.view` | New ordinary | SPECIFIED | Decision/case safe detail/history | Decision-min | CA1 |
 | `sales.customer-decision.evidence.record` | New ordinary | STAGED | Shared intake/append observations | Evidence-write | CA1; file requires secure DF |
 | `sales.customer-decision.accept` | Sensitive | SPECIFIED | Authoritative ordinary consent/claims | Exact consent | CA2/3 |

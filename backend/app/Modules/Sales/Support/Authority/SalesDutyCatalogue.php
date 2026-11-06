@@ -50,7 +50,7 @@ final class SalesDutyCatalogue
             new SalesDuty('sales.pricing.eligibility.manage', DutyClass::Sensitive, DutyStatus::Specified, 'Dated Party pricing memberships', 'Party eligibility', 'PR2'),
             new SalesDuty('sales.pricing.agreement.manage', DutyClass::Sensitive, DutyStatus::Specified, 'Contractual pricing versions', 'Confidential terms', 'PR2/3; cannot depart accepted terms'),
             new SalesDuty('sales.pricing.terms.view', DutyClass::Sensitive, DutyStatus::Specified, 'Read otherwise protected term choices', 'Confidential terms', 'PR2/3'),
-            new SalesDuty(PermissionVocabulary::FINANCIAL_CONFIGURE, DutyClass::Sensitive, DutyStatus::Staged, 'Sales FX/rounding policy', 'Config', 'FR1/4'),
+            new SalesDuty(PermissionVocabulary::FINANCIAL_CONFIGURE, DutyClass::Sensitive, DutyStatus::Staged, 'Sales financial, reference and discount-authority configuration', 'Config', 'FR1/4 + AU3 internal foundation'),
             new SalesDuty(PermissionVocabulary::PRICE_REFERENCE_APPROVE, DutyClass::Sensitive, DutyStatus::Staged, 'Independently approve governed price references', 'Protected reference terms', 'AU3 governed reference; no grants'),
             new SalesDuty('sales.customer-decision.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Decision/case safe detail/history', 'Decision-min', 'CA1'),
             new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, DutyClass::NewOrdinary, DutyStatus::Staged, 'Shared intake/append observations', 'Evidence-write', 'CA1; file requires secure DF'),

@@ -85,6 +85,18 @@ ordinary quotation behaviour, grant, activation or UI. Tests exercise missing/un
 independence, edits/splits/revisions, ambiguity, dates, tenancy, replay/revocation, raw immutability,
 precision and pinned FX. [Delivery evidence](../domain/quotation-discount-authority.md#stage-1-delivery-evidence).
 
+## Discount-authority stage 2 — internal policies, assignments and evaluation
+
+Company-scoped immutable policies/bands, activation history, employee/role/unit assignments,
+revocations and mode events are implemented. Exact pre-tax evaluations retain line/document inputs,
+allocation, original actors, governed scope anchors and pinned FX; routine authority checks those
+entrants' current duties and assignments. No ordinary issue clearance, new route, grant or UI.
+Migration `2026_12_03_010000_create_sales_discount_authority_configuration` passed its isolated
+cycle. Sales/Company regression: 696 passed, one existing docs-path skip; focused reference/policy/FX/evidence: 45 passed;
+whole-project PHPStan passed. Required schema ratchets currently fail on the other owner's
+Purchasing FK introduced in `3eb5d9b8` (#90); reported with reproduction on #90 and #86, left
+untouched. Stage 3 remains gated until this is fixed. [Details](../domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).
+
 ## Related
 
 - [Domain specification](../domain/quotation-discount-authority.md)

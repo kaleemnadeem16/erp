@@ -37,6 +37,12 @@ class CurrentCompany
         return $this->row()->baseCurrency?->code;
     }
 
+    /** The configured base-currency identity; null is incomplete setup, never an identity-rate assumption. */
+    public function baseCurrencyId(): ?int
+    {
+        return $this->row()->base_currency_id;
+    }
+
     /** The IANA time zone of the company's books and business day (default UTC). */
     public function timezone(): string
     {

@@ -1099,3 +1099,17 @@ passed the isolated cycle. Sales regression: 628 passed, one existing docs-path 
 reference/registration run: 26 passed; schema/writer/permission/route/scope ratchets, Pint and
 whole-project PHPStan passed. Private test bootstrap fixes only the inherited preview flag; private
 PHPStan cache avoids a root-owned shared directory. No dev DB write.
+
+### Discount-authority stage 2 — internal configuration; external verification gate
+
+Implemented immutable company policy/band versions, named role/unit/employee assignments and
+revocations, mode events, logical-scope reference anchors and exact concession evaluation evidence.
+No route, ordinary clearance, live duty/grant or UI. Migration
+`2026_12_03_010000_create_sales_discount_authority_configuration` passed its isolated cycle.
+Sales/Company regression: 696 passed and one existing docs-path skip; focused reference/policy/FX/
+evidence tests: 45 passed; whole-project
+PHPStan passed. The combined ratchets had 93 pass and two failures in CompanyScopedForeignKeyTest,
+solely on Purchasing's `purchase_orders_fx_override_by_foreign` from `3eb5d9b8` (#90). Reported
+to that owner and coordinator (#86); their migration/test remains untouched. The owner-required
+phase-green gate therefore blocks stage 3 pending that correction. ADR 0164 review is also pending
+before integration. No final-SHA integrated verification has been claimed.

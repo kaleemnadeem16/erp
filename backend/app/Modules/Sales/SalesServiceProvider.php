@@ -11,6 +11,7 @@ use App\Modules\Estimating\Support\CostEvidenceAuthorities;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Modules\Sales\Models\QuotationDraftLine;
+use App\Modules\Sales\Models\SalesDiscountPolicy;
 use App\Modules\Sales\Models\SalesPriceReference;
 use App\Modules\Sales\Numbering\LeadNumbering;
 use App\Modules\Sales\Numbering\OpportunityNumbering;
@@ -40,6 +41,7 @@ use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\PermissionRegistry;
 use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 
 class SalesServiceProvider extends ServiceProvider
@@ -81,7 +83,8 @@ class SalesServiceProvider extends ServiceProvider
         });
         // A draft line with an entered price carries a pinned base-currency amount, so it locks the company's base currency (invariant 10). A draft with no price holds no money.
         $this->app->afterResolving(FinancialActivity::class, static function (FinancialActivity $activity): void {
-            $activity->register(new ExistsProbe('governed sales price references', fn (): bool => SalesPriceReference::query()->exists()));
+            $activity->register(new ExistsProbe('discount authority policy', fn (): bool => Schema::hasTable('sales_discount_policy_versions') && SalesDiscountPolicy::query()->exists()));
+            $activity->register(new ExistsProbe('governed sales price references', fn (): bool => Schema::hasTable('sales_price_reference_versions') && SalesPriceReference::query()->exists()));
             $activity->register(new ExistsProbe('quotation draft prices', fn (): bool => QuotationDraftLine::query()->whereNotNull('unit_price')->exists()));
         });
     }

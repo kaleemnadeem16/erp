@@ -26,6 +26,10 @@ final class GovernedReferences
         if ($date === null) {
             throw AuthorityRefusal::make('REFERENCE_MISSING', 'Choose a pricing date before resolving a governed reference.');
         }
+        $anchor = DB::table('sales_quotation_reference_anchors')->where('company_id', $revision->company_id)->where('logical_scope_id', $line->logical_scope_id)->first();
+        if ($anchor !== null && ! hash_equals($anchor->economic_key, self::economicKey($line))) {
+            throw AuthorityRefusal::make('REFERENCE_CHANGED', 'The source or measure of a governed deliverable changed. Independent baseline review is required.');
+        }
         $bound = DB::table('sales_quotation_reference_bindings')->where('company_id', $revision->company_id)->where('family_id', $revision->family_id)
             ->where('economic_key', self::economicKey($line))->value('reference_id');
         if ($bound !== null) {

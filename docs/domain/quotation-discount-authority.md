@@ -2,7 +2,7 @@
 
 # Quotation discount authority
 
-**Owner-authorised specification, 2026-11-06, issue #86. Stage 1 is internal; stages 2–4 are pending.**
+**Owner-authorised specification, 2026-11-06, issue #86. Stages 1–2 are internal; stage 2 has an external verification gate; stages 3–4 are pending.**
 Decisions: [0163](../decisions/0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)
 and proposed [lock order 0164](../decisions/0164-order-discount-authority-locks-before-quotation-and-approval-records.md).
 This is one backend milestone delivered in four green stages. Configuration screens are a separate
@@ -30,7 +30,9 @@ currency and half-open effective interval. Manual services require an independen
 family/project-specific baseline. A reference proposal carries its source kind/key/version, factual
 description, dates and reason; independent activation records its authoriser and reason. Sources
 are not trusted until that activation exists. Ordinary entered prices and last quotations cannot
-be activated implicitly.
+be activated implicitly. When an approved customer agreement supplies the authority denominator,
+retain its difference from the separately governed ordinary list as distinct evidence; an unknown
+ordinary list is null, never an entered-price substitute.
 
 Bind the resolved version to the quotation family and economic identity. A revision/replacement
 inherits this binding; removing a line, making another logical scope or splitting a quantity must
@@ -223,6 +225,42 @@ reference/schema/writer/route/permission/scope ratchets passed; whole-project PH
 fresh/rollback/reapply passed. The local runner needs a private bootstrap setting the preview flag
 false to reproduce its tested default, and PHPStan uses a private cache because the shared cache
 is root-owned. Neither workaround changes `.env`, product behaviour or a test assertion.
+
+## Stage 2 internal configuration and evaluation
+
+Migration `2026_12_03_010000_create_sales_discount_authority_configuration` adds immutable policy
+versions, bands, activation events, named assignments/revocations, company mode events and
+protected evaluation snapshots. `sales_quotation_reference_anchors` also ties each original logical
+scope to its family/economic binding: changing its source or measure cannot choose a cheaper
+baseline. Revisions inherit the scope anchor; split lines share the economic amount ceiling.
+
+Typed matching is operation, customer, exact unit and `contains_item_id` (the quotation contains
+that Item; the selected policy governs the whole quotation). A new version supersedes its code's
+old eligible version; expiry or changed criteria cannot resurrect an older policy. Base currency
+is pinned on the policy. Assignment overlap is refused by the Action and database, role membership
+is live, and unit restrictions need both the matching family unit and active membership. Routine
+assessment checks each stored concession entrant's current discount duty/scope and assignment;
+an issuer's higher authority cannot substitute for an entrant's authority.
+
+MeasureQuotationConcessions reuses the existing adjustment/allocation kernel, includes optional
+exposure, groups split sources, and retains original line/document inputs, actors, allocation,
+reference and FX evidence, including dual transaction/base amounts and explicit unknowns.
+Participant authorisation epochs, family access state, company time zone and currency quantum
+are fingerprinted so same-total changes and restored grants cannot revive older evidence. Nominal
+source prices become dual-currency monetary evidence when evaluated using quotation-pinned FX.
+All ceiling comparisons use exact rationals. Shadow evaluation writes
+immutable snapshots through EvaluateQuotationDiscountAuthority with the existing view/prepare
+fence and receipt. OFF is the default. ENFORCE is only a reserved configuration value at this
+stage: ordinary quotation clearance is unchanged until the complete integration is delivered.
+There is no new HTTP route or production holder, activation, grant or UI.
+
+Verification: combined Sales/Company regression 696 passed with one existing docs-path skip;
+45 focused reference/policy/FX/evidence tests passed; whole-project PHPStan and isolated migration cycle passed. The rollout-manifest rows were checked directly because the container does not mount
+the docs folder. The combined ratchet run passed
+93 tests but failed both CompanyScopedForeignKeyTest methods on Purchasing's
+`purchase_orders_fx_override_by_foreign`, introduced in commit `3eb5d9b8` (#90). It is reported to
+that owner and the coordinator on #86; no Purchasing file or test assertion was changed to pass it.
+Stage 3 must wait for this external gate to be green.
 
 ## Related
 
