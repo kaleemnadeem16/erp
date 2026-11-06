@@ -141,7 +141,7 @@ finished QA5 feature; shares, UI, demo presets and bootstrap review remain outst
 
 The local access ledger and named-share consumer are committed through `3e9ba12f`; these are not
 the published exact-CI baseline. Local checkpoint `cb6e4bf7` implements the six family access routes, safe Resources, generated
-client and bounded directory/history projection. The following local UI checkpoint integrates
+client and bounded directory/history projection. Local checkpoints `68a6f43d` and `bbb47d60` integrate
 the access/responsibility workspace; neither is a published finished slice.
 Focused backend checks passed 12 tests/207 assertions; after recovery the API/security/ratchet
 run passed 82 tests/476 assertions. Isolated browser/model/existing quotation checks passed 39
@@ -159,8 +159,13 @@ Approved existing-test alignment: exact six-route inventory plus no-baseline-rou
 receipt assertions retained; PREPARE-without-VIEW review false plus both-duties-positive case.
 Production remains off. QA4 provenance/recipe/backout and demo/presets/bootstrap are not complete.
 The owner approved the narrow quotation-only patch path on 6 November. Preserve unrelated main-user
-access, audit quotation changes and retain self-management/grant-ceiling checks. Implementation
-and tests are next; no dependent access-Action change has yet been implemented.
+access, audit quotation changes and retain self-management/grant-ceiling checks. The local implementation now adds `SyncMemberAccess::patchQuotationDemo` and the shared exact
+environment/company/identity boundary. The full replacement method remains byte-for-byte unchanged.
+The patch preserves unrelated pivot/scope rows, requires independent ALL scope for each duty the
+operator administers, refuses mixed roles, audits before/after, and makes unchanged reruns write-free.
+Eight new tests plus Administration/named-scope/security regression passed 66 tests/316 assertions;
+whole-project PHPStan and formatting passed. It remains unapplied and has no new public route.
+The preset command, shared recipe, create-only seeder/scenarios and bootstrap remain outstanding.
 
 ## Continue in order
 

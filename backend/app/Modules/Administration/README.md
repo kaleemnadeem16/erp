@@ -69,6 +69,16 @@ only, per company; existing master-data maintainers gain no configuration author
 Supported forms, reserved reference types, demo data and the authorisation checklist are recorded
 in [extensibility](../../../../docs/architecture/extensibility.md#implemented-custom-field-settings-2026-10-06).
 
+## Narrow quotation demo patch
+
+`SyncMemberAccess::patchQuotationDemo` is the explicit ADR 0158 subset operation for the exact
+Company 1 main demo login and synthetic access operator. It checks current authority inside the
+company fence, uses the ordinary grant/scope guards, retains unrelated access rows, and audits
+changes. It is unavailable outside local/testing or DEMO_MODE and does not register/activate duties.
+The existing full replacement, self-management and no-grant-what-you-do-not-hold rules remain.
+See the [demo contract](../../../../docs/domain/quotation-access-demo.md). No public route is added.
+
+
 ## Related
 
 - [`docs/domain/access-administration.md`](../../../../docs/domain/access-administration.md)
