@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders\Demo\Sales;
 
+use App\Models\Company;
 use App\Models\Currency;
 use App\Models\User;
 use App\Modules\Inventory\Models\Item;
@@ -148,7 +149,8 @@ final class QuotationIssuingDemoSeeder extends Seeder
         $issued = $this->draft($admin, 'issued', $header($month), [$service]);
         $this->issue($admin, 'issued', $issued);
 
-        $expiring = $this->draft($admin, 'expiring', $header($today), [$service]);
+        // The last valid day is today in the COMPANY's calendar; the UTC date is still yesterday for part of every Karachi day, which the issue check would call past.
+        $expiring = $this->draft($admin, 'expiring', $header(now(Company::query()->findOrFail($admin->company_id)->timezone)->format('Y-m-d')), [$service]);
         $this->issue($admin, 'expiring', $expiring);
 
         $withdrawn = $this->draft($admin, 'withdrawn', $header($month), [$service]);
