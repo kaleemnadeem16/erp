@@ -75,6 +75,10 @@ final class QuotationRefusal
 
     public const OVERRIDE_BASIS_CHANGED = 'OVERRIDE_BASIS_CHANGED';
 
+    public const SHARE_RECIPIENT_INELIGIBLE = 'QUOTATION_SHARE_RECIPIENT_INELIGIBLE';
+
+    public const SHARE_OVERLAP = 'QUOTATION_SHARE_OVERLAP';
+
     public const TAX_DECLARATION_NOT_ALLOWED = 'TAX_DECLARATION_NOT_ALLOWED';
 
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException

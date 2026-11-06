@@ -4,6 +4,7 @@ use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationDocumentController;
+use App\Modules\Sales\Http\Controllers\Api\V1\QuotationFamilyAccessController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesOwnerController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesStageController;
 use Illuminate\Support\Facades\Route;
@@ -51,6 +52,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotations/{revision}/document/check', [QuotationDocumentController::class, 'check'])->whereNumber('revision')->name('quotations.document.check');
     Route::get('quotations/{revision}/deliveries', [QuotationDocumentController::class, 'deliveries'])->whereNumber('revision')->name('quotations.deliveries.index');
     Route::post('quotations/{revision}/deliveries', [QuotationDocumentController::class, 'recordDelivery'])->whereNumber('revision')->name('quotations.deliveries.store');
+
+    Route::get('quotation-families/{family}/access', [QuotationFamilyAccessController::class, 'show'])->whereNumber('family')->name('quotation-families.access.show');
+    Route::get('quotation-families/{family}/access-candidates', [QuotationFamilyAccessController::class, 'candidates'])->whereNumber('family')->name('quotation-families.access-candidates');
+    Route::post('quotation-families/{family}/reassign-owner', [QuotationFamilyAccessController::class, 'reassign'])->whereNumber('family')->name('quotation-families.reassign-owner');
+    Route::post('quotation-families/{family}/change-access-unit', [QuotationFamilyAccessController::class, 'unit'])->whereNumber('family')->name('quotation-families.change-access-unit');
+    Route::post('quotation-families/{family}/grant-access', [QuotationFamilyAccessController::class, 'grant'])->whereNumber('family')->name('quotation-families.grant-access');
+    Route::post('quotation-families/{family}/revoke-access', [QuotationFamilyAccessController::class, 'revoke'])->whereNumber('family')->name('quotation-families.revoke-access');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');
     Route::get('sales-stages', [SalesStageController::class, 'index'])->name('sales-stages.index');

@@ -54,6 +54,8 @@ final class QuotationRefusalStatus
         QuotationRefusal::DISCOUNT_PRECISION_EXCEEDED => self::UNPROCESSABLE,
         QuotationRefusal::OVERRIDE_NOT_ALLOWED => self::UNPROCESSABLE,
         QuotationRefusal::OVERRIDE_BASIS_CHANGED => self::UNPROCESSABLE,
+        QuotationRefusal::SHARE_RECIPIENT_INELIGIBLE => self::UNPROCESSABLE,
+        QuotationRefusal::SHARE_OVERLAP => self::UNPROCESSABLE,
         QuotationRefusal::TAX_DECLARATION_NOT_ALLOWED => self::UNPROCESSABLE,
     ];
 

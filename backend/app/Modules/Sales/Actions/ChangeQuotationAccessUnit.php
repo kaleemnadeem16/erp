@@ -23,7 +23,7 @@ final class ChangeQuotationAccessUnit
 
     public function __invoke(User $actor, int $familyId, ?int $unitId, int $expectedOwnershipGeneration, int $expectedAccessGeneration, ?string $requestKey, string $reason): QuotationOwnershipOutcome
     {
-        QuotationOwnership::requireAuthority($actor);
+        $this->assertMayManage($actor);
         $context = SalesActorContext::forUser($actor, 'quotation.change_access_unit');
         $reason = QuotationOwnership::reason($reason);
 
@@ -46,5 +46,10 @@ final class ChangeQuotationAccessUnit
         );
 
         return QuotationOwnershipOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
+    }
+
+    private function assertMayManage(User $actor): void
+    {
+        QuotationOwnership::requireAuthority($actor);
     }
 }

@@ -22,7 +22,7 @@ final class GrantQuotationAccess
 
     public function __invoke(User $actor, int $familyId, int $recipientId, string $level, int $expectedOwnership, int $expectedAccess, ?string $requestKey, string $reason, ?string $startsAt = null, ?string $endsAt = null): QuotationShareOutcome
     {
-        QuotationSharing::requireAuthority($actor, Duty::QUOTATION_ACCESS_DELEGATE, $level);
+        $this->assertMayManage($actor, $level);
         if (! in_array($level, ['VIEW', 'PREPARE'], true)) {
             throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'A share level is VIEW or PREPARE.', 'level');
         }
@@ -53,7 +53,7 @@ final class GrantQuotationAccess
                     ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('quotation_access_revocations as r')->whereColumn('r.company_id', 'g.company_id')->whereColumn('r.grant_id', 'g.id'))
                     ->whereRaw("tstzrange(g.starts_at,g.ends_at,'[)') && tstzrange(?::timestamptz,?::timestamptz,'[)')", [$start, $endsAt])->exists();
                 if ($overlap) {
-                    throw QuotationRefusal::make('QUOTATION_SHARE_OVERLAP', 'An effective share of this level already overlaps the requested interval.', 'recipient_id');
+                    throw QuotationRefusal::make(QuotationRefusal::SHARE_OVERLAP, 'An effective share of this level already overlaps the requested interval.', 'recipient_id');
                 }
                 $grant = DB::table('quotation_access_grants')->insertGetId([
                     'company_id' => $family->company_id, 'family_id' => $family->id, 'issuer_id' => $actor->id, 'recipient_id' => $recipientId, 'actor_id' => $actor->id,
@@ -68,5 +68,10 @@ final class GrantQuotationAccess
             });
 
         return QuotationShareOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
+    }
+
+    private function assertMayManage(User $actor, string $level): void
+    {
+        QuotationSharing::requireAuthority($actor, Duty::QUOTATION_ACCESS_DELEGATE, $level);
     }
 }

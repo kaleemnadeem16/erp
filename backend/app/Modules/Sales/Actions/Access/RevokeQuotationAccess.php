@@ -22,7 +22,7 @@ final class RevokeQuotationAccess
 
     public function __invoke(User $actor, int $familyId, int $grantId, int $expectedOwnership, int $expectedAccess, ?string $requestKey, string $reason): QuotationShareOutcome
     {
-        QuotationSharing::requireAuthority($actor, Duty::QUOTATION_ACCESS_REVOKE);
+        $this->assertMayManage($actor);
         $reason = QuotationOwnership::reason($reason);
         $outcome = $this->operations->run(SalesActorContext::forUser($actor, 'quotation.share.revoke'), 'quotation.share.revoke', $requestKey,
             ['family_id' => $familyId, 'grant_id' => $grantId, 'expected_ownership_generation' => $expectedOwnership, 'expected_access_generation' => $expectedAccess, 'reason' => $reason],
@@ -43,5 +43,10 @@ final class RevokeQuotationAccess
             });
 
         return QuotationShareOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
+    }
+
+    private function assertMayManage(User $actor): void
+    {
+        QuotationSharing::requireAuthority($actor, Duty::QUOTATION_ACCESS_REVOKE);
     }
 }

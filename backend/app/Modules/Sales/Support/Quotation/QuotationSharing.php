@@ -68,7 +68,7 @@ final class QuotationSharing
         if ($value === null) {
             return null;
         }
-        if (! preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/D', $value)) {
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$/D', $value)) {
             throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'Use an ISO 8601 instant with an explicit time zone.', $field);
         }
         try {
@@ -81,11 +81,16 @@ final class QuotationSharing
             throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'Use a valid ISO 8601 instant.', $field);
         }
 
+        $instant = $instant->setTimezone(new \DateTimeZone('UTC'));
+        if (! preg_match('/^(?!0000)\d{4}$/D', $instant->format('Y'))) {
+            throw QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, 'Use a supported ISO 8601 instant.', $field);
+        }
+
         return $instant->format('Y-m-d H:i:s.uP');
     }
 
     private static function recipientRefusal(): DomainInvariantException
     {
-        return QuotationRefusal::make('QUOTATION_SHARE_RECIPIENT_INELIGIBLE', 'That recipient is not eligible for this quotation access.', 'recipient_id');
+        return QuotationRefusal::make(QuotationRefusal::SHARE_RECIPIENT_INELIGIBLE, 'That recipient is not eligible for this quotation access.', 'recipient_id');
     }
 }

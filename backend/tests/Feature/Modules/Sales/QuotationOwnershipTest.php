@@ -376,6 +376,14 @@ class QuotationOwnershipTest extends TestCase
         $this->assertNull($receipt->revision_id);
 
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#quotation.*(owner|ownership|assign|access|baseline)#', $u) === 1)->values()->all());
+        $this->assertSame([
+            'api/v1/quotation-families/{family}/access',
+            'api/v1/quotation-families/{family}/access-candidates',
+            'api/v1/quotation-families/{family}/reassign-owner',
+            'api/v1/quotation-families/{family}/change-access-unit',
+            'api/v1/quotation-families/{family}/grant-access',
+            'api/v1/quotation-families/{family}/revoke-access',
+        ], $uris->filter(fn ($u) => preg_match('#quotation.*(owner|ownership|assign|access|baseline)#', $u) === 1)->values()->all());
+        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#quotation.*baseline#', $u) === 1)->values()->all());
     }
 }

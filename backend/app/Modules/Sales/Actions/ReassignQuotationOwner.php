@@ -25,7 +25,7 @@ final class ReassignQuotationOwner
 
     public function __invoke(User $actor, int $familyId, int $newOwnerId, int $expectedOwnershipGeneration, int $expectedAccessGeneration, ?string $requestKey, string $reason): QuotationOwnershipOutcome
     {
-        QuotationOwnership::requireAuthority($actor);
+        $this->assertMayManage($actor);
         $context = SalesActorContext::forUser($actor, 'quotation.reassign_owner');
         $reason = QuotationOwnership::reason($reason);
 
@@ -47,5 +47,10 @@ final class ReassignQuotationOwner
         );
 
         return QuotationOwnershipOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
+    }
+
+    private function assertMayManage(User $actor): void
+    {
+        QuotationOwnership::requireAuthority($actor);
     }
 }
