@@ -28,7 +28,9 @@ use Illuminate\Support\Facades\DB;
  */
 final class BootstrapDemoAccessOperator
 {
-    /** @return bool true when this call performed the bootstrap, false when it had already happened (and nothing was written) */
+    /**
+     * @param  list<string>|null  $grants  the duty names to grant; null means the approved set
+     * @return bool true when this call performed the bootstrap, false when it had already happened (and nothing was written) */
     public function __invoke(User $operator, ?array $grants = null, string $provenance = 'Approved synthetic demo operator bootstrap (ADR 0155)'): bool
     {
         $grants ??= QuotationDemoBoundary::DUTIES;
