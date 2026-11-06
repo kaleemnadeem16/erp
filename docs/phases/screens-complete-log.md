@@ -278,14 +278,27 @@ screen is not allowed to ask for (the whole sheet showed "Couldn't load this ass
 
 1. **Estimating:** done in stage 6. What is left there: the Estimating, Material selection and Material variance *Settings* screens (item 2), and there is no endpoint to
    bring an archived formulation or assembly back (the screens say so; whether one should exist is a product call).
-2. **Settings screens** (Company, Purchasing, Inventory, Estimating, Material selection, Material variance, Numbers, Printing, Account, Custom fields, Organisation, Approvals,
-   Members, Roles): adopt `ScreenTemplate` (they are forms, not lists); the Members and Roles *lists* also lack chips / selection.
-3. **Stock operations status chips** still use `Badge` variants rather than `StatusBadge` tones.
+2. **Settings screens**: done in section 9 except **Company** (owned by the documents agent).
+3. ~~Stock operations status chips~~ done in section 9.
 4. **Backend-blocked:** customer addresses (no `customer-sites` / `party-sites` endpoint), contact removal (no archive rule), forgot-password (no product decision).
 5. **A product rule is missing for archiving a trading partner that has roles:** the API refuses until both role accounts are *deleted* (soft delete), but the screens only
    archive a role by status, so such a partner can never be archived from the UI. The screen says so up front; an ADR should decide the intended path.
-6. **Supplier address edit/remove** is on the supplier record only, not on the supplier edit form's address list.
+6. ~~Supplier address edit/remove on the edit form~~ done in section 9.
 7. **Owner decisions still open: D3** (Exchange rates / Chart of accounts live under Settings, not a new sidebar group) **and D5** (taken as recommended, may be reversed). D7 is resolved.
+
+## 9. Follow-up stage (handoff items 1-4)
+
+Done on local `develop` by the screens agent:
+
+- **Settings screens on `ScreenTemplate` (kind `form`)**: Settings index, Purchasing, Inventory, Estimating, Material selection, Material variance, Numbers and rounding,
+  Document numbering, Printing, Account, Custom fields, Organisation, Approvals. Wrapper only: padding classes, data-testids, labels and behaviour are unchanged. **Company is not
+  done**: another agent owns `features/company`.
+- **Members** is on `ScreenTemplate` (list) with applied-filter chips (search, status) and Clear all. **Roles** is on the template only: it is a short list beside its editor with
+  no filters, so there is nothing to chip. **No bulk action** was added: the member and role endpoints are single-record, and bulk safety is not inferred from them.
+- **Stock operations status chips** (Physical counts, Inventory cutovers, Negative-stock overrides, Stock recalculation) use `StatusBadge` tones on the lists and on the records
+  (`overrideStatus` / `recalculationStatus` now return a `tone`). The visible text is unchanged, so no spec changed.
+- **Supplier addresses** can be edited and removed inside the supplier edit form (`SupplierSiteRemoveDialog` is shared with the record). Spec: `supplier-address-edit.spec.ts`.
+- Not verified: dark mode / accents / 320 px for these screens (item 5 of the handoff still needs the owner's eyes).
 
 ## Related
 
