@@ -290,6 +290,7 @@ export type * from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemPoli
 export type * from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemReason";
 export type * from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemReasonAnyOf";
 export * from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemReasonStatus";
+export type * from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem";
 export type * from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemUom";
 export * from "./assembliesMaterialPreview200DataVarianceAnyOfLimitationsItem";
 export type * from "./assembliesMaterialPreview200DataVarianceAnyOfSummary";

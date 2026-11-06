@@ -281,6 +281,15 @@ final class PreviewMaterialVariance
     {
         $costBands = $resolution->policy === null ? [] : $resolution->policy->bands
             ->filter(fn ($b): bool => in_array($b->measure, [VarianceMeasure::CostAmount, VarianceMeasure::CostPercent], true))->pluck('id')->all();
+        // A skipped cost band is reported without its identity (band_id 0) or its cost-evidence reason.
+        $skipped = [];
+        foreach ($evaluation->skipped as $s) {
+            $hidden = ! $includeCost && in_array($s['band_id'], $costBands, true);
+            $skipped[] = [
+                'band_id' => $hidden ? 0 : (int) $s['band_id'],
+                'reason' => $hidden ? 'A cost-based rule could not be evaluated.' : (string) $s['reason'],
+            ];
+        }
         $matched = [];
         foreach ($evaluation->matched as $condition) {
             // A cost band is internal-cost configuration: without the cost capability only its direction and effect
@@ -334,9 +343,7 @@ final class PreviewMaterialVariance
                 'scope_id' => $resolution->policy->scope_id, 'method' => $resolution->method->value,
             ],
             'matched' => $matched,
-            // A skipped cost band is reported without its identity (band_id 0) or its cost-evidence reason.
-            'skipped' => array_map(fn (array $s): array => ! $includeCost && in_array($s['band_id'], $costBands, true)
-                ? ['band_id' => 0, 'reason' => 'A cost-based rule could not be evaluated.'] : $s, $evaluation->skipped),
+            'skipped' => $skipped,
             'limitations' => $evaluation->limitations,
         ];
     }

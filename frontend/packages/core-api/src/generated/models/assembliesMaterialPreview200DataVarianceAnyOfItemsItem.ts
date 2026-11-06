@@ -18,6 +18,7 @@ import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemApproval } f
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemCost } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemCost";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemPolicy } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemPolicy";
 import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemMatchedItem } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemMatchedItem";
+import type { AssembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem } from "./assembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem";
 
 export type AssembliesMaterialPreview200DataVarianceAnyOfItemsItem = {
   item: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemItem;
@@ -38,7 +39,6 @@ export type AssembliesMaterialPreview200DataVarianceAnyOfItemsItem = {
   cost: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemCost;
   policy: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemPolicy;
   matched: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemMatchedItem[];
-  /** A skipped cost band is reported without its identity (band_id 0) or its cost-evidence reason. */
-  skipped: unknown[];
+  skipped: AssembliesMaterialPreview200DataVarianceAnyOfItemsItemSkippedItem[];
   limitations: string[];
 };
