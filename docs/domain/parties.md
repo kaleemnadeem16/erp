@@ -152,9 +152,9 @@ Restricted response keys are omitted on all lists/details/includes and mutation 
 Submitting protected keys, even null or unchanged values, requires field authority at both request
 and Action boundaries; omitted fields retain their values. An additive migration preserves prior
 actual field maintainers via company role/direct grants; read-only readership needs explicit review.
-No customer/supplier master-data
-maintenance screen exists yet. The purchase-order form does have an inline supplier-site creation
-dialog; its add affordance and dialog mount now follow `parties.supplier-site.manage`, with the
+The Customers and Trading partners screens now expose the
+customer and identity capabilities ([parties-screens.md](parties-screens.md)); Suppliers is described below. The purchase-order form also has an inline
+supplier-site creation dialog; its add affordance and dialog mount now follow `parties.supplier-site.manage`, with the
 server check remaining authoritative.
 
 This separation reuses [ADR 0030](../decisions/0030-unified-party-model.md)'s one-identity,
@@ -298,12 +298,15 @@ reuse an existing identity. Edit requires supplier maintenance; terms/mapping co
 keys follow their separate management capabilities. Identity stays fixed on account edit.
 The existing Request/Action and company guards enforce all writes; no new Parties capability or
 approval step is introduced. Edit also lists addresses; **Add address** uses the existing
-`parties.supplier-site.manage` workflow. Contacts and independent Party/customer forms remain
-unexposed capabilities, not implied by supplier registration.
+`parties.supplier-site.manage` workflow, and the supplier record's address cards offer **Edit** and **Remove** to the same capability (2026-11-05). Removing an
+address deletes only its supplier role join and says so: the underlying shared address is kept, because a customer role may still use it. Contacts and the independent Party and customer forms are separate screens
+([parties-screens.md](parties-screens.md)), not implied by supplier registration.
 
 ## Related
 
 - [ADR 0103](../decisions/0103-issue-quotations-to-party-backed-prospects.md) — Party-backed quotation issue without premature financial role; [ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md) accepts bounded readiness separation; detailed gates deferred
+
+- [parties-screens.md](parties-screens.md) — the Customers and Trading partners screens: inventory, coverage matrix, decisions
 
 - [R1-C1 prospect quotation research](../phases/phase-4-r1-c1-prospect-quotations.md) — bounded issue direction accepted in ADR 0103; financial account validation unchanged
 

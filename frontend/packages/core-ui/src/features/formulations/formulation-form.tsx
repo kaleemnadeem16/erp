@@ -1,15 +1,12 @@
 import { useForm, type UseFormReturn } from 'react-hook-form';
-import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
+import { CustomerCombobox, ItemCombobox, UomCombobox } from '../../components/lookups/entity-comboboxes';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useCustomerAccountsIndex, useUomsIndex } from '@erp/core-api';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Combobox } from '../../components/ui/combobox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { formulationLineSchema, formulationLinesPayload, FormulationLinesFields } from './formulation-lines-fields';
-import { lookupState } from '../../lib/api-errors';
 import { DecimalInput } from '../../components/ui/decimal-input';
 
 const NONE = 'NONE';
@@ -49,10 +46,12 @@ export function formulationPayload(v: FormulationFormValues) {
 
 export function FormulationForm({
   onSubmit,
+  onCancel,
   isSubmitting,
   formError
 }: {
   onSubmit: (v: FormulationFormValues, f: UseFormReturn<FormulationFormValues>) => void;
+  onCancel: () => void;
   isSubmitting?: boolean;
   formError?: string | null;
 }) {
@@ -68,19 +67,12 @@ export function FormulationForm({
       lines: []
     }
   });
-  const uomsResult = useUomsIndex({ per_page: 100, sort: 'name' });
-  const uoms = uomsResult.data?.status === 200 ? uomsResult.data.data.data : [];
-  const customersResult = useCustomerAccountsIndex({
-    per_page: 100,
-    sort: 'code'
-  });
-  const customers = customersResult.data?.status === 200 ? customersResult.data.data.data : [];
   const outputItemId = Number(form.watch('output_item_id')) || undefined;
 
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
-        {formError && <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
+      <form className="space-y-6" noValidate aria-label="New formulation" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
+        {formError && <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
         <DetailSection title="Formulation" description="A recipe: the inputs required to produce one base unit of the output item.">
           <FormField
             control={form.control}
@@ -89,7 +81,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output item</FormLabel>
                 <FormControl>
-                  <ItemCombobox label="Output item" placeholder="Select output item" value={field.value} onValueChange={(value, item) => {
+                  <ItemCombobox label="Output item" placeholder="Select output item" className="h-11 w-full md:h-10" value={field.value} onValueChange={(value, item) => {
                       field.onChange(value);
                       if (item) form.setValue('output_uom_id', String(item.stock_uom_id), { shouldDirty: true });
                     }} />
@@ -105,7 +97,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Code</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -118,7 +110,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -131,7 +123,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output quantity</FormLabel>
                 <FormControl>
-                  <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} />
+                  <DecimalInput className="h-11 md:h-10" rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -144,18 +136,7 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Output unit</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(uomsResult, 'units')}
-                    ref={field.ref}
-                    value={field.value}
-                    onValueChange={field.onChange}
-                    options={uoms.map((u) => ({
-                      value: String(u.id),
-                      label: `${u.name} (${u.code})`
-                    }))}
-                    placeholder="Defaults from output item"
-                    searchPlaceholder="Search units…"
-                    emptyText="No units found."
-                  />
+                  <UomCombobox label="Output unit" placeholder="Defaults from output item" className="h-11 w-full md:h-10" value={field.value} onValueChange={field.onChange} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -168,19 +149,13 @@ export function FormulationForm({
               <FormItem>
                 <FormLabel>Customer override</FormLabel>
                 <FormControl>
-                  <Combobox {...lookupState(customersResult, 'customers')}
-                    ref={field.ref}
+                  <CustomerCombobox
+                    label="Customer override"
+                    placeholder="Company default (no customer)"
+                    className="h-11 w-full md:h-10"
+                    leadingOptions={[{ value: NONE, label: 'Company default (no customer)' }]}
                     value={field.value}
                     onValueChange={field.onChange}
-                    options={[
-                      { value: NONE, label: 'Company default (no customer)' },
-                      ...customers.map((c) => ({
-                        value: String(c.id),
-                        label: c.code
-                      }))
-                    ]}
-                    searchPlaceholder="Search customers…"
-                    emptyText="No customers found."
                   />
                 </FormControl>
                 <p className="text-xs text-muted-foreground">
@@ -194,8 +169,11 @@ export function FormulationForm({
         <DetailSection title="Version 1 lines" description="The recipe's ingredients. You can activate this version once it has at least one line." fullWidth>
           <FormulationLinesFields control={form.control} excludeItemId={outputItemId} />
         </DetailSection>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-end gap-2 border-t bg-background px-4 py-3">
+          <Button type="button" variant="outline" className="h-11 md:h-9" disabled={isSubmitting} onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" className="h-11 md:h-9" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : 'Create formulation'}
           </Button>
         </div>

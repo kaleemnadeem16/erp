@@ -5,6 +5,8 @@ import {
   useSupplierAccountsShow,
   useSupplierAccountsSitesIndex,
   useSupplierAccountsUpdate,
+  useSupplierSitesDestroy,
+  type SupplierSiteResource,
   useCurrenciesIndex,
   useChartOfAccountsShow,
 } from "@erp/core-api";
@@ -17,6 +19,7 @@ import {
   Pencil,
   Plus,
   ShoppingBag,
+  Trash2,
 } from "lucide-react";
 
 import { ScreenTemplate } from "../../components/page/screen-template";
@@ -30,6 +33,15 @@ import {
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Skeleton } from "../../components/ui/skeleton";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../../components/ui/dialog";
+import { getApiErrorMessage } from "../../lib/api-errors";
 import {
   DetailPrintLayout,
   PrintTrigger,
@@ -59,6 +71,10 @@ export function SupplierDetailScreen({
   const mayViewAccounts = usePermission("accounting.account-mapping.view");
 
   const [siteOpen, setSiteOpen] = useState(false);
+  const [editingSite, setEditingSite] = useState<SupplierSiteResource | null>(null);
+  const [removingSite, setRemovingSite] = useState<SupplierSiteResource | null>(null);
+  const [siteError, setSiteError] = useState<string | null>(null);
+  const removeSite = useSupplierSitesDestroy();
 
   const query = useSupplierAccountsShow(
     supplierId,
@@ -346,6 +362,33 @@ export function SupplierDetailScreen({
                             Default
                           </Badge>
                         )}
+                        {mayManageSites && (
+                          <>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11 md:h-8 md:w-8"
+                              aria-label={`Edit address ${site.party_site?.name ?? site.id}`}
+                              onClick={() => setEditingSite(site)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11 md:h-8 md:w-8"
+                              aria-label={`Remove address ${site.party_site?.name ?? site.id}`}
+                              onClick={() => {
+                                setSiteError(null);
+                                setRemovingSite(site);
+                              }}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
@@ -444,6 +487,58 @@ export function SupplierDetailScreen({
             void sitesQuery.refetch();
           }}
         />
+      )}
+      {mayManageSites && editingSite && (
+        <SupplierSiteDialog
+          key={editingSite.id}
+          supplierAccountId={supplier.id}
+          open
+          site={editingSite}
+          onOpenChange={(open) => !open && setEditingSite(null)}
+          onCreated={() => {
+            setEditingSite(null);
+            void sitesQuery.refetch();
+          }}
+        />
+      )}
+
+      {mayManageSites && removingSite && (
+        <Dialog open onOpenChange={(open) => !open && !removeSite.isPending && setRemovingSite(null)}>
+          <DialogContent className="max-h-[90dvh] max-w-md overflow-y-auto" data-testid="remove-site-dialog">
+            <DialogHeader>
+              <DialogTitle>Remove {removingSite.party_site?.name ?? "this address"} from this supplier?</DialogTitle>
+              <DialogDescription>
+                The address stops being offered for this supplier. The address itself is kept, because another role of the same trading partner (a customer, say) may still use it.
+              </DialogDescription>
+            </DialogHeader>
+            {siteError && (
+              <p role="alert" className="text-sm text-destructive">
+                {siteError}
+              </p>
+            )}
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button variant="outline" className="h-11 md:h-9" disabled={removeSite.isPending} onClick={() => setRemovingSite(null)}>
+                Keep it
+              </Button>
+              <Button
+                variant="destructive"
+                className="h-11 md:h-9"
+                disabled={removeSite.isPending}
+                onClick={async () => {
+                  try {
+                    await removeSite.mutateAsync({ supplierSite: removingSite.id });
+                    setRemovingSite(null);
+                    await sitesQuery.refetch();
+                  } catch (failure) {
+                    setSiteError(getApiErrorMessage(failure) ?? "The address could not be removed.");
+                  }
+                }}
+              >
+                {removeSite.isPending ? "Removing…" : "Remove address"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </>,
     {

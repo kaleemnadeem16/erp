@@ -1,5 +1,7 @@
 import {
+  BookText,
   Building2,
+  Coins,
   Calculator,
   Hash,
   ListChecks,
@@ -53,6 +55,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
       { to: "/settings/company", label: "Company profile", description: "Who the company is, and the settings every part of the system shares.", icon: Building2, kind: "policy" },
       { to: "/settings/document-numbering", label: "Document numbering", description: "How the numbers on your documents are built. Numbers already issued never change.", icon: Hash, kind: "policy" },
       { to: "/settings/custom-fields", label: "Custom fields", description: "Extra fields on records, defined once for the company.", icon: SlidersHorizontal, kind: "policy" },
+      { to: "/settings/chart-of-accounts", label: "Chart of accounts", description: "The accounts that customers, suppliers and items map to, and how they are grouped.", icon: BookText, kind: "policy", permission: "accounting.chart-of-account.manage" },
       { to: "/settings/printing", label: "Printing", description: "Company details and colours used on every printed document, and the purchase order template.", icon: Printer, kind: "policy" },
     ],
   },
@@ -78,6 +81,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     description: "What the system fixes about decimals, currencies and rounding, and where each rule is governed.",
     entries: [
       { to: "/settings/numbers", label: "Numbers and rounding", description: "Fixed limits for quantities, prices and rates, and which rules can be changed where.", icon: Percent, kind: "reference" },
+      { to: "/settings/exchange-rates", label: "Exchange rates", description: "Rates you enter by hand for converting foreign-currency amounts. Documents keep the rate they were made with.", icon: Coins, kind: "policy", permission: "currency.exchange-rate.manage" },
     ],
   },
   {

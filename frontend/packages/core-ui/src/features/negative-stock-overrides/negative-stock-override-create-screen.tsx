@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import type { UseFormReturn } from 'react-hook-form';
 import { useNegativeStockOverrideRequestsStore, type NegativeStockMovementClass, type NegativeStockReasonCode } from '@erp/core-api';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import type { Presentation } from '../../lib/presentation';
 
-import { PageHeader } from '../../components/page/page-header';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
 import {
   NegativeStockOverrideForm,
@@ -11,8 +12,9 @@ import {
   type NegativeStockOverrideFormValues,
 } from './negative-stock-override-form';
 
-export function NegativeStockOverrideCreateScreen() {
+export function NegativeStockOverrideCreateScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const [formError, setFormError] = useState<string | null>(null);
   const createOverride = useNegativeStockOverrideRequestsStore();
 
@@ -33,7 +35,7 @@ export function NegativeStockOverrideCreateScreen() {
       },
       {
         onSuccess: (result) => {
-          if (result.status === 201) navigate(`/negative-stock-overrides/${result.data.data.id}`);
+          if (result.status === 201) navigate({ pathname: `/negative-stock-overrides/${result.data.data.id}`, search });
         },
         onError: (error) => setFormError(applyApiErrorsToForm(error, form.setError, NEGATIVE_STOCK_OVERRIDE_FORM_FIELDS)),
       }
@@ -41,13 +43,16 @@ export function NegativeStockOverrideCreateScreen() {
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title="New negative-stock override request"
-        description="Request authorisation for a genuine anticipated shortage before it's posted."
-        breadcrumbs={[{ label: 'Negative-Stock Overrides', to: '/negative-stock-overrides' }, { label: 'New' }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title="New negative-stock override request"
+      description="Request authorisation for a genuine anticipated shortage before it's posted."
+      listPath="/negative-stock-overrides"
+      listLabel="Negative-Stock Overrides"
+      size="lg"
+      form
+    >
       <NegativeStockOverrideForm onSubmit={handleSubmit} isSubmitting={createOverride.isPending} formError={formError} />
-    </div>
+    </RecordPresenter>
   );
 }

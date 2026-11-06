@@ -8,6 +8,10 @@ import type { ApplicationRatesIndexSort } from "./applicationRatesIndexSort";
 
 export type ApplicationRatesIndexParams = {
   /**
+   * @maxLength 255
+   */
+  "filter[search]"?: string;
+  /**
    * @minimum 1
    */
   "filter[item_id]"?: number;

@@ -94,13 +94,13 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
           }));
 
         return (
-          <fieldset key={field.id} className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 sm:grid-cols-2 lg:grid-cols-5 [&>*]:min-w-0">
+          <fieldset key={field.id} className="grid min-w-0 gap-3 rounded-lg border bg-panel/60 p-4 sm:grid-cols-2 @3xl:grid-cols-5 [&>*]:min-w-0">
             <legend className="px-1 text-sm font-medium">Line {index + 1}</legend>
             <FormField
               control={control}
               name={`lines.${index}.input_item_id` as FieldPath<TFieldValues>}
               render={({ field: itemField }) => (
-                <FormItem className="lg:col-span-2">
+                <FormItem className="@3xl:col-span-2">
                   <FormLabel>Item</FormLabel>
                   <FormControl>
                     <ItemCombobox
@@ -165,7 +165,7 @@ export function FormulationLinesFields<TFieldValues extends FieldValues & { line
                 </FormItem>
               )}
             />
-            <div className="flex items-end justify-end lg:col-start-5">
+            <div className="flex items-end justify-end @3xl:col-start-5">
               <Button type="button" variant="outline" size="sm" onClick={() => remove(index)} disabled={fields.length === 0}>
                 <Trash2 className="size-4" />
                 Remove

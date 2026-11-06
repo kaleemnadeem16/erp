@@ -45,6 +45,36 @@ export const presentation: {
   warehouseCreate: Presentation;
   warehouseDetail: Presentation;
   warehouseEdit: Presentation;
+  customerCreate: Presentation;
+  customerDetail: Presentation;
+  customerEdit: Presentation;
+  partyCreate: Presentation;
+  partyDetail: Presentation;
+  partyEdit: Presentation;
+  physicalCountCreate: Presentation;
+  physicalCountDetail: Presentation;
+  inventoryCutoverCreate: Presentation;
+  inventoryCutoverDetail: Presentation;
+  negativeStockOverrideCreate: Presentation;
+  negativeStockOverrideDetail: Presentation;
+  recalculationRequestCreate: Presentation;
+  recalculationRequestDetail: Presentation;
+  exchangeRateCreate: Presentation;
+  exchangeRateDetail: Presentation;
+  chartOfAccountCreate: Presentation;
+  chartOfAccountDetail: Presentation;
+  resourceRateCreate: Presentation;
+  resourceRateDetail: Presentation;
+  rateDimensionCreate: Presentation;
+  rateDimensionEdit: Presentation;
+  applicationRateCreate: Presentation;
+  applicationRateEdit: Presentation;
+  formulationCreate: Presentation;
+  formulationEdit: Presentation;
+  assemblyGroupCreate: Presentation;
+  assemblyGroupEdit: Presentation;
+  assemblyCreate: Presentation;
+  assemblyEdit: Presentation;
 } = {
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
@@ -84,6 +114,36 @@ export const presentation: {
   warehouseCreate: "sheet",
   warehouseDetail: "sheet",
   warehouseEdit: "sheet",
+  customerCreate: "sheet",
+  customerDetail: "sheet",
+  customerEdit: "sheet",
+  partyCreate: "sheet",
+  partyDetail: "sheet",
+  partyEdit: "sheet",
+  physicalCountCreate: "sheet",
+  physicalCountDetail: "sheet",
+  inventoryCutoverCreate: "sheet",
+  inventoryCutoverDetail: "sheet",
+  negativeStockOverrideCreate: "sheet",
+  negativeStockOverrideDetail: "sheet",
+  recalculationRequestCreate: "sheet",
+  recalculationRequestDetail: "sheet",
+  exchangeRateCreate: "sheet",
+  exchangeRateDetail: "sheet",
+  chartOfAccountCreate: "sheet",
+  chartOfAccountDetail: "sheet",
+  resourceRateCreate: "sheet",
+  resourceRateDetail: "sheet",
+  rateDimensionCreate: "sheet",
+  rateDimensionEdit: "sheet",
+  applicationRateCreate: "sheet",
+  applicationRateEdit: "sheet",
+  formulationCreate: "sheet",
+  formulationEdit: "sheet",
+  assemblyGroupCreate: "sheet",
+  assemblyGroupEdit: "sheet",
+  assemblyCreate: "sheet",
+  assemblyEdit: "sheet",
 };
 
 /**

@@ -26,12 +26,14 @@ export function AssemblyGroupForm({
   mode,
   defaultValues,
   onSubmit,
+  onCancel,
   isSubmitting,
   formError,
 }: {
   mode: 'create' | 'edit';
   defaultValues?: Partial<AssemblyGroupFormValues>;
   onSubmit: (v: AssemblyGroupFormValues, f: UseFormReturn<AssemblyGroupFormValues>) => void;
+  onCancel: () => void;
   isSubmitting?: boolean;
   formError?: string | null;
 }) {
@@ -41,9 +43,9 @@ export function AssemblyGroupForm({
   });
   return (
     <Form {...form}>
-      <form className="space-y-6" onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
+      <form className="space-y-6" noValidate aria-label={mode === 'create' ? 'New assembly group' : 'Edit assembly group'} onSubmit={form.handleSubmit((v) => onSubmit(v, form))}>
         {formError && (
-          <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
             {formError}
           </div>
         )}
@@ -58,7 +60,7 @@ export function AssemblyGroupForm({
               <FormItem>
                 <FormLabel>Code</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -71,15 +73,18 @@ export function AssemblyGroupForm({
               <FormItem>
                 <FormLabel>Name</FormLabel>
                 <FormControl>
-                  <Input {...field} />
+                  <Input className="h-11 md:h-10" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
         </DetailSection>
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="sticky bottom-0 -mx-4 flex items-center justify-end gap-2 border-t bg-background px-4 py-3">
+          <Button type="button" variant="outline" className="h-11 md:h-9" disabled={isSubmitting} onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" className="h-11 md:h-9" disabled={isSubmitting}>
             {isSubmitting ? 'Saving…' : mode === 'create' ? 'Create group' : 'Save group'}
           </Button>
         </div>

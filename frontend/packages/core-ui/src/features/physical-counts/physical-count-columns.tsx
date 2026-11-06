@@ -1,6 +1,7 @@
 import type { PhysicalCountResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 
@@ -15,6 +16,7 @@ export const physicalCountColumns: DataColumn<PhysicalCountResource>[] = [
     key: 'id',
     header: 'Count',
     value: (count) => `#${count.id}`,
+    cell: (count) => <RecordLink>#{count.id}</RecordLink>,
     cardRole: 'title',
   },
   {

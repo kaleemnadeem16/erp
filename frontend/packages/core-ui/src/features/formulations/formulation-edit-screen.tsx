@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { useForm, type UseFormReturn } from 'react-hook-form';
+import { Archive } from 'lucide-react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
+  useFormulationsDestroy,
   useFormulationsShow,
   useFormulationsUpdate,
   useFormulationsVersionsStore,
@@ -12,15 +15,18 @@ import {
   useFormulationVersionsDestroy,
   type FormulationVersionResource
 } from '@erp/core-api';
-import { Badge } from '../../components/ui/badge';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
-import { Skeleton } from '../../components/ui/skeleton';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../../components/ui/form';
-import { PageHeader } from '../../components/page/page-header';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import { RecordUnavailable } from '../../components/page/record-unavailable';
+import { DetailField } from '../../components/detail/detail-field';
 import { DetailSection } from '../../components/detail/detail-page-layout';
-import { applyApiErrorsToForm, getApiErrorMessage } from '../../lib/api-errors';
+import { applyApiErrorsToForm } from '../../lib/api-errors';
+import type { Presentation } from '../../lib/presentation';
+import { RecipeStatusBadge } from '../estimating/estimating-status';
 import { formulationLineSchema, formulationLinesPayload, FormulationLinesFields } from './formulation-lines-fields';
 import { FormulationCostBreakdown } from './formulation-cost-breakdown';
 import { usePermission } from '../../hooks/use-permission';
@@ -34,22 +40,26 @@ const headerSchema = z.object({
 type HeaderFormValues = z.infer<typeof headerSchema>;
 const HEADER_FIELDS = ['code', 'name', 'output_qty'] as const satisfies readonly (keyof HeaderFormValues)[];
 
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'success'> = {
-  DRAFT: 'secondary',
-  ACTIVE: 'success',
-  SUPERSEDED: 'secondary',
-  ARCHIVED: 'secondary'
-};
+const LIST = '/formulations';
 
-export function FormulationEditScreen() {
+/**
+ * `/formulations/:id/edit`: the recipe's header, its versions (revise, edit a draft, activate, delete a draft, view cost) and *Archive*. A workspace, so a wide
+ * sheet (decision D7: forms are sheets). Output item and customer are fixed once created.
+ */
+export function FormulationEditScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const mayManage = usePermission('estimating.formulation.manage');
   const query = useFormulationsShow(id, {
     include: 'outputItem,outputUom,customer,versions,versions.lines,versions.lines.inputItem,versions.lines.uom'
   });
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
   const updateMutation = useFormulationsUpdate();
+  const archiveMutation = useFormulationsDestroy();
   const [error, setError] = useState<string | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const back = () => navigate({ pathname: LIST, search: window.location.search });
 
   const form = useForm<HeaderFormValues>({
     resolver: zodResolver(headerSchema),
@@ -61,41 +71,55 @@ export function FormulationEditScreen() {
     updateMutation.mutate(
       { formulation: id, data: v },
       {
+        onSuccess: () => {
+          void queryClient.invalidateQueries();
+          back();
+        },
         onError: (e) => setError(applyApiErrorsToForm(e, form.setError, HEADER_FIELDS))
       }
     );
   };
 
-  if (query.isLoading)
+  if (!row) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <RecordPresenter presentation={presentation} title="Formulation" listPath={LIST} listLabel="Formulations" size="xl" form>
+        <RecordUnavailable isLoading={query.isLoading} error={query.error} noun="formulation" />
+      </RecordPresenter>
     );
-  if (!row || query.isError)
-    return (
-      <div className="p-6">
-        <Button variant="outline" onClick={() => navigate('/formulations')}>
-          Back to formulations
-        </Button>
-      </div>
-    );
+  }
+
+  const outputItem = row.output_item ? `${row.output_item.code} — ${row.output_item.name}` : `Item #${row.output_item_id}`;
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title={row.name}
-        description={`${row.output_item?.code ?? row.output_item_id} — ${row.status}`}
-        breadcrumbs={[{ label: 'Formulations', to: '/formulations' }, { label: row.code }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title={row.name}
+      description={`${row.code} · ${outputItem}`}
+      actions={
+        <>
+          <RecipeStatusBadge status={row.status} />
+          {mayManage && row.status !== 'ARCHIVED' && (
+            <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setConfirmArchive(true)}>
+              <Archive aria-hidden="true" className="mr-1.5 h-4 w-4" />
+              Archive
+            </Button>
+          )}
+        </>
+      }
+      listPath={LIST}
+      listLabel="Formulations"
+      size="xl"
+      form
+    >
       <Form {...form}>
-        <form className="space-y-6" onSubmit={form.handleSubmit(submitHeader)}>
-          {error && <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+        <form className="space-y-6" noValidate aria-label="Edit formulation" onSubmit={form.handleSubmit(submitHeader)}>
+          {error && <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
           <DetailSection
             title="Formulation"
-            description="Output item and customer override are immutable; archive and create a new formulation to change either."
+            description="Output item and customer override are fixed; archive this formulation and create a new one to change either."
           >
+            <DetailField label="Output item">{outputItem}</DetailField>
+            <DetailField label="Customer">{row.customer?.code ?? 'Company default'}</DetailField>
             <FormField
               control={form.control}
               name="code"
@@ -103,7 +127,7 @@ export function FormulationEditScreen() {
                 <FormItem>
                   <FormLabel>Code</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ''} />
+                    <Input className="h-11 md:h-10" {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -116,7 +140,7 @@ export function FormulationEditScreen() {
                 <FormItem>
                   <FormLabel>Name</FormLabel>
                   <FormControl>
-                    <Input {...field} value={field.value ?? ''} />
+                    <Input className="h-11 md:h-10" {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -129,22 +153,42 @@ export function FormulationEditScreen() {
                 <FormItem>
                   <FormLabel>Output quantity</FormLabel>
                   <FormControl>
-                    <DecimalInput rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} value={field.value ?? ''} />
+                    <DecimalInput className="h-11 md:h-10" rule={{ spec: 'assemblyTechnical', sign: 'positive' }} {...field} value={field.value ?? ''} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
           </DetailSection>
-          <div className="flex justify-end">
-            <Button type="submit" disabled={updateMutation.isPending}>
+          <div className="flex items-center justify-end gap-2">
+            <Button type="button" variant="outline" className="h-11 md:h-9" disabled={updateMutation.isPending} onClick={back}>
+              Cancel
+            </Button>
+            <Button type="submit" className="h-11 md:h-9" disabled={updateMutation.isPending}>
               {updateMutation.isPending ? 'Saving…' : 'Save formulation'}
             </Button>
           </div>
         </form>
       </Form>
       <FormulationVersions formulationId={id} outputItemId={row.output_item_id} versions={row.versions ?? []} onChanged={() => query.refetch()} />
-    </div>
+
+      <ConfirmActionDialog
+        open={confirmArchive}
+        onOpenChange={setConfirmArchive}
+        title={`Archive ${row.name}?`}
+        description={`An archived formulation no longer resolves as the recipe for ${outputItem}, even though its active version stays on record. There is no way to un-archive it: to use this recipe again, create a new formulation.`}
+        confirmLabel="Archive formulation"
+        pendingLabel="Archiving…"
+        cancelLabel="Keep it active"
+        failureMessage="The formulation could not be archived."
+        testId="archive-formulation-dialog"
+        onConfirm={async () => {
+          await archiveMutation.mutateAsync({ formulation: id });
+          await queryClient.invalidateQueries();
+          back();
+        }}
+      />
+    </RecordPresenter>
   );
 }
 
@@ -165,20 +209,19 @@ function FormulationVersions({
   const [breakdownVersionId, setBreakdownVersionId] = useState<number | null>(null);
   const activateMutation = useFormulationVersionsActivate();
   const deleteMutation = useFormulationVersionsDestroy();
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ kind: 'activate' | 'delete'; version: FormulationVersionResource } | null>(null);
 
   const sorted = [...versions].sort((a, b) => b.version_no - a.version_no);
 
   return (
     <DetailSection title="Versions" description="Every revision of this recipe, oldest superseded versions kept forever." fullWidth>
-      {actionError && <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>}
       <div className="space-y-3">
         {sorted.map((version) => (
           <div key={version.id} className="rounded-md border p-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="font-medium">Version {version.version_no}</span>
-                <Badge variant={STATUS_VARIANT[version.status] ?? 'default'}>{version.status}</Badge>
+                <RecipeStatusBadge status={version.status} />
                 {version.effective_from && (
                   <span className="text-xs text-muted-foreground">
                     from {version.effective_from}
@@ -189,46 +232,19 @@ function FormulationVersions({
               <div className="flex gap-2">
                 {version.status === 'DRAFT' && (
                   <>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditingVersionId(version.id)}>
+                    <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setEditingVersionId(version.id)}>
                       Edit draft
                     </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      onClick={() => {
-                        setActionError(null);
-                        activateMutation.mutate(
-                          { formulationVersion: version.id },
-                          {
-                            onSuccess: onChanged,
-                            onError: (e) => setActionError(getApiErrorMessage(e) ?? 'Could not activate this version.')
-                          }
-                        );
-                      }}
-                    >
+                    <Button type="button" size="sm" className="h-11 md:h-8" onClick={() => setPendingAction({ kind: 'activate', version })}>
                       Activate
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setActionError(null);
-                        deleteMutation.mutate(
-                          { formulationVersion: version.id },
-                          {
-                            onSuccess: onChanged,
-                            onError: (e) => setActionError(getApiErrorMessage(e) ?? 'Could not delete this version.')
-                          }
-                        );
-                      }}
-                    >
+                    <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setPendingAction({ kind: 'delete', version })}>
                       Delete
                     </Button>
                   </>
                 )}
                 {version.status === 'ACTIVE' && mayViewInternalCost && (
-                  <Button type="button" variant="outline" size="sm" onClick={() => setBreakdownVersionId((v) => (v === version.id ? null : version.id))}>
+                  <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setBreakdownVersionId((v) => (v === version.id ? null : version.id))}>
                     {breakdownVersionId === version.id ? 'Hide cost breakdown' : 'View cost breakdown'}
                   </Button>
                 )}
@@ -274,9 +290,33 @@ function FormulationVersions({
           }}
         />
       ) : (
-        <Button type="button" variant="outline" onClick={() => setRevising(true)}>
+        <Button type="button" variant="outline" className="h-11 md:h-9" onClick={() => setRevising(true)}>
           Revise — start a new version
         </Button>
+      )}
+
+      {pendingAction && (
+        <ConfirmActionDialog
+          open
+          onOpenChange={(next) => !next && setPendingAction(null)}
+          title={pendingAction.kind === 'activate' ? `Activate version ${pendingAction.version.version_no}?` : `Delete draft version ${pendingAction.version.version_no}?`}
+          description={
+            pendingAction.kind === 'activate'
+              ? 'It becomes the live recipe from today. The version that is active now (if any) is superseded and kept on record. A version needs at least one line, and the system refuses if it would make recipes consume each other in a loop.'
+              : 'The draft and its lines are removed for good. Only a draft can be deleted; active and superseded versions are kept forever.'
+          }
+          confirmLabel={pendingAction.kind === 'activate' ? 'Activate version' : 'Delete draft'}
+          pendingLabel={pendingAction.kind === 'activate' ? 'Activating…' : 'Deleting…'}
+          cancelLabel="Not now"
+          destructive={pendingAction.kind === 'delete'}
+          failureMessage={pendingAction.kind === 'activate' ? 'Could not activate this version.' : 'Could not delete this version.'}
+          testId={`${pendingAction.kind}-formulation-version-dialog`}
+          onConfirm={async () => {
+            if (pendingAction.kind === 'activate') await activateMutation.mutateAsync({ formulationVersion: pendingAction.version.id });
+            else await deleteMutation.mutateAsync({ formulationVersion: pendingAction.version.id });
+            onChanged();
+          }}
+        />
       )}
     </DetailSection>
   );

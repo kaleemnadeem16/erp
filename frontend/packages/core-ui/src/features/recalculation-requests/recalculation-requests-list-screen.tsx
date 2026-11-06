@@ -1,25 +1,35 @@
 import { useEffect, useMemo, useState } from 'react';
-import { SlidersHorizontal } from 'lucide-react';
-import { useNavigate } from 'react-router';
-import type { PaginationState, SortingState } from '@tanstack/react-table';
+import { useLocation, useNavigate } from 'react-router';
+import type { PaginationState, RowSelectionState, SortingState } from '@tanstack/react-table';
 import {
   useRecalculationRequestsIndex,
   type RecalculationRequestResource,
   type RecalculationRequestsIndexSort,
 } from '@erp/core-api';
 
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Sheet, SheetContent, SheetFooter, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { PageHeader } from '../../components/page/page-header';
-import { DataTable, toTanStackColumns, isColumnVisibleByDefault } from '../../components/data-table';
-import { apiSortToTableSorting, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
+import { ScreenTemplate } from '../../components/page/screen-template';
+import {
+  ActiveFilterChips,
+  BulkActionBar,
+  DataTable,
+  FilterField,
+  FilterSelect,
+  ListFiltersSheet,
+  ListSearchInput,
+  humanizeCode,
+  isColumnVisibleByDefault,
+  selectionColumn,
+  toTanStackColumns,
+  type FilterChip,
+} from '../../components/data-table';
+import { PrintLayout, PrintableTable, PrintTrigger, useQuickPrint } from '../../components/print';
+import { usePermission } from '../../hooks/use-permission';
+import { apiSortToTableSorting, describeSort, tableSortingToApiSort, useListQueryState } from '../../lib/list-query-state';
 import { useColumnVisibilityPreference } from '../../lib/use-column-visibility-preference';
+import { useDebouncedSearch } from '../../lib/use-debounced-search';
 import { useListViewPreference } from '../../lib/use-view-preference';
 import { recalculationRequestColumns } from './recalculation-request-columns';
-import { usePermission } from '../../hooks/use-permission';
 
 interface RecalculationRequestFilters {
   search: string;
@@ -29,96 +39,81 @@ interface RecalculationRequestFilters {
 
 const MOVEMENT_KINDS = ['RECEIPT', 'ISSUE', 'TRANSFER'] as const;
 
+/**
+ * The backdated-correction queue. On the screen standard (`erp-blue-design-standard.md` §List). Bulk: only *Print selected* — a recalculation changes recorded cost history, so each request is decided and executed on its own record, never in bulk (screen-delivery-contract.md §Row actions and selection).
+ */
 export function RecalculationRequestsListScreen() {
   const navigate = useNavigate();
-  const mayRequest = usePermission('inventory.recalculation.request');
+  const { search: listSearch } = useLocation();
+  const mayCreate = usePermission('inventory.recalculation.request');
   const query = useListQueryState<RecalculationRequestFilters>({ defaultSort: '-requested_at', defaultPerPage: 25 });
+  const searchBox = useDebouncedSearch(query.filters.search, (value) => query.setFilter('search', value));
   const [columnVisibility, setColumnVisibility] = useColumnVisibilityPreference(
     'recalculation-requests-list',
-    Object.fromEntries(recalculationRequestColumns.map((column) => [column.key, isColumnVisibleByDefault(column)]))
+    Object.fromEntries(recalculationRequestColumns.map((column) => [column.key, isColumnVisibleByDefault(column)])),
   );
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const { view, setView } = useListViewPreference('recalculation-requests-list');
-  const [searchInput, setSearchInput] = useState(query.filters.search ?? '');
 
-  useEffect(() => {
-    const handle = setTimeout(() => {
-      if (searchInput !== (query.filters.search ?? '')) query.setFilter('search', searchInput || undefined);
-    }, 300);
-    return () => clearTimeout(handle);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchInput]);
-
-  const requestsQuery = useRecalculationRequestsIndex({
+  const result = useRecalculationRequestsIndex({
     'filter[movement_kind]': (query.filters.movement_kind as (typeof MOVEMENT_KINDS)[number] | undefined) || undefined,
     'filter[search]': query.filters.search || undefined,
-    sort: query.sort as RecalculationRequestsIndexSort | undefined,
     include: 'item',
+    sort: query.sort as RecalculationRequestsIndexSort | undefined,
     per_page: query.perPage,
     page: query.page,
   });
+  const rows = result.data?.status === 200 ? result.data.data.data : [];
+  const meta = result.data?.status === 200 ? result.data.data.meta : undefined;
 
-  const requests = requestsQuery.data?.status === 200 ? requestsQuery.data.data.data : [];
-  const meta = requestsQuery.data?.status === 200 ? requestsQuery.data.data.meta : undefined;
-
-  const tanStackColumns = useMemo(() => toTanStackColumns(recalculationRequestColumns), []);
+  const tanStackColumns = useMemo(() => [selectionColumn<RecalculationRequestResource>(), ...toTanStackColumns(recalculationRequestColumns)], []);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  // A selection belongs to the rows it was made on: any change of page, sort, size or filter (all in the URL) clears it.
+  useEffect(() => setRowSelection({}), [listSearch]);
+  const selected = useMemo(() => rows.filter((row) => rowSelection[String(row.id)]), [rows, rowSelection]);
   const sorting: SortingState = apiSortToTableSorting(query.sort, recalculationRequestColumns);
   const pagination: PaginationState = { pageIndex: query.page - 1, pageSize: query.perPage };
-  const activeFilterCount = [query.filters.movement_kind].filter(Boolean).length;
+  const { contentRef, print } = useQuickPrint({ documentTitle: 'Stock Recalculation' });
+  const { contentRef: selectedRef, print: printSelected } = useQuickPrint({ documentTitle: 'Stock Recalculation (Selected)' });
+
+  const chips: FilterChip[] = [];
+  if (query.filters.search) chips.push({ id: 'search', label: `Search: "${query.filters.search}"`, onRemove: () => query.setFilter('search', undefined) });
+  if (query.filters.movement_kind) chips.push({ id: 'movement_kind', label: `Movement: ${humanizeCode(query.filters.movement_kind)}`, onRemove: () => query.setFilter('movement_kind', undefined) });
+  const filterCount = chips.filter((chip) => chip.id !== 'search').length;
+  const clearAll = () => query.setFilters({ search: undefined, movement_kind: undefined });
 
   return (
-    // Extra bottom padding below `md` clears the fixed MobileFab — see
-    // PageHeader's `primaryAction` note in docs/architecture/user-interface.md.
-    <div className="space-y-4 p-4 pb-24 md:p-6">
+    <ScreenTemplate kind="list" className="erp-screen">
       <PageHeader
         title="Stock Recalculation"
         description="ADR 0040's backdated correction workflow — request, decide, and execute a correction for a receipt, issue or transfer that conflicts with later valuation history."
-        primaryAction={mayRequest ? { label: 'New request', onClick: () => navigate('/recalculation-requests/new') } : undefined}
+        primaryAction={mayCreate ? { label: 'New request', onClick: () => navigate({ pathname: '/recalculation-requests/new', search: listSearch }) } : undefined}
       />
 
       <div className="flex flex-wrap items-center gap-2">
-        <Input
-          placeholder="Search item…"
-          value={searchInput}
-          onChange={(event) => setSearchInput(event.target.value)}
-          className="h-9 flex-1 md:w-56 md:flex-none"
-        />
-        <div className="hidden items-center gap-2 md:flex">
-          <MovementKindFilterControls query={query} />
+        <ListSearchInput input={searchBox.input} searchProps={searchBox.searchProps} onClear={() => query.setFilter('search', undefined)} placeholder="Search item…" ariaLabel="Search recalculation requests by item" />
+        <div className="hidden items-center gap-2 md:flex md:flex-wrap">
+          <FilterSelect label="Movement kind" allLabel="All movement kinds" value={query.filters.movement_kind} options={MOVEMENT_KINDS} onChange={(value) => query.setFilter('movement_kind', value)} className="md:w-52" />
+          <PrintTrigger onPrint={() => print()} className="h-10 px-4" />
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          className="h-9 shrink-0 md:hidden"
-          onClick={() => setFiltersOpen(true)}
-        >
-          <SlidersHorizontal className="h-4 w-4" />
-          Filters
-          {activeFilterCount > 0 && <Badge className="ml-1">{activeFilterCount}</Badge>}
-        </Button>
+        <ListFiltersSheet activeCount={filterCount} onClear={clearAll}>
+          <FilterField label="Movement kind">
+            <FilterSelect label="Movement kind (filters sheet)" allLabel="All movement kinds" value={query.filters.movement_kind} options={MOVEMENT_KINDS} onChange={(value) => query.setFilter('movement_kind', value)} />
+          </FilterField>
+          <PrintTrigger onPrint={() => print()} className="h-11 w-full justify-center" />
+        </ListFiltersSheet>
       </div>
 
-      <Sheet open={filtersOpen} onOpenChange={setFiltersOpen}>
-        <SheetContent side="bottom" className="md:hidden">
-          <SheetHeader>
-            <SheetTitle>Filters</SheetTitle>
-          </SheetHeader>
-          <div className="flex flex-col gap-3 py-4">
-            <MovementKindFilterControls query={query} full />
-          </div>
-          <SheetFooter>
-            <Button variant="ghost" onClick={() => query.setFilters({ movement_kind: undefined })}>
-              Clear filters
-            </Button>
-            <Button onClick={() => setFiltersOpen(false)}>Done</Button>
-          </SheetFooter>
-        </SheetContent>
-      </Sheet>
+      <ActiveFilterChips chips={chips} onClearAll={clearAll} />
+
+      <BulkActionBar count={selected.length} noun="request" onClear={() => setRowSelection({})}>
+        <PrintTrigger onPrint={() => printSelected()} label="Print selected" className="h-9 md:h-8" />
+      </BulkActionBar>
 
       <DataTable
         columns={tanStackColumns}
-        data={requests}
+        data={rows}
         rowCount={meta?.total ?? 0}
+        recordNoun="requests"
         pagination={pagination}
         onPaginationChange={(updater) => {
           const next = typeof updater === 'function' ? updater(pagination) : updater;
@@ -126,50 +121,43 @@ export function RecalculationRequestsListScreen() {
           else query.setPage(next.pageIndex + 1);
         }}
         sorting={sorting}
-        onSortingChange={(updater) => {
-          const next = typeof updater === 'function' ? updater(sorting) : updater;
-          query.setSort(tableSortingToApiSort(next, recalculationRequestColumns));
-        }}
+        onSortingChange={(updater) => query.setSort(tableSortingToApiSort(typeof updater === 'function' ? updater(sorting) : updater, recalculationRequestColumns))}
         columnVisibility={columnVisibility}
         onColumnVisibilityChange={setColumnVisibility}
-        onRowClick={(request: RecalculationRequestResource) => navigate(`/recalculation-requests/${request.id}`)}
-        isLoading={requestsQuery.isLoading}
-        isError={requestsQuery.isError}
-        error={requestsQuery.error}
-        onRetry={() => void requestsQuery.refetch()}
+        rowSelection={rowSelection}
+        onRowSelectionChange={setRowSelection}
+        getRowId={(row) => String(row.id)}
+        onRowClick={(row: RecalculationRequestResource) => navigate({ pathname: `/recalculation-requests/${row.id}`, search: listSearch })}
+        isLoading={result.isLoading}
+        isError={result.isError}
+        error={result.error}
+        onRetry={() => void result.refetch()}
         errorMessage="Couldn't load stock recalculation requests."
-        emptyMessage="No stock recalculation requests match these filters."
+        emptyMessage={chips.length > 0 ? 'No stock recalculation requests match these filters.' : 'No stock recalculation requests yet.'}
         view={view}
         onViewChange={setView}
         cardColumns={recalculationRequestColumns}
       />
-    </div>
-  );
-}
 
-interface MovementKindFilterControlsProps {
-  query: ReturnType<typeof useListQueryState<RecalculationRequestFilters>>;
-  full?: boolean;
-}
-
-/** Movement kind select — shared by the always-visible desktop row and the mobile Filters sheet. */
-function MovementKindFilterControls({ query, full }: MovementKindFilterControlsProps) {
-  return (
-    <Select
-      value={query.filters.movement_kind ?? 'all'}
-      onValueChange={(value) => query.setFilter('movement_kind', value === 'all' ? undefined : value)}
-    >
-      <SelectTrigger className={full ? 'h-9 w-full' : 'h-9 w-44'} aria-label="Movement kind">
-        <SelectValue placeholder="Movement kind" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">All movement kinds</SelectItem>
-        {MOVEMENT_KINDS.map((kind) => (
-          <SelectItem key={kind} value={kind}>
-            {kind}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      <div className="hidden">
+        <div ref={contentRef}>
+          <PrintLayout
+            title="STOCK RECALCULATION"
+            printedAt={new Date()}
+            recordCount={rows.length}
+            meta={[...(query.sort ? [{ label: 'Sort', value: describeSort(query.sort, recalculationRequestColumns) ?? query.sort }] : []), ...chips.map((chip) => ({ label: 'Filter', value: chip.label }))]}
+          >
+            <PrintableTable columns={recalculationRequestColumns} rows={rows} getRowKey={(row) => row.id} />
+          </PrintLayout>
+        </div>
+      </div>
+      <div className="hidden">
+        <div ref={selectedRef}>
+          <PrintLayout title="STOCK RECALCULATION (SELECTED)" printedAt={new Date()} recordCount={selected.length} meta={[{ label: 'Selection', value: `${selected.length} selected requests` }]}>
+            <PrintableTable columns={recalculationRequestColumns} rows={selected} getRowKey={(row) => row.id} />
+          </PrintLayout>
+        </div>
+      </div>
+    </ScreenTemplate>
   );
 }

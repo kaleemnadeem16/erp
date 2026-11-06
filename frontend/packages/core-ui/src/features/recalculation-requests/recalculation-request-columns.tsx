@@ -1,6 +1,8 @@
 import type { RecalculationRequestResource, RecalculationRequestResourceImpactVersionsItem } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
+import { humanizeCode } from '../../components/data-table/list-controls';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 
@@ -53,6 +55,7 @@ export const recalculationRequestColumns: DataColumn<RecalculationRequestResourc
     key: 'id',
     header: 'Request',
     value: (request) => `#${request.id}`,
+    cell: (request) => <RecordLink>#{request.id}</RecordLink>,
     cardRole: 'title',
   },
   {
@@ -64,7 +67,7 @@ export const recalculationRequestColumns: DataColumn<RecalculationRequestResourc
   {
     key: 'movement_kind',
     header: 'Movement kind',
-    value: (request) => request.movement_kind,
+    value: (request) => humanizeCode(request.movement_kind),
     filterable: true,
   },
   {

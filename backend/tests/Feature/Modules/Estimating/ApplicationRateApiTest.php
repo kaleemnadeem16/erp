@@ -63,6 +63,25 @@ class ApplicationRateApiTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data');
     }
 
+    public function test_rates_are_found_by_the_code_or_name_of_their_item(): void
+    {
+        $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);
+        $other = Item::create(['code' => 'PRIMER-9', 'name' => 'Wall primer', 'type' => 'FINISHED', 'stock_uom_id' => $this->litre->id, 'category_id' => $this->item->category_id]);
+        foreach ([$this->item, $other] as $item) {
+            $this->actingAs($user)->postJson('/api/v1/application-rates', [
+                'item_id' => $item->id, 'work_uom_id' => $this->sqm->id,
+                'qty_per_work_unit' => '0.1', 'uom_id' => $this->litre->id,
+            ])->assertCreated();
+        }
+
+        $this->getJson('/api/v1/application-rates?filter[search]=shade')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.item_id', $this->item->id);
+        $this->getJson('/api/v1/application-rates?filter[search]=PRIMER')
+            ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.item_id', $other->id);
+        $this->getJson('/api/v1/application-rates?filter[search]=nothing-like-this')
+            ->assertOk()->assertJsonCount(0, 'data');
+    }
+
     public function test_qty_per_work_unit_must_be_positive(): void
     {
         $user = PermissionedActor::grant(User::factory()->create(), ['estimating.application-rate.manage']);

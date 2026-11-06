@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import type { UseFormReturn } from 'react-hook-form';
-import { useApplicationRatesShow, useApplicationRatesUpdate } from '@erp/core-api';
+import { Trash2 } from 'lucide-react';
+import { useApplicationRatesDestroy, useApplicationRatesShow, useApplicationRatesUpdate } from '@erp/core-api';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Button } from '../../components/ui/button';
-import { Skeleton } from '../../components/ui/skeleton';
-import { PageHeader } from '../../components/page/page-header';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import { RecordUnavailable } from '../../components/page/record-unavailable';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
+import type { Presentation } from '../../lib/presentation';
 import {
   APPLICATION_RATE_FORM_FIELDS,
   ApplicationRateForm,
@@ -13,46 +17,63 @@ import {
   type ApplicationRateFormValues,
 } from './application-rate-form';
 
-export function ApplicationRateEditScreen() {
+const LIST = '/application-rates';
+
+/** `/application-rates/:id/edit`: change the quantity, unit, default flag and tags; item and work unit are fixed. *Delete rate* removes it (and its tags) for good. */
+export function ApplicationRateEditScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const id = Number(useParams<{ id: string }>().id);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const query = useApplicationRatesShow(id, { include: 'item,workUom,uom' });
   const row = query.data?.status === 200 ? query.data.data.data : undefined;
   const mutation = useApplicationRatesUpdate();
+  const destroy = useApplicationRatesDestroy();
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const back = () => navigate({ pathname: LIST, search: window.location.search });
 
   const submit = (v: ApplicationRateFormValues, form: UseFormReturn<ApplicationRateFormValues>) => {
     setError(null);
     mutation.mutate(
       { applicationRate: id, data: applicationRatePayload(v) },
-      { onError: (e) => setError(applyApiErrorsToForm(e, form.setError, APPLICATION_RATE_FORM_FIELDS)) }
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries();
+          back();
+        },
+        onError: (e) => setError(applyApiErrorsToForm(e, form.setError, APPLICATION_RATE_FORM_FIELDS)),
+      }
     );
   };
 
-  if (query.isLoading)
+  if (!row) {
     return (
-      <div className="space-y-4 p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <RecordPresenter presentation={presentation} title="Application rate" listPath={LIST} listLabel="Application rates" size="lg" form>
+        <RecordUnavailable isLoading={query.isLoading} error={query.error} noun="application rate" />
+      </RecordPresenter>
     );
-  if (!row || query.isError)
-    return (
-      <div className="p-6">
-        <Button variant="outline" onClick={() => navigate('/application-rates')}>
-          Back to application rates
-        </Button>
-      </div>
-    );
+  }
+
+  const itemName = row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id);
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title="Edit application rate"
-        description={row.item ? `${row.item.code} — ${row.item.name}` : String(row.item_id)}
-        breadcrumbs={[{ label: 'Application rates', to: '/application-rates' }, { label: `#${row.id}` }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title="Edit application rate"
+      description={itemName}
+      actions={
+        <Button type="button" variant="outline" size="sm" className="h-11 md:h-8" onClick={() => setConfirmDelete(true)}>
+          <Trash2 aria-hidden="true" className="mr-1.5 h-4 w-4" />
+          Delete rate
+        </Button>
+      }
+      listPath={LIST}
+      listLabel="Application rates"
+      size="lg"
+      form
+    >
       <ApplicationRateForm
+        key={`${row.id}-${row.updated_at}`}
         mode="edit"
         defaultValues={{
           item_id: String(row.item_id),
@@ -65,9 +86,31 @@ export function ApplicationRateEditScreen() {
           ),
         }}
         onSubmit={submit}
+        onCancel={back}
         isSubmitting={mutation.isPending}
         formError={error}
       />
-    </div>
+
+      <ConfirmActionDialog
+        open={confirmDelete}
+        onOpenChange={setConfirmDelete}
+        title="Delete this application rate?"
+        description={
+          <>
+            The rate for {itemName} and its dimension tags are removed for good. A rate that an assembly component points to cannot be deleted: the system refuses and
+            nothing changes. Resolution then no longer offers this rate, so another matching rate or the default for that item and work unit is used.
+          </>
+        }
+        confirmLabel="Delete rate"
+        pendingLabel="Deleting…"
+        failureMessage="The rate could not be deleted."
+        testId="delete-application-rate-dialog"
+        onConfirm={async () => {
+          await destroy.mutateAsync({ applicationRate: id });
+          await queryClient.invalidateQueries();
+          back();
+        }}
+      />
+    </RecordPresenter>
   );
 }

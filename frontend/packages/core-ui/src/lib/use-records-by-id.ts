@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useQueries } from '@tanstack/react-query';
-import { getItemsShowQueryOptions, getLocationsShowQueryOptions, getSupplierAccountsShowQueryOptions, getUomsShowQueryOptions, getWarehousesShowQueryOptions } from '@erp/core-api';
+import { getChartOfAccountsShowQueryOptions, getItemsShowQueryOptions, getLocationsShowQueryOptions, getSupplierAccountsShowQueryOptions, getUomsShowQueryOptions, getWarehousesShowQueryOptions } from '@erp/core-api';
 
 /**
  * A record a screen already knows by id (a line's item, a document's supplier, a filter's chosen location) must be resolved by that id. A page of a list is
@@ -34,3 +34,5 @@ export const useUomsById = <T extends { id: number }>(ids: number[], known: T[])
 export const useLocationsById = <T extends { id: number }>(ids: number[], known: T[]) => useByIds<T>(ids, (id) => getLocationsShowQueryOptions(id, { include: 'warehouse' }), known);
 export const useSuppliersById = <T extends { id: number }>(ids: number[], known: T[]) => useByIds<T>(ids, (id) => getSupplierAccountsShowQueryOptions(id, { include: 'party' }), known);
 export const useWarehousesById = <T extends { id: number }>(ids: number[], known: T[]) => useByIds<T>(ids, (id) => getWarehousesShowQueryOptions(id), known);
+export const useAccountsById = <T extends { id: number }>(ids: number[], known: T[], enabled = true) =>
+  useByIds<T>(enabled ? ids : [], (id) => getChartOfAccountsShowQueryOptions(id), known);

@@ -85,6 +85,8 @@ final class DemoDatabaseSeeder extends Seeder
                 ApprovalAuditorsDemoSeeder::class,
                 // Needs the demo warehouses (InventoryDemoSeeder, StockTransfersDemoSeeder): two sites that own them, and a limited clerk for each.
                 OrganisationDemoSeeder::class,
+                // After StockDemoSeeder (the demo login holds every capability by then) and PartiesDemoSeeder: contacts, a dual-role partner, an archived customer, an individual.
+                PartnersAndContactsDemoSeeder::class,
                 SalesCrmDemoSeeder::class,
                 // After SalesCrmDemoSeeder (a draft links to its deal) and the currency rates; a no-op unless the staged quotation duties are locally activated.
                 QuotationDraftsDemoSeeder::class,

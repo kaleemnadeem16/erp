@@ -35,7 +35,8 @@ test('the same litres in different cans is a composition fix: no stock movement,
   const supervisor = await signInAs(browser, SUPERVISOR);
   await supervisor.goto(`/physical-counts/${countId}`);
   await supervisor.getByRole('button', { name: 'Post count' }).click();
-  await expect(supervisor.getByText('POSTED', { exact: true })).toBeVisible();
+  // The count is a record sheet over its list now, and the list behind it also shows statuses: look in the sheet.
+  await expect(supervisor.getByRole('dialog').getByText('POSTED', { exact: true }).first()).toBeVisible();
 
   const balance = (await api(page, 'GET', `/package-balances?item_id=${world.item.id}`)).data[0];
   expect([balance.sealed[0].count, balance.loose, balance.total]).toEqual([4, '0.0000', '20.0000']);
@@ -85,7 +86,8 @@ test('a line goes stale when stock moves, is refreshed and recounted, and found 
   await suggestion.click();
   await expect(supervisor.getByTestId('found-cost')).toHaveValue('10');
   await post.click();
-  await expect(supervisor.getByText('POSTED', { exact: true })).toBeVisible();
+  // The count is a record sheet over its list now, and the list behind it also shows statuses: look in the sheet.
+  await expect(supervisor.getByRole('dialog').getByText('POSTED', { exact: true }).first()).toBeVisible();
 
   const balance = (await api(page, 'GET', `/package-balances?item_id=${world.item.id}`)).data[0];
   expect([balance.sealed[0].count, balance.loose, balance.total]).toEqual([3, '5.0000', '20.0000']);

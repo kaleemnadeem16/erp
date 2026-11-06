@@ -25,6 +25,7 @@ import { RecordSheet } from '../../components/page/record-sheet';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { useAuthStore } from '../../stores/auth-store';
 import { LocationsPanel } from './locations-panel';
+import { LocationRolesPanel } from './location-roles-panel';
 import { DetailPrintLayout, PrintTrigger, useQuickPrint, type DetailPrintSection } from '../../components/print';
 import { formatDate } from '../../lib/format-date';
 import { getApiErrorMessage } from '../../lib/api-errors';
@@ -211,6 +212,8 @@ export function WarehouseDetailScreen({ presentation = 'page' }: WarehouseDetail
           mayManage={mayManageLocations}
           mayMarkUsable={mayMarkUsable}
         />
+
+        <LocationRolesPanel warehouseId={warehouse.id} structured={structured} mayManage={mayManageLocations} />
 
         <DetailSection title="Inventory operations" fullWidth>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">

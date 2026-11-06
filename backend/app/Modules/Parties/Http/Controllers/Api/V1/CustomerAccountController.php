@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Parties\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Accounting\Support\AccountMappingAccess;
 use App\Modules\Parties\Actions\ArchiveCustomerAccount;
 use App\Modules\Parties\Actions\CreateCustomerAccount;
 use App\Modules\Parties\Actions\UpdateCustomerAccount;
@@ -32,7 +33,10 @@ class CustomerAccountController extends Controller
     /** @var array<string, string> */
     private const SORTABLE = [
         'code' => 'code',
+        'payment_terms_days' => 'payment_terms_days',
+        'status' => 'status',
         'created_at' => 'created_at',
+        'updated_at' => 'updated_at',
     ];
 
     public function index(IndexCustomerAccountRequest $request): AnonymousResourceCollection
@@ -45,8 +49,25 @@ class CustomerAccountController extends Controller
         if ($request->filled('filter.status')) {
             $query->where('status', $request->input('filter.status'));
         }
+        if ($request->filled('filter.default_currency_id')) {
+            $query->where('default_currency_id', $request->input('filter.default_currency_id'));
+        }
+        // The receivable control account is a protected mapping: filtering by it is allowed only to someone who may read it (ADR 0084),
+        // otherwise the filter would let a limited reader infer what it hides.
+        if ($request->filled('filter.receivable_account_id') && AccountMappingAccess::canView($request->user())) {
+            $query->where('receivable_account_id', $request->input('filter.receivable_account_id'));
+        }
         if ($request->filled('filter.search')) {
-            $query->where('code', 'ilike', '%'.$request->string('filter.search')->toString().'%');
+            $search = $request->string('filter.search')->toString();
+            $query->where(function ($q) use ($search) {
+                $q->where('code', 'ilike', '%'.$search.'%')
+                    ->orWhereHas('party', fn ($pq) => $pq
+                        ->where('name', 'ilike', '%'.$search.'%')
+                        ->orWhere('code', 'ilike', '%'.$search.'%')
+                        ->orWhere('tax_id', 'ilike', '%'.$search.'%')
+                        ->orWhere('registration_no', 'ilike', '%'.$search.'%')
+                    );
+            });
         }
         $this->applySort($query, $request, self::SORTABLE, 'code');
 

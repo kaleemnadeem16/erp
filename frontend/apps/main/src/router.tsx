@@ -38,6 +38,16 @@ import {
   GoodsReceiptCreateScreen,
   GoodsReceiptEditScreen,
   SuppliersListScreen,
+  CustomersListScreen,
+  ExchangeRatesListScreen,
+  ExchangeRateFormScreen,
+  ChartOfAccountsListScreen,
+  ChartOfAccountFormScreen,
+  CustomerDetailScreen,
+  CustomerFormScreen,
+  PartiesListScreen,
+  PartyDetailScreen,
+  PartyFormScreen,
   SupplierDetailScreen,
   SupplierFormScreen,
   CustomFieldsSettingsScreen,
@@ -104,6 +114,7 @@ import {
   OrganisationSettingsScreen,
   RecalculationRequestsListScreen,
   ResourceRatesListScreen,
+  ResourceRateFormScreen,
   RolesSettingsScreen,
   StockLedgerScreen,
   StockMoveDetailScreen,
@@ -131,6 +142,36 @@ const packCreateAsSheet = presentation.packConversionCreate === "sheet";
 const packDetailAsSheet = presentation.packConversionDetail === "sheet";
 const packEditAsSheet = presentation.packConversionEdit === "sheet";
 const supplierEditAsSheet = presentation.supplierEdit === "sheet";
+const physicalCountCreateAsSheet = presentation.physicalCountCreate === "sheet";
+const physicalCountDetailAsSheet = presentation.physicalCountDetail === "sheet";
+const inventoryCutoverCreateAsSheet = presentation.inventoryCutoverCreate === "sheet";
+const inventoryCutoverDetailAsSheet = presentation.inventoryCutoverDetail === "sheet";
+const negativeStockOverrideCreateAsSheet = presentation.negativeStockOverrideCreate === "sheet";
+const negativeStockOverrideDetailAsSheet = presentation.negativeStockOverrideDetail === "sheet";
+const recalculationRequestCreateAsSheet = presentation.recalculationRequestCreate === "sheet";
+const recalculationRequestDetailAsSheet = presentation.recalculationRequestDetail === "sheet";
+const exchangeRateCreateAsSheet = presentation.exchangeRateCreate === "sheet";
+const exchangeRateDetailAsSheet = presentation.exchangeRateDetail === "sheet";
+const resourceRateCreateAsSheet = presentation.resourceRateCreate === "sheet";
+const resourceRateDetailAsSheet = presentation.resourceRateDetail === "sheet";
+const rateDimensionCreateAsSheet = presentation.rateDimensionCreate === "sheet";
+const rateDimensionEditAsSheet = presentation.rateDimensionEdit === "sheet";
+const applicationRateCreateAsSheet = presentation.applicationRateCreate === "sheet";
+const applicationRateEditAsSheet = presentation.applicationRateEdit === "sheet";
+const formulationCreateAsSheet = presentation.formulationCreate === "sheet";
+const formulationEditAsSheet = presentation.formulationEdit === "sheet";
+const assemblyGroupCreateAsSheet = presentation.assemblyGroupCreate === "sheet";
+const assemblyGroupEditAsSheet = presentation.assemblyGroupEdit === "sheet";
+const assemblyCreateAsSheet = presentation.assemblyCreate === "sheet";
+const assemblyEditAsSheet = presentation.assemblyEdit === "sheet";
+const chartOfAccountCreateAsSheet = presentation.chartOfAccountCreate === "sheet";
+const chartOfAccountDetailAsSheet = presentation.chartOfAccountDetail === "sheet";
+const customerCreateAsSheet = presentation.customerCreate === "sheet";
+const customerDetailAsSheet = presentation.customerDetail === "sheet";
+const customerEditAsSheet = presentation.customerEdit === "sheet";
+const partyCreateAsSheet = presentation.partyCreate === "sheet";
+const partyDetailAsSheet = presentation.partyDetail === "sheet";
+const partyEditAsSheet = presentation.partyEdit === "sheet";
 const goodsReceiptCreateAsSheet = presentation.goodsReceiptCreate === "sheet";
 const goodsReceiptDetailAsSheet = presentation.goodsReceiptDetail === "sheet";
 const goodsReceiptEditAsSheet = presentation.goodsReceiptEdit === "sheet";
@@ -524,160 +565,252 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <RateDimensionsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/rate-dimensions/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <RateDimensionCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/rate-dimensions/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <RateDimensionEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {rateDimensionCreateAsSheet && (
+            <Route path="new" element={<RateDimensionCreateScreen presentation="sheet" />} />
+          )}
+          {rateDimensionEditAsSheet && (
+            <Route path=":id/edit" element={<RateDimensionEditScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!rateDimensionCreateAsSheet && (
+          <Route
+            path="/rate-dimensions/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RateDimensionCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!rateDimensionEditAsSheet && (
+          <Route
+            path="/rate-dimensions/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RateDimensionEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/application-rates"
           element={
             <ProtectedRoute>
               <AppShell>
                 <ApplicationRatesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/application-rates/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ApplicationRateCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/application-rates/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <ApplicationRateEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {applicationRateCreateAsSheet && (
+            <Route path="new" element={<ApplicationRateCreateScreen presentation="sheet" />} />
+          )}
+          {applicationRateEditAsSheet && (
+            <Route path=":id/edit" element={<ApplicationRateEditScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!applicationRateCreateAsSheet && (
+          <Route
+            path="/application-rates/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ApplicationRateCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!applicationRateEditAsSheet && (
+          <Route
+            path="/application-rates/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ApplicationRateEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/formulations"
           element={
             <ProtectedRoute>
               <AppShell>
                 <FormulationsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/formulations/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <FormulationCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/formulations/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <FormulationEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {formulationCreateAsSheet && (
+            <Route path="new" element={<FormulationCreateScreen presentation="sheet" />} />
+          )}
+          {formulationEditAsSheet && (
+            <Route path=":id/edit" element={<FormulationEditScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!formulationCreateAsSheet && (
+          <Route
+            path="/formulations/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <FormulationCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!formulationEditAsSheet && (
+          <Route
+            path="/formulations/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <FormulationEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/assembly-groups"
           element={
             <ProtectedRoute>
               <AppShell>
                 <AssemblyGroupsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/assembly-groups/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <AssemblyGroupCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/assembly-groups/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <AssemblyGroupEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {assemblyGroupCreateAsSheet && (
+            <Route path="new" element={<AssemblyGroupCreateScreen presentation="sheet" />} />
+          )}
+          {assemblyGroupEditAsSheet && (
+            <Route path=":id/edit" element={<AssemblyGroupEditScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!assemblyGroupCreateAsSheet && (
+          <Route
+            path="/assembly-groups/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <AssemblyGroupCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!assemblyGroupEditAsSheet && (
+          <Route
+            path="/assembly-groups/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <AssemblyGroupEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/assemblies"
           element={
             <ProtectedRoute>
               <AppShell>
                 <AssembliesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/assemblies/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <AssemblyCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/assemblies/:id/edit"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <AssemblyEditScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {assemblyCreateAsSheet && (
+            <Route path="new" element={<AssemblyCreateScreen presentation="sheet" />} />
+          )}
+          {assemblyEditAsSheet && (
+            <Route path=":id/edit" element={<AssemblyEditScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!assemblyCreateAsSheet && (
+          <Route
+            path="/assemblies/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <AssemblyCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!assemblyEditAsSheet && (
+          <Route
+            path="/assemblies/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <AssemblyEditScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/resource-rates"
           element={
             <ProtectedRoute>
               <AppShell>
                 <ResourceRatesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
+        >
+          {resourceRateCreateAsSheet && (
+            <Route path="new" element={<ResourceRateFormScreen presentation="sheet" />} />
+          )}
+          {resourceRateDetailAsSheet && (
+            <Route path=":id" element={<ResourceRateFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!resourceRateCreateAsSheet && (
+          <Route
+            path="/resource-rates/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ResourceRateFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!resourceRateDetailAsSheet && (
+          <Route
+            path="/resource-rates/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ResourceRateFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/material-preview"
           element={
@@ -817,6 +950,204 @@ export function AppRouter() {
               <ProtectedRoute>
                 <AppShell>
                   <SupplierFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/customers"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <CustomersListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {customerCreateAsSheet && (
+            <Route path="new" element={<CustomerFormScreen presentation="sheet" />} />
+          )}
+          {customerDetailAsSheet && (
+            <Route path=":id" element={<CustomerDetailScreen presentation="sheet" />} />
+          )}
+          {customerEditAsSheet && (
+            <Route path=":id/edit" element={<CustomerFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!customerCreateAsSheet && (
+          <Route
+            path="/customers/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CustomerFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!customerDetailAsSheet && (
+          <Route
+            path="/customers/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CustomerDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!customerEditAsSheet && (
+          <Route
+            path="/customers/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <CustomerFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/parties"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PartiesListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {partyCreateAsSheet && (
+            <Route path="new" element={<PartyFormScreen presentation="sheet" />} />
+          )}
+          {partyDetailAsSheet && (
+            <Route path=":id" element={<PartyDetailScreen presentation="sheet" />} />
+          )}
+          {partyEditAsSheet && (
+            <Route path=":id/edit" element={<PartyFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!partyCreateAsSheet && (
+          <Route
+            path="/parties/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PartyFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!partyDetailAsSheet && (
+          <Route
+            path="/parties/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PartyDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!partyEditAsSheet && (
+          <Route
+            path="/parties/:id/edit"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PartyFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/settings/exchange-rates"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ExchangeRatesListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {exchangeRateCreateAsSheet && (
+            <Route path="new" element={<ExchangeRateFormScreen presentation="sheet" />} />
+          )}
+          {exchangeRateDetailAsSheet && (
+            <Route path=":id" element={<ExchangeRateFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!exchangeRateCreateAsSheet && (
+          <Route
+            path="/settings/exchange-rates/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ExchangeRateFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!exchangeRateDetailAsSheet && (
+          <Route
+            path="/settings/exchange-rates/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ExchangeRateFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        <Route
+          path="/settings/chart-of-accounts"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <ChartOfAccountsListScreen />
+                <Outlet />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {chartOfAccountCreateAsSheet && (
+            <Route path="new" element={<ChartOfAccountFormScreen presentation="sheet" />} />
+          )}
+          {chartOfAccountDetailAsSheet && (
+            <Route path=":id" element={<ChartOfAccountFormScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!chartOfAccountCreateAsSheet && (
+          <Route
+            path="/settings/chart-of-accounts/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ChartOfAccountFormScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!chartOfAccountDetailAsSheet && (
+          <Route
+            path="/settings/chart-of-accounts/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <ChartOfAccountFormScreen presentation="page" />
                 </AppShell>
               </ProtectedRoute>
             }
@@ -1017,30 +1348,42 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <PhysicalCountsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/physical-counts/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PhysicalCountCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/physical-counts/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <PhysicalCountDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {physicalCountCreateAsSheet && (
+            <Route path="new" element={<PhysicalCountCreateScreen presentation="sheet" />} />
+          )}
+          {physicalCountDetailAsSheet && (
+            <Route path=":id" element={<PhysicalCountDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!physicalCountCreateAsSheet && (
+          <Route
+            path="/physical-counts/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PhysicalCountCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!physicalCountDetailAsSheet && (
+          <Route
+            path="/physical-counts/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <PhysicalCountDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/supplier-returns"
           element={
@@ -1317,90 +1660,126 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <InventoryCutoversListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/inventory-cutovers/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <InventoryCutoverCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/inventory-cutovers/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <InventoryCutoverDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {inventoryCutoverCreateAsSheet && (
+            <Route path="new" element={<InventoryCutoverCreateScreen presentation="sheet" />} />
+          )}
+          {inventoryCutoverDetailAsSheet && (
+            <Route path=":id" element={<InventoryCutoverDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!inventoryCutoverCreateAsSheet && (
+          <Route
+            path="/inventory-cutovers/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <InventoryCutoverCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!inventoryCutoverDetailAsSheet && (
+          <Route
+            path="/inventory-cutovers/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <InventoryCutoverDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/negative-stock-overrides"
           element={
             <ProtectedRoute>
               <AppShell>
                 <NegativeStockOverridesListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/negative-stock-overrides/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <NegativeStockOverrideCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/negative-stock-overrides/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <NegativeStockOverrideDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {negativeStockOverrideCreateAsSheet && (
+            <Route path="new" element={<NegativeStockOverrideCreateScreen presentation="sheet" />} />
+          )}
+          {negativeStockOverrideDetailAsSheet && (
+            <Route path=":id" element={<NegativeStockOverrideDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!negativeStockOverrideCreateAsSheet && (
+          <Route
+            path="/negative-stock-overrides/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <NegativeStockOverrideCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!negativeStockOverrideDetailAsSheet && (
+          <Route
+            path="/negative-stock-overrides/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <NegativeStockOverrideDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/recalculation-requests"
           element={
             <ProtectedRoute>
               <AppShell>
                 <RecalculationRequestsListScreen />
+                <Outlet />
               </AppShell>
             </ProtectedRoute>
           }
-        />
-        <Route
-          path="/recalculation-requests/new"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <RecalculationRequestCreateScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/recalculation-requests/:id"
-          element={
-            <ProtectedRoute>
-              <AppShell>
-                <RecalculationRequestDetailScreen />
-              </AppShell>
-            </ProtectedRoute>
-          }
-        />
+        >
+          {recalculationRequestCreateAsSheet && (
+            <Route path="new" element={<RecalculationRequestCreateScreen presentation="sheet" />} />
+          )}
+          {recalculationRequestDetailAsSheet && (
+            <Route path=":id" element={<RecalculationRequestDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {!recalculationRequestCreateAsSheet && (
+          <Route
+            path="/recalculation-requests/new"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RecalculationRequestCreateScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
+        {!recalculationRequestDetailAsSheet && (
+          <Route
+            path="/recalculation-requests/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <RecalculationRequestDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/settings/purchasing"
           element={

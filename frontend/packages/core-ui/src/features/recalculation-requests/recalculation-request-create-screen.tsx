@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import type { UseFormReturn } from 'react-hook-form';
 import { useRecalculationRequestsStore, type RecalculationMovementKind } from '@erp/core-api';
+import { RecordPresenter } from '../../components/page/record-presenter';
+import type { Presentation } from '../../lib/presentation';
 
-import { PageHeader } from '../../components/page/page-header';
 import { applyApiErrorsToForm } from '../../lib/api-errors';
 import {
   RecalculationRequestForm,
@@ -11,8 +12,9 @@ import {
   type RecalculationRequestFormValues,
 } from './recalculation-request-form';
 
-export function RecalculationRequestCreateScreen() {
+export function RecalculationRequestCreateScreen({ presentation = 'sheet' }: { presentation?: Presentation } = {}) {
   const navigate = useNavigate();
+  const { search } = useLocation();
   const [formError, setFormError] = useState<string | null>(null);
   const createRequest = useRecalculationRequestsStore();
 
@@ -40,7 +42,7 @@ export function RecalculationRequestCreateScreen() {
       },
       {
         onSuccess: (result) => {
-          if (result.status === 201) navigate(`/recalculation-requests/${result.data.data.id}`);
+          if (result.status === 201) navigate({ pathname: `/recalculation-requests/${result.data.data.id}`, search });
         },
         onError: (error) => setFormError(applyApiErrorsToForm(error, form.setError, RECALCULATION_REQUEST_FORM_FIELDS)),
       }
@@ -48,13 +50,16 @@ export function RecalculationRequestCreateScreen() {
   }
 
   return (
-    <div className="space-y-4 p-6">
-      <PageHeader
-        title="New stock recalculation request"
-        description="Request a correction for a backdated receipt, issue or transfer that conflicts with later valuation history."
-        breadcrumbs={[{ label: 'Stock Recalculation', to: '/recalculation-requests' }, { label: 'New' }]}
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title="New stock recalculation request"
+      description="Request a correction for a backdated receipt, issue or transfer that conflicts with later valuation history."
+      listPath="/recalculation-requests"
+      listLabel="Stock Recalculation"
+      size="lg"
+      form
+    >
       <RecalculationRequestForm onSubmit={handleSubmit} isSubmitting={createRequest.isPending} formError={formError} />
-    </div>
+    </RecordPresenter>
   );
 }

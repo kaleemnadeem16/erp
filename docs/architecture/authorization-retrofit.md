@@ -369,4 +369,4 @@ verification remains open.
       `inventory.warehouse.manage`; warehouse-location role writes need `inventory.location.manage`. Reads stay open
       shared reference data. Allowed/denied tests: `WarehouseApiTest`. Frontend: the Warehouses list hides
       "New warehouse" and the detail screen hides "Edit" without `inventory.warehouse.manage`, and the `/warehouses`
-      route now needs either capability instead of the legacy setup gate. No screen edits location roles yet.
+      route now needs either capability instead of the legacy setup gate. No screen edited location roles at that date (historical; since 2026-11-05 the warehouse sheet's *Location roles* panel does, STRUCTURED mode only, gated by the same capability).

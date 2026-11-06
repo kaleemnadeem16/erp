@@ -12,8 +12,9 @@ test('the override list shows what each request has actually been decided or rev
   await page.goto('/negative-stock-overrides');
   await expect(page.getByRole('heading', { name: /Negative-Stock Override/i }).first()).toBeVisible();
 
+  // The on-screen table only: the list also carries a hidden Quick Print table with the same rows (Print / Print selected).
   const rowFor = (item: string, status: string) =>
-    page.locator('tbody tr', { hasText: item }).filter({ hasText: status });
+    page.getByRole('table').locator('tbody tr', { hasText: item }).filter({ hasText: status });
 
   // A prior-approval item with one request of each decision.
   await expect(rowFor('demo-neg-primer', 'Rejected')).toHaveCount(1);

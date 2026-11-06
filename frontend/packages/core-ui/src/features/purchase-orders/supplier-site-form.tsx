@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   useSupplierAccountsSitesStore,
+  useSupplierSitesUpdate,
   type SupplierSiteResource,
 } from "@erp/core-api";
 
@@ -63,36 +64,88 @@ const defaultValues: SupplierSiteFormValues = {
   is_default: false,
 };
 
+/** The form values an existing site opens with (an edit starts from what is stored, never from blanks). */
+function valuesOf(site: SupplierSiteResource): SupplierSiteFormValues {
+  const address = site.party_site;
+
+  return {
+    name: address?.name ?? "",
+    role: site.role === "SHIP_FROM" ? "SHIP_FROM" : "ORDER_FROM",
+    address_line1: address?.address_line1 ?? "",
+    address_line2: address?.address_line2 ?? "",
+    city: address?.city ?? "",
+    state: address?.state ?? "",
+    postal_code: address?.postal_code ?? "",
+    country_code: address?.country_code ?? "",
+    is_default: site.is_default,
+  };
+}
+
 /**
  * A quick "add an address" side-task, started without leaving the purchase
  * order form it's needed from — see components/ui/dialog.tsx for why this is
  * a centered dialog rather than another side sheet. Creates the supplier's
  * new site and hands the finished record back; the caller decides what to do
  * with it (select it on the order being drafted).
+ *
+ * Given a `site` it edits that address instead (the supplier record's *Edit*):
+ * emptied optional parts are sent as `null` so a stored value can be cleared,
+ * and `onCreated` then receives the saved site.
  */
 export function SupplierSiteDialog({
   supplierAccountId,
   open,
   onOpenChange,
   onCreated,
+  site,
 }: {
   supplierAccountId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: (site: SupplierSiteResource) => void;
+  site?: SupplierSiteResource;
 }) {
   const form = useForm<SupplierSiteFormValues>({
     resolver: zodResolver(schema),
-    defaultValues,
+    defaultValues: site ? valuesOf(site) : defaultValues,
   });
   const create = useSupplierAccountsSitesStore();
+  const update = useSupplierSitesUpdate();
+  const mutation = site ? update : create;
 
   useEffect(() => {
-    if (open) form.reset(defaultValues);
+    if (open) form.reset(site ? valuesOf(site) : defaultValues);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, site?.id]);
 
   function handleSubmit(values: SupplierSiteFormValues) {
+    if (site) {
+      update.mutate(
+        {
+          supplierSite: site.id,
+          data: {
+            name: values.name,
+            role: values.role,
+            address_line1: values.address_line1 || null,
+            address_line2: values.address_line2 || null,
+            city: values.city || null,
+            state: values.state || null,
+            postal_code: values.postal_code || null,
+            country_code: values.country_code ? values.country_code.toUpperCase() : null,
+            is_default: values.is_default,
+          },
+        },
+        {
+          onSuccess: (result) => {
+            if (result.status === 200) {
+              onCreated(result.data.data);
+              onOpenChange(false);
+            }
+          },
+        },
+      );
+      return;
+    }
     create.mutate(
       {
         supplierAccount: supplierAccountId,
@@ -123,16 +176,16 @@ export function SupplierSiteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add a supplier site</DialogTitle>
+          <DialogTitle>{site ? "Edit supplier site" : "Add a supplier site"}</DialogTitle>
           <DialogDescription>
             An address this supplier orders from or ships from — used on purchase orders and their print.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form className="space-y-4" onSubmit={form.handleSubmit(handleSubmit)}>
-            {create.error && (
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
-                {getApiErrorMessage(create.error)}
+            {mutation.error && (
+              <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                {getApiErrorMessage(mutation.error)}
               </div>
             )}
             <div className="grid grid-cols-2 gap-3">
@@ -265,8 +318,8 @@ export function SupplierSiteDialog({
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={create.isPending}>
-                {create.isPending ? "Adding…" : "Add site"}
+              <Button type="submit" disabled={mutation.isPending}>
+                {mutation.isPending ? (site ? "Saving…" : "Adding…") : site ? "Save site" : "Add site"}
               </Button>
             </DialogFooter>
           </form>

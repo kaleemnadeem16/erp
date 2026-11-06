@@ -88,6 +88,9 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | Doc | Covers |
 |---|---|
 | [parties.md](parties.md) | Customers and suppliers — unified party model, role accounts, sites |
+| [parties-screens.md](parties-screens.md) | The Customers and Trading partners screens — inventory, coverage matrix |
+| [reference-data-screens.md](reference-data-screens.md) | The Exchange rates and Chart of accounts screens — placement, coverage matrix |
+| [estimating-screens.md](estimating-screens.md) | The Estimating group's screens (rate dimensions, application rates, formulations, assembly groups, assemblies, resource rates) — lists, sheets, backend coverage matrix |
 | [purchasing.md](purchasing.md) | Purchase orders, receipts, QA and matching boundaries |
 | [acquisition-costing.md](acquisition-costing.md) | Provisional/actual purchase cost and landed-cost allocation |
 | [receipt-package-evidence.md](receipt-package-evidence.md) | Observed sealed/loose arrival and atomic receipt-source evidence |

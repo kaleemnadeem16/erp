@@ -65,7 +65,11 @@ Deletion remains blocked while an assembly refers to the group. Before deploymen
 maintainers need an explicit grant; registration alone does not grant operational users access.
 The Assembly Groups list exposes URL-backed code/name search and mobile cards. Its New
 and row-edit affordances follow the effective manage capability; API and Action checks
-remain authoritative.
+remain authoritative. The group opens as a sheet with its overhead policy and a *Delete
+group* action whose refusal (an assembly still belongs to it) is shown as the server states it.
+Assemblies open as a wide sheet with their versions: a DRAFT version's notes and components can be
+edited in place, a version is activated or a draft deleted after a confirmation, and *Archive* retires
+the assembly (no un-archive). See [estimating-screens.md](estimating-screens.md).
 
 ## Schema
 

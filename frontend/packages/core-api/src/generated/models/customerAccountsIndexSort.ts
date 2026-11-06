@@ -11,7 +11,13 @@ export type CustomerAccountsIndexSort =
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const CustomerAccountsIndexSort = {
   code: "code",
+  payment_terms_days: "payment_terms_days",
+  status: "status",
   created_at: "created_at",
+  updated_at: "updated_at",
   "-code": "-code",
+  "-payment_terms_days": "-payment_terms_days",
+  "-status": "-status",
   "-created_at": "-created_at",
+  "-updated_at": "-updated_at",
 } as const;

@@ -109,6 +109,24 @@ const rules: readonly Rule[] = [
   },
   { path: "/leads", anyOf: salesRead },
   { path: "/sales-stages", anyOf: [...salesRead, "sales.stage.manage"] },
+  // Customers and trading partners (docs/domain/parties.md): reading is a shared reference lookup, but the screens are for those who maintain
+  // partners/accounts or work the Sales pipeline that chooses them. Creating/editing is judged separately below.
+  {
+    path: "/customers",
+    anyOf: ["parties.customer-account.manage", "parties.party.manage", ...salesRead],
+  },
+  {
+    path: "/parties",
+    anyOf: [
+      "parties.party.manage",
+      "parties.customer-account.manage",
+      "parties.supplier-account.manage",
+    ],
+  },
+  // Settings → Money / Company reference data. Reading rates and accounts is a shared lookup for the documents that use them; these screens are for those who
+  // maintain them (default-deny: no maintenance duty, no screen).
+  { path: "/settings/exchange-rates", anyOf: ["currency.exchange-rate.manage"] },
+  { path: "/settings/chart-of-accounts", anyOf: ["accounting.chart-of-account.manage"] },
   { path: "/supplier-returns", anyOf: supplierReturn },
   { path: "/stock-scraps", anyOf: stockScrap },
   { path: "/inventory-cutovers", anyOf: cutover },
@@ -269,6 +287,18 @@ export function canAccessScreen(
   }
   if (/^\/suppliers\/[^/]+\/edit$/.test(pathname))
     return permissions.has("parties.supplier-account.manage");
+  // Registering a customer needs account maintenance plus the two field authorities the API requires on create (terms, receivable mapping).
+  if (pathname === "/customers/new") {
+    return (
+      permissions.has("parties.customer-account.manage") &&
+      permissions.has("parties.payment-terms.manage") &&
+      permissions.has("accounting.account-mapping.manage")
+    );
+  }
+  if (/^\/customers\/[^/]+\/edit$/.test(pathname))
+    return permissions.has("parties.customer-account.manage");
+  if (pathname === "/parties/new" || /^\/parties\/[^/]+\/edit$/.test(pathname))
+    return permissions.has("parties.party.manage");
   if (pathname === "/recalculation-requests/new") {
     return permissions.has("inventory.recalculation.request");
   }
@@ -307,6 +337,23 @@ export function canAccessScreen(
     /^\/application-rates\/[^/]+\/edit$/.test(pathname)
   ) {
     return permissions.has("estimating.application-rate.manage");
+  }
+  // The recipe screens open to a reader (estimating.recipe.view); making or changing one still takes the maintaining duty.
+  if (
+    pathname === "/formulations/new" ||
+    /^\/formulations\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("estimating.formulation.manage");
+  }
+  if (
+    pathname === "/assemblies/new" ||
+    /^\/assemblies\/[^/]+\/edit$/.test(pathname)
+  ) {
+    return permissions.has("estimating.assembly.manage");
+  }
+  // Rates open to someone who may read internal cost; adding one takes the maintaining duty.
+  if (pathname === "/resource-rates/new") {
+    return permissions.has("estimating.resource-rate.manage");
   }
   // The Settings index is open to everyone, but only the index itself: as a rule it would prefix-match every /settings/* page that has no rule of
   // its own (or that comes after it) and open them all. Each page it links to is still judged by its own rule below.

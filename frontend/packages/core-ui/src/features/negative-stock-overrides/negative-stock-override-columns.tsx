@@ -1,6 +1,8 @@
 import type { NegativeStockOverrideRequestResource } from '@erp/core-api';
 
 import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
+import { humanizeCode } from '../../components/data-table/list-controls';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 
@@ -33,6 +35,7 @@ export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideReque
     key: 'id',
     header: 'Request',
     value: (override) => `#${override.id}`,
+    cell: (override) => <RecordLink>#{override.id}</RecordLink>,
     cardRole: 'title',
   },
   {
@@ -44,7 +47,7 @@ export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideReque
   {
     key: 'movement_class',
     header: 'Movement class',
-    value: (override) => override.movement_class,
+    value: (override) => humanizeCode(override.movement_class),
     filterable: true,
   },
   {
@@ -55,7 +58,7 @@ export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideReque
   {
     key: 'authorisation_mode',
     header: 'Mode',
-    value: (override) => override.authorisation_mode,
+    value: (override) => humanizeCode(override.authorisation_mode),
     filterable: true,
   },
   {

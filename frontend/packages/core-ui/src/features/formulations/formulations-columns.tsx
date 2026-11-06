@@ -1,20 +1,16 @@
 import type { FormulationResource } from '@erp/core-api';
-import { Badge } from '../../components/ui/badge';
+import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
-
-const STATUS_VARIANT: Record<string, 'default' | 'secondary' | 'success'> = {
-  DRAFT: 'secondary',
-  ACTIVE: 'success',
-  ARCHIVED: 'secondary',
-};
+import { humanizeCode } from '../../components/data-table';
+import { RecipeStatusBadge } from '../estimating/estimating-status';
 
 export const formulationColumns: DataColumn<FormulationResource>[] = [
-  { key: 'code', header: 'Code', value: (row) => row.code, sortable: true, cardRole: 'title' },
+  { key: 'code', header: 'Code', value: (row) => row.code, cell: (row) => <RecordLink>{row.code}</RecordLink>, sortable: true, cardRole: 'title' },
   { key: 'name', header: 'Name', value: (row) => row.name, cardRole: 'subtitle' },
   {
     key: 'output_item',
     header: 'Output item',
-    value: (row) => (row.output_item ? `${row.output_item.code} — ${row.output_item.name}` : row.output_item_id),
+    value: (row) => (row.output_item ? `${row.output_item.code} — ${row.output_item.name}` : `Item #${row.output_item_id}`),
   },
   {
     key: 'customer',
@@ -24,8 +20,8 @@ export const formulationColumns: DataColumn<FormulationResource>[] = [
   {
     key: 'status',
     header: 'Status',
-    value: (row) => row.status,
-    cell: (row) => <Badge variant={STATUS_VARIANT[row.status] ?? 'default'}>{row.status}</Badge>,
+    value: (row) => humanizeCode(row.status),
+    cell: (row) => <RecipeStatusBadge status={row.status} />,
     filterable: true,
   },
 ];

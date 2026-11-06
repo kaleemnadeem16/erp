@@ -149,6 +149,8 @@ may use another. Never infer from the customer record alone.
 
 ## Related
 
+- [reference-data-screens.md](reference-data-screens.md) — the screens that expose this (Settings → Exchange rates / Chart of accounts)
+
 - [Quotation financial calculation](quotation-financial-calculation.md)
 - [Precision, rounding and number display](precision.md)
 
