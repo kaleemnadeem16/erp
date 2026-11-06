@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -79,17 +80,17 @@ export function MaterialSelectionSettingsScreen() {
 
   if (!mayView && !mayViewMix) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
+      <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
         <PageHeader title="Material selection" description="Which stock the Material Preview proposes first." />
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
           You do not have permission to view this. Ask an administrator for <code>estimating.selection-policy.manage</code>.
         </div>
-      </div>
+      </ScreenTemplate>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Material selection"
         description="Which of the three selection presets the Material Preview proposes first for a material (company, category or item), and how tightly the company controls stock chosen by hand."
@@ -159,7 +160,7 @@ export function MaterialSelectionSettingsScreen() {
         </>)}
         {mayViewMix && <StockMixControlPanel mayManage={mayManageMix} />}
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }
 

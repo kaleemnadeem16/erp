@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { lookupState } from '../../lib/api-errors';
 import { useMemo, useState } from 'react';
 import { useCategoriesIndex, type ItemResource, useMaterialVariancePoliciesIndex, type VarianceScopeType } from '@erp/core-api';
@@ -59,17 +60,17 @@ export function MaterialVarianceSettingsScreen() {
 
   if (!mayViewRules && !mayViewReasons) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
+      <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
         <PageHeader title="Material variance" description="Reasons and rules for planned material quantities." />
         <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-4 text-sm">
           You do not have permission to view this. Ask an administrator for <code>estimating.material_variance_policy.manage</code>.
         </div>
-      </div>
+      </ScreenTemplate>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Material variance"
         description="What happens when a planned material quantity differs from the calculated standard: which reasons people can give, and which differences are just recorded, need a reason or are blocked."
@@ -145,6 +146,6 @@ export function MaterialVarianceSettingsScreen() {
           </>
         )}
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

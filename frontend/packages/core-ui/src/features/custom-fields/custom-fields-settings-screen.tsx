@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useState, type FormEvent } from "react";
 import {
   useCustomFieldDefinitionsIndex,
@@ -80,7 +81,7 @@ export function CustomFieldsSettingsScreen() {
     );
   }
   return (
-    <div className="space-y-5 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-5 p-4 md:p-6">
       <PageHeader
         title="Custom fields"
         description="Add company-specific information to supported records without changing the application."
@@ -239,6 +240,6 @@ export function CustomFieldsSettingsScreen() {
           {create.isPending ? "Adding…" : "Add field"}
         </Button>
       </form>
-    </div>
+    </ScreenTemplate>
   );
 }

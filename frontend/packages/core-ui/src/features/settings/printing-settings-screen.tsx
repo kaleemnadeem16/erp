@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import {
   PurchaseOrderPrintTemplate,
   resolvePurchaseOrderPrintTemplate,
@@ -39,7 +40,7 @@ export function PrintingSettingsScreen() {
   const companyName = useCompanyName();
 
   return (
-    <div className="space-y-4 p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-6">
       <PageHeader
         title="Printing"
         description="Company details and colours used on every printed document."
@@ -263,6 +264,6 @@ export function PrintingSettingsScreen() {
           </div>
         </div>
       </div>
-    </div>
+    </ScreenTemplate>
   );
 }

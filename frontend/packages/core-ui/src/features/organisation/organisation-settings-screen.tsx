@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useMemo, useState } from "react";
 import {
   useMembersIndex,
@@ -94,7 +95,7 @@ export function OrganisationSettingsScreen() {
   }
 
   return (
-    <div className="space-y-6 p-4 pb-24 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-6 p-4 pb-24 md:p-6">
       <PageHeader
         title="Organisation"
         description="Your sites, departments and teams, who belongs to each, and the warehouses each owns. Access follows this only where you limit it to “only my units”."
@@ -233,7 +234,7 @@ export function OrganisationSettingsScreen() {
           )}
         </div>
       )}
-    </div>
+    </ScreenTemplate>
   );
 }
 

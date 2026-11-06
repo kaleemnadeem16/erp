@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { OverheadScopeType } from '@erp/core-api';
 import { PageHeader } from '../../components/page/page-header';
 import { DetailPageLayout } from '../../components/detail/detail-page-layout';
@@ -12,7 +13,7 @@ import { OverheadPolicyPanel } from '../overhead-policies/overhead-policy-panel'
  */
 export function EstimatingSettingsScreen() {
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Estimating settings"
         description="The company default overhead policy — applied to any assembly with no group- or assembly-level override of its own."
@@ -20,6 +21,6 @@ export function EstimatingSettingsScreen() {
       <DetailPageLayout>
         <OverheadPolicyPanel scopeType={OverheadScopeType.COMPANY} scopeId={null} />
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { Link } from "react-router";
 
 import { PageHeader } from "../../components/page/page-header";
@@ -32,7 +33,7 @@ export function SettingsIndexScreen() {
   })).filter((group) => group.entries.length > 0);
 
   return (
-    <div className="space-y-6" data-testid="settings-index">
+    <ScreenTemplate kind="form" className="space-y-6" data-testid="settings-index">
       <PageHeader
         title="Settings"
         description="Company policies, fixed system rules and your own preferences. Pages you may not open are not listed."
@@ -86,6 +87,6 @@ export function SettingsIndexScreen() {
           </ul>
         </section>
       ))}
-    </div>
+    </ScreenTemplate>
   );
 }

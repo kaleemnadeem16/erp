@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { Link } from "react-router";
 
 import {
@@ -50,7 +51,7 @@ export function NumbersAndRoundingScreen() {
     );
 
   return (
-    <div className="space-y-6" data-testid="numbers-and-rounding">
+    <ScreenTemplate kind="form" className="space-y-6" data-testid="numbers-and-rounding">
       <PageHeader
         backTo="/settings"
         title="Numbers and rounding"
@@ -137,6 +138,6 @@ export function NumbersAndRoundingScreen() {
           </dl>
         </DetailSection>
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

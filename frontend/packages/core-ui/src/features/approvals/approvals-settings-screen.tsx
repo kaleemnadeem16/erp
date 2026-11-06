@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useState } from 'react';
 import { useApprovalSubjectTypesIndex, useApprovalSubjectTypesMode } from '@erp/core-api';
 import { PageHeader } from '../../components/page/page-header';
@@ -27,7 +28,7 @@ export function ApprovalsSettingsScreen() {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="space-y-6 p-4 pb-24 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-6 p-4 pb-24 md:p-6">
       <PageHeader title="Approvals" description="Choose what needs approval, who must approve it, and how much each person may approve." />
       {error && <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
 
@@ -65,6 +66,6 @@ export function ApprovalsSettingsScreen() {
 
       <PoliciesPanel subjectTypes={rows} mayManage={mayManagePolicies} />
       {mayViewAuthorities && <AuthoritiesPanel subjectTypes={rows} mayManage={mayManageAuthorities} />}
-    </div>
+    </ScreenTemplate>
   );
 }

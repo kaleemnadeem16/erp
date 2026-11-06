@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -89,15 +90,15 @@ export function PurchasingSettingsScreen() {
 
   if (settingsQuery.isLoading) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
+      <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </ScreenTemplate>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Purchasing settings"
         description="Over-receipt tolerance policy — how much more than ordered may be received, and under what authority."
@@ -196,6 +197,6 @@ export function PurchasingSettingsScreen() {
 
         <PolicyChangeHistory changes={changes} isLoading={changesQuery.isLoading} isForbidden={changesForbidden} />
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

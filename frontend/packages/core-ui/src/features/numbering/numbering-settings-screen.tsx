@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router';
 import { Hash } from 'lucide-react';
 
 import { ListError } from '../../components/data-table';
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { PageHeader } from '../../components/page/page-header';
 import { RecordSheet } from '../../components/page/record-sheet';
 import { AdvancedOptionsMenu, type AdvancedOption } from '../../components/ui/advanced-options-menu';
@@ -27,7 +28,7 @@ export function NumberingSettingsScreen() {
   const [showConstants, setShowConstants] = useState(false);
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Document numbering"
         description="How the numbers on your documents are built. A new format applies to numbers issued from then on; numbers already issued never change."
@@ -84,7 +85,7 @@ export function NumberingSettingsScreen() {
       )}
       {showConstants && <NumberingConstantsPanel />}
       <Outlet />
-    </div>
+    </ScreenTemplate>
   );
 }
 

@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -108,15 +109,15 @@ export function InventorySettingsScreen() {
 
   if (settingsQuery.isLoading) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
+      <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-64 w-full" />
-      </div>
+      </ScreenTemplate>
     );
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader
         title="Inventory settings"
         description="Location structure and default AVCO pool scope — governed defaults for how stock is organised and valued."
@@ -198,6 +199,6 @@ export function InventorySettingsScreen() {
 
         <PolicyChangeHistory changes={changes} isLoading={changesLoading} isForbidden={changesForbidden} />
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

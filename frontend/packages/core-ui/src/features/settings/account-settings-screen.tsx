@@ -1,3 +1,4 @@
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -95,7 +96,7 @@ export function AccountSettingsScreen() {
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader title="Account" description="Your name and password for signing in." />
 
       <div className="flex items-center gap-4 rounded-lg border border-border bg-card p-4">
@@ -215,6 +216,6 @@ export function AccountSettingsScreen() {
 
         <SignedInDevicesSection />
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }
