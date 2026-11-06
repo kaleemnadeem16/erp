@@ -203,8 +203,8 @@ export function VarianceVerdict({ item, mayViewCost }: { item: AssembliesMateria
       )}
       {item.skipped.length > 0 && (
         <ul className="space-y-1">
-          {item.skipped.map((skipped) => (
-            <li key={skipped.band_id} className="text-muted-foreground">Not judged: {skipped.reason}</li>
+          {item.skipped.map((skipped, skippedIndex) => (
+            <li key={`${skipped.band_id}-${skippedIndex}`} className="text-muted-foreground">Not judged: {skipped.reason}</li>
           ))}
         </ul>
       )}

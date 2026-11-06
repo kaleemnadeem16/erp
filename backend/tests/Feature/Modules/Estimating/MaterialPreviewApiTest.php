@@ -572,9 +572,59 @@ class MaterialPreviewApiTest extends TestCase
 
         // The band still applies for both — cost decides the effect — but only one caller sees the amount.
         $blind->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED')->assertJsonPath('data.variance.items.0.matched.0.observed', null);
-        $blind->assertJsonPath('data.variance.items.0.matched.0.measure', 'COST_AMOUNT');
+        $blind->assertJsonPath('data.variance.items.0.matched.0.measure', null);
         $sighted->assertJsonPath('data.variance.items.0.effect', 'REASON_REQUIRED')->assertJsonPath('data.variance.items.0.matched.0.observed', '3');
         $this->assertStringNotContainsString('"observed":"3"', $blind->getContent());
+    }
+
+    public function test_a_cost_blind_response_carries_no_cost_threshold_band_or_amount_anywhere(): void
+    {
+        // Distinctive threshold so any leak of the configured figure (or the observed 3) is searchable.
+        $this->activePolicy([['OVER', 'COST_AMOUNT', '2.37', null, 'REASON_REQUIRED'], ['OVER', 'COST_PERCENT', '41.5', null, 'BLOCKED']]);
+        $body = $this->payload() + ['planned_adjustments' => [$this->adjust('5')]];
+
+        $blind = $this->actingAs($this->userWith())->postJson($this->url(), $body)->assertOk();
+        $sighted = $this->actingAs($this->userWith('estimating.internal_cost.view'))->postJson($this->url(), $body)->assertOk();
+
+        // Positive control: the authorised user still sees the full projection.
+        $sighted->assertJsonPath('data.variance.items.0.matched.0.threshold', '2.37');
+
+        $variance = $blind->json('data.variance');
+        foreach ($variance['items'][0]['matched'] as $m) {
+            $this->assertSame([null, null, null, null, null], [$m['band_id'], $m['measure'], $m['threshold'], $m['unit'], $m['observed']], 'a cost band keeps only direction and effect');
+        }
+        $this->assertSame('REASON_REQUIRED', $variance['items'][0]['effect']);
+        $json = json_encode($variance);
+        foreach (['2.37', '41.5', '"COST_AMOUNT"', '"COST_PERCENT"', 'internal cost comparison'] as $needle) {
+            $this->assertStringNotContainsString($needle, $json);
+        }
+        $this->assertNoCostFigureLeaks($variance);
+    }
+
+    /** Every leaf of the blind variance block: no non-null value under a cost-bearing key. */
+    private function assertNoCostFigureLeaks(array $node, string $path = ''): void
+    {
+        foreach ($node as $k => $v) {
+            if (is_array($v)) {
+                $this->assertNoCostFigureLeaks($v, "{$path}.{$k}");
+
+                continue;
+            }
+            if (in_array($k, ['threshold', 'observed', 'standard', 'planned', 'delta', 'cost_impact', 'known_cost_impact'], true) && ! str_contains($path, 'quantity')) {
+                if (str_contains($path, 'cost') || str_contains($path, 'matched') || $k === 'cost_impact' || $k === 'known_cost_impact') {
+                    $this->assertNull($v, "cost figure leaked at {$path}.{$k}");
+                }
+            }
+        }
+    }
+
+    public function test_a_cost_blind_response_does_not_say_a_cost_band_was_skipped_for_missing_evidence(): void
+    {
+        $this->activePolicy([['OVER', 'COST_AMOUNT', '0.5', null, 'BLOCKED']]);
+        $blind = $this->actingAs($this->userWith())->postJson($this->url(), $this->payload() + ['planned_adjustments' => [$this->adjust('5')]])->assertOk();
+
+        $this->assertStringNotContainsString('internal cost comparison', $blind->getContent());
+        $this->assertStringNotContainsString('COST_AMOUNT', $blind->getContent());
     }
 
     public function test_a_plan_shows_what_it_would_cost_against_the_standard_only_with_the_cost_capability(): void

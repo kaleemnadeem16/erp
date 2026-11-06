@@ -66,11 +66,11 @@ class MaterialVarianceApprovalTest extends TestCase
     }
 
     /** @return array{0: array<string, mixed>, 1: array<int, string>, 2: list<array<string, mixed>>} */
-    private function preview(string $standard, string $planned): array
+    private function preview(string $standard, string $planned, bool $costViewer = true): array
     {
         $leaf = ['item' => ['id' => $this->paint->id, 'code' => 'PAINT', 'name' => 'Paint'], 'standard_quantity' => $standard, 'uom' => ['id' => $this->litre->id, 'code' => 'L', 'name' => 'Litre']];
 
-        return app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $this->paint->id, 'planned_quantity' => $planned, 'uom_id' => $this->litre->id]], PermissionedActor::grant(User::factory()->create(), ['estimating.material_preview.run']));
+        return app(PreviewMaterialVariance::class)([$leaf], [['item_id' => $this->paint->id, 'planned_quantity' => $planned, 'uom_id' => $this->litre->id]], PermissionedActor::grant(User::factory()->create(), $costViewer ? ['estimating.material_preview.run', 'estimating.internal_cost.view'] : ['estimating.material_preview.run']));
     }
 
     public function test_the_approval_effect_can_be_chosen_only_while_approvals_are_switched_on(): void
@@ -117,6 +117,24 @@ class MaterialVarianceApprovalTest extends TestCase
         $this->assertSame([['Estimating lead', 1, 1, false], ['Finance', 2, 2, true]], array_map(fn (array $s): array => [$s['name'], $s['stage'], $s['required_approvals'], $s['uses_authority_limit']], $item['approval']['steps']));
         $this->assertSame(1, $data['summary']['needs_approval_count']);
         $this->assertFalse($data['summary']['can_adopt']);
+    }
+
+    public function test_a_cost_blind_caller_learns_only_that_an_approval_would_be_required(): void
+    {
+        $this->mode(ApprovalMode::Policy);
+        $this->companyPolicy('APPROVAL_REQUIRED');
+        $this->approvalPolicy();
+
+        [$data] = $this->preview('10', '15', false);
+        $item = $data['items'][0];
+
+        $this->assertSame('APPROVAL_REQUIRED', $item['effect']);
+        $this->assertFalse($item['can_adopt']);
+        $this->assertNull($item['approval']['policy']);
+        $this->assertSame([], $item['approval']['steps']);
+        $json = json_encode($data);
+        $this->assertStringNotContainsString('Variance sign-off', $json);
+        $this->assertStringNotContainsString('Finance', $json);
     }
 
     public function test_with_no_matching_approval_policy_the_plan_is_never_treated_as_not_required(): void

@@ -130,7 +130,10 @@ final class PreviewMaterialVariance
                         $costEvidenceMissing++;
                     }
                 }
-                $approval = $evaluation->effect === VarianceEffect::ApprovalRequired ? $this->approvalPreview($item, $comparison) : null;
+                // Which policy would route a difference, and its stages, depend on the internal-cost amount: without the cost
+                // capability the caller learns only that an approval would be needed (no policy, steps or lookup at all).
+                $approval = $evaluation->effect !== VarianceEffect::ApprovalRequired ? null
+                    : ($includeCost ? $this->approvalPreview($item, $comparison) : $this->blindApproval());
                 $rows[] = $this->row($item, $row, $adjustment, $evaluation, $resolution, $reason, $status, $adoptable, $includeCost, $cost, $approval);
                 $evidence[] = [
                     'item_id' => $itemId, 'planned' => (string) $plannedStock, 'reason_id' => $reason?->id,
@@ -243,6 +246,12 @@ final class PreviewMaterialVariance
         ];
     }
 
+    /** @return array{policy: null, steps: list<never>, note: string} */
+    private function blindApproval(): array
+    {
+        return ['policy' => null, 'steps' => [], 'note' => 'An approval would be required before this can be adopted.'];
+    }
+
     /**
      * The internal cost of the standard and of the plan, in the item's stock unit at its current unit cost.
      * `HIDDEN` without the cost capability and `NO_EVIDENCE` when the item has no defensible unit cost: in
@@ -270,11 +279,14 @@ final class PreviewMaterialVariance
      */
     private function row(Item $item, array $row, array $adjustment, MaterialVarianceEvaluation $evaluation, MaterialVariancePolicyResolution $resolution, ?MaterialVarianceReason $reason, string $status, bool $adoptable, bool $includeCost, array $cost, ?array $approval): array
     {
+        $costBands = $resolution->policy === null ? [] : $resolution->policy->bands
+            ->filter(fn ($b): bool => in_array($b->measure, [VarianceMeasure::CostAmount, VarianceMeasure::CostPercent], true))->pluck('id')->all();
         $matched = [];
         foreach ($evaluation->matched as $condition) {
-            // What a cost band observed is internal cost: hidden, never zero, without the cost capability.
+            // A cost band is internal-cost configuration: without the cost capability only its direction and effect
+            // remain — no measure, threshold, unit, observed amount or band identity (ADR 0054; cost-blind projection).
             if (! $includeCost && in_array($condition['measure'], [VarianceMeasure::CostAmount->value, VarianceMeasure::CostPercent->value], true)) {
-                $condition['observed'] = null;
+                $condition = ['source' => 'BAND', 'band_id' => null, 'direction' => $condition['direction'], 'measure' => null, 'threshold' => null, 'unit' => null, 'observed' => null, 'effect' => $condition['effect']];
             }
             // Spelled out (not passed through) so the generated API schema carries each field's type.
             $matched[] = [
@@ -322,7 +334,9 @@ final class PreviewMaterialVariance
                 'scope_id' => $resolution->policy->scope_id, 'method' => $resolution->method->value,
             ],
             'matched' => $matched,
-            'skipped' => $evaluation->skipped,
+            // A skipped cost band is reported without its identity (band_id 0) or its cost-evidence reason.
+            'skipped' => array_map(fn (array $s): array => ! $includeCost && in_array($s['band_id'], $costBands, true)
+                ? ['band_id' => 0, 'reason' => 'A cost-based rule could not be evaluated.'] : $s, $evaluation->skipped),
             'limitations' => $evaluation->limitations,
         ];
     }

@@ -397,3 +397,7 @@ stored actors, not something a role assignment guarantees.
   and assignments
 - [ADR 0062](../decisions/0062-company-member-and-access-administration.md) — invitation and
   additive-role decision
+
+## Cost-blind projection (reusable rule)
+
+A configured figure that only matters because of internal cost is itself internal cost. Examples are a cost-band threshold, an approval policy chosen by an amount, and its stages. When the caller lacks `estimating.internal_cost.view`, return the effect only (for example "approval would be required"). Do not return the figure, the measure, the band or policy identity, or text that reveals cost evidence. Do not run the amount-dependent lookup at all for that caller. Test the complete response, including nested results, for both caller types. Reference: Estimating README, "Cost-blind material variance preview".
