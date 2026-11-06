@@ -2,6 +2,7 @@ import { useParams } from "react-router";
 import { QuotationListScreen } from "./quotation-list-screen";
 import { QuotationIssueScreen } from "./quotation-issue-screen";
 import { QuotationDocumentScreen } from "./quotation-document-screen";
+import { QuotationApprovalScreen } from "./quotation-approval-screen";
 
 /**
  * Route entries for the list, issue and document screens. Every screen denies before any query when the production
@@ -42,5 +43,14 @@ export function QuotationDocumentRoute() {
     <Unavailable />
   ) : (
     <QuotationDocumentScreen revisionId={revision} />
+  );
+}
+
+export function QuotationApprovalRoute() {
+  const revision = revisionFrom(useParams().revision);
+  return revision === null ? (
+    <Unavailable />
+  ) : (
+    <QuotationApprovalScreen revisionId={revision} />
   );
 }

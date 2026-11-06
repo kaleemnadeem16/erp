@@ -10,6 +10,7 @@ export type StoreApprovalPolicyRequestSubjectType =
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
 export const StoreApprovalPolicyRequestSubjectType = {
+  QUOTATION_REVISION: "QUOTATION_REVISION",
   PURCHASE_ORDER: "PURCHASE_ORDER",
   MATERIAL_VARIANCE: "MATERIAL_VARIANCE",
   STOCK_MIX: "STOCK_MIX",

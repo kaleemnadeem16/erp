@@ -3,6 +3,7 @@ import {
   AppShell,
   QuotationsWorkspaceScreen,
   QuotationListRoute,
+  QuotationApprovalRoute,
   QuotationIssueRoute,
   QuotationDocumentRoute,
   QuotationCreateScreen,
@@ -161,6 +162,7 @@ export function AppRouter() {
         <Route path="/quotations" element={<ProtectedRoute><AppShell><QuotationsWorkspaceScreen /></AppShell></ProtectedRoute>} />
         {/* Gated: every screen below denies before any request while QUOTATION_UI_ENABLED is false (production); only the local dev override opens them. */}
         <Route path="/quotations/all" element={<ProtectedRoute><AppShell><QuotationListRoute /></AppShell></ProtectedRoute>} />
+        <Route path="/quotations/:revision/approval" element={<ProtectedRoute><AppShell><QuotationApprovalRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/issue" element={<ProtectedRoute><AppShell><QuotationIssueRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/document" element={<ProtectedRoute><AppShell><QuotationDocumentRoute /></AppShell></ProtectedRoute>} />
         <Route

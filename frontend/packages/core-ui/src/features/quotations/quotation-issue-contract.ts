@@ -235,6 +235,16 @@ const KNOWN: Record<string, { group: BlockerGroup; label: string }> = {
     label:
       "A discount or price override needs approval before this can be issued.",
   },
+  APPROVAL_PENDING: {
+    group: "approval",
+    label:
+      "A discount or price override is waiting for someone to approve it.",
+  },
+  APPROVAL_REJECTED: {
+    group: "approval",
+    label:
+      "The approver rejected a discount or price override. Change it before asking again.",
+  },
   CONTROLS_NOT_CONFIGURED: {
     group: "controls",
     label: "Financial controls have not been configured.",

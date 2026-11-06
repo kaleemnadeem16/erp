@@ -1,6 +1,6 @@
 [← Decisions](README.md)
 
-# 0158 — Patch only approved quotation access for the main demo user
+# 0159 — Patch only approved quotation access for the main demo user
 
 - **Status:** accepted
 - **Date:** 2026-11-06

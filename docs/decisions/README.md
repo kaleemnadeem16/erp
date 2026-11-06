@@ -176,9 +176,13 @@ in the same commit.
 
 | [0157](0157-audit-quotation-access-generation-with-an-append-only-ledger.md) | Audit quotation access generation with an append-only ledger | accepted; implementation in progress | 2026-11-05 |
 
-| [0158](0158-patch-only-approved-quotation-access-for-the-main-demo-user.md) | Patch only approved quotation access for the main demo user | accepted | 2026-11-06 |
+| [0158](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md) | Approve quotation concessions through the shared Approvals engine | proposed (owner acceptance pending) | 2026-11-05 |
 
-**Next number: 0159**
+| [0159](0159-patch-only-approved-quotation-access-for-the-main-demo-user.md) | Patch only approved quotation access for the main demo user | accepted | 2026-11-06 |
+
+| [0160](0160-correct-manual-quotation-deliveries-by-appending-reasoned-records.md) | Correct manual quotation deliveries by appending reasoned records | accepted (safest default; owner may refine) | 2026-11-05 |
+
+**Next number: 0161** (0158 approvals and 0160 delivery correction came from other work in flight; the demo patch decision was renumbered 0158 -> 0159 at the merge to avoid a collision)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

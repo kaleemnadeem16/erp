@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Http\Controllers\Api\V1;
 
 use App\Exceptions\DomainInvariantException;
 use App\Http\Controllers\Controller;
+use App\Modules\Sales\Actions\CorrectManualQuotationDelivery;
 use App\Modules\Sales\Actions\DownloadQuotationDocument;
 use App\Modules\Sales\Actions\ReadQuotationDocumentDeliveries;
 use App\Modules\Sales\Actions\ReadQuotationDocumentHistory;
@@ -14,6 +15,7 @@ use App\Modules\Sales\Actions\RecordManualQuotationDelivery;
 use App\Modules\Sales\Actions\RepairQuotationDocument;
 use App\Modules\Sales\Actions\RequestQuotationDocument;
 use App\Modules\Sales\Http\Requests\Document\CheckQuotationDocumentRequest;
+use App\Modules\Sales\Http\Requests\Document\CorrectQuotationDeliveryRequest;
 use App\Modules\Sales\Http\Requests\Document\DownloadQuotationDocumentRequest;
 use App\Modules\Sales\Http\Requests\Document\ListQuotationDeliveriesRequest;
 use App\Modules\Sales\Http\Requests\Document\RecordQuotationDeliveryRequest;
@@ -22,6 +24,7 @@ use App\Modules\Sales\Http\Requests\Document\ShowQuotationDocumentRequest;
 use App\Modules\Sales\Http\Resources\QuotationDeliveryResource;
 use App\Modules\Sales\Http\Resources\QuotationDocumentHistoryResource;
 use App\Modules\Sales\Http\Resources\QuotationDocumentStatusResource;
+use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Models\QuotationRevision;
 use Closure;
 use Dedoc\Scramble\Attributes\HeaderParameter;
@@ -109,6 +112,29 @@ class QuotationDocumentController extends Controller
     }
 
     /**
+     * Corrects or withdraws a recorded delivery by appending a new record that names it and gives the reason; the earlier record is never edited or deleted. A statement by a person, not receipt by the customer.
+     */
+    #[HeaderParameter('Idempotency-Key', 'Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).', required: true, type: 'string')]
+    #[Response(201, 'The correction was recorded.', type: 'array{data: QuotationDeliveryResource}')]
+    #[Response(200, 'An exact retry: the stored record, with the header Idempotency-Replayed: true.', type: 'array{data: QuotationDeliveryResource}')]
+    #[Response(409, 'The key was used for a different record (DELIVERY_KEY_REUSED), the record was already corrected (DELIVERY_ALREADY_CORRECTED) or it was withdrawn (DELIVERY_WITHDRAWN).', type: 'array{message: string, reason_code: string, errors: array<string, list<string>>}')]
+    public function correctDelivery(CorrectQuotationDeliveryRequest $request, int $revision, int $delivery, CorrectManualQuotationDelivery $correct): JsonResponse
+    {
+        $key = trim((string) $request->header('Idempotency-Key'));
+        $withdraw = $request->boolean('withdraw');
+        $result = $this->refusing(fn () => $correct($request->user(), $revision, $delivery, $withdraw ? null : [
+            'channel' => (string) $request->input('channel'), 'delivered_on' => (string) $request->input('delivered_on'), 'recipient_name' => (string) $request->input('recipient_name'),
+            'recipient_detail' => $request->input('recipient_detail'), 'note' => $request->input('note'),
+        ], (string) $request->input('reason'), $key));
+        $response = (new QuotationDeliveryResource($result['delivery']))->response()->setStatusCode($result['replayed'] ? 200 : 201);
+        if ($result['replayed']) {
+            $response->header('Idempotency-Replayed', 'true');
+        }
+
+        return $response;
+    }
+
+    /**
      * @template T
      *
      * @param  Closure(): T  $work
@@ -127,7 +153,10 @@ class QuotationDocumentController extends Controller
             if ($code === 'access_denied') {
                 throw new AuthorizationException('You are not permitted to do that.');
             }
-            if ($code === 'DELIVERY_KEY_REUSED') {
+            if ($code === 'DELIVERY_NOT_FOUND') {
+                throw (new ModelNotFoundException)->setModel(QuotationDocumentDelivery::class);
+            }
+            if (in_array($code, ['DELIVERY_KEY_REUSED', 'DELIVERY_ALREADY_CORRECTED', 'DELIVERY_WITHDRAWN'], true)) {
                 throw new HttpResponseException(response()->json(['message' => $refusal->getMessage(), 'reason_code' => $code, 'errors' => [($refusal->field ?? 'id') => [$refusal->getMessage()]]], 409));
             }
 

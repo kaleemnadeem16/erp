@@ -25,6 +25,11 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
         'GET api/v1/quotations/{revision}/issue-readiness' => ['AssessQuotationIssueReadiness', 'requireRevision', 'view + prepare', 'readiness codes', 'QuotationIssueApiTest'],
         'POST api/v1/quotations/{revision}/issue' => ['IssueQuotation', 'requireRevision', 'view + issue', 'receipt identity', 'QuotationIssueApiTest'],
         'GET api/v1/quotations/{revision}/issued' => ['ReadIssuedQuotation', 'requireRevision', 'view; totals separately prepare/issue', 'safe issued header', 'QuotationIssueApiTest'],
+        // Approvals integration (ADR 0158): the quotation-family policy decides per revision; the engine's own authority is asked as well inside the decision.
+        'GET api/v1/quotations/{revision}/approval' => ['ReadQuotationApproval', 'requireRevision', 'view + (prepare or approve)', 'approval standing; names, codes, written reasons; no amounts or limits', 'QuotationApprovalApiTest'],
+        'POST api/v1/quotations/{revision}/approval' => ['RequestQuotationApproval', 'requireRevision', 'view + prepare', 'receipt identity', 'QuotationApprovalApiTest'],
+        'POST api/v1/quotations/{revision}/approval/decision' => ['DecideQuotationApproval', 'requireRevision', 'view + approve', 'receipt identity', 'QuotationApprovalApiTest'],
+        'POST api/v1/quotations/{revision}/approval/withdrawal' => ['WithdrawQuotationApproval', 'requireRevision', 'view + prepare', 'receipt identity', 'QuotationApprovalApiTest'],
         'GET api/v1/quotations/{revision}/document' => ['ReadQuotationDocumentStatus', 'locator', 'document.view + quotation.view', 'safe document status', 'QuotationDocumentApiTest'],
         'POST api/v1/quotations/{revision}/document' => ['RequestQuotationDocument', 'locator', 'document.generate + quotation.view', 'safe document status', 'QuotationDocumentApiTest'],
         'GET api/v1/quotations/{revision}/document/download' => ['DownloadQuotationDocument', 'locator', 'document.download + quotation.view', 'authorised PDF bytes', 'QuotationDocumentApiTest'],
@@ -32,6 +37,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
         'POST api/v1/quotations/{revision}/document/check' => ['RepairQuotationDocument', 'locator', 'document.repair + quotation.view', 'outcome code', 'QuotationDocumentApiTest'],
         'GET api/v1/quotations/{revision}/deliveries' => ['ReadQuotationDocumentDeliveries', 'locator', 'delivery.view + quotation.view', 'safe delivery evidence', 'QuotationDocumentApiTest'],
         'POST api/v1/quotations/{revision}/deliveries' => ['RecordManualQuotationDelivery', 'locator', 'delivery.record + quotation.view', 'safe delivery evidence', 'QuotationDocumentApiTest'],
+        'POST api/v1/quotations/{revision}/deliveries/{delivery}/correction' => ['CorrectManualQuotationDelivery', 'locator', 'delivery.record + quotation.view', 'safe delivery evidence', 'QuotationDeliveryCorrectionTest'],
     ];
 
     public function test_every_quotation_route_has_a_request_action_policy_projection_and_behaviour_inventory(): void
@@ -66,7 +72,8 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
     public function test_internal_family_writers_keep_the_exclusive_fence_before_subject_and_receipt(): void
     {
         $registered = ['CreateQuotationDraft', 'UpdateQuotationDraft', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
-            'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline'];
+            'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline',
+            'RequestQuotationApproval', 'DecideQuotationApproval', 'WithdrawQuotationApproval'];
         $found = [];
         foreach (glob(app_path('Modules/Sales/Actions/*.php')) as $file) {
             if (str_contains((string) file_get_contents($file), 'QuotationOperation')) {

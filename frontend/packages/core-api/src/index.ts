@@ -91,4 +91,5 @@ export * from "./generated/sales-owner/sales-owner";
 
 export * from "./generated/quotation-family-access/quotation-family-access";
 export * from "./generated/quotation/quotation";
+export * from "./generated/quotation-approval/quotation-approval";
 export * from "./generated/quotation-document/quotation-document";

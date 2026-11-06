@@ -19,6 +19,8 @@ use Illuminate\Support\Carbon;
  * @property int $reviewed_generation
  * @property int $revision_created_by
  * @property int $issued_by
+ * @property int|null $approval_request_id the shared approval this issue's needed concessions were issued under (ADR 0158)
+ * @property string|null $approval_fingerprint the draft content that approval was given for
  * @property Carbon $issued_at
  * @property string $official_number
  * @property int $numbering_allocation_id

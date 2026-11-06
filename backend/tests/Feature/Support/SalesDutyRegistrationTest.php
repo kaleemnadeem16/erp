@@ -270,12 +270,18 @@ class SalesDutyRegistrationTest extends TestCase
             'api/v1/quotations/{revision}/issue-readiness' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/issue' => ['POST'],
             'api/v1/quotations/{revision}/issued' => ['GET', 'HEAD'],
+            // Approvals integration (ADR 0158; default-deny, STAGED prepare/approve/view): QuotationApprovalApiTest.
+            'api/v1/quotations/{revision}/approval' => ['GET', 'HEAD', 'POST'],
+            'api/v1/quotations/{revision}/approval/decision' => ['POST'],
+            'api/v1/quotations/{revision}/approval/withdrawal' => ['POST'],
             // The issued-quotation document feature (default-deny, STAGED duties): QuotationDocumentApiTest.
             'api/v1/quotations/{revision}/document' => ['GET', 'HEAD', 'POST'],
             'api/v1/quotations/{revision}/document/download' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/document/history' => ['GET', 'HEAD'],
             'api/v1/quotations/{revision}/document/check' => ['POST'],
             'api/v1/quotations/{revision}/deliveries' => ['GET', 'HEAD', 'POST'],
+            // Append a reasoned correction or withdrawal of a recorded delivery (default-deny, STAGED delivery.record): QuotationDeliveryCorrectionTest.
+            'api/v1/quotations/{revision}/deliveries/{delivery}/correction' => ['POST'],
         ];
 
         foreach (Route::getRoutes() as $route) {

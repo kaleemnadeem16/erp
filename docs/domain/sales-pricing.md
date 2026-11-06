@@ -257,15 +257,38 @@ rule and largest-remainder allocation) and the browser calculates nothing.
 | Final-net override: amount + mandatory reason | `quotation_draft_lines` | `sales.quotation.price.override` (sensitive) | Needs an entered price; may only **reduce** the calculated net; excludes a discount; a price or quantity change must restate or clear it |
 | Document discount (one slot): PERCENT or AMOUNT | `quotation_draft_document_discounts` | `sales.quotation.discount` | Spread over the counted lines (base and baseline choices) by largest remainder, so the header stays the sum of its settled lines; optional lines take no share |
 
-**Approval is a recorded fact, not a workflow** (the approvals engine is not built). An override always needs approval (no risk bypass). A discount needs it unless the company's published
+**Approval is a recorded fact that the shared Approvals engine can now decide** ([ADR 0158](../decisions/0158-approve-quotation-concessions-through-the-shared-approvals-engine.md); see
+[Approving a draft's concessions](#approving-a-drafts-concessions-delivered)). An override always needs approval (no risk bypass). A discount needs it unless the company's published
 control set holds a reduction control (`INPUT_REDUCTION_*`, `AGGREGATE_REDUCTION_*`, now publishable) that the discount is proven within; no control set, no reduction control, a policy the set
 was not written for, or figures that cannot be computed yet count as "not proven within a limit" (default-deny). Only a code is stored and returned (`PRICE_OVERRIDE`,
 `DISCOUNT_ABOVE_LIMIT`, `DISCOUNT_LIMIT_NOT_CONFIGURED`, `DISCOUNT_LIMIT_UNVERIFIED`); no limit, threshold or cost reaches any reader. A draft that needs approval is blocked from issue
-(`APPROVAL_REQUIRED`) because no approval can be given yet; at issue the reduction controls also see the discount (reference and discretionary input) instead of being unevaluable.
+(`APPROVAL_REQUIRED`) until an approval for exactly that draft stands (`APPROVAL_PENDING` and `APPROVAL_REJECTED` say which); at issue the reduction controls also see the discount (reference and discretionary input) instead of being unevaluable.
 
 Issue freezes the provenance per line (`line_reduction_kind`, `line_reduction_amount`, `document_reduction_amount`), and the customer document shows the line `discount` so quantity x unit
 price - discount = amount. Override reasons and approval codes never reach the customer projection. Duties are not in the local dev preview; they are switched on only inside the demo
 seeder's own transaction.
+
+## Approving a draft's concessions (delivered)
+
+A draft whose discount or final-net override needs approval can be sent for approval, decided and then issued, through the shared Approvals engine (subject `QUOTATION_REVISION`, one per revision).
+It is a maker/checker split by duty and by person:
+
+| Step | Route | Duty (all STAGED, each with `sales.quotation.view`) | Rules |
+|---|---|---|---|
+| Read where it stands | `GET /api/v1/quotations/{revision}/approval` | `prepare` or `approve` | State for the draft **as it is now**, the request, decisions with written reasons, and what the caller may do (`can`). No amount, limit, ceiling or cost. |
+| Ask | `POST .../approval` | `sales.quotation.prepare` | Needs `expected_generation` and an Idempotency-Key. Refused when nothing needs approval, when the company has not set approvals up (mode and an applicable policy), when it is already approved, or when it was rejected as it stands. |
+| Decide | `POST .../approval/decision` | `sales.quotation.approve` | `APPROVED` or `REJECTED` (a rejection needs a reason). The engine's step capability and any authority ceiling apply, **and** the quotation-family record policy (OWN or ALL; a hidden record is 404). |
+| Withdraw | `POST .../approval/withdrawal` | `sales.quotation.prepare` | Only the requester (or an approvals manager); a reason is required. |
+
+Binding and separation: the approval is for the exact draft - the engine's hashed facts carry the draft's input generation and a content fingerprint of every pricing, concession, recipient,
+currency, rounding and FX-evidence field, so any edit ends a pending or granted approval (history stays) and a stale request is ignored by readiness and issue. The person who created the draft,
+entered a concession on it or requested the approval can never decide it, whatever the policy says, and a delegate cannot stand in. The same record policy is part of the engine's single
+eligibility, so the approvals inbox and the generic decision route cannot reach a quotation the family policy hides. Approving never issues. Issue consumes the approval (it locks the request) and the
+append-only issue records `approval_request_id` and the approved content fingerprint beside the already-frozen line reductions; the customer document carries no approval word. A failed mandatory
+control or any other blocker is independent of the approval.
+
+Not delivered: discount-size thresholds (the engine routes no amount for a concession; owner decision), approval expiry (a policy step can set a deadline; an approval otherwise lasts as long as the
+draft is unchanged), delegation, notifications, approval of an issued revision's replacement.
 
 ## Quotation list: recipient name and net amount (delivered)
 

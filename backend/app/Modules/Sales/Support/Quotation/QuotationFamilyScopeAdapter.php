@@ -26,7 +26,7 @@ final class QuotationFamilyScopeAdapter implements ResourceScopeAdapter
         }
 
         return in_array($duty, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_ACCESS_DELEGATE, PermissionVocabulary::QUOTATION_ACCESS_REVOKE, PermissionVocabulary::QUOTATION_ISSUE, PermissionVocabulary::QUOTATION_WITHDRAW,
-            PermissionVocabulary::QUOTATION_DISCOUNT, PermissionVocabulary::QUOTATION_PRICE_OVERRIDE, PermissionVocabulary::QUOTATION_COMMERCIAL_VIEW], true)
+            PermissionVocabulary::QUOTATION_DISCOUNT, PermissionVocabulary::QUOTATION_PRICE_OVERRIDE, PermissionVocabulary::QUOTATION_COMMERCIAL_VIEW, PermissionVocabulary::QUOTATION_APPROVE], true)
             && in_array($scope, ['ALL', AccessScopeLimit::OWN, AccessScopeLimit::MY_UNITS], true);
     }
 

@@ -25,6 +25,12 @@ now*; it never mutates another module's status and never issues or posts anythin
    when it changes; follow the per-workflow checklist in
    [approval-workflows.md](../../../../docs/architecture/approval-workflows.md).
 
+### Record-scoped subjects
+
+A subject that must also apply its own record policy (OWN or ALL scope, separation of duties, no delegates) implements `Support\RecordScopedApprovalSubject::mayDecide()`. `ApprovalEligibility`
+asks it inside the single eligibility every route shares (inbox, the generic decision route and the owning module's Action), so a capability plus a ceiling can never reach a record the module hides.
+Sales' `QUOTATION_REVISION` ([ADR 0158](../../../../docs/decisions/0158-approve-quotation-concessions-through-the-shared-approvals-engine.md)) is the first user.
+
 ## Capabilities
 
 `approvals.policy.manage`, `approvals.authority.manage`, `approvals.delegation.manage`, `approvals.settings.manage`,

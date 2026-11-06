@@ -17,6 +17,7 @@ use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
+use Database\Seeders\Demo\Sales\QuotationApprovalsDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationConcessionsDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationDraftsDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationIssuingDemoSeeder;
@@ -95,6 +96,8 @@ final class DemoDatabaseSeeder extends Seeder
                 QuotationDocumentsDemoSeeder::class,
                 // After QuotationDemoSeeder (control set) and QuotationTaxFactsDemoSeeder (declared facts): issued/expiring/withdrawn/cancelled/blocked quotations, local preview only.
                 QuotationIssuingDemoSeeder::class,
+                // After QuotationIssuingDemoSeeder (declared demo tax) and the approvals engine: discount/override approval scenarios (waiting, approved, issued, rejected, withdrawn, changed), local preview only.
+                QuotationApprovalsDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
                 // Configuration only; independent of the other seeders (needs the demo login).
                 DocumentConfigurationDemoSeeder::class,

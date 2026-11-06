@@ -50,7 +50,7 @@ final class SyncMemberAccess
     }
 
     /**
-     * Exact demo-only subset operation (ADR 0158). Never authorises an ordinary full replacement.
+     * Exact demo-only subset operation (ADR 0159). Never authorises an ordinary full replacement.
      *
      * @param  array<string,mixed>  $attributes
      */
@@ -134,7 +134,7 @@ final class SyncMemberAccess
             $after = $this->quotationPatchState($member->refresh(), $newRoleIds, $duties);
             if ($before !== $after) {
                 $member->forceFill(['access_updated_at' => now()])->save();
-                activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'], 'before' => $before, 'after' => $after, 'decision' => 'ADR 0158'])->log('quotation demo access patched');
+                activity()->performedOn($member)->causedBy($actor)->withProperties(['reason' => $attributes['reason'], 'before' => $before, 'after' => $after, 'decision' => 'ADR 0159'])->log('quotation demo access patched');
             }
 
             return $member->refresh();

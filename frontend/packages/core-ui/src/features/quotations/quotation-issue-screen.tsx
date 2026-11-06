@@ -37,6 +37,7 @@ import {
   type IssueReadiness,
   type QuotationIssueGateway,
 } from "./quotation-issue-contract";
+import { quotationApprovalAccess } from "./quotation-approval-access";
 import { quotationMilestoneAccess } from "./quotation-milestone-access";
 
 /** The reason shown for a refused issue; never echoes server text beyond the stable code's own wording. */
@@ -56,12 +57,15 @@ export function QuotationReadinessView({
   onIssue,
   onRecheck,
   rechecking = false,
+  approvalTo,
 }: {
   readiness: IssueReadiness;
   mayIssue: boolean;
   onIssue: () => void;
   onRecheck?: () => void;
   rechecking?: boolean;
+  /** Where the discount approval lives; given only to people who may read it. */
+  approvalTo?: string;
 }) {
   const groups = groupBlockers(readiness.blockers);
   return (
@@ -127,6 +131,16 @@ export function QuotationReadinessView({
               </li>
             ))}
           </ul>
+          {group.id === "approval" && approvalTo && (
+            <div className="col-span-full">
+              <Link
+                className="ui-link-action inline-flex min-h-11 items-center"
+                to={approvalTo}
+              >
+                Open discount approval
+              </Link>
+            </div>
+          )}
         </DetailSection>
       ))}
     </DetailPageLayout>
@@ -301,6 +315,13 @@ export function QuotationIssueScreen({
     ),
   );
   // Reading readiness needs prepare; issuing needs issue. Either alone may see its part.
+  const approvalAccess = quotationApprovalAccess(
+    new Set(
+      (user?.permissions ?? []).filter(
+        (p): p is string => typeof p === "string",
+      ),
+    ),
+  );
   if (!access.readiness && !access.issue) return <AccessDenied />;
   return (
     <GatedIssue
@@ -310,6 +331,9 @@ export function QuotationIssueScreen({
       mayReadiness={access.readiness}
       documentsTo={
         access.documents ? `/quotations/${revisionId}/document` : undefined
+      }
+      approvalTo={
+        approvalAccess.read ? `/quotations/${revisionId}/approval` : undefined
       }
     />
   );
@@ -321,12 +345,14 @@ function GatedIssue({
   mayIssue,
   mayReadiness,
   documentsTo,
+  approvalTo,
 }: {
   revisionId: number;
   gateway: QuotationIssueGateway;
   mayIssue: boolean;
   mayReadiness: boolean;
   documentsTo?: string;
+  approvalTo?: string;
 }) {
   const [confirming, setConfirming] = useState(false);
   const [outcome, setOutcome] = useState<IssueOutcome | null>(null);
@@ -408,6 +434,7 @@ function GatedIssue({
         }}
         onRecheck={() => void readiness.refetch()}
         rechecking={readiness.isFetching}
+        approvalTo={approvalTo}
       />
       {mayIssue && (
         <IssueConfirmDialog

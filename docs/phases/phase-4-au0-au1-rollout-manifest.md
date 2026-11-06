@@ -54,7 +54,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.quotation.issue` | New ordinary | STAGED | Official issue | Commercial-workflow | QL3 |
 | `sales.quotation.withdraw` | Sensitive | STAGED | Eligible unaccepted withdrawal/replacement disposition | Commercial-workflow | QL4/5; partial remains gated |
 | `sales.quotation.history.view` | New ordinary | SPECIFIED | Quote lifecycle history | Quote-min + independent fields | QL1–6 |
-| `sales.quotation.approve` | Sensitive | SPECIFIED | Exact commercial review subject | Review-commercial | QL2 + shared Approvals |
+| `sales.quotation.approve` | Sensitive | STAGED | Approve or reject the exact recorded discount/override need of one draft (ADR 0158) | Review-commercial | QL2 + shared Approvals |
 | `sales.quotation.review-operational` | Sensitive | SPECIFIED | Exact operational review profile | Review-operational | QL2 + review adapter |
 | `sales.quotation.discount` | New ordinary | STAGED | Routine specific discretionary input | Commercial-workflow | PR4/5 + AU3 limits |
 | `sales.quotation.price.override` | Sensitive | STAGED | Reasoned final net override | Commercial-workflow | PR4/5 + AU3; no risk bypass |

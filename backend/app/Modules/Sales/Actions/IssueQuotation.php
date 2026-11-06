@@ -6,6 +6,8 @@ namespace App\Modules\Sales\Actions;
 
 use App\Models\Company;
 use App\Models\User;
+use App\Modules\Approvals\Models\ApprovalRequest;
+use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Documents\Actions\BindDocumentManifest;
 use App\Modules\Documents\Models\DocumentManifest;
 use App\Modules\Numbering\Services\NumberingService;
@@ -117,6 +119,10 @@ final class IssueQuotation
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_ISSUABLE, 'The quotation cannot be issued yet'.($codes === '' ? '.' : ': '.$codes.'.'), 'blockers');
         }
 
+        // The approval this issue relies on is locked and read again: it must still stand as APPROVED when the issue becomes official (ADR 0158).
+        if ($assessment->approvalRequestId !== null && ApprovalRequest::query()->whereKey($assessment->approvalRequestId)->where('status', ApprovalRequestStatus::Approved)->lockForUpdate()->doesntExist()) {
+            throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_ISSUABLE, 'The quotation cannot be issued yet: APPROVAL_REQUIRED.', 'blockers');
+        }
         $company = Company::query()->findOrFail($this->company->id());
         $now = CarbonImmutable::parse((string) DB::selectOne('select now() as now')->now);
         $expiresAt = CarbonImmutable::parse($revision->valid_through_local_date?->format('Y-m-d') ?? $now->toDateString(), $company->timezone)->addDay()->startOfDay();
@@ -132,6 +138,7 @@ final class IssueQuotation
             'issued_timezone' => $company->timezone, 'expires_at' => $expiresAt, 'net_total' => $totals['net'], 'optional_net_total' => $totals['optional_net'], 'tax_total' => $totals['tax'],
             'gross_total' => $totals['gross'], 'rounding_policy_fingerprint' => $revision->rounding_policy_fingerprint, 'rounding_policy_version_no' => $revision->rounding_policy_version_no,
             'tax_calculation_version' => $assessment->tax->calculationVersion, 'tax_generation' => $assessment->tax->generation, 'tax_evidence_fingerprint' => $assessment->tax->evidenceFingerprint,
+            'approval_request_id' => $assessment->approvalRequestId, 'approval_fingerprint' => $assessment->approvalFingerprint,
             'controls_outcome' => $assessment->controls->outcome, 'controls_fingerprint' => $assessment->controls->fingerprint, 'financial_fingerprint' => $fingerprint,
         ]);
         foreach ($rows as $row) {

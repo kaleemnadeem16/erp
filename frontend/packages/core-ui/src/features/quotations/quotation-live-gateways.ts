@@ -1,12 +1,17 @@
 import {
   fetchBlob,
   getQuotationsDocumentDownloadUrl,
+  quotationsDeliveriesCorrect,
   quotationsDeliveriesIndex,
   quotationsDeliveriesStore,
   quotationsDocumentCheck,
   quotationsDocumentGenerate,
   quotationsDocumentHistory,
   quotationsDocumentShow,
+  quotationsApprovalDecide,
+  quotationsApprovalShow,
+  quotationsApprovalStore,
+  quotationsApprovalWithdraw,
   quotationsIndex,
   quotationsIssue,
   quotationsIssueReadiness,
@@ -17,6 +22,11 @@ import {
   readListPage,
   type QuotationListGateway,
 } from "./quotation-list-contract";
+import {
+  readApprovalOutcome,
+  readQuotationApproval,
+  type QuotationApprovalGateway,
+} from "./quotation-approval-contract";
 import {
   readIssuedTerms,
   readIssueOutcome,
@@ -96,6 +106,67 @@ export const liveDocumentGateway: QuotationDocumentGateway = {
         await quotationsDeliveriesStore(revisionId, input, {
           "Idempotency-Key": requestKey,
         }),
+      ),
+    ),
+  // A withdrawal still sends the old values (the server ignores them and repeats the record it withdraws).
+  correctDelivery: async ({ revisionId, correction, requestKey }) =>
+    readDelivery(
+      body(
+        await quotationsDeliveriesCorrect(
+          revisionId,
+          correction.deliveryId,
+          {
+            channel: correction.body.channel,
+            delivered_on: correction.body.delivered_on,
+            recipient_name: correction.body.recipient_name,
+            recipient_detail: correction.body.recipient_detail ?? null,
+            note: correction.body.note ?? null,
+            reason: correction.reason,
+            withdraw: correction.withdraw,
+          },
+          { "Idempotency-Key": requestKey },
+        ),
+      ),
+    ),
+};
+
+export const liveApprovalGateway: QuotationApprovalGateway = {
+  read: async (revisionId) =>
+    readQuotationApproval(body(await quotationsApprovalShow(revisionId))),
+  request: async ({ revisionId, expectedGeneration, requestKey }) =>
+    readApprovalOutcome(
+      body(
+        await quotationsApprovalStore(
+          revisionId,
+          { expected_generation: expectedGeneration },
+          { "Idempotency-Key": requestKey },
+        ),
+      ),
+    ),
+  decide: async ({
+    revisionId,
+    expectedGeneration,
+    decision,
+    reason,
+    requestKey,
+  }) =>
+    readApprovalOutcome(
+      body(
+        await quotationsApprovalDecide(
+          revisionId,
+          { expected_generation: expectedGeneration, decision, reason },
+          { "Idempotency-Key": requestKey },
+        ),
+      ),
+    ),
+  withdraw: async ({ revisionId, expectedGeneration, reason, requestKey }) =>
+    readApprovalOutcome(
+      body(
+        await quotationsApprovalWithdraw(
+          revisionId,
+          { expected_generation: expectedGeneration, reason },
+          { "Idempotency-Key": requestKey },
+        ),
       ),
     ),
 };

@@ -160,6 +160,7 @@ class QuotationDocumentApiTest extends TestCase
             ['POST', '/document/check', [], false],
             ['GET', '/deliveries', [], false],
             ['POST', '/deliveries', ['channel' => 'HAND', 'delivered_on' => $this->today(), 'recipient_name' => 'Probe'], true],
+            ['POST', '/deliveries/1/correction', ['reason' => 'Probe', 'withdraw' => true], true],
         ];
     }
 

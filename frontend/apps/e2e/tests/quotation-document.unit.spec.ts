@@ -206,6 +206,33 @@ test("history and deliveries render labelled entries; manual record is not prese
   ])
     expect(deliveries).toContain(text);
   expect(deliveries).not.toContain("Person reference");
+  const corrected = renderToStaticMarkup(
+    createElement(QuotationDeliveriesView, {
+      deliveries: [
+        mockDelivery({ superseded_by_id: 2, is_current: false }),
+        mockDelivery({
+          id: 2,
+          corrects_id: 1,
+          kind: "WITHDRAWAL",
+          correction_reason: "Never handed over",
+          is_current: false,
+        }),
+        mockDelivery({ id: 3, is_current: true }),
+      ],
+      onCorrect: () => undefined,
+      onWithdraw: () => undefined,
+    }),
+  );
+  for (const text of [
+    "Replaced by a later record.",
+    "Withdrawn: this delivery did not happen as recorded.",
+    "Reason: Never handed over",
+  ])
+    expect(corrected).toContain(text);
+  // Only the record that stands can be corrected or withdrawn.
+  expect(corrected.match(/Correct this record/g)).toHaveLength(1);
+  expect(corrected.match(/Withdraw this record/g)).toHaveLength(1);
+
   expect(
     renderToStaticMarkup(
       createElement(QuotationDeliveriesView, { deliveries: [] }),

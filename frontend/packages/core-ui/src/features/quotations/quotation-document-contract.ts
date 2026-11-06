@@ -10,6 +10,7 @@ import { z } from "zod";
  *   POST /api/v1/quotations/{revision}/document/check      operator hash check
  *   GET  /api/v1/quotations/{revision}/deliveries
  *   POST /api/v1/quotations/{revision}/deliveries          manual record (Idempotency-Key)
+ *   POST /api/v1/quotations/{revision}/deliveries/{delivery}/correction   correct or withdraw (Idempotency-Key)
  * SWAP: implement `QuotationDocumentGateway` with the generated quotationsDocument* and
  * quotationsDeliveries* functions; schemas and screens stay.
  */
@@ -43,6 +44,10 @@ export const deliverySchema = z.object({
   recipient_detail: z.string().nullable(),
   note: z.string().nullable(),
   corrects_id: id.nullable(),
+  kind: z.enum(["RECORD", "CORRECTION", "WITHDRAWAL"]),
+  correction_reason: z.string().nullable(),
+  superseded_by_id: id.nullable(),
+  is_current: z.boolean(),
   recorded_at: z.string(),
 });
 export const checkOutcomeSchema = z.object({ outcome: z.string() });
@@ -58,6 +63,14 @@ export interface DeliveryInput {
   recipient_detail?: string | null;
   note?: string | null;
   corrects_id?: number | null;
+}
+
+/** A correction names the record it replaces and always says why. A withdrawal says the delivery did not happen as recorded; the server repeats the old values. */
+export interface DeliveryCorrectionInput {
+  deliveryId: number;
+  body: DeliveryInput;
+  reason: string;
+  withdraw: boolean;
 }
 
 export const readDocumentStatus = (v: unknown) => documentStatusSchema.parse(v);
@@ -86,6 +99,12 @@ export interface QuotationDocumentGateway {
     body: DeliveryInput;
     requestKey: string;
   }): Promise<Delivery>;
+  /** Appends a correction or withdrawal; the earlier record is never changed. */
+  correctDelivery(input: {
+    revisionId: number;
+    correction: DeliveryCorrectionInput;
+    requestKey: string;
+  }): Promise<Delivery>;
 }
 
 const pending = async (): Promise<never> => {
@@ -100,6 +119,7 @@ export const pendingDocumentGateway: QuotationDocumentGateway = {
   check: pending,
   deliveries: pending,
   recordDelivery: pending,
+  correctDelivery: pending,
 };
 
 /**
@@ -149,6 +169,10 @@ export function historyLabel(event: string): string {
   return HISTORY_LABELS[event] ?? "Document activity";
 }
 export const DOCUMENT_REFUSALS: Record<string, string> = {
+  DELIVERY_ALREADY_CORRECTED:
+    "That record was already corrected. Reload and correct the latest record.",
+  DELIVERY_WITHDRAWN:
+    "That record was withdrawn and is final. Record the delivery again as a new record.",
   DELIVERY_KEY_REUSED:
     "This request was already used for a different record. Start again.",
   REQUEST_KEY_REQUIRED: "The request could not be identified. Try again.",
@@ -191,6 +215,10 @@ export function mockDelivery(overrides: Partial<Delivery> = {}): Delivery {
     recipient_detail: null,
     note: "Left at reception",
     corrects_id: null,
+    kind: "RECORD",
+    correction_reason: null,
+    superseded_by_id: null,
+    is_current: true,
     recorded_at: "2026-10-31T08:00:00Z",
     ...overrides,
   };

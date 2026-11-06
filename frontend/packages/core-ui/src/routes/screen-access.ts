@@ -3,6 +3,7 @@ import {
   quotationCreationAccess,
 } from "../features/quotations/quotation-access";
 import { quotationMilestoneAccess } from "../features/quotations/quotation-milestone-access";
+import { quotationApprovalAccess } from "../features/quotations/quotation-approval-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -247,6 +248,8 @@ export function canAccessScreen(
     if (pathname === "/quotations/all") return milestone.list;
     if (/^\/quotations\/[1-9]\d*\/issue$/.test(pathname))
       return milestone.readiness || milestone.issue;
+    if (/^\/quotations\/[1-9]\d*\/approval$/.test(pathname))
+      return quotationApprovalAccess(permissions).read;
     if (/^\/quotations\/[1-9]\d*\/document$/.test(pathname))
       return milestone.documents || milestone.deliveries;
     return false;

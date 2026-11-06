@@ -70,6 +70,9 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
 - Every history table also carries a `BEFORE TRUNCATE ... FOR EACH STATEMENT` trigger on the same guard (row triggers never fire on TRUNCATE, and the runtime role is a
   superuser, so revoking the privilege would not help). A new Documents history table adds both triggers in its own migration.
 
+- Quotation document trimming and delivery correction (Sales-owned, uses these Documents APIs unchanged): `ReadDocumentArtefactHistory` is still the full internal timeline; Sales'
+  `ReadQuotationDocumentHistory` trims it to an allowlist per event before it reaches a screen. Manual delivery corrections live in Sales (ADR 0160).
+
 ## Boundaries
 
 - The owner supplies the projection, totals, access, audiences and retention; Documents validates shape and never recomputes money, quantities or consent.

@@ -22,6 +22,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $recipient_detail
  * @property string|null $note
  * @property int|null $corrects_id
+ * @property string|null $correction_reason
+ * @property bool $is_withdrawal
  * @property string $operation_key
  * @property string $intent_digest
  * @property Carbon $recorded_at
@@ -37,6 +39,6 @@ class QuotationDocumentDelivery extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['delivered_on' => 'date', 'recorded_at' => 'datetime'];
+        return ['delivered_on' => 'date', 'recorded_at' => 'datetime', 'is_withdrawal' => 'boolean'];
     }
 }

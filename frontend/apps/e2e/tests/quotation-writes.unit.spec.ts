@@ -370,6 +370,59 @@ test("Record delivery: retry replays, edited details get a new key, success clea
   expect((await calls(page, "deliveries")).length).toBeGreaterThanOrEqual(2);
 });
 
+test("Correct a delivery: needs a reason, replays a retry, and a withdrawal repeats the record", async ({
+  page,
+}) => {
+  const standing = {
+    id: 5,
+    revision_id: 12,
+    recorded_by: 9,
+    channel: "HAND",
+    delivered_on: "2026-10-31",
+    recipient_name: "A. Customer",
+    recipient_detail: null,
+    note: null,
+    corrects_id: null,
+    kind: "RECORD",
+    correction_reason: null,
+    superseded_by_id: null,
+    is_current: true,
+    recorded_at: "2026-10-31T08:00:00Z",
+  };
+  await mount(page, "document", {
+    deliveries: [{ ok: [standing] }, { ok: [standing] }, { ok: [] }],
+    correctDelivery: [{ network: true }, { network: true }],
+  });
+  await page.getByRole("button", { name: "Correct this record" }).click();
+  await page.getByLabel("Received by").nth(1).fill("B. Customer");
+  const save = page.getByRole("button", { name: "Save correction" });
+  await save.click(); // no reason yet: nothing is sent
+  await expect(page.getByRole("alert")).toContainText("Say why");
+  expect(await calls(page, "correctDelivery")).toHaveLength(0);
+  await page.getByLabel("Reason").fill("Wrong person");
+  await save.click();
+  await expect(page.getByRole("alert")).toContainText("could not be completed");
+  await save.click(); // unchanged: the same uncertain request is replayed
+  await expect
+    .poll(async () => (await calls(page, "correctDelivery")).length)
+    .toBe(2);
+  const sent = await calls(page, "correctDelivery");
+  expect(key(sent[1]!)).toBe(key(sent[0]!));
+  const correction = sent[0]!.args.correction as {
+    deliveryId: number;
+    reason: string;
+    withdraw: boolean;
+  };
+  expect([
+    correction.deliveryId,
+    correction.reason,
+    correction.withdraw,
+  ]).toEqual([5, "Wrong person", false]);
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await page.getByRole("button", { name: "Withdraw this record" }).click();
+  await expect(page.getByLabel("Received by")).toHaveCount(1); // only the new-record form remains
+});
+
 test("the list, issue and document routes are denied in production even holding every duty, and open only in the dev build", async () => {
   const { canAccessScreen } =
     await import("../../../packages/core-ui/src/routes/screen-access");

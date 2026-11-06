@@ -39,7 +39,7 @@ final class SalesDutyCatalogue
             new SalesDuty(PermissionVocabulary::QUOTATION_ISSUE, DutyClass::NewOrdinary, DutyStatus::Staged, 'Official issue', 'Commercial-workflow', 'QL3', DutyScope::QuotationFamily),
             new SalesDuty(PermissionVocabulary::QUOTATION_WITHDRAW, DutyClass::Sensitive, DutyStatus::Staged, 'Eligible unaccepted withdrawal/replacement disposition', 'Commercial-workflow', 'QL4/5; partial remains gated', DutyScope::QuotationFamily),
             new SalesDuty('sales.quotation.history.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Quote lifecycle history', 'Quote-min + independent fields', 'QL1–6'),
-            new SalesDuty('sales.quotation.approve', DutyClass::Sensitive, DutyStatus::Specified, 'Exact commercial review subject', 'Review-commercial', 'QL2 + shared Approvals'),
+            new SalesDuty(PermissionVocabulary::QUOTATION_APPROVE, DutyClass::Sensitive, DutyStatus::Staged, 'Approve or reject the exact recorded discount/override need of one draft (shared Approvals)', 'Review-commercial', 'QL2 + shared Approvals; ADR 0158', DutyScope::QuotationFamily),
             new SalesDuty('sales.quotation.review-operational', DutyClass::Sensitive, DutyStatus::Specified, 'Exact operational review profile', 'Review-operational', 'QL2 + review adapter'),
             new SalesDuty(PermissionVocabulary::QUOTATION_DISCOUNT, DutyClass::NewOrdinary, DutyStatus::Staged, 'Routine specific discretionary input', 'Commercial-workflow', 'PR4/5 + AU3 limits', DutyScope::QuotationFamily),
             new SalesDuty(PermissionVocabulary::QUOTATION_PRICE_OVERRIDE, DutyClass::Sensitive, DutyStatus::Staged, 'Reasoned final net override', 'Commercial-workflow', 'PR4/5 + AU3; no risk bypass', DutyScope::QuotationFamily),

@@ -10,6 +10,7 @@ import {
   QuotationFamilyAccessPanel,
   useFamilyAccessData,
 } from "./quotation-family-access-panel";
+import { quotationApprovalAccess } from "./quotation-approval-access";
 import { quotationMilestoneAccess } from "./quotation-milestone-access";
 import { readDraft, readPreview, revisionId } from "./quotation-contract";
 import {
@@ -56,13 +57,13 @@ export function QuotationRecord({
   const { search } = useLocation();
   const user = useAuthStore((state) => state.user);
   // Issue and PDF screens deny on their own; the links only appear for people who can use them.
-  const milestone = quotationMilestoneAccess(
-    new Set(
-      (user?.permissions ?? []).filter(
-        (permission): permission is string => typeof permission === "string",
-      ),
+  const held = new Set(
+    (user?.permissions ?? []).filter(
+      (permission): permission is string => typeof permission === "string",
     ),
   );
+  const milestone = quotationMilestoneAccess(held);
+  const approvalAccess = quotationApprovalAccess(held);
   const detail = useQuotationsShow(id ?? 0, {
     query: {
       enabled: id !== null && !review,
@@ -131,6 +132,14 @@ export function QuotationRecord({
                   Issue readiness
                 </Link>
               )}
+            {id && recordMaySpecial && approvalAccess.read && (
+              <Link
+                className="ui-link-action inline-flex min-h-11 items-center"
+                to={`/quotations/${id}/approval`}
+              >
+                Discount approval
+              </Link>
+            )}
             {id && recordMaySpecial && milestone.documents && (
               <Link
                 className="ui-link-action inline-flex min-h-11 items-center"

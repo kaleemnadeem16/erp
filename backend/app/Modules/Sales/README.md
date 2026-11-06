@@ -126,6 +126,15 @@ Current behaviour, limitations and verification: [quotation sharing checkpoint](
 arithmetic through the pricing kernel and records the approval-needed code (default-deny, see [Sales pricing](../../../../docs/domain/sales-pricing.md#draft-concessions--discounts-and-final-net-overrides-pr4pr5-delivered)).
 Preview and editable reads carry the entered concessions and approval codes only, never cost, margin or limits. Issue is blocked while approval is needed.
 
+## Approving concessions (ADR 0158)
+
+`RequestQuotationApproval`, `DecideQuotationApproval`, `WithdrawQuotationApproval` and the read `ReadQuotationApproval` connect a draft's recorded approval need to the Approvals engine
+(`QuotationApprovalSubject`, subject `QUOTATION_REVISION`; routes `GET|POST /quotations/{revision}/approval`, `POST .../approval/decision`, `POST .../approval/withdrawal`). All are STAGED
+(`sales.quotation.prepare` to ask or withdraw, new `sales.quotation.approve` to decide, each with the independent view) and run through `QuotationOperation` (access fence, revision lock,
+`expected_generation`, idempotency). The approval is bound to the draft by `QuotationContentFingerprint`; `QuotationApprovals::standing()` derives (never stores) whether an approval stands for the draft
+as it is now, and `QuotationIssueAssessor` turns the recorded `APPROVAL_REQUIRED` blockers into satisfied / `APPROVAL_PENDING` / `APPROVAL_REJECTED` / unchanged. `IssueQuotation` locks the
+approval and records it on the append-only issue (`approval_request_id`, `approval_fingerprint`). Editing or cancelling a draft ends its approval. Demo: `QuotationApprovalsDemoSeeder` (local preview only).
+
 ## Draft tax declarations
 
 A MANUAL draft line carries the seller's versioned tax declaration (`tax_declaration` on a line write; history at `GET /quotations/{revision}/tax-declarations`). It is append-only evidence;

@@ -62,7 +62,7 @@ as the persona seeder. All exclude issue and repair.
 Do not let an old direct/unrestricted grant defeat a limited preset. Preserve unrelated ERP
 access and record the quotation-specific before/after provenance. Preset application uses the
 synthetic operator and real access Actions, never the target acting on itself. The owner-approved
-[0158 subset method](../decisions/0158-patch-only-approved-quotation-access-for-the-main-demo-user.md)
+[0159 subset method](../decisions/0159-patch-only-approved-quotation-access-for-the-main-demo-user.md)
 inside SyncMemberAccess manages only the five approved quotation duties for the exact main demo
 login. Ordinary full replacement and its grant guard stay unchanged. It preserves unrelated pivot
 and scope rows, refuses mixed conferring roles, audits before/after changes and adds nothing on an
@@ -88,7 +88,7 @@ parameterised contention harness can establish representative capacity.
 
 ## Related
 
-- [0158 quotation-only patch decision](../decisions/0158-patch-only-approved-quotation-access-for-the-main-demo-user.md)
+- [0159 quotation-only patch decision](../decisions/0159-patch-only-approved-quotation-access-for-the-main-demo-user.md)
 - [0156 owner decision](../decisions/0156-quotation-demo-access-and-activation-boundaries.md)
 - [0129 original demo deployment decision](../decisions/0129-demo-and-sandbox-data-live-in-a-separate-demo-deployment.md)
 - [Record access architecture](quotation-record-access-design.md)

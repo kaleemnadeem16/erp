@@ -71,7 +71,7 @@ in [extensibility](../../../../docs/architecture/extensibility.md#implemented-cu
 
 ## Narrow quotation demo patch
 
-`SyncMemberAccess::patchQuotationDemo` is the explicit ADR 0158 subset operation for the exact
+`SyncMemberAccess::patchQuotationDemo` is the explicit ADR 0159 subset operation for the exact
 Company 1 main demo login and synthetic access operator. It checks current authority inside the
 company fence, uses the ordinary grant/scope guards, retains unrelated access rows, and audits
 changes. It is unavailable outside local/testing or DEMO_MODE and does not register/activate duties.
