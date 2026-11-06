@@ -1,12 +1,10 @@
 import type { RecalculationRequestResource, RecalculationRequestResourceImpactVersionsItem } from '@erp/core-api';
 
-import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { RecordLink } from '../../components/ui/record-link';
 import { humanizeCode } from '../../components/data-table/list-controls';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
-
-type BadgeVariant = 'secondary' | 'default' | 'success' | 'destructive';
 
 /** Highest version_no overall — the request's most recent computed state, stale or not. */
 export function latestVersion(
@@ -36,18 +34,18 @@ export function currentVersion(
  * with its own multi-approver state, so status is derived from the latest/
  * current version rather than one flag. See docs/domain/stock-recalculation.md.
  */
-export function recalculationStatus(request: RecalculationRequestResource): { label: string; variant: BadgeVariant } {
+export function recalculationStatus(request: RecalculationRequestResource): { label: string; tone: StatusTone } {
   const latest = latestVersion(request);
-  if (!latest) return { label: 'Computing…', variant: 'secondary' };
-  if (latest.execution) return { label: 'Executed', variant: 'success' };
-  if (latest.is_rejected) return { label: 'Rejected', variant: 'destructive' };
+  if (!latest) return { label: 'Computing…', tone: 'pending' };
+  if (latest.execution) return { label: 'Executed', tone: 'success' };
+  if (latest.is_rejected) return { label: 'Rejected', tone: 'danger' };
 
   const current = currentVersion(request);
-  if (!current) return { label: 'Paused for review', variant: 'destructive' };
-  if (current.has_unexpired_full_approval) return { label: 'Approved — ready to execute', variant: 'default' };
+  if (!current) return { label: 'Paused for review', tone: 'danger' };
+  if (current.has_unexpired_full_approval) return { label: 'Approved — ready to execute', tone: 'active' };
 
   const overdue = new Date(request.review_due_at).getTime() < Date.now();
-  return { label: overdue ? 'Pending review (overdue)' : 'Pending review', variant: overdue ? 'destructive' : 'secondary' };
+  return { label: overdue ? 'Pending review (overdue)' : 'Pending review', tone: overdue ? 'danger' : 'pending' };
 }
 
 export const recalculationRequestColumns: DataColumn<RecalculationRequestResource>[] = [
@@ -81,7 +79,7 @@ export const recalculationRequestColumns: DataColumn<RecalculationRequestResourc
     value: (request) => recalculationStatus(request).label,
     cell: (request) => {
       const status = recalculationStatus(request);
-      return <Badge variant={status.variant}>{status.label}</Badge>;
+      return <StatusBadge tone={status.tone}>{status.label}</StatusBadge>;
     },
   },
   {

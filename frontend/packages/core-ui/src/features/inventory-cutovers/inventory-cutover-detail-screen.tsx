@@ -20,6 +20,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Combobox } from '../../components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -34,12 +35,12 @@ import { DecimalInput } from '../../components/ui/decimal-input';
 import { RecordPresenter } from '../../components/page/record-presenter';
 import type { Presentation } from '../../lib/presentation';
 
-const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
-  DRAFT: 'secondary',
-  VALIDATED: 'default',
-  APPROVED: 'default',
+const STATUS_TONE: Record<string, StatusTone> = {
+  DRAFT: 'draft',
+  VALIDATED: 'progress',
+  APPROVED: 'active',
   FINALISED: 'success',
-  FAILED: 'destructive',
+  FAILED: 'danger',
 };
 
 const NEGATIVE_OPENING_STATUS_VARIANT: Record<string, 'secondary' | 'success'> = {
@@ -294,7 +295,7 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
       <DetailPageLayout>
         <DetailSection title="General">
           <DetailField label="Status">
-            <Badge variant={STATUS_VARIANT[cutover.status] ?? 'secondary'}>{cutover.status}</Badge>
+            <StatusBadge tone={STATUS_TONE[cutover.status] ?? 'draft'}>{cutover.status}</StatusBadge>
           </DetailField>
           <DetailField label="Mode">{cutover.mode}</DetailField>
           <DetailField label="Cutover at">{formatDateTime(cutover.cutover_at)}</DetailField>

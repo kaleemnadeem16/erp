@@ -1,17 +1,17 @@
 import type { InventoryCutoverResource } from '@erp/core-api';
 
-import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { RecordLink } from '../../components/ui/record-link';
 import { humanizeCode } from '../../components/data-table/list-controls';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 
-const STATUS_VARIANT: Record<string, 'secondary' | 'default' | 'success' | 'destructive'> = {
-  DRAFT: 'secondary',
-  VALIDATED: 'default',
-  APPROVED: 'default',
+const STATUS_TONE: Record<string, StatusTone> = {
+  DRAFT: 'draft',
+  VALIDATED: 'progress',
+  APPROVED: 'active',
   FINALISED: 'success',
-  FAILED: 'destructive',
+  FAILED: 'danger',
 };
 
 export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
@@ -37,7 +37,7 @@ export const inventoryCutoverColumns: DataColumn<InventoryCutoverResource>[] = [
     key: 'status',
     header: 'Status',
     value: (cutover) => cutover.status,
-    cell: (cutover) => <Badge variant={STATUS_VARIANT[cutover.status] ?? 'secondary'}>{cutover.status}</Badge>,
+    cell: (cutover) => <StatusBadge tone={STATUS_TONE[cutover.status] ?? 'draft'}>{cutover.status}</StatusBadge>,
     filterable: true,
   },
   {

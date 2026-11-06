@@ -14,7 +14,7 @@ import {
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Combobox } from '../../components/ui/combobox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -34,10 +34,10 @@ import { usePermission } from '../../hooks/use-permission';
 import { RecordPresenter } from '../../components/page/record-presenter';
 import type { Presentation } from '../../lib/presentation';
 
-const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
-  DRAFT: 'secondary',
+const STATUS_TONE: Record<string, StatusTone> = {
+  DRAFT: 'draft',
   POSTED: 'success',
-  CANCELLED: 'destructive',
+  CANCELLED: 'danger',
 };
 
 // Null without a book quantity: a counter who counts blind (ADR 0083) is never shown the variance, which would give the book figure away.
@@ -248,7 +248,7 @@ export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presenta
         <DetailSection title="General">
           <DetailField label="Warehouse">{count.warehouse?.name}</DetailField>
           <DetailField label="Status">
-            <Badge variant={STATUS_VARIANT[count.status] ?? 'secondary'}>{count.status}</Badge>
+            <StatusBadge tone={STATUS_TONE[count.status] ?? 'draft'}>{count.status}</StatusBadge>
           </DetailField>
           <DetailField label="Reference">{count.reference}</DetailField>
           <DetailField label="Created">{formatDateTime(count.created_at)}</DetailField>

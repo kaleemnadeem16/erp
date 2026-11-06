@@ -11,6 +11,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../components/ui/table';
@@ -173,7 +174,7 @@ export function RecalculationRequestDetailScreen({ presentation = 'sheet' }: { p
       <DetailPageLayout>
         <DetailSection title="Movement">
           <DetailField label="Status">
-            <Badge variant={status.variant}>{status.label}</Badge>
+            <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
           </DetailField>
           <DetailField label="Movement kind">{request.movement_kind}</DetailField>
           <DetailField label="Location">{formatLocation(request.location) ?? request.location_id}</DetailField>

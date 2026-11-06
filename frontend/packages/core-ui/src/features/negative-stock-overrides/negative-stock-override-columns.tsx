@@ -1,12 +1,10 @@
 import type { NegativeStockOverrideRequestResource } from '@erp/core-api';
 
-import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { RecordLink } from '../../components/ui/record-link';
 import { humanizeCode } from '../../components/data-table/list-controls';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
-
-type BadgeVariant = 'secondary' | 'default' | 'success' | 'destructive';
 
 /**
  * There is no status column on the request itself — status is derived from
@@ -14,20 +12,20 @@ type BadgeVariant = 'secondary' | 'default' | 'success' | 'destructive';
  * PRIOR_APPROVAL request only ever gets an approval and an
  * IMMEDIATE_WITH_REVIEW request only ever gets a review (never both).
  */
-export function overrideStatus(override: NegativeStockOverrideRequestResource): { label: string; variant: BadgeVariant } {
+export function overrideStatus(override: NegativeStockOverrideRequestResource): { label: string; tone: StatusTone } {
   if (override.authorisation_mode === 'PRIOR_APPROVAL') {
-    if (!override.approval) return { label: 'Pending approval', variant: 'secondary' };
+    if (!override.approval) return { label: 'Pending approval', tone: 'pending' };
     return override.approval.decision === 'APPROVED'
-      ? { label: 'Approved', variant: 'success' }
-      : { label: 'Rejected', variant: 'destructive' };
+      ? { label: 'Approved', tone: 'success' }
+      : { label: 'Rejected', tone: 'danger' };
   }
   if (!override.review) {
     const overdue = override.review_due_at ? new Date(override.review_due_at).getTime() < Date.now() : false;
-    return { label: overdue ? 'Pending review (overdue)' : 'Pending review', variant: overdue ? 'destructive' : 'secondary' };
+    return { label: overdue ? 'Pending review (overdue)' : 'Pending review', tone: overdue ? 'danger' : 'pending' };
   }
   return override.review.outcome === 'JUSTIFIED'
-    ? { label: 'Justified', variant: 'success' }
-    : { label: 'Flagged', variant: 'destructive' };
+    ? { label: 'Justified', tone: 'success' }
+    : { label: 'Flagged', tone: 'danger' };
 }
 
 export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideRequestResource>[] = [
@@ -67,7 +65,7 @@ export const negativeStockOverrideColumns: DataColumn<NegativeStockOverrideReque
     value: (override) => overrideStatus(override).label,
     cell: (override) => {
       const status = overrideStatus(override);
-      return <Badge variant={status.variant}>{status.label}</Badge>;
+      return <StatusBadge tone={status.tone}>{status.label}</StatusBadge>;
     },
   },
   {

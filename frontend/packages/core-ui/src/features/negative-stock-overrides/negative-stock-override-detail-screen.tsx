@@ -11,6 +11,7 @@ import {
 import { Button } from '../../components/ui/button';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { Skeleton } from '../../components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
@@ -143,7 +144,7 @@ export function NegativeStockOverrideDetailScreen({ presentation = 'sheet' }: { 
       <DetailPageLayout>
         <DetailSection title="Shortage">
           <DetailField label="Status">
-            <Badge variant={status.variant}>{status.label}</Badge>
+            <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
           </DetailField>
           <DetailField label="Movement class">{override.movement_class}</DetailField>
           <DetailField label="Item">{override.item ? `${override.item.code} — ${override.item.name}` : override.item_id}</DetailField>

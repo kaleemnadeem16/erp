@@ -1,14 +1,14 @@
 import type { PhysicalCountResource } from '@erp/core-api';
 
-import { Badge } from '../../components/ui/badge';
+import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { RecordLink } from '../../components/ui/record-link';
 import type { DataColumn } from '../../components/data-table/types';
 import { formatDateTime } from '../../lib/format-date';
 
-const STATUS_VARIANT: Record<string, 'secondary' | 'success' | 'destructive'> = {
-  DRAFT: 'secondary',
+const STATUS_TONE: Record<string, StatusTone> = {
+  DRAFT: 'draft',
   POSTED: 'success',
-  CANCELLED: 'destructive',
+  CANCELLED: 'danger',
 };
 
 export const physicalCountColumns: DataColumn<PhysicalCountResource>[] = [
@@ -34,7 +34,7 @@ export const physicalCountColumns: DataColumn<PhysicalCountResource>[] = [
     key: 'status',
     header: 'Status',
     value: (count) => count.status,
-    cell: (count) => <Badge variant={STATUS_VARIANT[count.status] ?? 'secondary'}>{count.status}</Badge>,
+    cell: (count) => <StatusBadge tone={STATUS_TONE[count.status] ?? 'draft'}>{count.status}</StatusBadge>,
     filterable: true,
   },
   {
