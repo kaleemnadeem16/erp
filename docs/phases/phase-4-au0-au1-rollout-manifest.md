@@ -66,6 +66,8 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.pricing.agreement.manage` | Sensitive | SPECIFIED | Contractual pricing versions | Confidential terms | PR2/3; cannot depart accepted terms |
 | `sales.pricing.terms.view` | Sensitive | SPECIFIED | Read otherwise protected term choices | Confidential terms | PR2/3 |
 | `sales.quotation.assign` | Sensitive | STAGED | Reassign quotation owner / change access unit / internal baseline capture (independent view) | Ownership | QA1a; scoped policy QA1b |
+| `sales.quotation.access.delegate` | Sensitive | STAGED | Grant named quotation VIEW/PREPARE access using non-delegated authority | Access | QA5 |
+| `sales.quotation.access.revoke` | Sensitive | STAGED | Revoke named quotation access using non-delegated authority | Access | QA5 |
 | `sales.financial.configure` | Sensitive | STAGED | Sales FX/rounding policy | Config | FR1/4 |
 | `sales.customer-decision.view` | New ordinary | SPECIFIED | Decision/case safe detail/history | Decision-min | CA1 |
 | `sales.customer-decision.evidence.record` | New ordinary | STAGED | Shared intake/append observations | Evidence-write | CA1; file requires secure DF |
