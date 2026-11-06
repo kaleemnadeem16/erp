@@ -216,6 +216,7 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 
     public function test_draft_header_can_be_edited_and_fx_derived_line_amounts_are_recalculated(): void
     {
+        $this->governFx('1.500000000');
         [$order, $item, $uom] = $this->makeOrder();
         $line = $order->lines()->create(array_merge($this->lineAttributes($order, $item, $uom), [
             'discount_amount' => '1.0000',
@@ -226,7 +227,6 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
             'base_line_amount' => '19.5000',
         ]));
         $user = User::factory()->create();
-        $this->governFx('1.500000000');
 
         $this->actingAs($user)->patchJson("/api/v1/purchase-orders/{$order->id}", [
             'fx_rate' => '1.500000000',
@@ -283,9 +283,9 @@ class PurchaseOrderApiTest extends PurchaseOrderFoundationTest
 
     public function test_base_line_amount_converts_the_rounded_transaction_line_total(): void
     {
+        $this->governFx('1.234567890');
         [$template, $item, $uom] = $this->makeOrder();
         $payload = $this->payload($template, $item->id, $uom->id);
-        $this->governFx('1.234567890');
         $payload['fx_rate'] = '1.234567890';
         $payload['lines'][0] = array_merge($payload['lines'][0], [
             'ordered_qty' => '3.0000',

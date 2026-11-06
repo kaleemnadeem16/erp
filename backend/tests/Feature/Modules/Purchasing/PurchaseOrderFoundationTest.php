@@ -115,7 +115,8 @@ class PurchaseOrderFoundationTest extends TestCase
 
     /**
      * Gives the company a base currency (PKR) and one governed USD to PKR rate on the fixtures' rate date, which is what a purchase order's typed rate is
-     * reconciled with (issue #90). Calling it again with another rate replaces that rate.
+     * reconciled with (issue #90). Call it BEFORE makeOrder(): the base currency cannot change once a purchase order exists. A second call with another
+     * rate replaces that rate.
      */
     protected function governFx(string $rate = '1.000000000'): void
     {
@@ -131,8 +132,11 @@ class PurchaseOrderFoundationTest extends TestCase
     /** @return array{PurchaseOrder, Item, Uom} */
     protected function makeOrder(): array
     {
-        if (! ExchangeRate::query()->exists()) {
-            $this->governFx();
+        // Default fixture: the order currency (USD) is the company's base currency, so rate 1 is the governed rate. Done before the first order exists;
+        // a test that wants a foreign currency calls governFx() first, and a test that sets the base itself sets it to this same currency.
+        $usd = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
+        if (Company::query()->findOrFail(1)->base_currency_id === null) {
+            Company::query()->findOrFail(1)->update(['base_currency_id' => $usd->id]);
         }
         $currency = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'US Dollar', 'symbol' => '$']);
         [$supplier, $site] = $this->makeSupplier('SUP');
