@@ -14,4 +14,5 @@ export const CompanyChangesIndexFilterSection = {
   LOCALIZATION: "LOCALIZATION",
   REGISTRATION: "REGISTRATION",
   CONTACT: "CONTACT",
+  BRANDING: "BRANDING",
 } as const;

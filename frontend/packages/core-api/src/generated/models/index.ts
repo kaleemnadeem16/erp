@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 184 schemas that export a runtime value use `export *`.
+ * only the 185 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -455,6 +455,17 @@ export type * from "./chartOfAccountsStore201";
 export type * from "./chartOfAccountsUpdate200";
 export type * from "./closeOpportunityRequest";
 export * from "./closeOpportunityRequestOutcome";
+export type * from "./companyBrandingResource";
+export type * from "./companyBrandingResourceDisplayName";
+export type * from "./companyBrandingResourceLogo";
+export type * from "./companyBrandingResourceLogoAnyOf";
+export type * from "./companyBrandingResourceLogoAnyOfHeight";
+export type * from "./companyBrandingResourceLogoAnyOfMediaType";
+export type * from "./companyBrandingResourceLogoAnyOfSizeBytes";
+export type * from "./companyBrandingResourceLogoAnyOfWidth";
+export type * from "./companyBrandingResourceTagline";
+export type * from "./companyBrandingShow200";
+export type * from "./companyBrandingUpdate200";
 export type * from "./companyChangeResource";
 export type * from "./companyChangeResourceReason";
 export type * from "./companyChangesIndex200";
@@ -2082,6 +2093,10 @@ export type * from "./salesStagesSeedSuggested200";
 export type * from "./salesStagesStore201";
 export type * from "./salesStagesUpdate200";
 export type * from "./saveApprovalSettingRequest";
+export type * from "./saveCompanyBrandingRequest";
+export type * from "./saveCompanyBrandingRequestDisplayName";
+export * from "./saveCompanyBrandingRequestRemoveLogo";
+export type * from "./saveCompanyBrandingRequestTagline";
 export * from "./scopePeriod";
 export * from "./status";
 export type * from "./stockBatchResource";

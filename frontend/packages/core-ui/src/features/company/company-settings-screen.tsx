@@ -10,8 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Skeleton } from '../../components/ui/skeleton';
 import { Textarea } from '../../components/ui/textarea';
 import { PageHeader } from '../../components/page/page-header';
+import { ScreenTemplate } from '../../components/page/screen-template';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { getApiErrorMessage, isApiError } from '../../lib/api-errors';
+import { CompanyBrandingSection } from './company-branding-section';
 import { PolicyChangeHistory } from '../settings/policy-change-history';
 import { asCompanyView, type CompanyFieldDescription, type CompanyValues } from './company-types';
 import { countryOptions, offsetLabel, timeZoneNames } from './time-zones';
@@ -156,7 +158,7 @@ export function CompanySettingsScreen() {
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-6">
+    <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
       <PageHeader title="Company" description="Who the company is and the settings every part of the system shares." />
 
       {company.timezone_is_default && (
@@ -205,6 +207,8 @@ export function CompanySettingsScreen() {
           </div>
         </div>
 
+        <CompanyBrandingSection />
+
         <div className="col-span-full">
           <PolicyChangeHistory
             changes={changes.map((change) => ({ ...change, policy: change.section, reason: change.reason ?? '' }))}
@@ -213,6 +217,6 @@ export function CompanySettingsScreen() {
           />
         </div>
       </DetailPageLayout>
-    </div>
+    </ScreenTemplate>
   );
 }

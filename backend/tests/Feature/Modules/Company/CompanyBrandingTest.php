@@ -122,7 +122,7 @@ final class CompanyBrandingTest extends TestCase
         $logo = $this->get('/api/v1/company/branding/logo')->assertOk()->assertHeader('Content-Type', 'image/png')->assertHeader('X-Content-Type-Options', 'nosniff')->assertHeader('Cache-Control', 'no-store, private');
         $this->assertStringStartsWith("\x89PNG", $logo->getContent());
 
-        $this->post('/api/v1/company/branding', ['remove_logo' => '1', 'reason' => 'Remove the logo'], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.version', 3)->assertJsonPath('data.logo', null);
+        $this->post('/api/v1/company/branding', ['remove_logo' => 'true', 'reason' => 'Remove the logo'], ['Accept' => 'application/json'])->assertOk()->assertJsonPath('data.version', 3)->assertJsonPath('data.logo', null);
         $this->get('/api/v1/company/branding/logo')->assertNotFound();
         $this->assertSame([1, 2, 3], CompanyBrandVersion::query()->orderBy('version')->pluck('version')->all());
         $this->assertSame(3, CompanyChange::query()->where('section', 'BRANDING')->count(), 'every real change is in the company history');

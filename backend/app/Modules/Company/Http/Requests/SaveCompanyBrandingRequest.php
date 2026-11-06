@@ -11,7 +11,7 @@ use Illuminate\Foundation\Http\FormRequest;
 
 /**
  * Changes the company branding (`company.branding.manage`, STAGED: nobody passes today; the Action asks again). Multipart because a logo may travel with it. Only the parts that are
- * sent change; `remove_logo` clears the logo. A logo is PNG or JPEG, at most 2 MB; the file itself is sniffed and sanitised by the Action, whatever its name or declared type says.
+ * sent change; `remove_logo` (true/false, as a form sends it) clears the logo; an empty name or tagline clears that part. A logo is PNG or JPEG, at most 2 MB; the file itself is sniffed and sanitised by the Action, whatever its name or declared type says.
  */
 class SaveCompanyBrandingRequest extends FormRequest
 {
@@ -28,7 +28,7 @@ class SaveCompanyBrandingRequest extends FormRequest
         return [
             'display_name' => ['sometimes', 'nullable', 'string', 'max:120'],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:160'],
-            'remove_logo' => ['sometimes', 'boolean'],
+            'remove_logo' => ['sometimes', 'in:true,false,1,0'],
             'logo' => ['sometimes', 'file', 'max:'.intdiv(SaveCompanyBranding::MAX_LOGO_BYTES, 1024)],
             'reason' => ['required', 'string', 'min:3', 'max:1000'],
         ];

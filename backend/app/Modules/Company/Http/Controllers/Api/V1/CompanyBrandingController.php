@@ -24,6 +24,9 @@ class CompanyBrandingController extends Controller
     public function update(SaveCompanyBrandingRequest $request, SaveCompanyBranding $save, ReadCompanyBrand $brand): CompanyBrandingResource
     {
         $changes = array_intersect_key($request->validated(), array_flip(['display_name', 'tagline', 'remove_logo']));
+        if ($request->has('remove_logo')) {
+            $changes['remove_logo'] = $request->boolean('remove_logo');
+        }
         $file = $request->file('logo');
         $stream = $file === null ? null : fopen($file->getRealPath(), 'rb');
         try {
