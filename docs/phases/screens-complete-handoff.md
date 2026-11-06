@@ -39,6 +39,8 @@ Specs written: `customers-rules.unit`, `customers-screen`, `stock-operations-sta
 
 ## 3. What remains, in the order to do it
 
+> Items 1-4 below were done afterwards (log section 9), except the Company settings screen (another agent's) and bulk actions on Members/Roles (none is safe). Only item 5 and the blocked table remain.
+
 Each item says what is wrong today, where to start, and what "done" means (the delivery contract: [screen-delivery-contract.md](../architecture/screen-delivery-contract.md)).
 
 1. **Settings screens onto `ScreenTemplate` (kind `form`).** Today none of these uses it (checked with `grep`; Appearance is the only Settings screen that does): the Settings index, Company, Purchasing, Inventory,
