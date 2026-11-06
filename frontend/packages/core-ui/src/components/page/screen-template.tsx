@@ -48,6 +48,7 @@ export interface ScreenTemplateProps {
   children: ReactNode;
   className?: string;
   variables?: ScreenDesignVariables;
+  "data-testid"?: string;
 }
 
 /** Shared page shell. Compose it with PageHeader, DetailSection, DataTable or WizardShell; the feature owns data and actions. */
@@ -57,6 +58,7 @@ export function ScreenTemplate({
   children,
   className,
   variables,
+  "data-testid": testId,
 }: ScreenTemplateProps) {
   const inherited = useScreenDesign();
   const style = { ...inherited, ...variables } as CSSProperties;
@@ -65,6 +67,7 @@ export function ScreenTemplate({
       <div
         className={cn(SCREEN_TEMPLATES[kind], className)}
         data-screen-template={kind}
+        data-testid={testId}
         style={style}
       >
         {header}
