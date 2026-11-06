@@ -27,7 +27,7 @@ use App\Modules\Documents\Support\TemplateConfiguration;
  */
 final class ResolveDocumentPolicy
 {
-    public function __construct(private readonly DocumentTypeRegistry $registry, private readonly ?ReadCompanyBrand $brands = null) {}
+    public function __construct(private readonly DocumentTypeRegistry $registry, private readonly ReadCompanyBrand $brands) {}
 
     public function execute(string $typeKey, ?int $explicitTemplateVersionId = null, ?int $explicitPagePolicyVersionId = null): ResolvedDocumentPolicy
     {
@@ -78,7 +78,7 @@ final class ResolveDocumentPolicy
             $page = $this->pageComponent('EXPLICIT', $version);
         }
 
-        $brand = $this->brands?->current();
+        $brand = $this->brands->current();
         if ($brand === null) {
             return new ResolvedDocumentPolicy($typeKey, $template, $page, $notes);
         }

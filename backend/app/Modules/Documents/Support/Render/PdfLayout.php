@@ -17,7 +17,7 @@ final class PdfLayout
     private const MM = 72 / 25.4;
 
     /** The first-page header band when the manifest pinned a company brand: logo and name above the title line. */
-    private const BRAND_HEADER = 64.0;
+    private const BRAND_HEADER = 78.0;
 
     public readonly float $width;
 
