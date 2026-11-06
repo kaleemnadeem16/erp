@@ -7,7 +7,7 @@ use App\Modules\Approvals\Http\Controllers\Api\V1\ApprovalRequestController;
 use App\Modules\Approvals\Http\Controllers\Api\V1\ApprovalSubjectTypeController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->whereNumber(['approval_policy', 'approval_authority', 'approval_delegation', 'approval_request'])->group(function () {
     Route::get('approval-subject-types', [ApprovalSubjectTypeController::class, 'index'])->name('approval-subject-types.index');
     Route::put('approval-subject-types/{subject_type}/mode', [ApprovalSubjectTypeController::class, 'updateMode'])->name('approval-subject-types.mode');
 

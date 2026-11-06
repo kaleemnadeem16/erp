@@ -14,7 +14,6 @@ use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use App\Modules\Approvals\Support\Review\ReviewProfile;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
-use Illuminate\Support\Carbon;
 
 /**
  * Whether someone may decide a step — a stable capability plus, when the step uses limits, an amount ceiling held
@@ -102,7 +101,7 @@ final class ApprovalEligibility
     private function authorityCovering(User $person, string $subjectType, BigDecimal $amount): ?ApprovalAuthority
     {
         return ApprovalAuthority::query()
-            ->inForce(Carbon::today())
+            ->inForce()
             ->where('user_id', $person->id)
             ->where('subject_type', $subjectType)
             ->orderByDesc('unlimited')

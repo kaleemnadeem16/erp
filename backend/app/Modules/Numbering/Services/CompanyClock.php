@@ -31,4 +31,13 @@ final class CompanyClock
     {
         return $instant->setTimezone($this->timezone());
     }
+
+    /**
+     * The company's business date right now, as a date at local midnight: what "today" means for anything dated by day
+     * (a validity range, an effective date). Never `Carbon::today()`, which is the application clock's UTC day.
+     */
+    public function today(): CarbonImmutable
+    {
+        return $this->local(CarbonImmutable::now())->startOfDay();
+    }
 }

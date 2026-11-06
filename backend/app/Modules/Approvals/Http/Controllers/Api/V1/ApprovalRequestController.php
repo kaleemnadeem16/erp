@@ -15,6 +15,7 @@ use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalInbox;
 use App\Modules\Approvals\Support\ApprovalRequestAccess;
+use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
@@ -39,17 +40,21 @@ class ApprovalRequestController extends Controller
         return ApprovalRequestResource::collection($inbox->forUser($request->user()));
     }
 
-    /** A request is visible to who submitted it, who may audit approvals, and anyone who can act on or has acted on it. */
+    /** A request is visible to who submitted it, who may audit approvals, and anyone who can act on or has acted on it. For everyone else it is a plain 404, the same as an unknown id. */
+    #[Response(404, 'The approval does not exist or is not visible to the caller; the answer never says which.', type: 'array{message: string}')]
     public function show(Request $request, ApprovalRequest $approval_request, ApprovalInbox $inbox): ApprovalRequestResource
     {
         $user = $request->user();
         $approval_request->load(['steps.policyStep', 'steps.decisions']);
-        $involved = app(ApprovalRequestAccess::class)->canView($user, $approval_request);
-        abort_unless($involved, 403, 'This approval is not yours to see.');
+        $access = app(ApprovalRequestAccess::class);
+        if (! $access->canView($user, $approval_request)) {
+            $access->hide($approval_request);
+        }
 
         return new ApprovalRequestResource($approval_request);
     }
 
+    #[Response(404, 'The approval does not exist or is not visible to the caller; the answer never says which.', type: 'array{message: string}')]
     public function decide(DecideApprovalRequest $request, ApprovalRequest $approval_request, DecideApproval $decide): ApprovalRequestResource
     {
         $data = $request->validated();
@@ -57,6 +62,7 @@ class ApprovalRequestController extends Controller
         return new ApprovalRequestResource($decide($approval_request, $request->user(), ApprovalDecisionKind::from($data['decision']), $data['reason'] ?? null, $data['step_id'] ?? null));
     }
 
+    #[Response(404, 'The approval does not exist or is not visible to the caller; the answer never says which.', type: 'array{message: string}')]
     public function withdraw(WithdrawApprovalRequest $request, ApprovalRequest $approval_request, WithdrawApproval $withdraw): ApprovalRequestResource
     {
         return new ApprovalRequestResource($withdraw($approval_request, $request->user(), $request->validated('reason')));

@@ -6,6 +6,7 @@ namespace App\Modules\Approvals\Models;
 
 use App\Models\Model;
 use App\Models\User;
+use App\Modules\Numbering\Services\CompanyClock;
 use App\Support\Concerns\BelongsToCompany;
 use App\Support\Concerns\GuardsRelatedCompanyScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -56,7 +57,7 @@ class ApprovalDelegation extends Model
     /** @param  Builder<ApprovalDelegation>  $query */
     public function scopeInForce(Builder $query, ?Carbon $on = null): void
     {
-        $day = ($on ?? Carbon::today())->toDateString();
+        $day = ($on ?? app(CompanyClock::class)->today())->toDateString();
         $query->whereNull('revoked_at')->where('valid_from', '<=', $day)->where('valid_to', '>=', $day);
     }
 }

@@ -59,6 +59,20 @@ dialogs; revoke controls follow the existing delegator/management gate. All exis
 `approvals.history.view` gates remain unchanged. See the
 [workspace specification](../../../../docs/domain/approvals.md#approval-workspace-first-draft-2026-10-07).
 
+## Non-disclosure and business dates (addendum to ADR 0070, issue #89)
+
+- **A hidden request is a 404.** Showing, deciding or withdrawing a request the caller may not see (not the submitter, not an
+  auditor, never asked to decide, never decided) answers exactly like an unknown id: the same 404, body and headers. The check
+  runs in the Form Request `authorize()` before validation, so an invalid body cannot tell them apart either. An approvals
+  manager may still withdraw any request of the company. Revoking a delegation you are not part of is likewise a 404 (the
+  delegate, who can see it, still gets 403). Cross-company ids were already 404.
+- **403 means a missing capability only.** Policy and authority routes take the id as a string and resolve the record after the
+  Form Request judged the capability, so a caller without it gets the same 403 for an existing and an unknown id.
+- **Authority and delegation dates are business dates.** `valid_from` / `valid_to` are compared with today's date in the company's
+  time zone (`CompanyClock::today()`, the same clock Numbering uses), not the UTC application day: a grant for the 11th starts
+  at local midnight and lasts until the end of the local 11th. This covers `inForce()`, `ApprovalEligibility` and the `in_force`
+  field. Timestamps (`created_at`, `revoked_at`, deadlines) stay instants.
+
 ## Does not own
 
 Departments or record-level scope (Q26), notifications (deliberately deferred to the shared ERP-wide capability, Q33 — do not add

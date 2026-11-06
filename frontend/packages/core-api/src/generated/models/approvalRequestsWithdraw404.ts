@@ -5,7 +5,6 @@
  * OpenAPI spec version: 0.0.1
  */
 
-export type ApprovalRequestsShow403 = {
-  /** Error overview. */
+export type ApprovalRequestsWithdraw404 = {
   message: string;
 };

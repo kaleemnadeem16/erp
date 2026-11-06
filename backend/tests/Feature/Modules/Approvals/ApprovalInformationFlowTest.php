@@ -59,7 +59,7 @@ class ApprovalInformationFlowTest extends TestCase
         $this->subject->documents[1]['amount'] = '95000.0000';
         $this->travel(2)->hours();
         $response = $this->actingAs($bystander)->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED']);
-        $response->assertUnprocessable()->assertJsonPath('message', 'You are not eligible to decide any open step of this approval.');
+        $response->assertNotFound();
         $this->assertStringNotContainsString('changed after', $response->getContent());
         $this->assertSame('PENDING', $request->fresh()->status->value);
         $this->assertNull($request->fresh()->closing_reason);
@@ -108,9 +108,9 @@ class ApprovalInformationFlowTest extends TestCase
         foreach ([['SUSPENDED', false], ['INVITED', false], ['ACTIVE', true]] as [$status, $mustChangePassword]) {
             $principal->forceFill(['status' => $status, 'must_change_password' => $mustChangePassword])->save();
             $this->getJson('/api/v1/approval-requests/inbox')->assertOk()->assertExactJson(['data' => []]);
-            $this->getJson("/api/v1/approval-requests/{$request->id}")->assertForbidden()->assertJsonMissingPath('data.amount_base');
+            $this->getJson("/api/v1/approval-requests/{$request->id}")->assertNotFound()->assertJsonMissingPath('data.amount_base');
             $this->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED'])
-                ->assertUnprocessable()->assertJsonPath('message', 'You are not eligible to decide any open step of this approval.');
+                ->assertNotFound();
             $this->assertSame('PENDING', $request->fresh()->status->value);
             $this->assertDatabaseCount('approval_decisions', 0);
         }

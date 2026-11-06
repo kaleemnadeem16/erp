@@ -134,7 +134,7 @@ class ApprovalApiTest extends TestCase
 
         $this->actingAs($ahmed)->getJson('/api/v1/approval-delegations')->assertOk()->assertJsonCount(1, 'data');
         $this->actingAs($stranger)->getJson('/api/v1/approval-delegations')->assertOk()->assertJsonCount(0, 'data');
-        $this->actingAs($stranger)->deleteJson("/api/v1/approval-delegations/{$id}")->assertForbidden();
+        $this->actingAs($stranger)->deleteJson("/api/v1/approval-delegations/{$id}")->assertNotFound();
         $this->actingAs($ali)->deleteJson("/api/v1/approval-delegations/{$id}")->assertOk()->assertJsonPath('data.in_force', false);
     }
 
@@ -155,9 +155,9 @@ class ApprovalApiTest extends TestCase
         $this->assertSame('80000.0000', $inbox['amount_base']);
         $this->assertSame('manual', $inbox['evidence']['fx_rate_source']);
 
-        $this->actingAs($bystander)->getJson("/api/v1/approval-requests/{$request->id}")->assertForbidden();
+        $this->actingAs($bystander)->getJson("/api/v1/approval-requests/{$request->id}")->assertNotFound();
         $this->actingAs($submitter)->getJson("/api/v1/approval-requests/{$request->id}")->assertOk();
-        $this->actingAs($bystander)->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED'])->assertUnprocessable();
+        $this->actingAs($bystander)->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED'])->assertNotFound();
         $this->actingAs($approver)->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'REJECTED'])->assertUnprocessable();
         $this->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED', 'reason' => 'ok'])->assertOk()->assertJsonPath('data.status', 'APPROVED')
             ->assertJsonPath('data.steps.0.decisions.0.decided_by.id', $approver->id);
@@ -178,7 +178,7 @@ class ApprovalApiTest extends TestCase
         $submitter = $this->user();
         $request = app(SubmitForApproval::class)('TEST_DOCUMENT', 1, $submitter);
 
-        $this->actingAs($this->user())->postJson("/api/v1/approval-requests/{$request->id}/withdraw", ['reason' => 'x'])->assertUnprocessable();
+        $this->actingAs($this->user())->postJson("/api/v1/approval-requests/{$request->id}/withdraw", ['reason' => 'x'])->assertNotFound();
         $this->actingAs($submitter)->postJson("/api/v1/approval-requests/{$request->id}/withdraw", [])->assertUnprocessable()->assertJsonValidationErrors('reason');
         $this->postJson("/api/v1/approval-requests/{$request->id}/withdraw", ['reason' => 'Needs editing'])->assertOk()->assertJsonPath('data.status', 'WITHDRAWN');
         $this->assertSame('WITHDRAWN', ApprovalRequest::query()->findOrFail($request->id)->status->value);

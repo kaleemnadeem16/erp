@@ -19,6 +19,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Record-addressed routes take the id as a string and resolve it only after the Form Request has judged the capability, so a
+ * caller without it gets the same 403 for an existing and an unknown policy, never a 404 that would reveal which exist.
+ */
 class ApprovalPolicyController extends Controller
 {
     public function index(IndexApprovalPolicyRequest $request): AnonymousResourceCollection
@@ -33,9 +37,9 @@ class ApprovalPolicyController extends Controller
         return ApprovalPolicyResource::collection($query->orderBy('subject_type')->orderBy('code')->orderByDesc('version_no')->paginate($request->integer('per_page', 50)));
     }
 
-    public function show(IndexApprovalPolicyRequest $request, ApprovalPolicy $approval_policy): ApprovalPolicyResource
+    public function show(IndexApprovalPolicyRequest $request, int $approval_policy): ApprovalPolicyResource
     {
-        return new ApprovalPolicyResource($approval_policy->load(['conditions', 'steps']));
+        return new ApprovalPolicyResource(ApprovalPolicy::query()->findOrFail($approval_policy)->load(['conditions', 'steps']));
     }
 
     public function store(StoreApprovalPolicyRequest $request, CreateApprovalPolicy $create): JsonResponse
@@ -43,20 +47,20 @@ class ApprovalPolicyController extends Controller
         return (new ApprovalPolicyResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
-    public function update(UpdateApprovalPolicyRequest $request, ApprovalPolicy $approval_policy, UpdateApprovalPolicy $update): ApprovalPolicyResource
+    public function update(UpdateApprovalPolicyRequest $request, int $approval_policy, UpdateApprovalPolicy $update): ApprovalPolicyResource
     {
-        return new ApprovalPolicyResource($update($approval_policy, $request->validated(), $request->user()));
+        return new ApprovalPolicyResource($update(ApprovalPolicy::query()->findOrFail($approval_policy), $request->validated(), $request->user()));
     }
 
-    public function destroy(ManageApprovalPolicyRequest $request, ApprovalPolicy $approval_policy, DeleteApprovalPolicy $delete): Response
+    public function destroy(ManageApprovalPolicyRequest $request, int $approval_policy, DeleteApprovalPolicy $delete): Response
     {
-        $delete($approval_policy, $request->user());
+        $delete(ApprovalPolicy::query()->findOrFail($approval_policy), $request->user());
 
         return response()->noContent();
     }
 
-    public function activate(ManageApprovalPolicyRequest $request, ApprovalPolicy $approval_policy, ActivateApprovalPolicy $activate): ApprovalPolicyResource
+    public function activate(ManageApprovalPolicyRequest $request, int $approval_policy, ActivateApprovalPolicy $activate): ApprovalPolicyResource
     {
-        return new ApprovalPolicyResource($activate($approval_policy, $request->user()));
+        return new ApprovalPolicyResource($activate(ApprovalPolicy::query()->findOrFail($approval_policy), $request->user()));
     }
 }

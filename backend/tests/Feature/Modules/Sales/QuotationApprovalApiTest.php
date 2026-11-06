@@ -254,7 +254,7 @@ class QuotationApprovalApiTest extends TestCase
         $request = ApprovalRequest::query()->firstOrFail();
         // The engine's own decision route and inbox apply the same record policy: a capability alone never reaches a record the family policy hides.
         $this->getJson('/api/v1/approval-requests/inbox')->assertOk()->assertJsonCount(0, 'data');
-        $this->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED'])->assertStatus(422);
+        $this->postJson("/api/v1/approval-requests/{$request->id}/decide", ['decision' => 'APPROVED'])->assertNotFound();
         $this->assertSame(0, ApprovalDecision::query()->count());
 
         $nobody = User::factory()->create();

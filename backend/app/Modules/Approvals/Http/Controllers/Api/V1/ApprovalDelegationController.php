@@ -10,6 +10,7 @@ use App\Modules\Approvals\Actions\RevokeApprovalDelegation;
 use App\Modules\Approvals\Http\Requests\StoreApprovalDelegationRequest;
 use App\Modules\Approvals\Http\Resources\ApprovalDelegationResource;
 use App\Modules\Approvals\Models\ApprovalDelegation;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,9 +40,16 @@ class ApprovalDelegationController extends Controller
         return (new ApprovalDelegationResource($create($data + ['delegator_id' => $delegatorId], $request->user())))->response()->setStatusCode(201);
     }
 
-    public function destroy(Request $request, ApprovalDelegation $approval_delegation, RevokeApprovalDelegation $revoke): ApprovalDelegationResource
+    public function destroy(Request $request, int $approval_delegation, RevokeApprovalDelegation $revoke): ApprovalDelegationResource
     {
-        abort_unless($approval_delegation->delegator_id === $request->user()->id || $request->user()->can('approvals.delegation.manage'), 403);
+        $user = $request->user();
+        $approval_delegation = ApprovalDelegation::query()->findOrFail($approval_delegation);
+        $manager = $user->can('approvals.delegation.manage');
+        // Someone with no part in the delegation gets the unknown-id 404; the delegate, who can see it, is refused with a 403.
+        if (! $manager && ! in_array($user->id, [$approval_delegation->delegator_id, $approval_delegation->delegate_id], true)) {
+            throw (new ModelNotFoundException)->setModel(ApprovalDelegation::class, [$approval_delegation->getKey()]);
+        }
+        abort_unless($manager || $approval_delegation->delegator_id === $user->id, 403, 'Only the person who delegated this can revoke it.');
 
         return new ApprovalDelegationResource($revoke($approval_delegation, $request->user()));
     }

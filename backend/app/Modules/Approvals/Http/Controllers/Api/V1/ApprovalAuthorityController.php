@@ -41,8 +41,8 @@ class ApprovalAuthorityController extends Controller
         return (new ApprovalAuthorityResource($create($request->validated(), $request->user())))->response()->setStatusCode(201);
     }
 
-    public function destroy(ManageApprovalAuthorityRequest $request, ApprovalAuthority $approval_authority, RevokeApprovalAuthority $revoke): ApprovalAuthorityResource
+    public function destroy(ManageApprovalAuthorityRequest $request, int $approval_authority, RevokeApprovalAuthority $revoke): ApprovalAuthorityResource
     {
-        return new ApprovalAuthorityResource($revoke($approval_authority, $request->user()));
+        return new ApprovalAuthorityResource($revoke(ApprovalAuthority::query()->findOrFail($approval_authority), $request->user()));
     }
 }

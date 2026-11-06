@@ -109,7 +109,7 @@ class ApprovalEvidenceVisibilityTest extends TestCase
         $this->getJson("/api/v1/approval-requests/{$this->requestId}")->assertOk()->assertJsonPath('data.amount_base', '80000.0000');
         // Someone who merely holds the approve permission, not asked to decide, gets nothing: not involved, and no cost visibility.
         $bystander = $this->user('test.document.approve');
-        $this->actingAs($bystander)->getJson("/api/v1/approval-requests/{$this->requestId}")->assertForbidden();
+        $this->actingAs($bystander)->getJson("/api/v1/approval-requests/{$this->requestId}")->assertNotFound();
     }
 
     public function test_every_registered_subject_declares_who_may_see_its_figures(): void

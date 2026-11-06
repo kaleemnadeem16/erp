@@ -22,16 +22,17 @@ import type {
 
 import type {
   ApprovalRequestsDecide200,
+  ApprovalRequestsDecide404,
   ApprovalRequestsInbox200,
   ApprovalRequestsIndex200,
   ApprovalRequestsIndexParams,
   ApprovalRequestsShow200,
-  ApprovalRequestsShow403,
+  ApprovalRequestsShow404,
   ApprovalRequestsWithdraw200,
+  ApprovalRequestsWithdraw404,
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
   DecideApprovalRequest,
-  ModelNotFoundExceptionResponse,
   ValidationExceptionResponse,
   WithdrawApprovalRequest,
 } from ".././models";
@@ -461,7 +462,7 @@ export function useApprovalRequestsInbox<
 }
 
 /**
- * @summary A request is visible to who submitted it, who may audit approvals, and anyone who can act on or has acted on it
+ * @summary A request is visible to who submitted it, who may audit approvals, and anyone who can act on or has acted on it. For everyone else it is a plain 404, the same as an unknown id
  */
 export type approvalRequestsShowResponse200 = {
   data: ApprovalRequestsShow200;
@@ -473,13 +474,8 @@ export type approvalRequestsShowResponse401 = {
   status: 401;
 };
 
-export type approvalRequestsShowResponse403 = {
-  data: ApprovalRequestsShow403;
-  status: 403;
-};
-
 export type approvalRequestsShowResponse404 = {
-  data: ModelNotFoundExceptionResponse;
+  data: ApprovalRequestsShow404;
   status: 404;
 };
 
@@ -488,9 +484,7 @@ export type approvalRequestsShowResponseSuccess =
     headers: Headers;
   };
 export type approvalRequestsShowResponseError = (
-  | approvalRequestsShowResponse401
-  | approvalRequestsShowResponse403
-  | approvalRequestsShowResponse404
+  approvalRequestsShowResponse401 | approvalRequestsShowResponse404
 ) & {
   headers: Headers;
 };
@@ -521,10 +515,7 @@ export const getApprovalRequestsShowQueryKey = (approvalRequest?: number) => {
 
 export const getApprovalRequestsShowQueryOptions = <
   TData = Awaited<ReturnType<typeof approvalRequestsShow>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ApprovalRequestsShow403
-    | ModelNotFoundExceptionResponse,
+  TError = AuthenticationExceptionResponse | ApprovalRequestsShow404,
 >(
   approvalRequest: number,
   options?: {
@@ -563,16 +554,11 @@ export type ApprovalRequestsShowQueryResult = NonNullable<
   Awaited<ReturnType<typeof approvalRequestsShow>>
 >;
 export type ApprovalRequestsShowQueryError =
-  | AuthenticationExceptionResponse
-  | ApprovalRequestsShow403
-  | ModelNotFoundExceptionResponse;
+  AuthenticationExceptionResponse | ApprovalRequestsShow404;
 
 export function useApprovalRequestsShow<
   TData = Awaited<ReturnType<typeof approvalRequestsShow>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ApprovalRequestsShow403
-    | ModelNotFoundExceptionResponse,
+  TError = AuthenticationExceptionResponse | ApprovalRequestsShow404,
 >(
   approvalRequest: number,
   options: {
@@ -599,10 +585,7 @@ export function useApprovalRequestsShow<
 };
 export function useApprovalRequestsShow<
   TData = Awaited<ReturnType<typeof approvalRequestsShow>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ApprovalRequestsShow403
-    | ModelNotFoundExceptionResponse,
+  TError = AuthenticationExceptionResponse | ApprovalRequestsShow404,
 >(
   approvalRequest: number,
   options?: {
@@ -629,10 +612,7 @@ export function useApprovalRequestsShow<
 };
 export function useApprovalRequestsShow<
   TData = Awaited<ReturnType<typeof approvalRequestsShow>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ApprovalRequestsShow403
-    | ModelNotFoundExceptionResponse,
+  TError = AuthenticationExceptionResponse | ApprovalRequestsShow404,
 >(
   approvalRequest: number,
   options?: {
@@ -650,15 +630,12 @@ export function useApprovalRequestsShow<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary A request is visible to who submitted it, who may audit approvals, and anyone who can act on or has acted on it
+ * @summary A request is visible to who submitted it, who may audit approvals, and anyone who can act on or has acted on it. For everyone else it is a plain 404, the same as an unknown id
  */
 
 export function useApprovalRequestsShow<
   TData = Awaited<ReturnType<typeof approvalRequestsShow>>,
-  TError =
-    | AuthenticationExceptionResponse
-    | ApprovalRequestsShow403
-    | ModelNotFoundExceptionResponse,
+  TError = AuthenticationExceptionResponse | ApprovalRequestsShow404,
 >(
   approvalRequest: number,
   options?: {
@@ -706,7 +683,7 @@ export type approvalRequestsDecideResponse403 = {
 };
 
 export type approvalRequestsDecideResponse404 = {
-  data: ModelNotFoundExceptionResponse;
+  data: ApprovalRequestsDecide404;
   status: 404;
 };
 
@@ -755,7 +732,7 @@ export const getApprovalRequestsDecideMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
-    | ModelNotFoundExceptionResponse
+    | ApprovalRequestsDecide404
     | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
@@ -800,14 +777,14 @@ export type ApprovalRequestsDecideMutationBody = DecideApprovalRequest;
 export type ApprovalRequestsDecideMutationError =
   | AuthenticationExceptionResponse
   | AuthorizationExceptionResponse
-  | ModelNotFoundExceptionResponse
+  | ApprovalRequestsDecide404
   | ValidationExceptionResponse;
 
 export const useApprovalRequestsDecide = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
-    | ModelNotFoundExceptionResponse
+    | ApprovalRequestsDecide404
     | ValidationExceptionResponse,
   TContext = unknown,
 >(
@@ -847,7 +824,7 @@ export type approvalRequestsWithdrawResponse403 = {
 };
 
 export type approvalRequestsWithdrawResponse404 = {
-  data: ModelNotFoundExceptionResponse;
+  data: ApprovalRequestsWithdraw404;
   status: 404;
 };
 
@@ -897,7 +874,7 @@ export const getApprovalRequestsWithdrawMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
-    | ModelNotFoundExceptionResponse
+    | ApprovalRequestsWithdraw404
     | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
@@ -942,14 +919,14 @@ export type ApprovalRequestsWithdrawMutationBody = WithdrawApprovalRequest;
 export type ApprovalRequestsWithdrawMutationError =
   | AuthenticationExceptionResponse
   | AuthorizationExceptionResponse
-  | ModelNotFoundExceptionResponse
+  | ApprovalRequestsWithdraw404
   | ValidationExceptionResponse;
 
 export const useApprovalRequestsWithdraw = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
-    | ModelNotFoundExceptionResponse
+    | ApprovalRequestsWithdraw404
     | ValidationExceptionResponse,
   TContext = unknown,
 >(

@@ -100,10 +100,10 @@ class ApprovalDocumentReviewTest extends TestCase
         $this->assertStringNotContainsString('Specification: exterior coating', $response->getContent());
         $response = $this->actingAs($history)->getJson('/api/v1/approval-requests')->assertOk();
         $this->assertStringNotContainsString('123.4500', $response->getContent());
-        $this->review(User::factory()->create())->assertForbidden();
+        $this->review(User::factory()->create())->assertNotFound();
         $financeOnly = PermissionedActor::grant(User::factory()->create(), ['purchasing.commercial-cost.view']);
         $this->assertNull(app(ApprovalReviewAccess::class)->profile($financeOnly, $this->request));
-        $this->review($financeOnly)->assertForbidden();
+        $this->review($financeOnly)->assertNotFound();
     }
 
     public function test_technical_step_hides_structured_money_and_retains_its_historical_profile(): void
@@ -134,7 +134,7 @@ class ApprovalDocumentReviewTest extends TestCase
         ApprovalDelegation::create(['delegator_id' => $principal->id, 'delegate_id' => $delegate->id, 'subject_type' => 'PURCHASE_ORDER', 'valid_from' => today(), 'valid_to' => today()->addDay(), 'reason' => 'Cover', 'created_by' => $principal->id]);
         $this->review($delegate)->assertOk()->assertJsonPath('data.document_review.profile', 'COMMERCIAL');
         $principal->update(['status' => 'SUSPENDED']);
-        $this->review($delegate)->assertForbidden();
+        $this->review($delegate)->assertNotFound();
     }
 
     public function test_changed_document_with_the_same_total_invalidates_decision_and_issuance(): void
@@ -158,7 +158,7 @@ class ApprovalDocumentReviewTest extends TestCase
         unset($facts['document_review']);
         $this->request->update(['facts' => $facts]);
         $actor = $this->approver();
-        $this->actingAs($actor)->postJson('/api/v1/approval-requests/'.$this->request->id.'/decide', ['decision' => 'APPROVED'])->assertUnprocessable();
+        $this->actingAs($actor)->postJson('/api/v1/approval-requests/'.$this->request->id.'/decide', ['decision' => 'APPROVED'])->assertNotFound();
         $this->assertDatabaseCount('approval_decisions', 0);
         $this->review($this->buyer)->assertOk()->assertJsonPath('data.document_review_ready', false)->assertJsonPath('data.can_decide', false);
         $snapshot = app(ApprovalReviewRegistry::class)->capture('PURCHASE_ORDER', $this->order->id);
@@ -198,7 +198,7 @@ class ApprovalDocumentReviewTest extends TestCase
         $foreign = User::factory()->create();
         app()->instance(CompanyContext::class, $context);
         PermissionedActor::grant($foreign, ['purchasing.purchase-order.approve']);
-        $this->actingAs($foreign)->postJson('/api/v1/approval-requests/'.$this->request->id.'/decide', ['decision' => 'APPROVED'])->assertUnprocessable();
+        $this->actingAs($foreign)->postJson('/api/v1/approval-requests/'.$this->request->id.'/decide', ['decision' => 'APPROVED'])->assertNotFound();
         $this->assertDatabaseCount('approval_decisions', 0);
         $this->assertSame('PENDING', $this->request->fresh()->status->value);
     }
