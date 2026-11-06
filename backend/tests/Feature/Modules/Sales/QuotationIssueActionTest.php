@@ -28,6 +28,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -103,6 +104,25 @@ class QuotationIssueActionTest extends TestCase
         $this->assertSame(['TAXABLE', 'TAXABLE'], $lines->pluck('tax_disposition')->all());
         $this->assertSame(1, $this->allocations());
         $this->assertSame($revision->id, (int) DB::table('numbering_allocations')->where('number', 'QTN-00001')->value('document_id'));
+    }
+
+    public function test_a_company_outside_utc_gets_the_expiry_at_its_own_local_midnight(): void
+    {
+        Company::query()->whereKey(1)->update(['timezone' => 'Asia/Karachi']);
+        $revision = $this->preparedDraft();
+        $generation = QuotationRevision::findOrFail($revision->id)->input_generation;
+
+        $this->issue($revision, $generation);
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+
+        $row = QuotationRevision::findOrFail($revision->id);
+        $validThrough = $row->valid_through_local_date->format('Y-m-d');
+        $this->assertSame('Asia/Karachi', $row->issued_timezone);
+        $this->assertSame(
+            CarbonImmutable::parse($validThrough, 'Asia/Karachi')->addDay()->startOfDay()->utc()->toIso8601String(),
+            CarbonImmutable::parse($row->expires_at)->utc()->toIso8601String(),
+            'the instant stored is local midnight after valid-through, not midnight UTC',
+        );
     }
 
     public function test_an_exact_retry_replays_the_original_number_and_instant_without_a_second_allocation(): void

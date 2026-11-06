@@ -125,7 +125,7 @@ final class IssueQuotation
         }
         $company = Company::query()->findOrFail($this->company->id());
         $now = CarbonImmutable::parse((string) DB::selectOne('select now() as now')->now);
-        $expiresAt = CarbonImmutable::parse($revision->valid_through_local_date?->format('Y-m-d') ?? $now->toDateString(), $company->timezone)->addDay()->startOfDay();
+        $expiresAt = CarbonImmutable::parse($revision->valid_through_local_date?->format('Y-m-d') ?? $now->toDateString(), $company->timezone)->addDay()->startOfDay()->utc(); // the instant is stored as UTC: a zoned Carbon would be written without its offset and read back as UTC wall time
         $allocation = $this->numbering->allocate(new NumberingContext(QuotationNumbering::KEY, $now, [], [], $revision->id, null, $actor->id));
 
         [$rows, $totals] = $this->freeze($revision, $assessment);
