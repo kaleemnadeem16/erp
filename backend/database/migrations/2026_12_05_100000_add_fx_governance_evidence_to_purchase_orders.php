@@ -20,15 +20,17 @@ return new class extends Migration
             $table->decimal('fx_governed_rate', 19, 9)->nullable();
             $table->date('fx_governed_rate_date')->nullable();
             $table->text('fx_override_reason')->nullable();
-            $table->foreignId('fx_override_by')->nullable()->constrained('users')->restrictOnDelete();
+            // Composite company-scoped FK (tenant-FK ratchet): a null fx_override_by is not checked (MATCH SIMPLE).
+            $table->unsignedBigInteger('fx_override_by')->nullable();
+            $table->foreign(['company_id', 'fx_override_by'], 'purchase_orders_fx_override_by_company_fk')->references(['company_id', 'id'])->on('users')->restrictOnDelete();
         });
     }
 
     public function down(): void
     {
         Schema::table('purchase_orders', function (Blueprint $table): void {
-            $table->dropConstrainedForeignId('fx_override_by');
-            $table->dropColumn(['fx_governed_rate', 'fx_governed_rate_date', 'fx_override_reason']);
+            $table->dropForeign('purchase_orders_fx_override_by_company_fk');
+            $table->dropColumn(['fx_governed_rate', 'fx_governed_rate_date', 'fx_override_reason', 'fx_override_by']);
         });
     }
 };

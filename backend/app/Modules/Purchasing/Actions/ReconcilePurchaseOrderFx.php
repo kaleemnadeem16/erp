@@ -77,10 +77,9 @@ final class ReconcilePurchaseOrderFx
         if ($currencyId === $baseId) {
             return [BigDecimal::one(), $rateDate];
         }
-        $type = RateType::tryFrom(strtoupper($rateType));
-        if ($type === null) {
-            return [null, null];
-        }
+        // A purchase uses the SPOT rate at its date (multi-currency.md, rate selection); only AVERAGE and CLOSING select another. The order form's
+        // free-text label ("MANUAL") is evidence of how it was typed, not a different rate type.
+        $type = RateType::tryFrom(strtoupper($rateType)) ?? RateType::Spot;
         $row = ExchangeRate::query()->where('from_currency_id', $currencyId)->where('to_currency_id', $baseId)->where('rate_type', $type->value)
             ->whereDate('rate_date', '<=', $rateDate)->whereDate('rate_date', '>=', Carbon::parse($rateDate)->subDays((int) config('purchasing.fx.max_rate_age_days', 7))->toDateString())
             ->orderByDesc('rate_date')->first();

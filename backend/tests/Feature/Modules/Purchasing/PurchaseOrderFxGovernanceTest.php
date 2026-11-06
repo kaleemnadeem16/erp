@@ -4,15 +4,15 @@ namespace Tests\Feature\Modules\Purchasing;
 
 use App\Models\Company;
 use App\Models\Currency;
-use App\Models\ExchangeRate;
+use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Models\ApprovalSubjectSetting;
 use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
+use App\Modules\Inventory\Models\Item;
 use App\Modules\Purchasing\Models\PurchaseOrder;
-use App\Support\RateType;
 use Tests\Support\PurchasingActor;
 
 /**
@@ -32,7 +32,7 @@ class PurchaseOrderFxGovernanceTest extends PurchaseOrderFoundationTest
 
     private User $fixedRateBuyer;
 
-    /** @var array{PurchaseOrder, \App\Modules\Inventory\Models\Item, \App\Models\Uom}|null */
+    /** @var array{PurchaseOrder, Item, Uom}|null */
     private ?array $fixture = null;
 
     protected function setUp(): void
@@ -94,6 +94,13 @@ class PurchaseOrderFxGovernanceTest extends PurchaseOrderFoundationTest
     {
         $this->actingAsUnprivileged($this->buyer)->postJson('/api/v1/purchase-orders', $this->payload('281.000000000'))->assertCreated(); // +0.357%
         $this->actingAsUnprivileged($this->buyer)->postJson('/api/v1/purchase-orders', $this->payload('278.000000000'))->assertUnprocessable()->assertJsonValidationErrors('fx_rate'); // -0.714%
+    }
+
+    public function test_the_order_forms_free_text_rate_type_is_checked_against_the_spot_rate(): void
+    {
+        $payload = $this->payload('280.000000000');
+        $this->actingAsUnprivileged($this->buyer)->postJson('/api/v1/purchase-orders', ['fx_rate_type' => 'MANUAL'] + $payload)->assertCreated();
+        $this->actingAsUnprivileged($this->buyer)->postJson('/api/v1/purchase-orders', ['fx_rate_type' => 'MANUAL', 'fx_rate' => '28.000000000'] + $payload)->assertUnprocessable();
     }
 
     public function test_a_rate_with_no_governed_rate_to_check_it_against_is_refused(): void
