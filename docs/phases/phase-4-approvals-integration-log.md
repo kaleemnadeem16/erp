@@ -60,3 +60,22 @@ only discount one and the issuable scenarios use small overrides. Rule: controls
 - A first-class "approvals waiting on me" entry on the Quotes list (the generic `/approvals` inbox lists the request only if the approver also passes the record policy; it does, but has no quotation deep link).
 - Approval of a replacement revision (`IssueQuotationReplacement` consumes the same assessor, so a replacement with concessions needs its own approval; not exercised by a dedicated test).
 - Browser (Playwright e2e) coverage with a signed-in approver, once the owner decides the preview question.
+
+## Discount-authority foundation — owner specification, 2026-11-06 (#86)
+
+The original threshold/expiry questions above describe the historical ADR 0158 integration. The
+owner has now selected [ADR 0163](../decisions/0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)
+and the [full backend specification](../domain/quotation-discount-authority.md): independent
+governed references, precise percentage/base-amount and line/quotation limits, effective employee
+authority, strict quotation-only routing, configurable 14-calendar-day expiry capped by validity,
+shadow evaluation before explicit company activation. Final-net overrides and undeclared reductions
+still need independent approval; no delegation/grants/activation. The
+[lock-order ADR 0164](../decisions/0164-order-discount-authority-locks-before-quotation-and-approval-records.md)
+is proposed for coordinator review. Four ordered implementation commits/stages follow only after
+the preceding stage is green. UI is a contract handoff; one new demo seeder is permitted, existing
+Sales seeders are reserved. This entry records specification only, not delivered authority.
+
+## Related
+
+- [Domain specification](../domain/quotation-discount-authority.md)
+- [Phase index](README.md)

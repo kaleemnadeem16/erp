@@ -12,6 +12,8 @@ the model is specific to any one industry
 
 ---
 
+- [Quotation discount authority](quotation-discount-authority.md) — governed references, employee limits, routing, expiry and disabled rollout (specification).
+
 ## The costing chain
 
 The core of the system. Each layer feeds the one above.

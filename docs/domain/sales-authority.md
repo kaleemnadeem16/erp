@@ -103,6 +103,12 @@ Schema and approved names do not enable public routes. [Rollout specification](.
 requires explicit registration/holder inventory/grant proof and staging checks. Preserve CRM/C2
 compatibility; don't retrofit unrelated surfaces or change existing maintenance/read exceptions.
 
+## Discount-authority foundation
+
+The owner-authorised [quotation discount-authority specification](quotation-discount-authority.md)
+refines AU3/AU4 for issue #86. ADR 0163 records the chosen reference, authority and expiry rules;
+ADR 0164 proposes the common lock order. This is a specification, not delivered runtime authority.
+
 ## Related
 
 - [Duty matrix](sales-duty-matrix.md) · [Reporting/forecast](sales-reporting-and-forecast.md)

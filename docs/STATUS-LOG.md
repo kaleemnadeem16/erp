@@ -1077,3 +1077,14 @@ Integrated from source 8800a0d08681b2c91177d76aeaf429b2e5cd8039 (owner approval 
 ## 2026-11-02 — Quotation OWN scope (#60), demo data (#79), quotation UI M1 (#75)
 
 Integrated from sources 5877c54c74c529712b5b221bb78eef4f44884c45 (#60; migration `2026_10_30_110000_extend_access_scope_limits_for_quotation_own`, applied additively to the dev database), cb98d538e78f23d7683dcca5a91841f0f90b6387 (#79; demo seeders only, not run) and ae748380a2b8bac8ab2b73d83b18cb77c7cf4f2a (#75; quotation screens behind the off-by-default gate; Agent B review: no blocking finding), owner approval 2026-11-02, one combined develop CI run.
+
+## 2026-11-06 — Discount-authority foundation specified (#86)
+
+Owner authorised the four-stage backend milestone; ADR 0163 and the
+[domain specification](domain/quotation-discount-authority.md) record governed references,
+company/employee authority, exact pinned FX, shared approvals, 14-calendar-day configurable expiry
+(capped by validity, replacing the earlier no-expiry default), shadow rollout and legacy handling.
+ADR 0164 proposes the common lock order for coordinator review before integration. No code,
+migration, permission grant/activation or UI delivered by this specification commit. Real business
+configuration remains separate; demo values/sources only. Family lineage covers revisions and
+replacements, not yet orders/jobs or unrelated families.
