@@ -96,7 +96,8 @@ test("a member whose role is limited shows where it applies", async ({
     .getByPlaceholder(/Search/i)
     .first()
     .fill("Demo Karachi Clerk");
-  await page.getByText("Demo Karachi Clerk").first().click();
+  // The applied-filter chip repeats the search text, so open the member from its table row.
+  await page.getByRole("row", { name: /Demo Karachi Clerk/ }).first().click();
   await page.getByRole("button", { name: "Edit user" }).click();
   const where = page.getByLabel("Where each role applies");
   await expect(where).toBeVisible();
