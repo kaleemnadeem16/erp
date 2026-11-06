@@ -96,7 +96,7 @@ final class SaveCompanyBranding
                 return ['version' => $latest ?? $this->emptyBaseline(), 'changed' => false];
             }
 
-            $version = CompanyBrandVersion::query()->create($next + ['version' => ($latest?->version ?? 0) + 1, 'reason' => $reason, 'created_by' => $actor->id])->refresh();
+            $version = CompanyBrandVersion::query()->create($next + ['version' => (int) CompanyBrandVersion::query()->max('version') + 1, 'reason' => $reason, 'created_by' => $actor->id])->refresh();
             CompanyChange::query()->create([
                 'section' => 'BRANDING',
                 'old_values' => ['brand_version' => $latest?->version, 'display_name' => $latest?->display_name, 'tagline' => $latest?->tagline, 'logo_sha256' => $latest?->logo_sha256],

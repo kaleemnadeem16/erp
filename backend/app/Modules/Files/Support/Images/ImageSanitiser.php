@@ -130,8 +130,8 @@ final class ImageSanitiser
             throw self::refuse('The PNG image data is damaged.', 'logo_damaged');
         }
         $out = self::PNG_SIGNATURE.self::chunk('IHDR', $header);
-        if ($colour === 3 && $palette !== null) {
-            $out .= self::chunk('PLTE', $palette);
+        if ($colour === 3) {
+            $out .= self::chunk('PLTE', (string) $palette);
         }
         if ($transparency !== null && in_array($colour, [0, 2, 3], true)) {
             $out .= self::chunk('tRNS', $transparency);
