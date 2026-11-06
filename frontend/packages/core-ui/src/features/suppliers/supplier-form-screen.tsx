@@ -13,8 +13,9 @@ import {
   useChartOfAccountsShow,
   useCurrenciesIndex,
   type SupplierAccountResource,
+  type SupplierSiteResource,
 } from "@erp/core-api";
-import { History, RotateCcw } from "lucide-react";
+import { History, Pencil, RotateCcw, Trash2 } from "lucide-react";
 
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
@@ -47,6 +48,7 @@ import {
   customFieldValues,
   type CustomFieldValues,
 } from "../custom-fields/custom-field-inputs";
+import { SupplierSiteRemoveDialog } from "./supplier-site-remove-dialog";
 import { SupplierSiteDialog } from "../purchase-orders/supplier-site-form";
 
 const DRAFT_NAME = "supplier";
@@ -206,6 +208,8 @@ function SupplierEditor({
   const mayMap = usePermission("accounting.account-mapping.manage");
 
   const [siteOpen, setSiteOpen] = useState(false);
+  const [editingSite, setEditingSite] = useState<SupplierSiteResource | null>(null);
+  const [removingSite, setRemovingSite] = useState<SupplierSiteResource | null>(null);
   const sitesQuery = useSupplierAccountsSitesIndex(
     supplier?.id ?? 0,
     undefined,
@@ -877,9 +881,36 @@ function SupplierEditor({
                       className="rounded-md border bg-card p-3 text-sm"
                       key={site.id}
                     >
-                      <p className="font-medium">
-                        {site.party_site?.name} · {site.role}
-                      </p>
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-medium">
+                          {site.party_site?.name} · {site.role}
+                          {site.is_default ? " · Default" : ""}
+                        </p>
+                        {mayManageSites && (
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11 md:h-8 md:w-8"
+                              aria-label={`Edit address ${site.party_site?.name ?? site.id}`}
+                              onClick={() => setEditingSite(site)}
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-11 w-11 md:h-8 md:w-8"
+                              aria-label={`Remove address ${site.party_site?.name ?? site.id}`}
+                              onClick={() => setRemovingSite(site)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                       <p className="text-xs text-muted-foreground mt-1">
                         {[
                           site.party_site?.address_line1,
@@ -972,6 +1003,27 @@ function SupplierEditor({
             }}
           />
         )}
+
+        {supplier && mayManageSites && editingSite && (
+          <SupplierSiteDialog
+            key={editingSite.id}
+            supplierAccountId={supplier.id}
+            open
+            site={editingSite}
+            onOpenChange={(open) => !open && setEditingSite(null)}
+            onCreated={() => {
+              setEditingSite(null);
+              void sitesQuery.refetch();
+            }}
+          />
+        )}
+        {supplier && mayManageSites && removingSite && (
+          <SupplierSiteRemoveDialog
+            site={removingSite}
+            onClose={() => setRemovingSite(null)}
+            onRemoved={() => sitesQuery.refetch()}
+          />
+        )}
       </RecordSheet>
     );
   }
@@ -1001,6 +1053,27 @@ function SupplierEditor({
               setSiteOpen(false);
               void sitesQuery.refetch();
             }}
+          />
+        )}
+
+        {supplier && mayManageSites && editingSite && (
+          <SupplierSiteDialog
+            key={editingSite.id}
+            supplierAccountId={supplier.id}
+            open
+            site={editingSite}
+            onOpenChange={(open) => !open && setEditingSite(null)}
+            onCreated={() => {
+              setEditingSite(null);
+              void sitesQuery.refetch();
+            }}
+          />
+        )}
+        {supplier && mayManageSites && removingSite && (
+          <SupplierSiteRemoveDialog
+            site={removingSite}
+            onClose={() => setRemovingSite(null)}
+            onRemoved={() => sitesQuery.refetch()}
           />
         )}
       </div>
