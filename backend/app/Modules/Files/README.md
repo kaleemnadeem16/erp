@@ -33,8 +33,8 @@ UI, no URL, no attachment table. Callable only from code and tests.
 ## Boundaries
 
 - Registration is not permission. Files grants nothing; the owner decides, and a missing or throwing callback denies.
-- Image sanitising (re-encoding to strip metadata) is **deferred and mandatory before the Company-logo pilot**: it needs an imaging extension the development image does
-  not have. F0 validates and decodes dimensions only.
+- Image sanitising: Files' `Support\Images\ImageSanitiser` (pure PHP, no imaging extension) rebuilds a PNG or JPEG from its pixel data and drops every other chunk or segment (ADR 0162); the Company logo owner calls it before staging. `FileValidator` itself still only validates and decodes dimensions, so any other image purpose must sanitise first.
+- `Actions\ReadVerifiedFile` is the trusted in-process read for small files an owner prints or shows (owner asked for `read`, blob staged for that owner and binding, VERIFIED, hash and size re-checked). It is not a route.
 - A leftover staging object after a crash between the object write and the database commit is an orphan for the reconciliation slice (F2); F0 removes it on failure.
 - Not here: attachments and versions and protected streaming (F1), recovery, quarantine release, holds and reconciliation (F2), Documents integration (F3), branding,
   quotas and rate limits (activation conditions, D11), retention classes.

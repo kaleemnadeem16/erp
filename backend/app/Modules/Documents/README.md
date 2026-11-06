@@ -18,7 +18,7 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
   sections taken from the projection schema; an adapter opts into Letter by implementing `ConstrainsDocumentLayout`.
 - Actions (internal): `VersionDocumentTemplate`, `VersionDocumentPagePolicy`, `ActivateDocumentConfiguration` (generation-locked; downgrade needs a reason and
   is refused while `DocumentConfigurationUsage` reports the version pinned; since DF2 that port is bound to `ManifestConfigurationUsage`, so a version any frozen manifest resolved to is pinned), `ResolveDocumentPolicy` (shipped →
-  Company `'*'` → type → explicit; **brand is always `NOT_AVAILABLE`**, never a fallback; reads no user preference).
+  Company `'*'` → type → explicit; the brand comes only from Company's typed contract (ADR 0162): `PINNED` with text and logo reference, or `NOT_AVAILABLE`, never a fallback; reads no user preference).
 - `Actions\BindDocumentSubject`: internal, idempotent, fails closed (missing adapter, wrong version/audience, denied or throwing access, invalid projection).
 - DF2 freeze and generation intents (issue #26): `document_manifests` (insert-only; per (binding, purpose `DRAFT_PREVIEW|ORIGINAL`, stable generation identity) the frozen
   typed payload and schema version, source generation, template and page policy **as resolved configuration** (a shipped default is pinned too) with their version ids
@@ -80,7 +80,8 @@ contract: [documents.md](../../../../docs/domain/documents.md); slices: [documen
 - The owning module's own binding table holds the real FKs to a Documents binding and to its subject. Documents holds no subject FK.
 - Registration is not permission. Documents grants nothing.
 - Money/quantities are decimal strings, never floats.
-- Not here yet: Company brand and assets (a separate Company-owned task), archive and retention, a delivery route and Sales' quotation binding (DF4), pilot (DF5).
+- Company branding (ADR 0162, issue #23): a manifest pins `brand_state PINNED`, the brand text/version (`document_manifests.brand`) and the logo reference with its hash (`asset_manifest`) at the freeze; no brand freezes exactly as before. `GenerateDocumentArtefact` reads the pinned logo back through `ReadCompanyBrandLogo`, hash-checked, and fails with `brand_asset_unavailable` if it cannot (never an unbranded original). The renderer (`document-pdf/1` 1.0.0, unchanged) draws a taller first-page header band with logo, name and tagline only when the manifest pinned a brand; `PdfImage` embeds JPEG as DCT and PNG as its own Flate data (alpha as a soft mask).
+- Not here yet: archive and retention, a delivery route and Sales' quotation binding (DF4), pilot (DF5).
   The quotation binding and Sales snapshot tables are Sales-owned.
 - Purchasing and the existing PO Quick Print are untouched; the PO-shaped adapter lives under `tests/Support/Documents` and writes nothing.
 

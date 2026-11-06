@@ -206,6 +206,10 @@ protected-data absence, immutable used configuration, A4/Letter pagination and P
 No actual PO/Invoice/Inventory adapter is required for quotation first delivery. Future adapter must
 prove its own snapshot/access/retention semantics; framework availability does not prove support.
 
+## Company branding (ADR 0162)
+
+Company owns immutable brand versions (display name, tagline, sanitised PNG/JPEG logo). A manifest pins the current brand at the freeze (`brand_state PINNED`, `brand`, logo in `asset_manifest`); no brand pins `NOT_AVAILABLE` and renders exactly as before. A pinned logo that cannot be read back fails the generation. Managing the brand needs `company.branding.manage` (STAGED, granted to nobody).
+
 ## Related
 
 - [0137](../decisions/0137-share-document-and-print-infrastructure-through-module-adapters.md)

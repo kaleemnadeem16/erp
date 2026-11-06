@@ -35,3 +35,17 @@ Work area: quotation PDF, document history, manual delivery. Worked in a separat
 ## Remaining work
 
 See the final report; summary: branding (#23) pending the answer above, DOC5 after customer acceptance, DOC6 after a provider decision, DOC7 only by new contracts, and the owner activation of the STAGED duties.
+
+
+## Addendum 2026-11-06: branding (#23), demo seeder and recheck
+
+Owner answers received for #23 (PNG and JPEG only, 2 MB, `company.branding.manage` STAGED and granted to nobody, a Branding section on the Company screen, logo on quotation documents with a fallback). Built on `develop`
+([ADR 0162](../decisions/0162-company-branding-versions-with-a-sanitised-logo-pinned-into-documents.md)): `company_brand_versions`, branding Actions and routes, the Files image sanitiser and trusted read, the manifest pin
+(`brand_state PINNED`, `brand`, `asset_manifest`), the renderer's logo header, the Branding section (Company screen now in `ScreenTemplate kind form`), demo branding and tests.
+Slice 2 above is therefore **done** (text and logo; colours and contact selection deliberately not built).
+
+- Demo seeder gap: `QuotationDocumentsDemoSeeder` used the first user (not the named demo login), MANUAL lines (refused with `TAX_CLASSIFICATION_REQUIRED`) and ran before the fictitious tax declaration existed. It now uses the demo login,
+  declared service items, runs after `QuotationIssuingDemoSeeder`, and skips with the exact missing duties instead of a vague refusal. The literal "not permitted to access quotations" on the owner's database could not be reproduced on a
+  private database; the cause that matches it is a first user without the preview duties. If it still appears there, the message now names the missing duty (run `sales:dev-grant-quotation` for the demo login).
+- Recheck of document, delivery and correction paths: no further buildable gap found (history trimming, correction, withdrawal and repair paths are covered by their tests). DOC5 needs customer acceptance (CA0 to CA2, not delivered),
+  DOC6 needs an approved email provider and credentials, DOC7 are separately contracted extensions: still not buildable.
