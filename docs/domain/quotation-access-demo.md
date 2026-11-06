@@ -2,10 +2,91 @@
 
 # Quotation access demo contract
 
-**Accepted contract; not yet delivered.** [0156](../decisions/0156-quotation-demo-access-and-activation-boundaries.md)
+**Delivered for the local preview (ADR [0161](../decisions/0161-switchable-quotation-demo-presets-and-local-preview-activation.md)); the
+operator bootstrap awaits its exact-SHA review.** [0156](../decisions/0156-quotation-demo-access-and-activation-boundaries.md)
 records the owner's decisions. The tables below distinguish source-defined legacy personas from
-the intended QA4 recipe; they are not an inventory of grants on the owner's database. No owner
-database has been seeded or inspected by this implementation work.
+the QA4 recipe; they are not an inventory of grants on the owner's database. No owner database
+has been seeded or inspected by this implementation work. The delivered mechanism is described
+first; the older tables that follow keep the original accepted contract and are marked where the
+delivered recipe differs.
+
+## Delivered: switch the main login between presets
+
+Local preview only: `APP_ENV=local` and `SALES_DEV_QUOTATION_DUTIES=true`. Company 1 only. The
+preview now makes the access family (assign, share, revoke), the concessions (discount, price
+override, commercial view) and approve ACTIVE; none is active in the shipped manifest and
+activating grants nobody anything. Repair, withdraw and send are never activated.
+
+```
+php artisan demo:seed                       # once (create-only; also builds the operator and personas below)
+php artisan sales:demo-preset --list        # presets and what they give
+php artisan sales:demo-preset preparer      # switch user@erp.x1techs.com; prints the resulting rights and scope
+php artisan sales:demo-preset --revoke      # same as "off"
+```
+
+Docker: prefix with `docker compose exec app` (or `docker/backend/run.sh`). Each run is made by the
+synthetic operator through the guarded `SyncMemberAccess::patchQuotationDemo` (ADR 0159: quotation
+access only, unrelated rights kept, audited, rerun adds nothing) plus audited workflow add-ons.
+
+| Preset | Access (scope) | Workflow add-ons |
+|---|---|---|
+| off | none | none |
+| viewer | view (ALL) | none |
+| preparer | view + prepare (OWN) | none |
+| collaborator | view + prepare (OWN or named share) | none |
+| shared-viewer | view (named shares only) | none |
+| delegate | view + prepare + share + revoke (OWN) | none |
+| concessions | view + prepare (OWN) | discount, price override, commercial view |
+| manager | view + prepare (MY_UNITS) | none |
+| issuer | view (ALL) | issue |
+| approver | view (ALL) | approve |
+| governor | view + prepare + assign + share + revoke (MY_UNITS) | none |
+| access-manager | view + assign + share + revoke (ALL) | none |
+| full | governor rights (ALL) | issue, discount, price override, commercial view, approve |
+
+Add-ons are direct ALL-scoped grants like the existing `sales:dev-grant-quotation`; the patch itself
+still never manages issue, repair or workflow duties. `sales:dev-grant-quotation` is unchanged
+and, if used, hands view and prepare out directly: the next preset switch resets them. Making
+the main login useful for MY_UNITS presets: the seeder adds it to Head office only while it belongs to
+no unit (membership alone grants nothing).
+
+## Delivered: operator and personas
+
+All addresses `@erp.x1techs.com`, shared demo password. Created by `QuotationAccessDemoSeeder`
+(create-only, company passed as a parameter, refuses any company but Company 1, writes nothing
+outside the local preview).
+
+| Login | Access | Purpose |
+|---|---|---|
+| demo-access-operator | role + access administration; exactly view, prepare, assign, share, revoke (ALL) via the bootstrap | applies presets; never issue, repair or approve |
+| demo-quote-manager | preparer role, MY_UNITS, Head office | unit containment |
+| demo-quote-governor | governor role, MY_UNITS, Head office | unit-level reassignment and sharing |
+| demo-quote-recovery | access manager, ALL | places quotations in units, reassigns, revokes |
+| demo-quote-delegate | delegate role, OWN | owns quotations and shares them by name |
+| demo-quote-collaborator | preparer role, OWN or named share | receives PREPARE shares; owns one |
+| demo-quote-viewer | viewer role, named shares only | receives VIEW shares |
+| demo-quote-approver (existing) / demo-quote-director | view + approve | decide approvals; never their own draft |
+
+Existing CRM personas keep their CRM roles: the operator cannot retain CRM rights it does not hold,
+so it cannot re-assign them. The new logins are separate.
+
+Seeded quotations through the real Actions (markers in the `demo-acc-` request keys): shared read-only
+(delegate to viewer), a PREPARE share that ends 2030-01-01, a share given then revoked, a quotation placed
+in Head office then handed to the unit manager by the governor, an owner transferred from delegate to
+collaborator, and the collaborator's own. Two override drafts exercise the two-stage approval below.
+
+**Fictitious demo approval routing (not the owner's thresholds).** The engine routes only on the kind
+of concession and currency, not on a percentage. Demo policy `demo-quotation-override-two-stage`: a
+price override (alone or with a discount) needs a sales lead and then a director; a discount alone keeps
+the existing single-step policy. Step names are constants in the seeder. Real thresholds (for example
+"up to N% sales lead, above that director") need a routed percentage fact in the Approvals subject first;
+the owner supplies the numbers later.
+
+**Bootstrap (ADR 0155).** `BootstrapDemoAccessOperator` is the only first-holder path: exact operator
+identity, Company 1, not production, duties already active, exactly the five approved duties, an
+append-only receipt, never replenished, any other set refused. It awaits exact-SHA review before it may
+merge. On the VM demo (non-local `DEMO_MODE`) the duties cannot be activated by this preview, so presets
+are local-only for now.
 
 ## Existing persona definitions before this extension
 

@@ -181,6 +181,7 @@ in the same commit.
 | [0159](0159-patch-only-approved-quotation-access-for-the-main-demo-user.md) | Patch only approved quotation access for the main demo user | accepted | 2026-11-06 |
 
 | [0160](0160-correct-manual-quotation-deliveries-by-appending-reasoned-records.md) | Correct manual quotation deliveries by appending reasoned records | accepted (safest default; owner may refine) | 2026-11-05 |
+| [0161](0161-switchable-quotation-demo-presets-and-local-preview-activation.md) | Switchable quotation demo presets and local-preview activation | accepted (owner-approved defaults) | 2026-11-06 |
 | [0162](0162-company-branding-versions-with-a-sanitised-logo-pinned-into-documents.md) | Company branding: immutable versions with a sanitised logo, pinned into documents | accepted (owner-approved answers) | 2026-11-06 |
 
 **Next number: 0163** (0158 approvals and 0160 delivery correction came from other work in flight; the demo patch decision was renumbered 0158 -> 0159 at the merge to avoid a collision)
