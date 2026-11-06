@@ -79,9 +79,17 @@ class SalesDevPreviewTest extends TestCase
         $this->assertTrue($manifest->isActive(self::VIEW));
         $this->assertTrue($manifest->isActive(self::PREPARE));
         $this->assertTrue($manifest->isActive('sales.quotation.issue'), 'issue is part of the local preview (owner decision, #76 review)');
-        foreach ([PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::DOCUMENT_REPAIR, 'sales.quotation.assign'] as $other) {
+        foreach ([PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::DOCUMENT_REPAIR, PermissionVocabulary::QUOTATION_WITHDRAW, 'sales.delivery.send'] as $other) {
             $this->assertFalse($manifest->isActive($other), "{$other} stays off");
         }
+        // Owner decisions: access management, concessions and the approver duty are ACTIVE in the local preview, but are not part of what the grant command hands out.
+        foreach ([...SalesDevPreview::ACCESS_DUTIES, ...SalesDevPreview::CONCESSION_DUTIES, ...SalesDevPreview::APPROVE_DUTIES] as $duty) {
+            $this->assertTrue($manifest->isActive($duty), "{$duty} is active in the local preview");
+            $this->assertNotContains($duty, SalesDevPreview::all(), "{$duty} is never handed out by sales:dev-grant-quotation");
+            $this->assertFalse(SalesDutyManifest::shipped()->isActive($duty), "{$duty} stays STAGED in the shipped manifest");
+            $this->assertNotContains($duty, PermissionVocabulary::all());
+        }
+        $this->assertNotContains(PermissionVocabulary::DOCUMENT_REPAIR, SalesDevPreview::activated(), 'repair is never activated');
         $this->assertFalse(SalesDutyManifest::shipped()->isActive('sales.quotation.issue'), 'issue stays STAGED in the shipped manifest');
         $this->assertFalse(SalesDutyManifest::shipped()->isActive(self::VIEW), 'The shipped manifest is untouched.');
         $this->assertNotContains(self::VIEW, PermissionVocabulary::all(), 'The shipped vocabulary helper is unchanged.');

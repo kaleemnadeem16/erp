@@ -38,10 +38,32 @@ final class SalesDevPreview
      */
     public const ISSUE_DUTIES = [PermissionVocabulary::QUOTATION_ISSUE];
 
-    /** @return list<string> every duty the local preview turns on */
+    /**
+     * Activated for the local preview (owner decisions, 2026-11): the access-management family (reassign, share, revoke - ADR 0156), the pricing concessions and the
+     * approver duty. They are switched ON in the manifest only; `all()` (what `sales:dev-grant-quotation` hands out) does NOT include them, so a login holds one only
+     * through an explicit, reviewed path: the demo presets (`sales:demo-preset`, ADR 0159 + 0161), the bootstrapped synthetic access operator, or a seeder persona.
+     * Delegation of approval stays off (the approval subject refuses delegates); the shipped manifest keeps every one of these STAGED.
+     *
+     * @var list<string>
+     */
+    public const ACCESS_DUTIES = [PermissionVocabulary::QUOTATION_ASSIGN, PermissionVocabulary::QUOTATION_ACCESS_DELEGATE, PermissionVocabulary::QUOTATION_ACCESS_REVOKE];
+
+    /** @var list<string> */
+    public const CONCESSION_DUTIES = [PermissionVocabulary::QUOTATION_DISCOUNT, PermissionVocabulary::QUOTATION_PRICE_OVERRIDE, PermissionVocabulary::QUOTATION_COMMERCIAL_VIEW];
+
+    /** @var list<string> */
+    public const APPROVE_DUTIES = [PermissionVocabulary::QUOTATION_APPROVE];
+
+    /** @return list<string> every duty the local preview turns on and `sales:dev-grant-quotation` hands out */
     public static function all(): array
     {
         return [...self::DUTIES, ...self::DOCUMENT_DUTIES, ...self::ISSUE_DUTIES];
+    }
+
+    /** @return list<string> every duty the local preview makes ACTIVE in the manifest (a superset of `all()`; activation grants nobody anything) */
+    public static function activated(): array
+    {
+        return [...self::all(), ...self::ACCESS_DUTIES, ...self::CONCESSION_DUTIES, ...self::APPROVE_DUTIES];
     }
 
     public static function requested(): bool
@@ -67,6 +89,6 @@ final class SalesDevPreview
             return $shipped;
         }
 
-        return $shipped->withActivated(self::all());
+        return $shipped->withActivated(self::activated());
     }
 }

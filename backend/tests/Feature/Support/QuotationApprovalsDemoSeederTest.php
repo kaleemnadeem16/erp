@@ -62,14 +62,14 @@ final class QuotationApprovalsDemoSeederTest extends TestCase
         $this->assertContains('APPROVAL_REQUIRED', $codes($byId(4)));
         $this->assertContains('APPROVAL_REQUIRED', $codes($byId(5)), 'edited after approval: a new approval is needed');
 
-        // The approver can decide the waiting one in principle (the duty is STAGED, so this check switches it on for itself); the preparer never can.
+        // The approver can decide the waiting one (the duty is ACTIVE in the local preview, owner decision); the preparer never can.
         $shipped = app(SalesDutyManifest::class);
-        $this->app->instance(SalesDutyManifest::class, $shipped->withActivated([Sales::QUOTATION_APPROVE]));
+        $this->assertTrue($shipped->isActive(Sales::QUOTATION_APPROVE));
         $this->assertTrue(app(ReadQuotationApproval::class)($approver, $byId(0)->id)['can']['decide']);
         $this->assertFalse(app(ReadQuotationApproval::class)($admin, $byId(0)->id)['can']['decide']);
 
-        // Nothing lasting: the seeder left the duty STAGED.
-        $this->app->instance(SalesDutyManifest::class, $shipped);
-        $this->assertFalse(app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_APPROVE));
+        // Nothing lasting: the seeder left the container's manifest as the local preview built it, and the shipped manifest stays STAGED.
+        $this->assertSame($shipped, app(SalesDutyManifest::class));
+        $this->assertFalse(SalesDutyManifest::shipped()->isActive(Sales::QUOTATION_APPROVE));
     }
 }
