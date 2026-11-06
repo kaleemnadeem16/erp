@@ -44,6 +44,7 @@ class OpenReadRoutesTest extends TestCase
         'api/v1/approval-authorities/mine' => 'The caller\'s own approval authority only.',
         'api/v1/approval-requests/inbox' => 'Scoped to the caller\'s own assignments.',
         'api/v1/company' => 'The company profile: any signed-in user may read it (ADR 0081); each field enforces its own change permission. Registration and tax numbers are business identifiers printed on documents, so they are readable too — an owner may narrow that later.',
+        'api/v1/company/branding' => 'The document branding (display name, tagline, logo description): the same text and logo are printed on every customer document, so any signed-in user may read it like the company profile (ADR 0081, ADR 0162); changing it needs the STAGED company.branding.manage duty, which nobody holds. The logo file itself is served by a separate route.',
         'api/v1/approval-delegations' => 'Only delegations involving the caller; approvals.delegation.manage permits the company list (ADR 0070).',
         'api/v1/assembly-groups' => 'Shared estimating lookup; carries no cost (writes need estimating.assembly-group.manage).',
         'api/v1/assemblies' => 'Shared estimating lookup; commercial configuration is projected by capability (audit, 2026-09-30).',
