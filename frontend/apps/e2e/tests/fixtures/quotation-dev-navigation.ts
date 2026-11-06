@@ -23,11 +23,13 @@ useAuthStore.setState({
     permissions:
       query.get("duty") === "none"
         ? []
-        : [
-            query.get("duty") === "view"
-              ? "sales.quotation.view"
-              : "sales.quotation.prepare",
-          ],
+        : query.get("duty") === "both"
+          ? ["sales.quotation.view", "sales.quotation.prepare"]
+          : [
+              query.get("duty") === "view"
+                ? "sales.quotation.view"
+                : "sales.quotation.prepare",
+            ],
   },
 });
 function Destination() {

@@ -90,7 +90,7 @@ test("phone More navigation exposes only the entitled review entry", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await mount(page, "build=dev&flag=1&duty=prepare");
+  await mount(page, "build=dev&flag=1&duty=both");
   await page.getByRole("button", { name: "More", exact: true }).click();
   await expect(
     page

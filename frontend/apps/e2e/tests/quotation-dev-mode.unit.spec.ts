@@ -80,15 +80,18 @@ test("quotation navigation and direct workspace access require both dev exposure
     });
     expect(canAccessScreen("/quotations", grants)).toBe(true);
     expect(homeScreen(grants)).toBe("/quotations");
+    // QA3: editing and review need BOTH duties; prepare alone is refused there, both together are allowed (creating a draft is unchanged).
     expect(
       canAccessScreen("/quotations/new", new Set(["sales.quotation.prepare"])),
     ).toBe(true);
+    expect(canAccessScreen("/quotations/new", grants)).toBe(true);
     expect(
       canAccessScreen(
         "/quotations/12/edit",
         new Set(["sales.quotation.prepare"]),
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(canAccessScreen("/quotations/12/edit", grants)).toBe(true);
     expect(
       canAccessScreen("/quotations/new", new Set(["sales.quotation.view"])),
     ).toBe(false);
@@ -109,7 +112,8 @@ test("quotation navigation and direct workspace access require both dev exposure
         "/quotations/12/review",
         new Set(["sales.quotation.prepare"]),
       ),
-    ).toBe(true);
+    ).toBe(false);
+    expect(canAccessScreen("/quotations/12/review", grants)).toBe(true);
     expect(
       canAccessScreen("/quotations/12", new Set(["sales.quotation.prepare"])),
     ).toBe(false);
@@ -118,7 +122,7 @@ test("quotation navigation and direct workspace access require both dev exposure
     ).toBe(true);
     expect(
       canAccessScreen("/quotations", new Set(["sales.quotation.prepare"])),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       canAccessScreen("/quotations", new Set(["sales.pipeline.view"])),
     ).toBe(false);
