@@ -31,6 +31,16 @@ A subject that must also apply its own record policy (OWN or ALL scope, separati
 asks it inside the single eligibility every route shares (inbox, the generic decision route and the owning module's Action), so a capability plus a ceiling can never reach a record the module hides.
 Sales' `QUOTATION_REVISION` ([ADR 0158](../../../../docs/decisions/0158-approve-quotation-concessions-through-the-shared-approvals-engine.md)) is the first user.
 
+### Opt-in strict Sales contract
+
+`StrictApprovalSubject` selects effective company-local policies and refuses equal best priority.
+`TransactionalApprovalSubject` wraps submission, decision and withdrawal before engine preflight
+or request locks; it can pin submission evidence and check request-wide expiry. The final locked
+decision repeats preflight for these subjects. `ProtectedApprovalEvidenceSubject` keeps independent
+field authority on current and historical deciders too. Sales is the sole opt-in consumer; Purchasing
+and Estimating retain ADR 0070 selection and lifecycle semantics. Configuration statement barriers
+serialise shared engine policy/authority writers with Sales authority generations (proposed ADR 0164).
+
 ## Capabilities
 
 `approvals.policy.manage`, `approvals.authority.manage`, `approvals.delegation.manage`, `approvals.settings.manage`,

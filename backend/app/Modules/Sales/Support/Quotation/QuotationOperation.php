@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Quotation;
 
+use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityFence;
+use App\Modules\Sales\Support\DiscountAuthority\RecordQuotationAuthority;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Support\Scope\CompanyAccessFence;
@@ -50,6 +53,7 @@ final class QuotationOperation
                 return DB::transaction(function () use ($actor, $operation, $key, $hash, $lockSubject, $work, $replayGuard): array {
                     // Acquire security first on each attempt; family and revision locks follow.
                     $this->accessFence->lockAll();
+                    app(AuthorityFence::class)->lock();
                     $subject = $lockSubject();
                     $receipt = $this->receipts->find($actor, $key);
                     if ($receipt !== null) {
@@ -63,6 +67,15 @@ final class QuotationOperation
                         return ['result' => $receipt['result'], 'replayed' => true];
                     }
                     $result = $work($subject);
+                    if (isset($result['revision_id']) && ! in_array($operation, ['quotation.evaluate_discount_authority', 'quotation.issue', 'quotation.issue_replacement'], true)) {
+                        $revision = QuotationRevision::query()->find($result['revision_id']);
+                        if ($revision !== null) {
+                            $evaluationId = app(RecordQuotationAuthority::class)->record($actor->actor, $revision);
+                            if ($evaluationId !== null) {
+                                $result['authority_evaluation_id'] = $evaluationId;
+                            }
+                        }
+                    }
                     $this->receipts->record($actor, $key, $operation, $hash, $result);
 
                     return ['result' => $result, 'replayed' => false];

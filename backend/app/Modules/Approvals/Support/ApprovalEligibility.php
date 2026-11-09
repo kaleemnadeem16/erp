@@ -90,6 +90,10 @@ final class ApprovalEligibility
             $snapshot['authority_id'] = $authority->id;
         }
 
+        if ($subject instanceof TransactionalApprovalSubject) {
+            $snapshot += $subject->decisionEvidence($person, $request);
+        }
+
         return new ApprovalGrant($person, null, $snapshot);
     }
 

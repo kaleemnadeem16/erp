@@ -17,6 +17,7 @@ use App\Modules\Approvals\Support\ApprovalStepStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Approvals\Support\ExpiryAction;
 use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
+use App\Modules\Approvals\Support\TransactionalApprovalSubject;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -39,6 +40,17 @@ final class DecideApproval
 
     public function __invoke(ApprovalRequest $request, User $actor, ApprovalDecisionKind $decision, ?string $reason = null, ?int $stepId = null): ApprovalRequest
     {
+        $subject = $this->subjects->get($request->subject_type);
+        if ($subject instanceof TransactionalApprovalSubject) {
+            return $subject->approvalTransaction($request->subject_id, $actor,
+                fn (User $fresh): ApprovalRequest => $this->decide($request, $fresh, $decision, $reason, $stepId), 'decide') ?? throw new \LogicException('A decision must return its request.');
+        }
+
+        return $this->decide($request, $actor, $decision, $reason, $stepId);
+    }
+
+    private function decide(ApprovalRequest $request, User $actor, ApprovalDecisionKind $decision, ?string $reason, ?int $stepId): ApprovalRequest
+    {
         if ($decision === ApprovalDecisionKind::Rejected && trim((string) $reason) === '') {
             throw new DomainInvariantException('A rejection needs a reason.', 'reason');
         }
@@ -60,6 +72,9 @@ final class DecideApproval
             }
 
             [$step, $grant] = $this->authorisedStep($request, $actor, $stepId);
+            if ($this->subjects->get($request->subject_type) instanceof TransactionalApprovalSubject) {
+                $this->preflight($request);
+            }
 
             ApprovalDecision::query()->create([
                 'request_id' => $request->id, 'request_step_id' => $step->id, 'decision' => $decision,
@@ -99,7 +114,11 @@ final class DecideApproval
 
     private function assertUnchanged(ApprovalRequest $request): void
     {
-        $current = $this->subjects->get($request->subject_type)->routing($request->subject_id);
+        $subject = $this->subjects->get($request->subject_type);
+        if ($subject instanceof TransactionalApprovalSubject) {
+            $subject->assertRequestCurrent($request);
+        }
+        $current = $subject->routing($request->subject_id);
         if ($current->hash() !== $request->facts_hash || ! app(ApprovalReviewRegistry::class)->unchanged($request)) {
             ($this->invalidate)($request, 'The document changed after it was submitted for approval; it must be submitted again.');
             throw new DomainInvariantException('The document changed after it was submitted, so this approval was cancelled. It must be submitted again.', 'approval');

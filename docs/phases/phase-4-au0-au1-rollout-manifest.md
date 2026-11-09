@@ -68,6 +68,7 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.quotation.assign` | Sensitive | STAGED | Reassign quotation owner / change access unit / internal baseline capture (independent view) | Ownership | QA1a; scoped policy QA1b |
 | `sales.quotation.access.delegate` | Sensitive | STAGED | Grant named quotation VIEW/PREPARE access using non-delegated authority | Access | QA5 |
 | `sales.quotation.access.revoke` | Sensitive | STAGED | Revoke named quotation access using non-delegated authority | Access | QA5 |
+| `sales.discount-authority.evidence.view` | Sensitive | STAGED | Read evaluated discount reference, exposure and limits with independent quotation view and scope | Protected authority evidence | AU3 / ADR 0163; no holder grants or activation |
 | `sales.pricing.reference.approve` | Sensitive | STAGED | Independently approve a governed reference proposal | Protected reference terms | AU3 / ADR 0163; no holder grants or activation |
 | `sales.financial.configure` | Sensitive | STAGED | Sales financial, governed-reference and discount-authority configuration | Protected company configuration | FR1/4 + AU3 internal foundation; no holder grants or activation |
 | `sales.customer-decision.view` | New ordinary | SPECIFIED | Decision/case safe detail/history | Decision-min | CA1 |

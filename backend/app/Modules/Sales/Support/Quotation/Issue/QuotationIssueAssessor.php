@@ -10,6 +10,8 @@ use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Actions\PreviewQuotation;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\DiscountAuthority\AssessDiscountAuthority;
+use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
 use App\Modules\Sales\Support\Financial\Certainty;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
@@ -67,6 +69,15 @@ final class QuotationIssueAssessor
      */
     private function applyApproval(QuotationRevision $revision, array $blockers): array
     {
+        if (app(QuotationAuthorityApproval::class)->enabled()) {
+            $authority = app(AssessDiscountAuthority::class)->assess($revision);
+            if ($authority['result'] === 'ROUTINE') {
+                return [array_values(array_filter($blockers, fn (IssueBlocker $b): bool => $b->code !== 'APPROVAL_REQUIRED')), null];
+            }
+            if ($authority['result'] !== 'NOT_APPLICABLE') {
+                $blockers[] = new IssueBlocker('APPROVAL_REQUIRED', IssueBlocker::HEADER);
+            }
+        }
         $needed = array_filter($blockers, fn (IssueBlocker $blocker): bool => $blocker->code === 'APPROVAL_REQUIRED');
         if ($needed === []) {
             return [$blockers, null];

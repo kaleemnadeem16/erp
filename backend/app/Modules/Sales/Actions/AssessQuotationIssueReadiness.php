@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityFence;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationIssueAssessor;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
+use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -32,6 +34,9 @@ final class AssessQuotationIssueReadiness
 
         // One read transaction holds the company access fence (shared) through the record check and the whole assessment.
         return DB::transaction(function () use ($actor, $revisionId, $context): array {
+            app(CompanyAccessFence::class)->lockAll();
+            app(AuthorityFence::class)->lock();
+            $actor = ActiveActor::require($actor, 'assess a quotation for issue');
             $revision = app(QuotationAccess::class)->requireRevision($actor, $revisionId, [PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::QUOTATION_PREPARE]);
             if (! $revision->isDraft()) {
                 throw QuotationRefusal::make(QuotationRefusal::QUOTATION_NOT_EDITABLE, 'Only a draft quotation can be assessed for issue.', 'revision_id');

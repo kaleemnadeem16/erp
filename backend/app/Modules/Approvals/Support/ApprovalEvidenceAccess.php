@@ -32,6 +32,10 @@ final class ApprovalEvidenceAccess
         if ($user === null) {
             return false;
         }
+        $subject = $this->subjects->get($request->subject_type);
+        if ($subject instanceof ProtectedApprovalEvidenceSubject) {
+            return $subject->mayReadRequestEvidence($user, $request);
+        }
         if (app(ApprovalReviewRegistry::class)->has($request->subject_type)) {
             return $user->status === MemberStatus::Active && ! $user->must_change_password && (($this->subjects->has($request->subject_type) && $this->subjects->get($request->subject_type)->canViewEvidence($user))
                 || app(ApprovalReviewAccess::class)->profile($user, $request) === ReviewProfile::Commercial);

@@ -17,6 +17,7 @@ use App\Modules\Sales\Models\QuotationIssue;
 use App\Modules\Sales\Models\QuotationIssuedLine;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Numbering\QuotationNumbering;
+use App\Modules\Sales\Support\DiscountAuthority\RecordQuotationAuthority;
 use App\Modules\Sales\Support\Documents\QuotationCustomerDocumentAdapter;
 use App\Modules\Sales\Support\Documents\QuotationCustomerProjection;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
@@ -128,6 +129,7 @@ final class IssueQuotation
         $expiresAt = CarbonImmutable::parse($revision->valid_through_local_date?->format('Y-m-d') ?? $now->toDateString(), $company->timezone)->addDay()->startOfDay()->utc(); // the instant is stored as UTC: a zoned Carbon would be written without its offset and read back as UTC wall time
         $allocation = $this->numbering->allocate(new NumberingContext(QuotationNumbering::KEY, $now, [], [], $revision->id, null, $actor->id));
 
+        $authorityEvaluationId = app(RecordQuotationAuthority::class)->record($actor, $revision);
         [$rows, $totals] = $this->freeze($revision, $assessment);
         $fingerprint = hash('sha256', json_encode(['lines' => $rows, 'totals' => $totals, 'policy' => self::POLICY_VERSION], JSON_THROW_ON_ERROR));
         $issue = QuotationIssue::query()->create([
@@ -138,7 +140,7 @@ final class IssueQuotation
             'issued_timezone' => $company->timezone, 'expires_at' => $expiresAt, 'net_total' => $totals['net'], 'optional_net_total' => $totals['optional_net'], 'tax_total' => $totals['tax'],
             'gross_total' => $totals['gross'], 'rounding_policy_fingerprint' => $revision->rounding_policy_fingerprint, 'rounding_policy_version_no' => $revision->rounding_policy_version_no,
             'tax_calculation_version' => $assessment->tax->calculationVersion, 'tax_generation' => $assessment->tax->generation, 'tax_evidence_fingerprint' => $assessment->tax->evidenceFingerprint,
-            'approval_request_id' => $assessment->approvalRequestId, 'approval_fingerprint' => $assessment->approvalFingerprint,
+            'authority_evaluation_id' => $authorityEvaluationId, 'approval_request_id' => $assessment->approvalRequestId, 'approval_fingerprint' => $assessment->approvalFingerprint,
             'controls_outcome' => $assessment->controls->outcome, 'controls_fingerprint' => $assessment->controls->fingerprint, 'financial_fingerprint' => $fingerprint,
         ]);
         foreach ($rows as $row) {

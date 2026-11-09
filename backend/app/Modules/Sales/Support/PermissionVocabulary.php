@@ -47,6 +47,8 @@ final class PermissionVocabulary
     public const FINANCIAL_CONFIGURE = 'sales.financial.configure';
 
     /** Independent activation of a proposed governed reference; STAGED, no grants. */
+    public const AUTHORITY_EVIDENCE_VIEW = 'sales.discount-authority.evidence.view';
+
     public const PRICE_REFERENCE_APPROVE = 'sales.pricing.reference.approve';
 
     /**

@@ -35,6 +35,7 @@ class SalesDutyRegistrationTest extends TestCase
     {
         $shipped = SalesDutyManifest::shipped();
         $this->assertSame(DutyStatus::Staged, $shipped->find(Sales::PRICE_REFERENCE_APPROVE)->status);
+        $this->assertSame(DutyStatus::Staged, $shipped->find(Sales::AUTHORITY_EVIDENCE_VIEW)->status);
         $this->assertNotContains(Sales::PRICE_REFERENCE_APPROVE, $this->freshRegistry($shipped)->all());
         $fixture = $shipped->withActivated([Sales::PRICE_REFERENCE_APPROVE]);
         $registry = $this->freshRegistry($fixture);

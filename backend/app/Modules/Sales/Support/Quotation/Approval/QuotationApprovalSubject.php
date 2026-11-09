@@ -6,25 +6,34 @@ namespace App\Modules\Sales\Support\Quotation\Approval;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
+use App\Modules\Approvals\Actions\ResolveApprovalPolicy;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalFactType;
 use App\Modules\Approvals\Support\ApprovalRouting;
+use App\Modules\Approvals\Support\ProtectedApprovalEvidenceSubject;
 use App\Modules\Approvals\Support\RecordScopedApprovalSubject;
+use App\Modules\Approvals\Support\StrictApprovalSubject;
+use App\Modules\Approvals\Support\TransactionalApprovalSubject;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityFence;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
+use App\Modules\Sales\Support\DiscountAuthority\DiscountConfiguration;
+use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
+use App\Modules\Sales\Support\SalesAccess;
+use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 /**
- * How a quotation draft tells the approval engine what it is (ADR 0070, ADR 0158). The subject is one REVISION. The routed facts are the kinds of concession the draft carries
- * and its currency; the content fingerprint and generation ride in the same hashed facts so the engine's own "document changed" rule becomes "this exact draft changed".
- * No amount is routed (no base-currency conversion evidence exists for a concession yet), so a step that uses an authority ceiling can never be satisfied: default-deny.
- * The summary names no recipient, price or limit. Beyond the engine's capability rule, the record policy decides who may decide: the quotation-family scope (OWN or ALL) with
- * the independent view, never the draft's creator or the person who entered a concession on it, and never a delegate (the owner has not decided delegation).
+ * Sales approval adapter. ENFORCE opts into evaluated concession routing, effective-date/tie
+ * refusal and named employee authority. The transaction hook precedes every engine request
+ * lock. OFF/SHADOW retain the earlier concession approval rules.
  */
-final class QuotationApprovalSubject implements RecordScopedApprovalSubject
+final class QuotationApprovalSubject implements ProtectedApprovalEvidenceSubject, RecordScopedApprovalSubject, StrictApprovalSubject, TransactionalApprovalSubject
 {
     public const CODE = 'QUOTATION_REVISION';
 
@@ -46,6 +55,8 @@ final class QuotationApprovalSubject implements RecordScopedApprovalSubject
     public function facts(): array
     {
         return [
+            'amount_base' => ['label' => 'Evaluated discount in company base currency', 'type' => ApprovalFactType::Decimal],
+            'authority_rank' => ['label' => 'Lowest qualified configured authority rank', 'type' => ApprovalFactType::Id],
             'concessions' => ['label' => 'Kinds of concession (DISCOUNT, OVERRIDE, DISCOUNT+OVERRIDE)', 'type' => ApprovalFactType::String],
             'currency_id' => ['label' => 'Quotation currency', 'type' => ApprovalFactType::Id],
         ];
@@ -54,27 +65,34 @@ final class QuotationApprovalSubject implements RecordScopedApprovalSubject
     /** Nothing monetary is routed or shown, so there is no figure to guard; the summary is the same for everyone. */
     public function canViewEvidence(User $user): bool
     {
-        return false;
+        return $this->strictPolicySelection() && SalesAccess::may(ActiveActor::current($user), PermissionVocabulary::AUTHORITY_EVIDENCE_VIEW);
     }
 
     public function routing(int $subjectId): ApprovalRouting
     {
         $revision = QuotationRevision::query()->findOrFail($subjectId);
 
+        $assessment = $this->strictPolicySelection() ? app(QuotationAuthorityApproval::class)->assessment($revision) : null;
+        $extra = $assessment === null ? [] : ['authority_fingerprint' => $assessment['fingerprint'], 'authority_rank' => $assessment['required_rank']];
+
         return new ApprovalRouting(
-            [
+            $extra + [
                 'concessions' => QuotationContentFingerprint::concessions($revision), 'currency_id' => $revision->currency_id,
                 'input_generation' => $revision->input_generation, 'content_fingerprint' => QuotationContentFingerprint::of($revision),
             ],
-            null,
-            ['fingerprint_version' => QuotationContentFingerprint::VERSION],
+            $assessment['measure']['reduction_base_amount'] ?? null,
+            ['authority' => $assessment, 'fingerprint_version' => QuotationContentFingerprint::VERSION],
             ['number' => "Quotation draft r{$revision->revision_ordinal} (#{$revision->id})", 'title' => 'Discount or price override'],
         );
     }
 
     public function mayDecide(User $person, ApprovalRequest $request, bool $delegated): bool
     {
-        if ($delegated) {
+        $person = ActiveActor::current($person);
+        if ($person === null) {
+            return false;
+        }
+        if ($delegated || $request->submitted_by === $person->id) {
             return false;
         }
         $revisionId = $request->subject_id;
@@ -92,7 +110,87 @@ final class QuotationApprovalSubject implements RecordScopedApprovalSubject
             throw $refusal;
         }
 
+        if ($this->strictPolicySelection()) {
+            return app(QuotationAuthorityApproval::class)->mayDecide($person, QuotationRevision::query()->findOrFail($revisionId));
+        }
+
         return true;
+    }
+
+    public function mayReadRequestEvidence(User $actor, ApprovalRequest $request): bool
+    {
+        if (! $this->canViewEvidence($actor)) {
+            return false;
+        }
+        try {
+            DB::transaction(fn () => app(QuotationAccess::class)->requireRevision($actor, $request->subject_id, [PermissionVocabulary::QUOTATION_VIEW]));
+        } catch (AuthorizationException|DomainInvariantException) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function strictPolicySelection(): bool
+    {
+        return app(QuotationAuthorityApproval::class)->enabled();
+    }
+
+    public function policySelectionDate(): string
+    {
+        return app(DiscountConfiguration::class)->today();
+    }
+
+    /** @param \Closure(User): (ApprovalRequest|null) $work */
+    public function approvalTransaction(int $subjectId, User $actor, \Closure $work, string $operation): ?ApprovalRequest
+    {
+        return DB::transaction(function () use ($subjectId, $actor, $work, $operation): ?ApprovalRequest {
+            app(CompanyAccessFence::class)->lockAll();
+            app(AuthorityFence::class)->lock();
+            $fresh = ActiveActor::require($actor, 'decide quotation approvals');
+            app(QuotationAccess::class)->requireRevision($fresh, $subjectId, [PermissionVocabulary::QUOTATION_VIEW, $operation === 'decide' ? PermissionVocabulary::QUOTATION_APPROVE : PermissionVocabulary::QUOTATION_PREPARE], true);
+
+            return $work($fresh);
+        });
+    }
+
+    public function submissionSnapshot(int $subjectId, ApprovalRouting $routing): array
+    {
+        $snapshot = $routing->snapshot();
+        if ($this->strictPolicySelection()) {
+            $snapshot['evidence']['authority_expires_at'] = app(QuotationAuthorityApproval::class)->deadline(QuotationRevision::query()->findOrFail($subjectId));
+        }
+
+        return $snapshot;
+    }
+
+    public function decisionEvidence(User $actor, ApprovalRequest $request): array
+    {
+        if (! $this->strictPolicySelection()) {
+            return [];
+        }
+        $revision = QuotationRevision::query()->findOrFail($request->subject_id);
+        $policy = app(DiscountConfiguration::class)->policy($revision);
+        $assignment = app(DiscountConfiguration::class)->assignment($actor, $revision, $policy, 'APPROVE');
+
+        return ['sales_authority_policy_id' => $policy->id, 'sales_authority_assignment_id' => $assignment?->id,
+            'sales_authority_band_id' => $assignment?->band_id, 'sales_authority_fingerprint' => app(QuotationAuthorityApproval::class)->assessment($revision)['fingerprint']];
+    }
+
+    public function requestHasExpired(ApprovalRequest $request): bool
+    {
+        return app(QuotationAuthorityApproval::class)->expired($request);
+    }
+
+    public function assertRequestCurrent(ApprovalRequest $request): void
+    {
+        app(QuotationAuthorityApproval::class)->assertUnexpired($request);
+        if ($this->strictPolicySelection()) {
+            $policy = app(ResolveApprovalPolicy::class)(self::CODE, $this->routing($request->subject_id));
+            if ($policy?->id !== $request->policy_id) {
+                throw AuthorityRefusal::make('AUTHORITY_APPROVAL_POLICY_CHANGED', 'Approval routing changed. Submit the current quotation for review again.');
+            }
+        }
     }
 
     /** The person who created the draft or entered any concession on it prepared it: they can never approve it. */

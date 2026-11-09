@@ -160,5 +160,10 @@ anchors, named employee assignments/revocations, mode events and evaluations are
 `RevokeDiscountAuthority`, `SetDiscountAuthorityMode` use STAGED financial configuration;
 `EvaluateQuotationDiscountAuthority` uses scoped view/prepare and existing quotation receipts.
 `AssessDiscountAuthority` is a read-only internal collaborator; routine clearance is based on
-stored concession entrants, not the issuer. No route or issuing integration is delivered yet.
+stored concession entrants, not the issuer. This describes the historical stage-2 boundary. Strict approval routing and initial
+readiness/issue integration are now implemented internally: company authority locks precede
+quotation/request locks, evaluated concession amounts route in ENFORCE, ambiguous policies refuse,
+named approver assignments and fourteen-day/validity-capped expiry are live checks. Issue pins its
+authority evaluation; quotation writes append SHADOW/ENFORCE evaluations. Configuration/evidence
+HTTP APIs and the final create-only demo remain outstanding; no duties or holders are activated.
 See the [specification and current gate](../../../../docs/domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).

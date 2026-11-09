@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Quotation\Approval;
 
+use App\Exceptions\DomainInvariantException;
+use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalRequest;
+use App\Modules\Approvals\Support\ApprovalEligibility;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Sales\Models\QuotationRevision;
@@ -33,6 +36,23 @@ final class QuotationApprovals
 
     public function isCurrent(QuotationRevision $revision, ApprovalRequest $request): bool
     {
+        try {
+            $subject = app(QuotationApprovalSubject::class);
+            $subject->assertRequestCurrent($request);
+            if ($subject->strictPolicySelection() && $request->status === ApprovalRequestStatus::Approved) {
+                foreach ($request->steps()->with('decisions')->get() as $step) {
+                    foreach ($step->decisions as $decision) {
+                        $person = User::query()->find($decision->decided_by);
+                        if ($person === null || app(ApprovalEligibility::class)->grantFor($person, $request, $step) === null) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        } catch (DomainInvariantException) {
+            return false;
+        }
+
         return hash_equals($request->facts_hash, $this->subjects->get(QuotationApprovalSubject::CODE)->routing($revision->id)->hash());
     }
 

@@ -15,6 +15,7 @@ use App\Modules\Approvals\Support\ApprovalRouting;
 use App\Modules\Approvals\Support\ApprovalStepStatus;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
+use App\Modules\Approvals\Support\TransactionalApprovalSubject;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -37,6 +38,16 @@ final class SubmitForApproval
 
     public function __invoke(string $subjectType, int $subjectId, User $actor): ?ApprovalRequest
     {
+        $subject = $this->subjects->get($subjectType);
+        if ($subject instanceof TransactionalApprovalSubject) {
+            return $subject->approvalTransaction($subjectId, $actor, fn (User $fresh): ?ApprovalRequest => $this->submit($subjectType, $subjectId, $fresh), 'submit');
+        }
+
+        return $this->submit($subjectType, $subjectId, $actor);
+    }
+
+    private function submit(string $subjectType, int $subjectId, User $actor): ?ApprovalRequest
+    {
         $mode = $this->modes->for($subjectType);
         if ($mode === ApprovalMode::None) {
             return null;
@@ -55,6 +66,11 @@ final class SubmitForApproval
 
             $open = ApprovalRequest::query()->where('subject_type', $subjectType)->where('subject_id', $subjectId)
                 ->where('status', ApprovalRequestStatus::Pending)->lockForUpdate()->first();
+            $subject = $this->subjects->get($subjectType);
+            if ($open !== null && $subject instanceof TransactionalApprovalSubject && $subject->requestHasExpired($open)) {
+                app(InvalidateApprovals::class)($open, 'The approval expired before a fresh submission.', ApprovalRequestStatus::Expired);
+                $open = null;
+            }
             if ($open !== null) {
                 if ($open->facts_hash === $routing->hash() && app(ApprovalReviewRegistry::class)->unchanged($open)) {
                     return $open;
@@ -68,7 +84,8 @@ final class SubmitForApproval
 
     private function create(ApprovalPolicy $policy, string $subjectType, int $subjectId, ApprovalRouting $routing, User $actor): ApprovalRequest
     {
-        $snapshot = $routing->snapshot();
+        $subject = $this->subjects->get($subjectType);
+        $snapshot = $subject instanceof TransactionalApprovalSubject ? $subject->submissionSnapshot($subjectId, $routing) : $routing->snapshot();
         $review = app(ApprovalReviewRegistry::class)->capture($subjectType, $subjectId);
         if ($review !== null) {
             $snapshot['document_review'] = $review;

@@ -95,7 +95,18 @@ Migration `2026_12_03_010000_create_sales_discount_authority_configuration` pass
 cycle. Sales/Company regression: 696 passed, one existing docs-path skip; focused reference/policy/FX/evidence: 45 passed;
 whole-project PHPStan passed. Required schema ratchets currently fail on the other owner's
 Purchasing FK introduced in `3eb5d9b8` (#90); reported with reproduction on #90 and #86, left
-untouched. Stage 3 remains gated until this is fixed. [Details](../domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).
+untouched. Historical gate: fixed by `253332eb`; the tenant-FK ratchet passed on 2026-11-09. [Details](../domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).
+
+## 2026-11-09 — strict discount routing and initial integration checkpoint
+
+The tenant-FK gate is resolved. Opt-in engine transaction, strict policy selection and protected
+field hooks are implemented for Sales, with evaluated concession routing, named approver-band
+checks, fourteen-day/quotation-validity expiry, and decision/issue revalidation. Quotation writes
+append authority evaluations; issue pins its evaluation through a company-composite FK. No duty
+activation or holder grant. ADR 0164 contains the concrete lock/barrier proposal for owner review.
+Six real two-session tests passed, including both decision/configuration orderings and live
+suspension, permission, assignment and source changes. Configuration APIs, the final demo and
+complete feature close-out remain outstanding; see the canonical [checkpoint](../domain/quotation-discount-authority.md#routing-and-lifecycle-integration-checkpoint-2026-11-09).
 
 ## Related
 

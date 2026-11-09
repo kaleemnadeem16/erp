@@ -8,6 +8,8 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
+use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Approvals\Support\TransactionalApprovalSubject;
 use Illuminate\Support\Facades\DB;
 
 /** The submitter (or a policy manager) takes a pending request back so the document can be edited and resubmitted. */
@@ -16,6 +18,17 @@ final class WithdrawApproval
     public function __construct(private readonly InvalidateApprovals $invalidate) {}
 
     public function __invoke(ApprovalRequest $request, User $actor, string $reason): ApprovalRequest
+    {
+        $subject = app(ApprovalSubjectRegistry::class)->get($request->subject_type);
+        if ($subject instanceof TransactionalApprovalSubject) {
+            return $subject->approvalTransaction($request->subject_id, $actor, fn (User $fresh): ApprovalRequest => $this->withdraw($request, $fresh, $reason), 'withdraw')
+                ?? throw new \LogicException('A withdrawal must return its request.');
+        }
+
+        return $this->withdraw($request, $actor, $reason);
+    }
+
+    private function withdraw(ApprovalRequest $request, User $actor, string $reason): ApprovalRequest
     {
         if (trim($reason) === '') {
             throw new DomainInvariantException('Say why the approval is being withdrawn.', 'reason');

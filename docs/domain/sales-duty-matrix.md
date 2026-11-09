@@ -48,6 +48,7 @@ contract/rollout. Classifications do not name real people/roles or authorise a m
 | `sales.pricing.eligibility.manage` | Sales | Dated Party pricing memberships | C + independent legitimate Party/membership eligibility | Party eligibility | S | PR2 |
 | `sales.pricing.agreement.manage` | Sales | Contractual pricing versions | C + contracting Party and protected agreement/term scope | Confidential terms | S | PR2/3; cannot depart accepted terms |
 | `sales.pricing.terms.view` | Sales | Read otherwise protected term choices | C + legitimate Party/agreement/private-term eligibility | Confidential terms | S | PR2/3 |
+| `sales.discount-authority.evidence.view` | Sales | Protected discount authority evidence | Governed references, exposure and limits; independent quotation view/scope | Config + record | S | AU3/0163, STAGED; no grants |
 | `sales.financial.configure` | Sales | Sales FX/rounding policy | C + Sales financial policy configuration; not FX master edit | Config | S | FR1/4 |
 | `tax.configuration.manage` | Shared Tax domain (FR2) | Typed tax component/group/rate versions | C + shared Tax configuration; no quotation prerequisite | Tax-config | S | FR2/3/6 owning tax provider |
 | `tax.profile.manage` | Shared Tax domain (FR2) | Party tax profile and evidence | C + independent legitimate Party/tax-evidence eligibility | Tax evidence | S | FR2 + independent Party eligibility |

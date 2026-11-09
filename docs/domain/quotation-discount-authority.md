@@ -2,7 +2,7 @@
 
 # Quotation discount authority
 
-**Owner-authorised specification, 2026-11-06, issue #86. Stages 1–2 are internal; stage 2 has an external verification gate; stages 3–4 are pending.**
+**Owner-authorised specification, 2026-11-06, issue #86. Stages 1–2 are internal; the external tenant-FK gate is resolved. Strict routing and lifecycle integration are in progress; API/demo close-out remains outstanding.**
 Decisions: [0163](../decisions/0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)
 and proposed [lock order 0164](../decisions/0164-order-discount-authority-locks-before-quotation-and-approval-records.md).
 This is one backend milestone delivered in four green stages. Configuration screens are a separate
@@ -260,7 +260,42 @@ the docs folder. The combined ratchet run passed
 93 tests but failed both CompanyScopedForeignKeyTest methods on Purchasing's
 `purchase_orders_fx_override_by_foreign`, introduced in commit `3eb5d9b8` (#90). It is reported to
 that owner and the coordinator on #86; no Purchasing file or test assertion was changed to pass it.
-Stage 3 must wait for this external gate to be green.
+Historical external gate: Purchasing fixed the FK in `253332eb`; both tenant-FK ratchet tests passed on 2026-11-09.
+
+## Routing and lifecycle integration checkpoint (2026-11-09)
+
+ENFORCE routes `amount_base` from the immutable evaluation calculation, with the lowest qualified
+configured rank. Shared policy selection is opt-in: company-local effective dates and equal-priority
+refusal, never an id tie-break. Named APPROVE/BOTH assignments must cover the exact exposure; a
+higher band is accepted only with `allow_higher_approver`. The independent STAGED
+`sales.discount-authority.evidence.view` also requires quotation view and effective family scope.
+No duty is activated or granted by these changes.
+The engine's optional subject transaction hook surrounds submit/decision/withdraw, including its
+preflight, before any request lock. Sales rehydrates its actor inside security → authority head →
+revision fences. A final locked decision repeats fingerprint, policy-selection and expiry checks.
+The default request deadline is fourteen company-local calendar days, capped by quotation validity;
+approved requests expire too. Missing evidence returns 422; `sales.discount_authority_hide_missing_evidence`
+is the single owner-decision switch to a non-disclosing 404.
+Readiness remains read-only. ENFORCE routine clearance uses the concession entrant's current
+assignment; mandatory financial/tax controls remain independent. Quotation operations append
+SHADOW/ENFORCE evaluations with their receipts; issue pins `authority_evaluation_id` through a
+company-composite FK. Replays retain their original evidence after checking current access.
+Shared approval configuration statement barriers conservatively advance Sales authority generations;
+this contention/invalidation trade-off is proposed for review in ADR 0164.
+**Not feature completion:** configuration HTTP APIs, protected evaluation/audit API contracts,
+create-only Company 1 demo, the complete writer inventory and final verification remain outstanding.
+Existing API response envelopes are unchanged; the shared approval fact vocabulary adds
+`amount_base` and `authority_rank`, and protected approval evidence gains authority/expiry data.
+No generated client file is owned by this checkpoint.
+### Screen handoff
+Settings will need versioned reference proposals and independent approval, policy/band versions,
+named employee assignments and revocation, and explicit OFF/SHADOW/ENFORCE confirmation. Show
+DEMO ONLY labels on illustrative limits and people. A quotation needs a safe clearance/review
+status; only authorised evidence readers may see its reference, percentage, base exposure and
+qualified band. The approver needs that evidence and a visible expiry, with plain messages for
+missing evidence, changed terms, expired approval or unavailable authority. Preserve draft context
+when requesting again. A paged restricted audit will explain configuration and evaluation history.
+These screens and their backend HTTP contracts are not delivered by this checkpoint.
 
 ## Related
 

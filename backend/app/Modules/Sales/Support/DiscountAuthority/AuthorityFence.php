@@ -17,7 +17,9 @@ final class AuthorityFence
             throw new LogicException('Authority evaluation requires an enclosing transaction and the company access fence.');
         }
         $company = app(CompanyContext::class)->id();
-        DB::table('sales_authority_heads')->insertOrIgnore(['company_id' => $company]);
+        if (! DB::table('sales_authority_heads')->where('company_id', $company)->exists()) {
+            DB::table('sales_authority_heads')->insertOrIgnore(['company_id' => $company]);
+        }
 
         return (int) DB::table('sales_authority_heads')->where('company_id', $company)->lockForUpdate()->value('generation');
     }

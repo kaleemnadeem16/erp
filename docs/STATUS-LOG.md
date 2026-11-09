@@ -1113,3 +1113,28 @@ solely on Purchasing's `purchase_orders_fx_override_by_foreign` from `3eb5d9b8` 
 to that owner and coordinator (#86); their migration/test remains untouched. The owner-required
 phase-green gate therefore blocks stage 3 pending that correction. ADR 0164 review is also pending
 before integration. No final-SHA integrated verification has been claimed.
+
+## 2026-11-09 — #86 strict routing and initial lifecycle integration checkpoint
+
+Discount-authority strict shared routing and transaction/evidence hooks are implemented internally.
+Sales routes the evaluated concession, refuses best-priority ties, applies company-local effective
+dates, checks exact named approver bands and pins a fourteen-day/validity-capped deadline. Generic
+submission/decision/withdrawal take the Sales transaction fences before request locking. Final
+locked decisions and issue revalidate authority; draft operations append SHADOW/ENFORCE evaluations,
+and issue pins its evaluation with a company-composite FK. No duty activation or holder grant.
+The independent authority-evidence duty is STAGED and represented in the manifest/rollout matrix.
+ADR 0164 is updated with the concrete conservative shared configuration writer barriers for owner
+review. Both tenant-FK tests pass; Purchasing's historical external gate is resolved.
+
+Eight focused routing/lifecycle tests and six real two-session tests passed in the module rerun,
+including live suspension/revocation/source changes and both decision/configuration orderings.
+The isolated migration cycle passed and touched-path Pint passed. Full regression evidence remains
+part of the close-out; the unrelated customer-decision isolated rollback defect is recorded as #101
+for WP-E1. Whole-project PHPStan passed once; a later parallel run hit host-load timeouts and is
+being repeated with one worker. No whole backend suite was run.
+
+This is an in-progress checkpoint, not feature completion: configuration/evidence/audit HTTP APIs,
+the create-only demo seeder and final close-out remain outstanding. Existing response envelopes
+are unchanged; the shared approval fact vocabulary adds amount_base/authority_rank and protected
+evidence includes authority/expiry. No generated client file was edited by this work. The plain
+screen handoff and current resume point are in [the domain specification](domain/quotation-discount-authority.md#routing-and-lifecycle-integration-checkpoint-2026-11-09).

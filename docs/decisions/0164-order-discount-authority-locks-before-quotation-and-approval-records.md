@@ -38,6 +38,23 @@ barriers; immutable rows reject mutation. A decision must compare fresh routing 
 final locked transaction, not only in preflight. Approval eligibility is judged live, including
 employee/role/unit access and preparer/requester exclusions.
 
+### Concrete engine boundary (2026-11-09, proposed for owner review)
+
+`TransactionalApprovalSubject` wraps submission, decision and withdrawal before engine preflight
+or a request lock; Sales takes `CompanyAccessFence::lockAll()`, the authority head, then the
+revision and rehydrates the actor there. The final locked decision repeats evidence and expiry
+checks. `QuotationOperation` takes the same head before its subject closure, including OFF mode:
+absence and later activation must be serialised too. Readiness takes this order explicitly.
+
+The statement barrier on shared policy, condition, step, setting, authority and delegation tables
+uses the existing authority writer barrier. It conservatively takes security and authority heads
+in company order before any affected row, including statements spanning consumer types. Only Sales
+uses the resulting generation, strict selection and request-wide expiry; other consumers retain
+their business selection semantics. The conservative contention is intentional and reviewable.
+Row-level callbacks must never be the first acquisition point. Approval configuration writes may
+invalidate open Sales evidence even when the changed consumer differs; this is a safe foundation
+trade-off, rather than a claim of fine-grained dependency tracking.
+
 Replays check current access before returning the original receipt; they do not generate new
 evidence or rewrite old policy/reference versions. Bounded waits and whole-operation deadlock/
 serialisation retries retain QuotationOperation's existing semantics. Tests use separate real
