@@ -9,7 +9,9 @@ use App\Models\Role;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Support\AccessAssignmentGuard;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Support\CompanyContext;
+use App\Support\Scope\CompanyAccessFence;
 use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\DB;
 
@@ -30,9 +32,18 @@ final class SaveRole
         if ($role?->users()->whereKey($actor->id)->exists()) {
             throw new DomainInvariantException('You cannot change a role assigned to your own account.', 'role');
         }
-        $this->guard->validate($actor, [], $attributes['permissions']);
 
         return DB::transaction(function () use ($role, $attributes, $actor): Role {
+            // The early checks above only fail fast. Authority is decided here, under the company barrier, from the stored actor.
+            app(CompanyAccessFence::class)->lockAll();
+            $actor = ActiveActor::require($actor, 'manage roles');
+            if (! $actor->can('administration.role.manage')) {
+                throw new DomainInvariantException('The actor cannot manage roles.', 'name');
+            }
+            if ($role !== null && $role->users()->whereKey($actor->id)->exists()) {
+                throw new DomainInvariantException('You cannot change a role assigned to your own account.', 'role');
+            }
+            $this->guard->validate($actor, [], $attributes['permissions']);
             if ($role !== null) {
                 $role = Role::query()->whereKey($role->id)->lockForUpdate()->firstOrFail();
                 $limitedScopes = AccessScopeLimit::query()->where('role_id', $role->id)->whereIn('scope', [AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED])->distinct()->pluck('scope');

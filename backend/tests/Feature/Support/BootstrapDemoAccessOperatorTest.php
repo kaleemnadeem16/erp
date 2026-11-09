@@ -78,6 +78,50 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 1);
     }
 
+    public function test_a_replacement_user_with_the_operator_email_cannot_repeat_the_bootstrap(): void
+    {
+        $this->activate();
+        $original = $this->operator();
+        $bootstrap = app(BootstrapDemoAccessOperator::class);
+        $this->assertTrue($bootstrap($original));
+
+        // The original is renamed away and a brand-new user takes the designated identity: it has a new id and no receipt of its own.
+        DB::table('users')->where('id', $original->id)->update(['email' => 'renamed-operator@erp.x1techs.com']);
+        $replacement = $this->operator();
+        $this->assertNotSame($original->id, $replacement->id);
+
+        $this->assertThrows(fn () => $bootstrap($replacement), DomainInvariantException::class, 'already');
+        $this->assertSame([], $this->held($replacement));
+        $this->assertDatabaseCount('demo_access_operator_bootstraps', 1);
+    }
+
+    public function test_the_database_allows_one_receipt_per_company_and_operator_identity(): void
+    {
+        $this->activate();
+        $original = $this->operator();
+        app(BootstrapDemoAccessOperator::class)($original);
+        $other = User::factory()->create();
+
+        $this->assertThrows(fn () => DB::transaction(fn () => DB::table('demo_access_operator_bootstraps')->insert([
+            'company_id' => $original->company_id, 'user_id' => $other->id, 'email' => strtoupper(Demo::OPERATOR_EMAIL), 'grants' => json_encode($this->approved()), 'provenance' => 'second receipt',
+        ])), QueryException::class);
+        $this->assertDatabaseCount('demo_access_operator_bootstraps', 1);
+    }
+
+    public function test_an_operator_already_holding_a_duty_outside_the_ceiling_is_refused(): void
+    {
+        $manifest = SalesDutyManifest::shipped()->withActivated([...Demo::DUTIES, Duty::QUOTATION_ISSUE]);
+        $this->app->instance(SalesDutyManifest::class, $manifest);
+        $manifest->registerWith(app(PermissionRegistry::class));
+        app(PermissionRegistry::class)->registerForTeam(1);
+        $operator = $this->operator();
+        $operator->givePermissionTo(Duty::QUOTATION_ISSUE);
+
+        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator), DomainInvariantException::class, 'outside');
+        $this->assertDatabaseCount('demo_access_operator_bootstraps', 0);
+        $this->assertSame([Duty::QUOTATION_ISSUE], $this->held($operator));
+    }
+
     public function test_any_other_grant_set_is_refused_including_issue_and_repair(): void
     {
         $this->activate();

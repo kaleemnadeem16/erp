@@ -12,6 +12,7 @@ use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
+use App\Support\Demo\QuotationDemoBoundary;
 use App\Support\PermissionRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Log;
@@ -141,6 +142,18 @@ class SalesDevPreviewTest extends TestCase
         $this->artisan('sales:dev-grant-quotation', ['email' => $user->email, '--revoke' => true])->assertSuccessful();
         $this->assertSame([], $user->fresh()->getAllPermissions()->pluck('name')->all());
         $this->artisan('sales:dev-grant-quotation', ['email' => 'nobody@example.test'])->assertFailed();
+    }
+
+    public function test_the_grant_command_never_touches_the_synthetic_demo_access_operator(): void
+    {
+        $this->environment('local', true);
+        $operator = User::factory()->create(['email' => QuotationDemoBoundary::OPERATOR_EMAIL]);
+
+        $this->artisan('sales:dev-grant-quotation', ['email' => $operator->email])->assertFailed();
+        $this->artisan('sales:dev-grant-quotation', ['email' => strtoupper($operator->email)])->assertFailed();
+        $this->artisan('sales:dev-grant-quotation', ['email' => $operator->email, '--revoke' => true])->assertFailed();
+
+        $this->assertSame([], $operator->fresh()->getAllPermissions()->pluck('name')->all(), 'the operator never receives issue or document duties from the preview command');
     }
 
     public function test_a_granted_developer_can_use_the_quotation_endpoints_end_to_end_and_an_ungranted_one_cannot(): void

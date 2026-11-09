@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Models\User;
 use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Support\CompanyContext;
+use App\Support\Demo\QuotationDemoBoundary;
 use App\Support\PermissionRegistry;
 use Illuminate\Console\Command;
 
@@ -32,6 +33,11 @@ final class GrantQuotationDevPreview extends Command
         }
 
         $email = strtolower((string) ($this->argument('email') ?? config('demo.user.email')));
+        if ($email === strtolower(QuotationDemoBoundary::OPERATOR_EMAIL)) {
+            $this->components->error('Refused: the synthetic demo access operator is limited to its approved set (ADR 0155); this preview command never grants or revokes for it.');
+
+            return self::FAILURE;
+        }
         $user = User::query()->where('email', $email)->first();
         if (! $user instanceof User) {
             $this->components->error("No user with the email {$email} exists.");

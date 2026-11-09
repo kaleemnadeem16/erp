@@ -32,9 +32,20 @@ final class SyncMemberAccess
         if ($actor->is($member)) {
             throw new DomainInvariantException('You cannot change your own access.', 'role_ids');
         }
-        $access = $this->guard->validate($actor, $attributes['role_ids'], $attributes['direct_permissions']);
 
-        return DB::transaction(function () use ($member, $attributes, $actor, $access): User {
+        return DB::transaction(function () use ($member, $attributes, $actor): User {
+            // The early checks above only fail fast. Authority is decided here, under the company barrier, from the stored actor.
+            app(CompanyAccessFence::class)->lockAll();
+            $actor = ActiveActor::require($actor, 'assign access');
+            $member = User::query()->whereKey($member->id)->lockForUpdate()->firstOrFail();
+            $this->guard->assertCompany($member);
+            if (! $actor->can('administration.access.assign')) {
+                throw new DomainInvariantException('The actor cannot assign access.', 'role_ids');
+            }
+            if ($actor->is($member)) {
+                throw new DomainInvariantException('You cannot change your own access.', 'role_ids');
+            }
+            $access = $this->guard->validate($actor, $attributes['role_ids'], $attributes['direct_permissions']);
             $before = ['roles' => $member->getRoleNames()->values(), 'direct_permissions' => $member->getDirectPermissions()->pluck('name')->values()];
             $member->syncRoles($access['roles']);
             $member->syncPermissions($access['permissions']);
