@@ -79,6 +79,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE supplier_returns, stock_scraps IN ACCESS EXCLUSIVE MODE');
         foreach (['supplier_returns' => 'supplier_return_lines', 'stock_scraps' => 'stock_scrap_lines'] as $header => $lines) {
             if (DB::table($header)->exists()) {
                 throw new RuntimeException('Return or scrap documents exist; restore a compatible application instead of discarding them.');

@@ -81,6 +81,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE sales_opportunity_attribution_corrections IN ACCESS EXCLUSIVE MODE');
         if (DB::table('sales_opportunity_attribution_corrections')->exists()) {
             throw new RuntimeException('Refusing to drop sales_opportunity_attribution_corrections: accepted attribution corrections would be lost and recorded responsibility would no longer be auditable.');
         }

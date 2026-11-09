@@ -363,6 +363,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE rejected_stock_exits IN ACCESS EXCLUSIVE MODE');
         if (DB::table('rejected_stock_exits')->exists()) {
             throw new RuntimeException('Rejected-stock exits exist; restore a compatible application instead of discarding history.');
         }

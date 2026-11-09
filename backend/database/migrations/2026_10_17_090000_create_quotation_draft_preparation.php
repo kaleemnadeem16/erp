@@ -122,6 +122,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['sales_quotation_operation_receipts', 'quotation_draft_lines'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than erase evidence: receipts and entered prices are the record of what was prepared and under which FX.
         if (Schema::hasTable('sales_quotation_operation_receipts')
             && (DB::table('sales_quotation_operation_receipts')->exists() || DB::table('quotation_draft_lines')->whereNotNull('unit_price')->exists())) {

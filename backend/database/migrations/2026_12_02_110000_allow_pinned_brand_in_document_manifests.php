@@ -26,6 +26,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE document_manifests IN ACCESS EXCLUSIVE MODE');
         if (DB::table('document_manifests')->where('brand_state', 'PINNED')->exists()) {
             throw new RuntimeException('Manifests that pinned a company brand exist; they are evidence and cannot be rolled back to the unbranded shape.');
         }

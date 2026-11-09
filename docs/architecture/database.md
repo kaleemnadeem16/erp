@@ -180,11 +180,12 @@ just columns.
    a re-created trigger must also re-create **every** trigger that shared the dropped statement (a half-recreated pair once left a table unguarded).
 4. **Indexes and uniqueness:** index the foreign keys and filters the feature queries; unique indexes are partial where appropriate and always include `company_id`. A table expected to exceed ~100k rows gets
    an `EXPLAIN` in review; dbvm has one vCPU.
-5. **A real `down()`.** It reverses exactly what `up()` did, or **refuses** (throws with a clear message) when data written since would be lost or become inconsistent — never silently drops evidence. CI runs a full
+5. **A real `down()`.** It reverses exactly what `up()` did, or **refuses** (throws with a clear message) when data written since would be lost or become inconsistent — never silently drops evidence. **Lock first, then look:** the first statement of such a `down()` is `LOCK TABLE <every table it reads or drops> IN ACCESS EXCLUSIVE MODE` (one statement, so the order is fixed), and only then the evidence check; a ratchet test fails a `down()` that checks before it locks. CI runs a full
    rollback-then-re-migrate cycle; also run `migrate:rollback --step=1` and `migrate` yourself on a database that holds data.
 6. **Separate backfills from schema changes** (lock duration), and make a backfill idempotent and per-company.
 7. **Rollout state travels with the migration:** a new permission needs registration plus a grant/continuity migration and the administrator re-sync ([authorization.md](authorization.md) R5); a new setting has a safe
    default that preserves today's behaviour; a new mode starts off ([extensibility.md](extensibility.md#progressive-capability-modes)).
+   A constraint added later to a table that already holds rows is added `NOT VALID` and then `VALIDATE`d (the validation does not block writers); if existing rows break it, the migration reports which and leaves it unvalidated rather than rewriting evidence.
 8. **Test the migration:** the schema test database is built by running migrations, so the migration is exercised by the whole suite; add a focused test for any trigger, backfill or rollout logic.
 
 ## Related

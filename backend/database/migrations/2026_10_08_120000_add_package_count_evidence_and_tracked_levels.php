@@ -320,6 +320,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE inventory_package_operations IN ACCESS EXCLUSIVE MODE');
         if (DB::table('inventory_package_operations')->whereNotNull('physical_count_line_id')->exists()) {
             throw new RuntimeException('Package count evidence exists; restore a compatible application instead of discarding history.');
         }

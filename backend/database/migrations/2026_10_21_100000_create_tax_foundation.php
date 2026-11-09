@@ -244,6 +244,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['tax_components', 'tax_component_versions', 'tax_rate_versions', 'tax_rule_versions', 'tax_group_versions', 'tax_group_members', 'tax_dependency_versions', 'tax_group_activations', 'tax_operation_receipts'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         foreach ($this->evidenceTables() as $table) {
             if (Schema::hasTable($table) && DB::table($table)->exists()) {
                 throw new RuntimeException('Tax evidence exists; rollback would erase history. Plan a backout first.');

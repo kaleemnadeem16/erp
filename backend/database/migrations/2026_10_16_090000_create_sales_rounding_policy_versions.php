@@ -103,6 +103,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_filter(['sales_rounding_policy_versions'], fn (string $t): bool => Schema::hasTable($t));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than discard history: dropping the table would erase the policy any issued evidence cites.
         if (Schema::hasTable('sales_rounding_policy_versions') && DB::table('sales_rounding_policy_versions')->where('status', '<>', 'DRAFT')->exists()) {
             throw new RuntimeException('Activated Sales rounding policy versions exist; rolling this migration back would erase policy history. Plan a backout first.');

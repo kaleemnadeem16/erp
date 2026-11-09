@@ -262,6 +262,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE inventory_package_operations, inventory_package_states, inventory_package_issue_draws IN ACCESS EXCLUSIVE MODE');
         if (DB::table('inventory_package_operations')->where('evidence_kind', 'QA_DISPOSITION')->exists() || DB::table('inventory_package_states')->where('availability', 'REJECTED')->exists() || DB::table('inventory_package_issue_draws')->where('availability', '<>', 'USABLE')->exists()) {
             throw new RuntimeException('Held-receipt, rejected or QA-disposition package evidence exists; restore a compatible application instead of discarding history.');
         }

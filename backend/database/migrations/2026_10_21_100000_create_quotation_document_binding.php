@@ -80,6 +80,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['quotation_customer_document_snapshots', 'quotation_document_bindings'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than erase document evidence.
         if (Schema::hasTable('quotation_customer_document_snapshots') && (DB::table('quotation_customer_document_snapshots')->exists() || DB::table('quotation_document_bindings')->exists())) {
             throw new RuntimeException('Quotation document snapshots or bindings exist; rolling this migration back would erase document evidence. Plan a backout first.');

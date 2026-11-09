@@ -29,6 +29,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE quotation_issues IN ACCESS EXCLUSIVE MODE');
         // Refuse rather than erase evidence: the link is the record of which approval authorised an issued quotation's reductions.
         if (DB::table('quotation_issues')->whereNotNull('approval_request_id')->exists()) {
             throw new RuntimeException('Issued quotations name the approval they were issued under; rolling this migration back would erase that evidence. Plan a backout first.');

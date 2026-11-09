@@ -176,6 +176,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['document_template_versions', 'document_page_policy_versions'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than erase configuration history that manifests may already pin.
         if (Schema::hasTable('document_template_versions') && (DB::table('document_template_versions')->exists() || DB::table('document_page_policy_versions')->exists())) {
             throw new RuntimeException('Document template or page-policy versions exist; rolling this migration back would erase configuration history. Plan a backout first.');

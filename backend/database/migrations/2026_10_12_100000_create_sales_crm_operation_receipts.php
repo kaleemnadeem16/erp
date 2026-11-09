@@ -52,6 +52,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_filter(['sales_crm_operation_receipts'], fn (string $t): bool => Schema::hasTable($t));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         if (Schema::hasTable('sales_crm_operation_receipts') && DB::table('sales_crm_operation_receipts')->exists()) {
             throw new RuntimeException('Refusing to drop sales_crm_operation_receipts: it holds receipts that make accepted CRM operations replayable and auditable.');
         }

@@ -122,6 +122,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['tax_party_profile_versions', 'tax_party_component_evidence', 'tax_party_profile_activations'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         foreach ($this->tables() as $table) {
             if (Schema::hasTable($table) && DB::table($table)->exists()) {
                 throw new RuntimeException('Tax profile evidence exists; rollback would erase protected history.');

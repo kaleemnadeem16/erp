@@ -169,6 +169,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE sales_lead_enquiry_corrections, sales_lead_intakes IN ACCESS EXCLUSIVE MODE');
         if (DB::table('sales_lead_enquiry_corrections')->exists() || DB::table('sales_lead_intakes')->where('evidence_kind', 'ORIGINAL_INTAKE')->exists()) {
             throw new RuntimeException('Refusing to remove lead intake evidence: accepted original intakes or enquiry corrections would be lost, and the corrected enquiry would no longer be auditable.');
         }

@@ -115,6 +115,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE quotation_draft_document_discounts, quotation_draft_lines, quotation_issued_lines, quotation_net_controls IN ACCESS EXCLUSIVE MODE');
         // Refuse rather than erase evidence: an entered discount or override, or a frozen reduction, is the record of what a seller conceded and who entered it.
         if (DB::table('quotation_draft_document_discounts')->exists() || DB::table('quotation_draft_lines')->where(fn ($q) => $q->whereNotNull('discount_kind')->orWhereNotNull('net_override'))->exists()
             || DB::table('quotation_issued_lines')->where(fn ($q) => $q->whereNotNull('line_reduction_kind')->orWhere('document_reduction_amount', '>', 0))->exists()) {

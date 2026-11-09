@@ -69,8 +69,10 @@ SQL);
 
     public function down(): void
     {
-        if (DB::table('company_changes')->where('section', 'BRANDING')->exists()) {
-            throw new RuntimeException('Company change history that records branding exists; it is history and cannot be rolled back.');
+        // Both tables hold branding evidence: take both locks before looking at either.
+        DB::statement('LOCK TABLE company_brand_versions, company_changes IN ACCESS EXCLUSIVE MODE');
+        if (DB::table('company_brand_versions')->exists() || DB::table('company_changes')->where('section', 'BRANDING')->exists()) {
+            throw new RuntimeException('Company brand versions or change history that records branding exist; they are history and cannot be rolled back.');
         }
         DB::statement('ALTER TABLE company_changes DROP CONSTRAINT company_changes_section_check');
         DB::statement("ALTER TABLE company_changes ADD CONSTRAINT company_changes_section_check CHECK (section IN ('GENERAL', 'LOCALIZATION', 'REGISTRATION', 'CONTACT'))");

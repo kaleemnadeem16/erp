@@ -126,6 +126,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['job_handover_origins', 'job_baselines', 'job_events', 'service_jobs'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than erase Job evidence — even fixtures: a populated rollback must be planned, not run.
         foreach (['job_handover_origins', 'job_baselines', 'job_events', 'service_jobs'] as $table) {
             if (Schema::hasTable($table) && DB::table($table)->exists()) {

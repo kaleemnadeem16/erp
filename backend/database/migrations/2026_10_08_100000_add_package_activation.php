@@ -110,6 +110,8 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        DB::statement('LOCK TABLE inventory_package_activations IN ACCESS EXCLUSIVE MODE');
         if (DB::table('inventory_package_activations')->exists()) {
             throw new RuntimeException('Package activations exist and cannot be undone; restore a compatible application instead of discarding them.');
         }

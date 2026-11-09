@@ -37,6 +37,7 @@ Ratchets fail the day a new route, writer or table silently skips a rule. A feat
 | `PackageOperationsHaveNoEntryPointTest`, `ImportStagingHasNoEntryPointTest` | internal operations stay unreachable until deliberately given an entry point |
 | `PermissionCheckRegistrationTest` | every literal permission string checked in code is registered |
 | `CompanyScopedForeignKeyTest`, `CompanyScopedUniqueIndexTest` | company ownership participates in every relationship and unique constraint |
+| `MigrationRollbackLockFirstTest` | a `down()` that refuses to destroy evidence takes its exclusive table locks before it reads the rows |
 | `ControllerActionBoundaryTest` | controllers delegate to Actions |
 | `TestingEnvironmentIsolationTest` | tests never touch the development or production database |
 

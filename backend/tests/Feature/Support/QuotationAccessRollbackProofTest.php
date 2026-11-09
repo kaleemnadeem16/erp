@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Support;
 
 use App\Models\User;
+use App\Modules\Parties\Models\Party;
 use App\Modules\Tax\Actions\DeclareQuotationTaxSource;
 use App\Modules\Tax\Support\EffectivePeriod;
 use App\Modules\Tax\Support\TaxDutyManifest;
@@ -50,10 +51,12 @@ class QuotationAccessRollbackProofTest extends TestCase
     public function test_populated_customer_decision_receipt_refuses_rollback(): void
     {
         $actor = User::factory()->create();
-        // The schema deliberately has no case FK. This is a valid synthetic storage fixture,
+        // A receipt must now name a real case (issue #99), so the fixture creates one. This is a valid synthetic storage fixture,
         // not a customer acceptance or a claim that a business Action has been executed.
+        $case = DB::table('customer_decision_cases')->insertGetId(['company_id' => 1, 'party_id' => Party::create(['code' => 'RBPROOF', 'name' => 'Rollback proof'])->id,
+            'intake_identity' => 'rollback-proof', 'recorded_by' => $actor->id, 'recorded_at' => now()]);
         DB::table('sales_customer_decision_receipts')->insert(['company_id' => 1, 'actor_id' => $actor->id, 'request_key' => 'rollback-proof',
-            'operation' => 'synthetic', 'case_id' => 1, 'payload_hash' => str_repeat('a', 64), 'completed_at' => now(), 'result' => '{}']);
+            'operation' => 'synthetic', 'case_id' => $case, 'payload_hash' => str_repeat('a', 64), 'completed_at' => now(), 'result' => '{}']);
         $this->assertPopulatedRollbackRefused('2026_11_02_110000_create_sales_customer_decision_receipts.php', ['sales_customer_decision_receipts']);
     }
 }

@@ -73,6 +73,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_filter(['document_subject_bindings'], fn (string $t): bool => Schema::hasTable($t));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than erase document evidence.
         if (Schema::hasTable('document_subject_bindings') && DB::table('document_subject_bindings')->exists()) {
             throw new RuntimeException('Document bindings exist; rolling this migration back would erase document evidence. Plan a backout first.');

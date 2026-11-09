@@ -310,6 +310,11 @@ SQL);
 
     public function down(): void
     {
+        // Lock first, then look: nothing can write evidence between the check and the drop.
+        $present = array_values(array_filter(['quotation_families', 'quotation_revisions'], fn (string $t): bool => Schema::hasTable($t)));
+        if ($present !== []) {
+            DB::statement('LOCK TABLE '.implode(', ', $present).' IN ACCESS EXCLUSIVE MODE');
+        }
         // Refuse rather than erase quotation history: a family, its association events or any revision beyond a bare draft may already be evidence.
         if (Schema::hasTable('quotation_families') && (DB::table('quotation_revisions')->exists() || DB::table('quotation_families')->exists())) {
             throw new RuntimeException('Quotation families or revisions exist; rolling this migration back would erase quotation history. Plan a backout first.');
