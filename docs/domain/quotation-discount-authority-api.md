@@ -58,7 +58,8 @@ records without a pin return an explicit null. ENFORCE requires a captured famil
 is explicit and inherits across revisions; incompatible established evidence refuses.
 
 Existing request/decision/withdrawal/issue paths enforce current authority inside their transaction.
-An expired pending request is ended when submitted again; a new request receives a fresh deadline.
+The Sales request input envelope (including frozen expiry/evaluation evidence) is immutable in the
+database; status transitions remain available. An expired pending request is ended when submitted again; a new request receives a fresh deadline.
 Approval never replaces current issue permission, record scope, tax or mandatory financial controls.
 The existing safe quotation approval summary also returns nullable `request.expires_at` and server-derived
 `request.expired`; its `approval_needed`/`can.request` flags now reflect routine clearance and undeclared

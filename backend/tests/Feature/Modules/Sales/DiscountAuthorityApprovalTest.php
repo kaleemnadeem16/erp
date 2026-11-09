@@ -24,6 +24,7 @@ use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
 use App\Modules\Sales\Support\PermissionVocabulary as Duty;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -230,5 +231,37 @@ class DiscountAuthorityApprovalTest extends TestCase
         Sanctum::actingAs($this->maker);
         $this->getJson('/api/v1/approval-requests/'.$request->id)->assertOk()->assertJsonPath('data.evidence_visible', false)
             ->assertJsonPath('data.evidence', [])->assertJsonPath('data.amount_base', null)->assertJsonPath('data.policy.name', 'Quotation review')->assertJsonPath('data.steps.0.name', 'Review step');
+    }
+
+    public function test_the_sales_request_evidence_is_immutable_but_decision_status_can_advance(): void
+    {
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $policy = $this->authorityPolicy();
+        $this->authorityAssignment($policy, 3, $this->checker, ['purpose' => 'APPROVE']);
+        $this->authorityMode('ENFORCE');
+        $this->routingPolicy();
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
+        $request = app(QuotationApprovals::class)->latest($revision->id);
+        foreach (['facts' => json_encode(['version' => 'different'], JSON_THROW_ON_ERROR), 'facts_hash' => str_repeat('0', 64), 'summary' => json_encode(['title' => 'Changed evidence'], JSON_THROW_ON_ERROR)] as $column => $value) {
+            try {
+                DB::transaction(fn () => DB::table('approval_requests')->where('id', $request->id)->update([$column => $value]));
+                $this->fail('Frozen Sales approval evidence must not change.');
+            } catch (QueryException $e) {
+                $this->assertSame('23514', $e->getCode());
+            }
+        }
+        foreach ([
+            fn () => DB::table('approval_requests')->where('id', $request->id)->delete(),
+            fn () => DB::statement('TRUNCATE approval_requests CASCADE'),
+        ] as $remove) {
+            try {
+                DB::transaction($remove);
+                $this->fail('Sales approval evidence must not be removed.');
+            } catch (QueryException $e) {
+                $this->assertSame('23514', $e->getCode());
+            }
+        }
+        $approved = app(DecideApproval::class)($request, $this->checker, ApprovalDecisionKind::Approved);
+        $this->assertSame('APPROVED', $approved->status->value);
     }
 }

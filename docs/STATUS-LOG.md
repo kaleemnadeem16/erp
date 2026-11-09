@@ -1177,3 +1177,13 @@ staged here. `codegen.sh --check` itself regenerates/writes that client, so owne
 drift verification and the consequent frontend checks remain an explicit integration gate, together
 with review of proposed ADR 0164 and the owner's clean CI batch. Real values/holders/sources and
 activation remain unapproved; screens follow separately. No push was made.
+
+## 2026-11-09 — #86 frozen Sales approval envelope
+
+The final review added migration `2026_12_03_040000_freeze_sales_approval_request_evidence`:
+frozen Sales request input evidence is immutable at the database boundary while normal engine
+status transitions remain available. Other consumers retain their existing rules. The additional
+negative tests cover evidence mutation/removal and a successful decision afterward: **13 passed**;
+Sales/Purchasing/Estimating approval regression **46 passed**. Pint, whole-project PHPStan and the
+isolated migration cycle passed again. API/client shapes are unchanged by this safeguard; the
+owner-run codegen/check and proposed ADR 0164 review gates above remain.
