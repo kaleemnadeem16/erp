@@ -21,19 +21,45 @@ final class ImageSanitiser
 
     public const JPEG = 'image/jpeg';
 
+    /** The most pixels a sanitised image may have, and the longest side. Both are judged from the declared header BEFORE any pixel data is inflated or copied. */
+    public const MAX_PIXELS = 1_000_000;
+
+    public const MAX_DIMENSION = 4096;
+
+    /** The most decoded scanline bytes (filter bytes included) a PNG may inflate to: the hard ceiling handed to the inflater. */
+    public const MAX_DECODED_BYTES = 8_388_608;
+
+    /** The most input bytes this class will parse at all. */
+    public const MAX_INPUT_BYTES = 2_097_152;
+
     private const PNG_SIGNATURE = "\x89PNG\r\n\x1a\n";
 
     /** @return array{bytes: string, media_type: string, width: int, height: int} */
-    public static function sanitise(string $bytes): array
+    public static function sanitise(string $bytes, int $maxPixels = self::MAX_PIXELS): array
     {
+        if (strlen($bytes) > self::MAX_INPUT_BYTES) {
+            throw self::refuse('The logo is larger than 2 MB.', 'logo_too_large');
+        }
+        $maxPixels = min($maxPixels, self::MAX_PIXELS);
         if (str_starts_with($bytes, self::PNG_SIGNATURE)) {
-            return self::png($bytes);
+            return self::png($bytes, $maxPixels);
         }
         if (str_starts_with($bytes, "\xFF\xD8")) {
-            return self::jpeg($bytes);
+            return self::jpeg($bytes, $maxPixels);
         }
 
         throw self::refuse('Only PNG and JPEG logos are accepted.', 'logo_type_unsupported');
+    }
+
+    /** Refuses declared dimensions over the budget, from the header alone, before any pixel data is touched. */
+    private static function requireWithinBudget(int $width, int $height, int $maxPixels): void
+    {
+        if ($width < 1 || $height < 1) {
+            throw self::refuse('The image is damaged.', 'logo_damaged');
+        }
+        if ($width > self::MAX_DIMENSION || $height > self::MAX_DIMENSION || $width * $height > $maxPixels) {
+            throw self::refuse('The logo has more than 1 megapixel (for example 1000 x 1000) or a side longer than '.self::MAX_DIMENSION.' pixels; use a smaller image.', 'image_too_large');
+        }
     }
 
     private static function refuse(string $message, string $code): FileException
@@ -44,7 +70,7 @@ final class ImageSanitiser
     // ---- PNG -----------------------------------------------------------------------------------------------------------------------------------------
 
     /** @return array{bytes: string, media_type: string, width: int, height: int} */
-    private static function png(string $bytes): array
+    private static function png(string $bytes, int $maxPixels): array
     {
         $length = strlen($bytes);
         $pos = 8;
@@ -75,6 +101,8 @@ final class ImageSanitiser
                         throw self::refuse('The PNG is damaged.', 'logo_damaged');
                     }
                     $header = $body;
+                    $declared = unpack('Nw/Nh', $body);
+                    self::requireWithinBudget($declared['w'], $declared['h'], $maxPixels);
                     break;
                 case 'PLTE':
                     $palette = $body;
@@ -125,9 +153,17 @@ final class ImageSanitiser
         }
         $rowBytes = intdiv($width * $channels * $depth + 7, 8);
         $expected = ($rowBytes + 1) * $height;
+        if ($expected > self::MAX_DECODED_BYTES) {
+            throw self::refuse('The logo is too large to process; use a smaller image.', 'image_too_large');
+        }
         $raw = @gzuncompress($data, $expected + 1);
         if ($raw === false || strlen($raw) !== $expected) {
             throw self::refuse('The PNG image data is damaged.', 'logo_damaged');
+        }
+        for ($y = 0; $y < $height; $y++) {
+            if (ord($raw[$y * ($rowBytes + 1)]) > 4) {
+                throw self::refuse('The PNG image data is damaged.', 'logo_damaged');
+            }
         }
         $out = self::PNG_SIGNATURE.self::chunk('IHDR', $header);
         if ($colour === 3) {
@@ -148,13 +184,16 @@ final class ImageSanitiser
     // ---- JPEG ----------------------------------------------------------------------------------------------------------------------------------------
 
     /** @return array{bytes: string, media_type: string, width: int, height: int} */
-    private static function jpeg(string $bytes): array
+    private static function jpeg(string $bytes, int $maxPixels): array
     {
         $length = strlen($bytes);
         $pos = 2;
         $out = "\xFF\xD8";
         $width = $height = 0;
         $scans = 0;
+        $components = 0;
+        $tables = ['quant' => false, 'huffman' => false];
+        $sawFrame = false;
         $ended = false;
         while ($pos < $length) {
             if ($bytes[$pos] !== "\xFF") {
@@ -189,7 +228,7 @@ final class ImageSanitiser
                 throw self::refuse('This kind of JPEG (lossless or arithmetic coding) is not supported.', 'logo_unsupported_jpeg');
             }
             if (in_array($marker, [0xC0, 0xC1, 0xC2], true)) {
-                if ($size < 8 || ord($body[0]) !== 8) {
+                if ($sawFrame || $size < 8 || ord($body[0]) !== 8) {
                     throw self::refuse('This kind of JPEG is not supported.', 'logo_unsupported_jpeg');
                 }
                 [$height, $width] = array_values(unpack('n2', substr($body, 1, 4)));
@@ -197,16 +236,35 @@ final class ImageSanitiser
                 if (! in_array($components, [1, 3], true)) {
                     throw self::refuse('CMYK JPEG files are not supported; export the logo as RGB.', 'logo_cmyk');
                 }
+                if ($size !== 8 + 3 * $components) {
+                    throw self::refuse('The JPEG is damaged.', 'logo_damaged');
+                }
+                self::requireWithinBudget($width, $height, $maxPixels);
+                $sawFrame = true;
                 $out .= $segment;
 
                 continue;
             }
-            // Kept: quantisation and Huffman tables, restart interval, the scan itself and the small Adobe colour-transform marker. Everything else (APPn, COM, ...) is dropped.
-            $keep = in_array($marker, [0xDB, 0xC4, 0xDD, 0xDA], true) || ($marker === 0xEE && str_starts_with($body, 'Adobe'));
-            if ($keep) {
+            // Kept: quantisation and Huffman tables, restart interval and the scan itself. The Adobe colour-transform marker is REBUILT from its one validated value, never copied.
+            // Everything else (APPn, COM, ...) is dropped.
+            if ($marker === 0xEE && str_starts_with($body, 'Adobe')) {
+                if ($size !== 14 || ord($body[11]) > 2) {
+                    throw self::refuse('The JPEG is damaged.', 'logo_damaged');
+                }
+                $out .= "\xFF\xEE\x00\x0E".'Adobe'."\x00\x64\x00\x00\x00\x00".$body[11];
+            } elseif (in_array($marker, [0xDB, 0xC4, 0xDD, 0xDA], true)) {
+                if ($marker === 0xDD && $size !== 4) {
+                    throw self::refuse('The JPEG is damaged.', 'logo_damaged');
+                }
+                $tables['quant'] = $tables['quant'] || $marker === 0xDB;
+                $tables['huffman'] = $tables['huffman'] || $marker === 0xC4;
                 $out .= $segment;
             }
             if ($marker === 0xDA) {
+                $selectors = ord($body[0] ?? "\0");
+                if (! $sawFrame || ! $tables['quant'] || ! $tables['huffman'] || $selectors < 1 || $selectors > $components || $size !== 6 + 2 * $selectors) {
+                    throw self::refuse('The JPEG is damaged.', 'logo_damaged');
+                }
                 $scans++;
                 $start = $pos;
                 while ($pos + 1 < $length) {

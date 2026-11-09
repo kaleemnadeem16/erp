@@ -127,7 +127,7 @@ final class SaveCompanyBranding
             throw new DomainInvariantException('The logo is larger than 2 MB.', 'logo');
         }
         try {
-            $image = ImageSanitiser::sanitise($bytes);
+            $image = ImageSanitiser::sanitise($bytes, CompanyBrandFileOwner::MAX_PIXELS);
             if ($image['width'] * $image['height'] > CompanyBrandFileOwner::MAX_PIXELS) {
                 throw new FileException('The logo has more than 1 megapixel (for example 1000 x 1000); use a smaller image.', 'logo', 'image_too_large');
             }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Documents\Support\Render;
 
 use App\Modules\Documents\Support\DocumentException;
+use App\Modules\Files\Support\Images\ImageSanitiser;
 
 /**
  * One raster image prepared for a PDF image XObject, from a logo that Company already sanitised (ADR 0162): a JPEG is embedded as it is (DCTDecode); a PNG without transparency
@@ -29,6 +30,14 @@ final class PdfImage
         public readonly ?array $mask,
         public readonly ?array $colourKey,
     ) {}
+
+    /** A pinned logo was sanitised within these budgets; the drawing code re-checks them from the header before it inflates or un-filters anything. */
+    private static function requireWithinBudget(int $w, int $h): void
+    {
+        if ($w < 1 || $h < 1 || $w > ImageSanitiser::MAX_DIMENSION || $h > ImageSanitiser::MAX_DIMENSION || $w * $h > ImageSanitiser::MAX_PIXELS) {
+            throw new DocumentException('The pinned logo cannot be drawn.', null, 'brand_asset_unsupported');
+        }
+    }
 
     public static function fromBytes(string $mediaType, string $bytes): self
     {
@@ -69,6 +78,7 @@ final class PdfImage
                 if ($width < 1 || $height < 1 || ! in_array($components, [1, 3], true)) {
                     break;
                 }
+                self::requireWithinBudget($width, $height);
 
                 return new self($width, $height, $components === 1 ? '/DeviceGray' : '/DeviceRGB', 8, '/DCTDecode', null, $b, null, null);
             }
@@ -106,6 +116,7 @@ final class PdfImage
         if ($interlace !== 0 || $depth === 16 || $w < 1 || $h < 1) {
             throw new DocumentException('The pinned logo cannot be drawn.', null, 'brand_asset_unsupported');
         }
+        self::requireWithinBudget($w, $h);
 
         if ($colour === 4 || $colour === 6) {
             return self::withAlpha($w, $h, $colour === 6 ? 4 : 2, $idat);
