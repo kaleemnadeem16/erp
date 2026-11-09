@@ -105,8 +105,8 @@ checks, fourteen-day/quotation-validity expiry, and decision/issue revalidation.
 append authority evaluations; issue pins its evaluation through a company-composite FK. No duty
 activation or holder grant. ADR 0164 contains the concrete lock/barrier proposal for owner review.
 Six real two-session tests passed, including both decision/configuration orderings and live
-suspension, permission, assignment and source changes. Configuration APIs, the final demo and
-complete feature close-out remain outstanding; see the canonical [checkpoint](../domain/quotation-discount-authority.md#routing-and-lifecycle-integration-checkpoint-2026-11-09).
+suspension, permission, assignment and source changes. The guarded configuration/current-evidence/paged-audit APIs and create-only demo are implemented;
+owner codegen/check and proposed lock-order review remain integration gates; see the canonical [checkpoint](../domain/quotation-discount-authority.md#routing-and-lifecycle-integration-checkpoint-2026-11-09).
 
 ## Related
 

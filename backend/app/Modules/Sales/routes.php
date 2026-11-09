@@ -1,9 +1,12 @@
 <?php
 
+use App\Modules\Sales\Actions\ReadDiscountAuthorityConfiguration;
+use App\Modules\Sales\Http\Controllers\Api\V1\DiscountAuthorityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationApprovalController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationController;
+use App\Modules\Sales\Http\Controllers\Api\V1\QuotationDiscountAuthorityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationDocumentController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationFamilyAccessController;
 use App\Modules\Sales\Http\Controllers\Api\V1\SalesOwnerController;
@@ -11,6 +14,15 @@ use App\Modules\Sales\Http\Controllers\Api\V1\SalesStageController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('sales-discount-authority/{collection}', [DiscountAuthorityController::class, 'index'])->whereIn('collection', array_keys(ReadDiscountAuthorityConfiguration::COLLECTIONS))->name('sales-discount-authority.index');
+    Route::get('sales-discount-authority/{collection}/{id}', [DiscountAuthorityController::class, 'show'])->whereIn('collection', array_keys(ReadDiscountAuthorityConfiguration::COLLECTIONS))->whereNumber('id')->name('sales-discount-authority.show');
+    Route::post('sales-discount-authority/references', [DiscountAuthorityController::class, 'proposeReference'])->name('sales-discount-authority.proposeReference');
+    Route::post('sales-discount-authority/references/{reference}/approval', [DiscountAuthorityController::class, 'approveReference'])->whereNumber('reference')->name('sales-discount-authority.approveReference');
+    Route::post('sales-discount-authority/policies', [DiscountAuthorityController::class, 'proposePolicy'])->name('sales-discount-authority.proposePolicy');
+    Route::post('sales-discount-authority/policies/{policy}/activation', [DiscountAuthorityController::class, 'activatePolicy'])->whereNumber('policy')->name('sales-discount-authority.activatePolicy');
+    Route::post('sales-discount-authority/assignments', [DiscountAuthorityController::class, 'assign'])->name('sales-discount-authority.assign');
+    Route::post('sales-discount-authority/assignments/{assignment}/revocation', [DiscountAuthorityController::class, 'revoke'])->whereNumber('assignment')->name('sales-discount-authority.revoke');
+    Route::post('sales-discount-authority/mode', [DiscountAuthorityController::class, 'mode'])->name('sales-discount-authority.mode');
     Route::get('leads', [LeadController::class, 'index'])->name('leads.index');
     Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
     Route::get('leads/{lead}', [LeadController::class, 'show'])->whereNumber('lead')->name('leads.show');
@@ -44,6 +56,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quotations/{revision}/preview', [QuotationController::class, 'preview'])->whereNumber('revision')->name('quotations.preview');
     Route::get('quotations/{revision}/issue-readiness', [QuotationController::class, 'readiness'])->whereNumber('revision')->name('quotations.issue-readiness');
     Route::post('quotations/{revision}/issue', [QuotationController::class, 'issue'])->whereNumber('revision')->name('quotations.issue');
+    Route::get('quotations/{revision}/discount-authority', [QuotationDiscountAuthorityController::class, 'show'])->whereNumber('revision')->name('quotations.discount-authority.show');
+    Route::get('quotations/{revision}/discount-authority/history', [QuotationDiscountAuthorityController::class, 'history'])->whereNumber('revision')->name('quotations.discount-authority.history');
+    Route::post('quotations/{revision}/authority-references', [QuotationDiscountAuthorityController::class, 'bind'])->whereNumber('revision')->name('quotations.authority-references');
     Route::get('quotations/{revision}/approval', [QuotationApprovalController::class, 'show'])->whereNumber('revision')->name('quotations.approval.show');
     Route::post('quotations/{revision}/approval', [QuotationApprovalController::class, 'store'])->whereNumber('revision')->name('quotations.approval.store');
     Route::post('quotations/{revision}/approval/decision', [QuotationApprovalController::class, 'decide'])->whereNumber('revision')->name('quotations.approval.decide');

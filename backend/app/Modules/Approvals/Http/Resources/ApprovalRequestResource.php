@@ -9,6 +9,8 @@ use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalEvidenceAccess;
 use App\Modules\Approvals\Support\ApprovalInbox;
 use App\Modules\Approvals\Support\ApprovalReasonAccess;
+use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Approvals\Support\ProtectedApprovalEvidenceSubject;
 use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,6 +26,7 @@ class ApprovalRequestResource extends JsonResource
         $row->loadMissing(['steps.policyStep', 'steps.decisions.decider', 'policy', 'submitter']);
         $actionable = $request->user() !== null && $row->isOpen() ? app(ApprovalInbox::class)->actionableStep($request->user(), $row) : null;
         $showMoney = app(ApprovalEvidenceAccess::class)->canView($request->user(), $row, $actionable);
+        $hideRoutingLabels = app(ApprovalSubjectRegistry::class)->get($row->subject_type) instanceof ProtectedApprovalEvidenceSubject && ! $showMoney;
         // Person-written reasons follow the evidence (ADR 0087): the rest of the request stays readable without them.
         $reasons = app(ApprovalReasonAccess::class);
         $readsAllReasons = $reasons->readsAll($request->user(), (bool) $showMoney);
@@ -32,7 +35,7 @@ class ApprovalRequestResource extends JsonResource
         return [
             'id' => $row->id, 'subject_type' => $row->subject_type, 'subject_id' => $row->subject_id,
             'status' => $row->status->value, 'summary' => $row->summary,
-            'policy' => ['id' => $row->policy_id, 'code' => $row->policy->code, 'version_no' => $row->policy->version_no, 'name' => $row->policy->name],
+            'policy' => ['id' => $row->policy_id, 'code' => $hideRoutingLabels ? 'QUOTATION_REVIEW' : $row->policy->code, 'version_no' => $row->policy->version_no, 'name' => $hideRoutingLabels ? 'Quotation review' : $row->policy->name],
             'submitted_by' => ['id' => $row->submitted_by, 'name' => $row->submitter->name],
             'submitted_at' => $row->submitted_at->toIso8601String(), 'closed_at' => $row->closed_at?->toIso8601String(),
             'closing_reason' => $showClosingReason ? $row->closing_reason : null,
@@ -47,7 +50,7 @@ class ApprovalRequestResource extends JsonResource
             'document_review' => $this->when(app(ApprovalReviewRegistry::class)->has($row->subject_type), fn () => new ApprovalDocumentReviewResource($row)),
             'can_decide' => $actionable !== null, 'my_step_id' => $actionable?->id,
             'steps' => $row->steps->map(fn ($s): array => [
-                'review_profile' => $s->review_profile->value, 'id' => $s->id, 'stage' => $s->stage, 'name' => $s->name, 'status' => $s->status->value,
+                'review_profile' => $s->review_profile->value, 'id' => $s->id, 'stage' => $s->stage, 'name' => $hideRoutingLabels ? 'Review step' : $s->name, 'status' => $s->status->value,
                 'required_approvals' => $s->required_approvals,
                 'approved_count' => $s->decisions->where('decision', ApprovalDecisionKind::Approved)->count(),
                 'deadline_at' => $s->deadline_at?->toIso8601String(), 'overdue' => $s->overdue_at !== null,

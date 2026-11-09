@@ -9,11 +9,15 @@ use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalDecision;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\DiscountAuthority\AssessDiscountAuthority;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityFence;
+use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
+use App\Support\Scope\CompanyAccessFence;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
@@ -33,20 +37,29 @@ final class ReadQuotationApproval
         ActiveActor::require($actor, 'use quotations');
 
         return DB::transaction(function () use ($actor, $revisionId): array {
+            app(CompanyAccessFence::class)->lockAll();
+            app(AuthorityFence::class)->lock();
+            $actor = ActiveActor::require($actor, 'read quotation approval standing');
             [$revision, $preparer, $decider] = $this->visible($actor, $revisionId);
+            $needed = $this->recordedNeed($revision);
+            if ($revision->isDraft() && app(QuotationAuthorityApproval::class)->enabled()) {
+                $authority = app(AssessDiscountAuthority::class)->assess($revision);
+                $needed = ! in_array($authority['result'], ['ROUTINE', 'NOT_APPLICABLE'], true);
+            }
             $standing = $this->approvals->standing($revision);
             $request = $standing['request'];
             $open = $request !== null && $request->isOpen() && $standing['current'];
 
             return [
                 'revision_id' => $revision->id, 'input_generation' => $revision->input_generation, 'is_draft' => $revision->isDraft(),
-                'approval_needed' => $this->recordedNeed($revision),
+                'approval_needed' => $needed,
                 'state' => $standing['state'],
                 // A request given for earlier content (changed since) is shown as history, never as the draft's standing.
                 'superseded' => $request !== null && ! $standing['current'],
                 'request' => $request === null ? null : [
                     'id' => $request->id, 'status' => $request->status->value, 'requested_at' => $request->submitted_at->toIso8601String(),
                     'requested_by' => $this->person($request->submitted_by),
+                    'expires_at' => $request->facts['evidence']['authority_expires_at'] ?? null, 'expired' => $this->subject->requestHasExpired($request),
                     'closed_at' => $request->closed_at?->toIso8601String(), 'closing_reason' => $request->status === ApprovalRequestStatus::Pending ? null : $request->closing_reason,
                     'concessions' => $request->facts['facts']['concessions'] ?? null,
                     'decisions' => ApprovalDecision::query()->where('request_id', $request->id)->orderBy('id')->get()->map(fn (ApprovalDecision $decision): array => [
@@ -54,7 +67,7 @@ final class ReadQuotationApproval
                     ])->all(),
                 ],
                 'can' => [
-                    'request' => $preparer && $revision->isDraft() && $this->recordedNeed($revision) && in_array($standing['state'], [QuotationApprovals::NOT_REQUESTED], true),
+                    'request' => $preparer && $revision->isDraft() && $needed && in_array($standing['state'], [QuotationApprovals::NOT_REQUESTED], true),
                     'withdraw' => $preparer && $open && $request->submitted_by === $actor->id,
                     'decide' => $decider && $open && $revision->isDraft() && $request->submitted_by !== $actor->id && $this->subject->mayDecide($actor, $request, false),
                 ],

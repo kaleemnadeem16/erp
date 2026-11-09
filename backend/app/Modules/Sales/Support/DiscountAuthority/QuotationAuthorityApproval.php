@@ -52,7 +52,7 @@ final class QuotationAuthorityApproval
     public function deadline(QuotationRevision $revision): string
     {
         $zone = app(CurrentCompany::class)->timezone();
-        $days = (int) $this->assessment($revision)['expiry_calendar_days'];
+        $days = min(14, (int) $this->assessment($revision)['expiry_calendar_days']);
         $deadline = now($zone)->addDays($days);
         if ($revision->valid_through_local_date !== null) {
             $validity = Carbon::parse($revision->valid_through_local_date->format('Y-m-d'), $zone)->addDay()->startOfDay();

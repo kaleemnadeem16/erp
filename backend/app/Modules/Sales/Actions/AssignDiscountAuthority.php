@@ -9,7 +9,9 @@ use App\Modules\Sales\Models\SalesDiscountAssignment;
 use App\Modules\Sales\Models\SalesDiscountBand;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityOperation;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CompanyContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -20,6 +22,7 @@ final class AssignDiscountAuthority
     /** @param array<string, mixed> $input */
     public function __invoke(User $actor, string $key, int $expectedGeneration, array $input): SalesDiscountAssignment
     {
+        SalesAccess::require(ActiveActor::require($actor), PermissionVocabulary::FINANCIAL_CONFIGURE);
         $result = app(AuthorityOperation::class)->run($actor, PermissionVocabulary::FINANCIAL_CONFIGURE, $key, $expectedGeneration, ['operation' => 'assignment.create', 'input' => $input], function () use ($actor, $input): array {
             $data = Validator::make($input, [
                 'user_id' => ['required', 'integer', 'min:1'], 'band_id' => ['required', 'integer', 'min:1'], 'role_id' => ['nullable', 'integer', 'min:1'], 'unit_id' => ['nullable', 'integer', 'min:1'],

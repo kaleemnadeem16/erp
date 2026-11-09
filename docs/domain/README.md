@@ -12,7 +12,7 @@ the model is specific to any one industry
 
 ---
 
-- [Quotation discount authority](quotation-discount-authority.md) — governed references, employee limits, routing, expiry and disabled rollout (specification).
+- [Quotation discount authority](quotation-discount-authority.md) · [API and rollout](quotation-discount-authority-api.md) — governed references, employee limits, routing, expiry and disabled backend rollout.
 
 ## The costing chain
 

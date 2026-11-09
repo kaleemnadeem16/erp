@@ -19,12 +19,15 @@ use App\Modules\Sales\Actions\RequestQuotationApproval;
 use App\Modules\Sales\Actions\RevokeDiscountAuthority;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
+use App\Modules\Sales\Support\DiscountAuthority\AssessDiscountAuthority;
+use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
 use App\Modules\Sales\Support\PermissionVocabulary as Duty;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\Sanctum;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsDiscountAuthority;
 use Tests\TestCase;
@@ -183,10 +186,49 @@ class DiscountAuthorityApprovalTest extends TestCase
         app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
         $old = app(QuotationApprovals::class)->latest($revision->id);
         $this->travelTo(Carbon::parse($old->facts['evidence']['authority_expires_at']));
+        Sanctum::actingAs($this->maker);
+        $this->getJson('/api/v1/quotations/'.$revision->id.'/approval')->assertOk()->assertJsonPath('data.request.expired', true)->assertJsonPath('data.can.request', true);
         app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
         $fresh = app(QuotationApprovals::class)->latest($revision->id);
         $this->assertNotSame($old->id, $fresh->id);
         $this->assertSame('EXPIRED', $old->refresh()->status->value);
         $this->assertTrue(Carbon::parse($fresh->facts['evidence']['authority_expires_at'])->greaterThan(now()));
+    }
+
+    public function test_enforce_cannot_clear_an_unbound_legacy_draft_even_when_no_discount_was_declared(): void
+    {
+        $revision = $this->preparedDraft();
+        $this->authorityPolicy();
+        $this->authorityMode('ENFORCE');
+        $assessment = app(AssessDiscountAuthority::class)->assess($revision);
+        $this->assertSame('UNEVALUABLE', $assessment['result']);
+        $this->assertContains('REFERENCE_NOT_BOUND', $assessment['reasons']);
+        $readiness = app(AssessQuotationIssueReadiness::class)($this->maker, $revision->id);
+        $this->assertFalse($readiness['issue_ready']);
+    }
+
+    public function test_policy_configuration_cannot_extend_approval_beyond_fourteen_calendar_days(): void
+    {
+        $this->travelTo(now()->startOfMinute());
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $this->authorityPolicy(['expiry_calendar_days' => 30]);
+        $this->authorityMode('ENFORCE');
+        $deadline = app(QuotationAuthorityApproval::class)->deadline($revision);
+        $this->assertSame(now(Company::findOrFail(1)->timezone)->addDays(14)->utc()->toIso8601String(), $deadline);
+    }
+
+    public function test_shared_request_labels_and_figures_remain_blind_without_the_independent_evidence_duty(): void
+    {
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $this->authorityPolicy();
+        $this->authorityMode('ENFORCE');
+        $route = $this->routingPolicy();
+        // A company-written label can contain a ceiling; it must not become a field-policy bypass.
+        $route->update(['name' => 'DEMO ONLY commercial threshold']);
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
+        $request = app(QuotationApprovals::class)->latest($revision->id);
+        Sanctum::actingAs($this->maker);
+        $this->getJson('/api/v1/approval-requests/'.$request->id)->assertOk()->assertJsonPath('data.evidence_visible', false)
+            ->assertJsonPath('data.evidence', [])->assertJsonPath('data.amount_base', null)->assertJsonPath('data.policy.name', 'Quotation review')->assertJsonPath('data.steps.0.name', 'Review step');
     }
 }

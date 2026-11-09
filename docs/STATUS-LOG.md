@@ -1138,3 +1138,42 @@ the create-only demo seeder and final close-out remain outstanding. Existing res
 are unchanged; the shared approval fact vocabulary adds amount_base/authority_rank and protected
 evidence includes authority/expiry. No generated client file was edited by this work. The plain
 screen handoff and current resume point are in [the domain specification](domain/quotation-discount-authority.md#routing-and-lifecycle-integration-checkpoint-2026-11-09).
+
+## 2026-11-09 — #86 backend completion; owner review/codegen gates retained
+
+The remaining backend adapters are delivered: versioned configuration lists/details, governed
+reference proposal/independent approval, policy creation/activation, named assignments/revocation,
+mode changes, explicit family-reference capture, protected current evaluation and paged audit.
+Every new HTTP surface has a Form Request and a fresh-actor Action guard. Family references and
+activation audit respect independent quotation visibility. ENFORCE refuses an unbound legacy
+source; safe approval flags reflect routine clearance and undeclared reductions, with public
+expiry metadata. Issued evidence is read from its immutable issue pin, never recomputed from live
+policy. Shared approval labels/figures stay blind without independent evidence authority.
+
+`DiscountAuthorityDemoSeeder` is create-only, guarded to the exact local/testing Company 1 demo
+identity, PKR base and named demo master data. Illustrative references, bands, independent fixture
+people, active/expired/unassigned examples are labelled DEMO ONLY. It creates no useful credential,
+grant, duty activation or company-mode change. Configuration APIs, the journey, rollout rows and
+plain screen handoff are documented in [the contract](domain/quotation-discount-authority-api.md).
+
+Verification on the shared checkout (other agents' work was present; not an isolated final-branch
+checkout): Sales/Approvals regression **639 passed**; the final focused authority/API/demo/consumer/
+route/permission/scope/tenant batch **132 passed, one docs-mount skip**; separate CompanyAccessFenceTest
+**16 passed**; real two-session authority tests **six passed**, including both decision/configuration
+orderings. The skipped manifest assertion was checked directly against all **63** shipped duties
+and statuses with no missing/wrong row. Touched PHP Pint and whole-project PHPStan passed; the final
+isolated migration apply/rollback/re-apply cycle passed. No whole backend suite was run.
+
+Earlier failures were diagnosed, not waived: the OFF receipt shape and repeat-migration function
+were corrected; the customer-decision rollback dependency (#101) was fixed by WP-E1 in `29489ecb`
+and the subsequent module run is green. A combined check reached a full shared test RAM disk
+(155 passed, 28 infrastructure failures); only Codex's private databases were dropped, and the
+split reruns above passed. No shared stack restart or dev/production database operation was used.
+
+OpenAPI export succeeded and the new request/band/expiry schemas were checked. Its 25 JR001
+warnings concern array-backed resources (including the new Resources); there are no missing-model-
+schema warnings. Per the owner's explicit boundary, no generated API client file was edited or
+staged here. `codegen.sh --check` itself regenerates/writes that client, so owner-run generation,
+drift verification and the consequent frontend checks remain an explicit integration gate, together
+with review of proposed ADR 0164 and the owner's clean CI batch. Real values/holders/sources and
+activation remain unapproved; screens follow separately. No push was made.

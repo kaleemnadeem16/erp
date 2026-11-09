@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Modules\Sales\Models\SalesDiscountAssignment;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityOperation;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use Illuminate\Support\Facades\DB;
 
 final class RevokeDiscountAuthority
@@ -16,6 +18,8 @@ final class RevokeDiscountAuthority
     /** @return array<string, mixed> */
     public function __invoke(User $actor, int $assignmentId, string $key, int $expectedGeneration, string $reason): array
     {
+        SalesAccess::require(ActiveActor::require($actor), PermissionVocabulary::FINANCIAL_CONFIGURE);
+
         return app(AuthorityOperation::class)->run($actor, PermissionVocabulary::FINANCIAL_CONFIGURE, $key, $expectedGeneration, ['operation' => 'assignment.revoke', 'id' => $assignmentId, 'reason' => $reason], function () use ($actor, $assignmentId, $reason): array {
             $assignment = SalesDiscountAssignment::findOrFail($assignmentId);
             if (trim($reason) === '' || mb_strlen($reason) > 1000) {

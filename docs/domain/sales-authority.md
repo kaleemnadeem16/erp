@@ -4,7 +4,7 @@
 
 **2026-10-15 · ACCEPTED0138/0139; SPECIFIED, not new application delivery/verification.**
 The [canonical duty matrix](sales-duty-matrix.md) is the vocabulary/operation/scope/field/holder source.
-No real grants are authorised. Reuse RecordScope, ApprovalSubject/ApprovalReviewRegistry and module
+No real grants are authorised. The discount-authority subset is now implemented as a disabled backend capability ([API and rollout](quotation-discount-authority-api.md)); the broader authority matrix retains its separate delivery gates. Reuse RecordScope, ApprovalSubject/ApprovalReviewRegistry and module
 Actions; exact technical implementation remains code-owner responsibility under separate authority.
 
 ## Evaluation order and protected operations

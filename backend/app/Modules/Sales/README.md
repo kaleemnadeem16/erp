@@ -165,5 +165,6 @@ readiness/issue integration are now implemented internally: company authority lo
 quotation/request locks, evaluated concession amounts route in ENFORCE, ambiguous policies refuse,
 named approver assignments and fourteen-day/validity-capped expiry are live checks. Issue pins its
 authority evaluation; quotation writes append SHADOW/ENFORCE evaluations. Configuration/evidence
-HTTP APIs and the final create-only demo remain outstanding; no duties or holders are activated.
+HTTP APIs and the final create-only Company 1 demo are implemented; no duties, holders or company
+modes are activated. API/rollout contract: [discount authority](../../../../docs/domain/quotation-discount-authority-api.md). Generated-client verification remains owner-run.
 See the [specification and current gate](../../../../docs/domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).

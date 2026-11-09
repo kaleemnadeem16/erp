@@ -11,11 +11,8 @@ use Illuminate\Validation\Rule;
 /** The same validation is used by direct Actions and HTTP; no arbitrary executable matching facts. */
 final class ReferenceInput
 {
-    /**
-     * @param  array<string, mixed>  $input
-     * @return array<string, mixed>
-     */
-    public static function parse(array $input): array
+    /** @return array<string, mixed> */
+    public static function rules(): array
     {
         $rules = [
             'code' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9][a-z0-9_.-]*$/'],
@@ -26,6 +23,17 @@ final class ReferenceInput
             'unit_price' => ['required', 'string', 'regex:/^\d+(\.\d{1,4})?$/'], 'effective_from' => ['required', 'date_format:Y-m-d'],
             'effective_to' => ['nullable', 'date_format:Y-m-d', 'after:effective_from'], 'priority' => ['required', 'integer'], 'reason' => ['required', 'string', 'max:1000'],
         ];
+
+        return $rules;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    public static function parse(array $input): array
+    {
+        $rules = self::rules();
         if (array_diff(array_keys($input), array_keys($rules)) !== []) {
             throw AuthorityRefusal::make('AUTHORITY_INPUT_INVALID', 'The reference contains unsupported fields.');
         }

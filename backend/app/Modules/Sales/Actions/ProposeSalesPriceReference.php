@@ -9,8 +9,10 @@ use App\Modules\Sales\Models\SalesPriceReference;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityOperation;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
 use App\Modules\Sales\Support\DiscountAuthority\ReferenceInput;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CurrentCompany;
 
 final class ProposeSalesPriceReference
@@ -18,6 +20,7 @@ final class ProposeSalesPriceReference
     /** @param array<string, mixed> $input */
     public function __invoke(User $actor, string $key, int $expectedGeneration, array $input): SalesPriceReference
     {
+        SalesAccess::require(ActiveActor::require($actor), PermissionVocabulary::FINANCIAL_CONFIGURE);
         $result = app(AuthorityOperation::class)->run($actor, PermissionVocabulary::FINANCIAL_CONFIGURE, $key, $expectedGeneration, ['operation' => 'reference.propose', 'input' => $input], function () use ($actor, $input): array {
             if (app(CurrentCompany::class)->baseCurrencyId() === null) {
                 throw AuthorityRefusal::make('AUTHORITY_BASE_CURRENCY_REQUIRED', 'Set the company base currency before governing selling prices.', 'base_currency_id');

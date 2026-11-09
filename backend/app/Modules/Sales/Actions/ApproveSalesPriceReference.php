@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Modules\Sales\Models\SalesPriceReference;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityOperation;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +18,7 @@ final class ApproveSalesPriceReference
 {
     public function __invoke(User $actor, int $referenceId, string $key, int $expectedGeneration, string $reason): SalesPriceReference
     {
+        SalesAccess::require(ActiveActor::require($actor), PermissionVocabulary::PRICE_REFERENCE_APPROVE);
         $result = app(AuthorityOperation::class)->run($actor, PermissionVocabulary::PRICE_REFERENCE_APPROVE, $key, $expectedGeneration, ['operation' => 'reference.approve', 'reference_id' => $referenceId, 'reason' => $reason], function () use ($actor, $referenceId, $reason): array {
             $reference = SalesPriceReference::query()->findOrFail($referenceId);
             if ($reference->proposed_by === $actor->id) {

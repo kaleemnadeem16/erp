@@ -17,6 +17,7 @@ use Database\Seeders\Demo\Estimating\OverheadPoliciesDemoSeeder;
 use Database\Seeders\Demo\Estimating\RateDimensionsDemoSeeder;
 use Database\Seeders\Demo\Estimating\RecipeAccessDemoSeeder;
 use Database\Seeders\Demo\Estimating\ResourceRatesDemoSeeder;
+use Database\Seeders\Demo\Sales\DiscountAuthorityDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationAccessDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationApprovalsDemoSeeder;
 use Database\Seeders\Demo\Sales\QuotationConcessionsDemoSeeder;
@@ -103,6 +104,7 @@ final class DemoDatabaseSeeder extends Seeder
                 QuotationApprovalsDemoSeeder::class,
                 // After the approvals demo (the lead approver, the engine setup) and the organisation demo (Head office): the synthetic access operator, access personas, owned/shared/transferred quotations and the fictitious two-stage approval; local preview only.
                 QuotationAccessDemoSeeder::class,
+                DiscountAuthorityDemoSeeder::class,
                 CustomFieldsDemoSeeder::class,
                 // Configuration only; independent of the other seeders (needs the demo login).
                 DocumentConfigurationDemoSeeder::class,

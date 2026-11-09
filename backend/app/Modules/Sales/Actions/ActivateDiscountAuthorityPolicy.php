@@ -8,7 +8,9 @@ use App\Models\User;
 use App\Modules\Sales\Models\SalesDiscountPolicy;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityOperation;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
+use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\SalesAccess;
 use App\Support\CurrentCompany;
 use Illuminate\Support\Facades\DB;
 
@@ -16,6 +18,7 @@ final class ActivateDiscountAuthorityPolicy
 {
     public function __invoke(User $actor, int $policyId, string $key, int $expectedGeneration, string $reason): SalesDiscountPolicy
     {
+        SalesAccess::require(ActiveActor::require($actor), PermissionVocabulary::FINANCIAL_CONFIGURE);
         $result = app(AuthorityOperation::class)->run($actor, PermissionVocabulary::FINANCIAL_CONFIGURE, $key, $expectedGeneration, ['operation' => 'policy.activate', 'id' => $policyId, 'reason' => $reason], function () use ($actor, $policyId, $reason): array {
             $policy = SalesDiscountPolicy::query()->findOrFail($policyId);
             $today = now(app(CurrentCompany::class)->timezone())->format('Y-m-d');

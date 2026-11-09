@@ -12,11 +12,8 @@ final class DiscountPolicyInput
 {
     public const CEILINGS = ['line_percent', 'line_base_amount', 'document_percent', 'document_base_amount', 'input_percent', 'input_base_amount'];
 
-    /**
-     * @param  array<string, mixed>  $input
-     * @return array<string, mixed>
-     */
-    public static function parse(array $input): array
+    /** @return array<string, mixed> */
+    public static function rules(): array
     {
         $rules = [
             'code' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9][a-z0-9_.-]*$/'], 'priority' => ['required', 'integer'],
@@ -31,6 +28,17 @@ final class DiscountPolicyInput
         foreach (self::CEILINGS as $field) {
             $rules['bands.*.'.$field] = ['nullable', 'string', 'regex:/^\d+(\.\d{1,4})?$/'];
         }
+
+        return $rules;
+    }
+
+    /**
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    public static function parse(array $input): array
+    {
+        $rules = self::rules();
         $allowed = array_filter(array_keys($rules), fn (string $key): bool => ! str_contains($key, '.'));
         if (array_diff(array_keys($input), $allowed) !== []) {
             throw AuthorityRefusal::make('AUTHORITY_INPUT_INVALID', 'The policy contains unsupported matching fields.');

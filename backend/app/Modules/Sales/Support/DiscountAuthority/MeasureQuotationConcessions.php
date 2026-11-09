@@ -37,6 +37,9 @@ final class MeasureQuotationConcessions
             if ($line->unit_price === null) {
                 throw AuthorityRefusal::make('AUTHORITY_PRICE_MISSING', 'Every offered line needs a price before authority can be evaluated.');
             }
+            if (app(DiscountConfiguration::class)->mode() === 'ENFORCE' && ! DB::table('sales_quotation_reference_anchors')->where('company_id', $revision->company_id)->where('logical_scope_id', $line->logical_scope_id)->exists()) {
+                throw AuthorityRefusal::make('REFERENCE_NOT_BOUND', 'Capture the independently approved family reference before authority can clear this line.');
+            }
             $reference = app(GovernedReferences::class)->resolve($revision, $line);
             $ratio = app(PinnedAuthorityFx::class)->ratio($revision, $line, $base);
             $quantity = $line->priced_quantity ?? $line->offered_quantity;

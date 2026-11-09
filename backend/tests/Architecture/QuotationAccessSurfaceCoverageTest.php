@@ -26,6 +26,9 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
         'POST api/v1/quotations/{revision}/issue' => ['IssueQuotation', 'requireRevision', 'view + issue', 'receipt identity', 'QuotationIssueApiTest'],
         'GET api/v1/quotations/{revision}/issued' => ['ReadIssuedQuotation', 'requireRevision', 'view; totals separately prepare/issue', 'safe issued header', 'QuotationIssueApiTest'],
         // Approvals integration (ADR 0158): the quotation-family policy decides per revision; the engine's own authority is asked as well inside the decision.
+        'GET api/v1/quotations/{revision}/discount-authority' => ['ReadQuotationDiscountAuthority', 'requireRevision', 'view + independent authority evidence', 'protected evaluated concession summary', 'DiscountAuthorityApiTest'],
+        'GET api/v1/quotations/{revision}/discount-authority/history' => ['ReadQuotationDiscountAuthority', 'requireRevision', 'view + independent authority evidence', 'paged protected evaluation summaries', 'DiscountAuthorityApiTest'],
+        'POST api/v1/quotations/{revision}/authority-references' => ['BindQuotationAuthorityReferences', 'requireRevision', 'view + prepare', 'binding count only', 'DiscountAuthorityApiTest'],
         'GET api/v1/quotations/{revision}/approval' => ['ReadQuotationApproval', 'requireRevision', 'view + (prepare or approve)', 'approval standing; names, codes, written reasons; no amounts or limits', 'QuotationApprovalApiTest'],
         'POST api/v1/quotations/{revision}/approval' => ['RequestQuotationApproval', 'requireRevision', 'view + prepare', 'receipt identity', 'QuotationApprovalApiTest'],
         'POST api/v1/quotations/{revision}/approval/decision' => ['DecideQuotationApproval', 'requireRevision', 'view + approve', 'receipt identity', 'QuotationApprovalApiTest'],

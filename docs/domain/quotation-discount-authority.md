@@ -2,7 +2,7 @@
 
 # Quotation discount authority
 
-**Owner-authorised specification, 2026-11-06, issue #86. Stages 1–2 are internal; the external tenant-FK gate is resolved. Strict routing and lifecycle integration are in progress; API/demo close-out remains outstanding.**
+**Owner-authorised specification, 2026-11-06, issue #86. Backend stages 1–4 are implemented; duties remain STAGED. Owner lock-order review and owner-run generated-client verification remain integration gates.**
 Decisions: [0163](../decisions/0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)
 and proposed [lock order 0164](../decisions/0164-order-discount-authority-locks-before-quotation-and-approval-records.md).
 This is one backend milestone delivered in four green stages. Configuration screens are a separate
@@ -207,7 +207,7 @@ final-SHA evidence must distinguish shared working-tree checks from committed-so
   quotation no-delegation remains; do not introduce a new substitute mechanism implicitly.
 - Automatic reuse of unchanged approval steps. Full reapproval is the initial safe behaviour.
 
-## Stage 1 delivery evidence
+## Historical stage 1 delivery evidence
 
 The internal reference foundation uses `sales_price_reference_versions`,
 `sales_price_reference_activations`, `sales_quotation_reference_bindings`,
@@ -226,7 +226,7 @@ fresh/rollback/reapply passed. The local runner needs a private bootstrap settin
 false to reproduce its tested default, and PHPStan uses a private cache because the shared cache
 is root-owned. Neither workaround changes `.env`, product behaviour or a test assertion.
 
-## Stage 2 internal configuration and evaluation
+## Historical stage 2 internal configuration and evaluation
 
 Migration `2026_12_03_010000_create_sales_discount_authority_configuration` adds immutable policy
 versions, bands, activation events, named assignments/revocations, company mode events and
@@ -264,29 +264,26 @@ Historical external gate: Purchasing fixed the FK in `253332eb`; both tenant-FK 
 
 ## Routing and lifecycle integration checkpoint (2026-11-09)
 
-ENFORCE routes `amount_base` from the immutable evaluation calculation, with the lowest qualified
-configured rank. Shared policy selection is opt-in: company-local effective dates and equal-priority
-refusal, never an id tie-break. Named APPROVE/BOTH assignments must cover the exact exposure; a
-higher band is accepted only with `allow_higher_approver`. The independent STAGED
-`sales.discount-authority.evidence.view` also requires quotation view and effective family scope.
-No duty is activated or granted by these changes.
-The engine's optional subject transaction hook surrounds submit/decision/withdraw, including its
-preflight, before any request lock. Sales rehydrates its actor inside security → authority head →
-revision fences. A final locked decision repeats fingerprint, policy-selection and expiry checks.
-The default request deadline is fourteen company-local calendar days, capped by quotation validity;
-approved requests expire too. Missing evidence returns 422; `sales.discount_authority_hide_missing_evidence`
-is the single owner-decision switch to a non-disclosing 404.
-Readiness remains read-only. ENFORCE routine clearance uses the concession entrant's current
-assignment; mandatory financial/tax controls remain independent. Quotation operations append
-SHADOW/ENFORCE evaluations with their receipts; issue pins `authority_evaluation_id` through a
-company-composite FK. Replays retain their original evidence after checking current access.
-Shared approval configuration statement barriers conservatively advance Sales authority generations;
-this contention/invalidation trade-off is proposed for review in ADR 0164.
-**Not feature completion:** configuration HTTP APIs, protected evaluation/audit API contracts,
-create-only Company 1 demo, the complete writer inventory and final verification remain outstanding.
-Existing API response envelopes are unchanged; the shared approval fact vocabulary adds
-`amount_base` and `authority_rank`, and protected approval evidence gains authority/expiry data.
-No generated client file is owned by this checkpoint.
+The complete backend includes strict Sales-only selection, evaluated concession routing, current
+named-employee eligibility, independent evidence visibility, expiry and all delivered draft/approval/
+readiness/issue paths. Generic decisions take the subject transaction hook before request locking;
+configuration writers use statement barriers. The concrete contention trade-off remains proposed
+for owner review in ADR 0164. An approval lasts at most fourteen company-local calendar days,
+never beyond quotation validity, even if a stored policy configures a longer interval.
+
+ENFORCE requires captured family/scope reference anchors before clearance. Draft operations append
+SHADOW/ENFORCE evaluations; issue pins its immutable evaluation through the company-composite
+`quotation_issues.authority_evaluation_id` FK. OFF retains the original receipt shape and protections.
+An expired pending request can be submitted afresh; completed approval still needs live eligible
+reviewers before issue. Missing evidence uses 422, with the single
+`sales.discount_authority_hide_missing_evidence` switch for the owner's 404 alternative.
+
+Configuration APIs, protected current/paged evidence reads, and the create-only Company 1 demo
+are delivered. The [API and rollout contract](quotation-discount-authority-api.md) lists routes,
+projections, permission boundaries and demo prerequisites; the [journey](../journeys/quotation-discount-authority.md)
+explains the operator flow. No duty, holder or company mode is activated by delivery. Generated
+client files remain with the owner for codegen/check; screens are a separate workstream.
+
 ### Screen handoff
 Settings will need versioned reference proposals and independent approval, policy/band versions,
 named employee assignments and revocation, and explicit OFF/SHADOW/ENFORCE confirmation. Show
@@ -295,10 +292,11 @@ status; only authorised evidence readers may see its reference, percentage, base
 qualified band. The approver needs that evidence and a visible expiry, with plain messages for
 missing evidence, changed terms, expired approval or unavailable authority. Preserve draft context
 when requesting again. A paged restricted audit will explain configuration and evaluation history.
-These screens and their backend HTTP contracts are not delivered by this checkpoint.
+The backend contracts are delivered; these screens remain a separate workstream.
 
 ## Related
 
+- [API and rollout](quotation-discount-authority-api.md) · [Journey](../journeys/quotation-discount-authority.md)
 - [Sales authority](sales-authority.md) · [Pricing](sales-pricing.md) · [Approvals](approvals.md)
 - [Approvals integration log](../phases/phase-4-approvals-integration-log.md)
 - [AU rollout manifest](../phases/phase-4-au0-au1-rollout-manifest.md)

@@ -271,6 +271,9 @@ class SalesDutyRegistrationTest extends TestCase
 
         // QL1b draft adapters and the owner-authorised QA4a list remain STAGED. Each URI may only carry the methods listed here.
         $adapters = [
+            'api/v1/quotations/{revision}/discount-authority' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/discount-authority/history' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/authority-references' => ['POST'],
             'api/v1/quotations/{revision}' => ['GET', 'HEAD', 'PATCH'],
             'api/v1/quotations/{revision}/editable' => ['GET', 'HEAD'],
             // Seller declaration history: exact view + prepare, default-deny; QuotationTaxDeclarationTest.
