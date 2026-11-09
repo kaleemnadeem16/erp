@@ -186,6 +186,7 @@ in the same commit.
 | [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) | Govern quotation discount authority with independent reference evidence | accepted (owner decision pack; implementation pending) | 2026-11-06 |
 | [0164](0164-order-discount-authority-locks-before-quotation-and-approval-records.md) | Order discount authority locks before quotation and approval records | proposed (coordinator review) | 2026-11-06 |
 | [0165](0165-reconcile-purchase-order-fx-with-the-governed-rate.md) | Reconcile a purchase order's FX rate with the governed exchange rate | proposed (owner defaults pending) | 2026-11-06 |
+| [0180](0180-database-refuses-cross-family-and-broken-chain-rows-and-rollbacks-lock-first.md) | The database refuses cross-family and broken-chain rows; rollbacks lock before they look | accepted | 2026-11-09 |
 
 **Next number: 0166** (0158 approvals and 0160 delivery correction came from other work in flight; the demo patch decision was renumbered 0158 -> 0159 at the merge to avoid a collision)
 
