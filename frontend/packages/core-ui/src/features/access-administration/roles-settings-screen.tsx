@@ -180,6 +180,9 @@ export function RolesSettingsScreen() {
     );
   }
 
+  // A failed load is not "no roles": the empty state is for a list that loaded and is empty.
+  const loadFailed = rolesQuery.isError || permissionsQuery.isError;
+
   if (rolesQuery.isLoading || permissionsQuery.isLoading) {
     return (
       <div className="space-y-4 p-4 md:p-6">
@@ -213,8 +216,8 @@ export function RolesSettingsScreen() {
           {error}
         </div>
       )}
-      {(rolesQuery.isError || permissionsQuery.isError) && (
-        <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+      {loadFailed && (
+        <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           Could not load roles or permissions.{" "}
           {getApiErrorMessage(rolesQuery.error ?? permissionsQuery.error)}
           <Button
@@ -234,7 +237,9 @@ export function RolesSettingsScreen() {
           <div className="border-b border-border px-4 py-3 text-sm font-semibold">
             Company roles
           </div>
-          {roles.length === 0 ? (
+          {loadFailed ? (
+            <p className="p-6 text-center text-sm text-muted-foreground">Roles could not be loaded.</p>
+          ) : roles.length === 0 ? (
             <div className="p-6 text-center">
               <ShieldCheck className="mx-auto size-8 text-muted-foreground" />
               <p className="mt-2 text-sm text-muted-foreground">

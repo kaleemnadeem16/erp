@@ -7,7 +7,7 @@ import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
-import { getApiErrorMessage, isApiError } from '../../lib/api-errors';
+import { describeLoadError, getApiErrorMessage, isApiError } from '../../lib/api-errors';
 
 /** The shape of `GET /api/v1/company/branding`, written out by hand (the generated types are loose about nullable fields). */
 export interface CompanyBrandingView {
@@ -88,7 +88,16 @@ export function CompanyBrandingSection() {
   if (query.isLoading || !brand) {
     return (
       <DetailSection title="Branding" description="The name, tagline and logo printed on documents." fullWidth>
-        <p className="text-sm text-muted-foreground">{query.isError ? 'Branding could not be loaded.' : 'Loading…'}</p>
+        {query.isError || !query.isLoading ? (
+          <div role="alert" className="space-y-2 text-sm text-destructive">
+            <p>{query.isError ? describeLoadError(query.error) : 'Branding could not be read.'}</p>
+            <Button type="button" variant="outline" size="sm" className="min-h-11 md:min-h-9" onClick={() => void query.refetch()}>
+              Try again
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        )}
       </DetailSection>
     );
   }

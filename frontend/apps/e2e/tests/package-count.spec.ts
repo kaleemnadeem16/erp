@@ -35,6 +35,8 @@ test('the same litres in different cans is a composition fix: no stock movement,
   const supervisor = await signInAs(browser, SUPERVISOR);
   await supervisor.goto(`/physical-counts/${countId}`);
   await supervisor.getByRole('button', { name: 'Post count' }).click();
+  // Posting asks first; confirm in the dialog.
+  await supervisor.getByTestId('count-post-dialog').getByRole('button', { name: 'Post count' }).click();
   // The count is a record sheet over its list now, and the list behind it also shows statuses: look in the sheet.
   await expect(supervisor.getByRole('dialog').getByText('POSTED', { exact: true }).first()).toBeVisible();
 
@@ -86,6 +88,7 @@ test('a line goes stale when stock moves, is refreshed and recounted, and found 
   await suggestion.click();
   await expect(supervisor.getByTestId('found-cost')).toHaveValue('10');
   await post.click();
+  await supervisor.getByTestId('count-post-dialog').getByRole('button', { name: 'Post count' }).click();
   // The count is a record sheet over its list now, and the list behind it also shows statuses: look in the sheet.
   await expect(supervisor.getByRole('dialog').getByText('POSTED', { exact: true }).first()).toBeVisible();
 

@@ -75,6 +75,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "../components/ui/tooltip";
+import { useQueryClient } from "@tanstack/react-query";
+import { clearPrivateQueryCache } from "../lib/session-cache";
 import { getInitials } from "../lib/initials";
 import { useAuthStore } from "../stores/auth-store";
 import { useAppearanceStore, useIsDarkMode } from "../stores/appearance-store";
@@ -414,6 +416,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const logout = useLogout();
+  const queryClient = useQueryClient();
   const [moreOpen, setMoreOpen] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const usagePrefs = useNavUsagePrefs(pathname);
@@ -469,6 +472,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   function handleLogout() {
     logout.mutate(undefined, {
       onSuccess: () => {
+        clearPrivateQueryCache(queryClient);
         setUser(null);
         navigate("/login", { replace: true });
       },

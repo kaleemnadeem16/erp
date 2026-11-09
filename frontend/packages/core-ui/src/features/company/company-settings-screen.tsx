@@ -12,7 +12,7 @@ import { Textarea } from '../../components/ui/textarea';
 import { PageHeader } from '../../components/page/page-header';
 import { ScreenTemplate } from '../../components/page/screen-template';
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
-import { getApiErrorMessage, isApiError } from '../../lib/api-errors';
+import { describeLoadError, getApiErrorMessage, isApiError } from '../../lib/api-errors';
 import { CompanyBrandingSection } from './company-branding-section';
 import { PolicyChangeHistory } from '../settings/policy-change-history';
 import { asCompanyView, type CompanyFieldDescription, type CompanyValues } from './company-types';
@@ -55,6 +55,19 @@ export function CompanySettingsScreen() {
 
   const zones = useMemo(() => timeZoneNames().map((zone) => ({ value: zone, label: `${zone}  (${offsetLabel(zone)})` })), []);
   const countries = useMemo(() => countryOptions(), []);
+
+  if (companyQuery.isError && !company) {
+    return (
+      <div className="space-y-4 p-4 md:p-6">
+        <div role="alert" className="space-y-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+          <p>{describeLoadError(companyQuery.error)}</p>
+          <Button type="button" variant="outline" size="sm" className="min-h-11 md:min-h-9" onClick={() => void companyQuery.refetch()}>
+            Try again
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (companyQuery.isLoading || !company) {
     return (

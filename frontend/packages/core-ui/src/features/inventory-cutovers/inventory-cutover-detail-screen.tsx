@@ -17,6 +17,7 @@ import {
 } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Input } from '../../components/ui/input';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
@@ -41,6 +42,15 @@ const STATUS_TONE: Record<string, StatusTone> = {
   APPROVED: 'active',
   FINALISED: 'success',
   FAILED: 'danger',
+};
+
+type ConfirmSpec = {
+  title: string;
+  description: string;
+  confirmLabel: string;
+  pendingLabel: string;
+  destructive?: boolean;
+  run: () => Promise<unknown>;
 };
 
 const NEGATIVE_OPENING_STATUS_VARIANT: Record<string, 'secondary' | 'success'> = {
@@ -82,6 +92,8 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
   const currentUser = useAuthStore((state) => state.user);
 
   const [actionError, setActionError] = useState<string | null>(null);
+  // The high-impact steps ask first; the dialog shows what will happen and the server's own refusal if there is one.
+  const [confirming, setConfirming] = useState<ConfirmSpec | null>(null);
   const [importBatchId, setImportBatchId] = useState('');
   const [showNegativeOpeningForm, setShowNegativeOpeningForm] = useState(false);
   const [negativeOpeningDraft, setNegativeOpeningDraft] = useState({
@@ -122,32 +134,56 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
     validateCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
   }
 
-  function handleApprove() {
-    setActionError(null);
-    approveCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
+  function askApprove() {
+    setConfirming({
+      title: 'Approve this cutover?',
+      description: 'Approval clears the cutover for its opening state to be committed. You cannot approve a cutover you created or validated.',
+      confirmLabel: 'Approve',
+      pendingLabel: 'Approving…',
+      destructive: false,
+      run: () => approveCutover.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
+    });
   }
 
-  function handleCommit() {
-    setActionError(null);
-    commitCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
+  function askCommit() {
+    setConfirming({
+      title: 'Commit the opening state?',
+      description: 'This writes the opening stock balances from the attached batches into live inventory. It cannot be undone from this screen; later corrections are made with stock adjustments.',
+      confirmLabel: 'Commit opening state',
+      pendingLabel: 'Committing…',
+      run: () => commitCutover.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
+    });
   }
 
-  function handleFinalise() {
-    setActionError(null);
-    finaliseCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
+  function askFinalise() {
+    setConfirming({
+      title: 'Finalise this cutover?',
+      description: 'Finalising freezes the cutover and its batches. It cannot be undone; later corrections are made with stock adjustments.',
+      confirmLabel: 'Finalise',
+      pendingLabel: 'Finalising…',
+      run: () => finaliseCutover.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
+    });
   }
 
-  function handleCommitOpenPurchaseOrders() {
-    setActionError(null);
-    commitOpenPurchaseOrders.mutate(
-      { inventoryCutover: cutoverId },
-      { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) }
-    );
+  function askCommitOpenPurchaseOrders() {
+    setConfirming({
+      title: 'Commit the open purchase orders?',
+      description: 'This creates the open purchase orders from the attached batches in live purchasing. It cannot be undone from this screen.',
+      confirmLabel: 'Commit open purchase orders',
+      pendingLabel: 'Committing…',
+      run: () => commitOpenPurchaseOrders.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
+    });
   }
 
-  function handleApproveNegativeOpening(id: number) {
-    setActionError(null);
-    approveNegativeOpening.mutate({ inventoryCutoverNegativeOpening: id }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
+  function askApproveNegativeOpening(id: number) {
+    setConfirming({
+      title: 'Approve this negative opening?',
+      description: 'Approving accepts an opening balance below zero for this item and location, at the provisional cost shown. It cannot be undone from this screen.',
+      confirmLabel: 'Approve',
+      pendingLabel: 'Approving…',
+      destructive: false,
+      run: () => approveNegativeOpening.mutateAsync({ inventoryCutoverNegativeOpening: id }).then(refetch),
+    });
   }
 
   function handleRequestNegativeOpening(event: FormEvent) {
@@ -245,7 +281,7 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
             {isValidated && mayApprove && (
               <div className="flex flex-col items-end gap-1">
                 <Button
-                  onClick={handleApprove}
+                  onClick={askApprove}
                   disabled={approveCutover.isPending || isOwnCutover}
                   title={isOwnCutover ? "You can't approve a cutover you created or validated" : undefined}
                 >
@@ -261,21 +297,21 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
             {isApproved && (
               <>
                 {mayCommit && (
-                  <Button variant="outline" onClick={handleCommit} disabled={commitCutover.isPending}>
+                  <Button variant="outline" onClick={askCommit} disabled={commitCutover.isPending}>
                     Commit opening state
                   </Button>
                 )}
                 {hasPendingOpenPurchaseOrders && mayCommitOpenOrders && (
                   <Button
                     variant="outline"
-                    onClick={handleCommitOpenPurchaseOrders}
+                    onClick={askCommitOpenPurchaseOrders}
                     disabled={commitOpenPurchaseOrders.isPending}
                   >
                     Commit open purchase orders
                   </Button>
                 )}
                 {mayFinalise && (
-                  <Button onClick={handleFinalise} disabled={finaliseCutover.isPending}>
+                  <Button onClick={askFinalise} disabled={finaliseCutover.isPending}>
                     Finalise
                   </Button>
                 )}
@@ -287,6 +323,21 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
       listLabel="Inventory Cutovers"
       size="xl"
     >
+
+      {confirming && (
+        <ConfirmActionDialog
+          open
+          onOpenChange={(next) => !next && setConfirming(null)}
+          title={confirming.title}
+          description={confirming.description}
+          confirmLabel={confirming.confirmLabel}
+          pendingLabel={confirming.pendingLabel}
+          cancelLabel="Not now"
+          destructive={confirming.destructive ?? true}
+          onConfirm={confirming.run}
+          testId="cutover-confirm-dialog"
+        />
+      )}
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>
@@ -403,7 +454,7 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
                       </TableCell>
                       <TableCell className="text-right">
                         {exception.status === 'REQUESTED' && mayApproveNegativeOpening && (
-                          <Button variant="outline" size="sm" onClick={() => handleApproveNegativeOpening(exception.id)} disabled={approveNegativeOpening.isPending}>
+                          <Button variant="outline" size="sm" onClick={() => askApproveNegativeOpening(exception.id)} disabled={approveNegativeOpening.isPending}>
                             Approve
                           </Button>
                         )}

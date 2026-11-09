@@ -1,9 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   MaterialSelectionStrategy,
-  useAssembliesIndex,
   useAssembliesMaterialPreview,
-  useCustomerAccountsIndex,
   useLocationsIndex,
   useMaterialVarianceReasonsIndex,
   useRateDimensionsIndex,
@@ -28,7 +26,8 @@ import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { PageHeader } from '../../components/page/page-header';
 import { ScreenTemplate } from '../../components/page/screen-template';
-import { getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
+import { AssemblyCombobox, CustomerCombobox, UomCombobox } from '../../components/lookups/entity-comboboxes';
+import { completeLookupState, getApiErrorMessage, lookupState, type LookupState } from '../../lib/api-errors';
 import { useAuthStore } from '../../stores/auth-store';
 import { CostEvidence, CostReadiness } from '../costing/cost-evidence';
 import { InventoryProposalPanel } from './inventory-proposal-panel';
@@ -99,27 +98,22 @@ export function MaterialPreviewScreen() {
   const mayViewAvailability = permissions.includes('estimating.inventory_availability.view');
   const mayChooseMix = mayViewAvailability && permissions.includes('estimating.stock_mix.choose');
   const mayViewCost = permissions.includes('estimating.internal_cost.view');
-  const assembliesQuery = useAssembliesIndex({ per_page: 100, sort: 'code', include: 'workUom,versions' });
-  const assemblies = assembliesQuery.data?.status === 200 ? assembliesQuery.data.data.data : [];
-  const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' });
+  // Nothing is requested for someone who may not run a preview: the denial screen below must not cost a single lookup.
+  const [assemblyId, setAssemblyId] = useState('');
+  const [assembly, setAssembly] = useState<AssemblyResource | undefined>(undefined);
+  // The short reference lists below are fetched whole and checked for completeness (completeLookupState); assemblies and
+  // customers can grow without bound, so those pickers search on the server instead of listing a first page.
+  const uomsQuery = useUomsIndex({ per_page: 100, sort: 'name' }, { query: { enabled: mayRun } });
   const uoms = uomsQuery.data?.status === 200 ? uomsQuery.data.data.data : [];
-  const customersQuery = useCustomerAccountsIndex({ per_page: 100, sort: 'code' });
-  const customers = customersQuery.data?.status === 200 ? customersQuery.data.data.data : [];
-  const dimensionsQuery = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' });
+  const dimensionsQuery = useRateDimensionsIndex({ per_page: 100, sort: 'sort_order', include: 'values' }, { query: { enabled: mayRun } });
   const dimensions = dimensionsQuery.data?.status === 200 ? dimensionsQuery.data.data.data : [];
   // Only the stock-scope pickers need these, so skip the requests for someone who cannot see availability.
   const warehousesQuery = useWarehousesIndex(
     { per_page: 100, sort: 'code', 'filter[active]': true },
-    { query: { enabled: mayViewAvailability } },
+    { query: { enabled: mayRun && mayViewAvailability } },
   );
   const warehouses = warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data : [];
-  const locationsQuery = useLocationsIndex(
-    { per_page: 100, sort: 'code', 'filter[active]': true },
-    { query: { enabled: mayViewAvailability } },
-  );
-  const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
 
-  const [assemblyId, setAssemblyId] = useState('');
   const [versionId, setVersionId] = useState(ACTIVE);
   const [workQuantity, setWorkQuantity] = useState('1');
   const [workUomId, setWorkUomId] = useState('');
@@ -127,6 +121,12 @@ export function MaterialPreviewScreen() {
   const [dimensionValues, setDimensionValues] = useState<Record<number, string>>({});
   const [warehouseId, setWarehouseId] = useState(NONE);
   const [locationId, setLocationId] = useState(NONE);
+  // Locations are asked for one warehouse at a time, so the list is complete for the warehouse that was chosen.
+  const locationsQuery = useLocationsIndex(
+    { per_page: 100, sort: 'code', 'filter[active]': true, 'filter[warehouse_id]': Number(warehouseId) || undefined },
+    { query: { enabled: mayRun && mayViewAvailability && warehouseId !== NONE } },
+  );
+  const locations = locationsQuery.data?.status === 200 ? locationsQuery.data.data.data : [];
   const [strategy, setStrategy] = useState(COMPANY_DEFAULT);
   const [showStrategy, setShowStrategy] = useState(false);
   const [preview, setPreview] = useState<PreviewData | null>(null);
@@ -141,13 +141,8 @@ export function MaterialPreviewScreen() {
   // Hand-built stock mixes by item id (ADR 0072): they too belong to the materials the context resolved to.
   const [mixes, setMixes] = useState<Record<number, MixDraft>>({});
   const mutation = useAssembliesMaterialPreview();
-  const reasonsQuery = useMaterialVarianceReasonsIndex({ per_page: 100, sort: 'name', 'filter[active]': true });
+  const reasonsQuery = useMaterialVarianceReasonsIndex({ per_page: 100, sort: 'name', 'filter[active]': true }, { query: { enabled: mayRun } });
   const reasons = reasonsQuery.data?.status === 200 ? reasonsQuery.data.data.data : [];
-
-  const assembly = useMemo(
-    () => assemblies.find((candidate) => candidate.id === Number(assemblyId)),
-    [assemblies, assemblyId],
-  );
 
   // A warehouse with a single stock location (the SIMPLE location mode) has nothing to narrow
   // below the warehouse, so the location picker only appears when there is a real choice.
@@ -170,10 +165,10 @@ export function MaterialPreviewScreen() {
     setPreview(null);
   };
 
-  const selectAssembly = (value: string) => {
+  const selectAssembly = (value: string, selected?: AssemblyResource) => {
     setAssemblyId(value);
+    setAssembly(selected);
     setVersionId(ACTIVE);
-    const selected = assemblies.find((candidate) => candidate.id === Number(value));
     setWorkUomId(selected ? String(selected.work_uom_id) : '');
     resetContext();
   };
@@ -282,14 +277,12 @@ export function MaterialPreviewScreen() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <Field label="Assembly">
-            <Combobox {...lookupState(assembliesQuery, 'assemblies')}
-              aria-label="Assembly"
+            <AssemblyCombobox
+              label="Assembly"
               value={assemblyId}
               onValueChange={selectAssembly}
-              options={assemblies.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.name}` }))}
               placeholder="Select assembly"
-              searchPlaceholder="Search assemblies…"
-              emptyText="No assemblies found."
+              className="w-full"
             />
           </Field>
           <Field label="Assembly version">
@@ -305,16 +298,12 @@ export function MaterialPreviewScreen() {
             />
           </Field>
           <Field label="Customer (optional)">
-            <Combobox {...lookupState(customersQuery, 'customers')}
-              aria-label="Customer"
+            <CustomerCombobox
+              label="Customer"
               value={customerId}
               onValueChange={(value) => { setCustomerId(value); resetContext(); }}
-              options={[
-                { value: NONE, label: 'Company-default formulation' },
-                ...customers.map((row) => ({ value: String(row.id), label: `${row.code} — ${row.party?.name ?? 'Customer'}` })),
-              ]}
-              searchPlaceholder="Search customers…"
-              emptyText="No customers found."
+              leadingOptions={[{ value: NONE, label: 'Company-default formulation' }]}
+              className="w-full"
             />
           </Field>
           <Field label="Work quantity">
@@ -326,19 +315,17 @@ export function MaterialPreviewScreen() {
             />
           </Field>
           <Field label="Work unit">
-            <Combobox {...lookupState(uomsQuery, 'units')}
-              aria-label="Work unit"
+            <UomCombobox
+              label="Work unit"
               value={workUomId}
               onValueChange={(value) => { setWorkUomId(value); setPreview(null); }}
-              options={uoms.map((row) => ({ value: String(row.id), label: `${row.name} (${row.code})` }))}
               placeholder="Select unit"
-              searchPlaceholder="Search units…"
-              emptyText="No units found."
+              className="w-full"
             />
           </Field>
           {dimensions.map((dimension) => (
             <Field key={dimension.id} label={`${dimension.name}${dimension.is_required ? ' (required for a specific match)' : ' (optional)'}`}>
-              <Combobox {...lookupState(dimensionsQuery, 'rate dimensions')}
+              <Combobox {...completeLookupState(dimensionsQuery, 'rate dimensions')}
                 aria-label={dimension.name}
                 value={dimensionValues[dimension.id] ?? NONE}
                 onValueChange={(value) => {
@@ -363,7 +350,7 @@ export function MaterialPreviewScreen() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <Field label="Warehouse (optional)">
-                <Combobox {...lookupState(warehousesQuery, 'warehouses')}
+                <Combobox {...completeLookupState(warehousesQuery, 'warehouses')}
                   aria-label="Warehouse"
                   value={warehouseId}
                   onValueChange={selectWarehouse}
@@ -377,7 +364,7 @@ export function MaterialPreviewScreen() {
               </Field>
               {warehouseLocations.length > 1 && (
                 <Field label="Location (optional)">
-                  <Combobox {...lookupState(locationsQuery, 'locations')}
+                  <Combobox {...completeLookupState(locationsQuery, 'locations')}
                     aria-label="Location"
                     value={locationId}
                     onValueChange={(value) => { setLocationId(value); setPreview(null); }}
@@ -428,7 +415,7 @@ export function MaterialPreviewScreen() {
           onMixChange={(itemId, draft) => setMixes((current) => ({ ...current, [itemId]: draft }))}
           onCalculate={submit}
           uoms={uoms}
-          unitsLookup={lookupState(uomsQuery, 'units')}
+          unitsLookup={completeLookupState(uomsQuery, 'units')}
           reasons={reasons}
           isCalculating={mutation.isPending}
           calculatedAt={calculatedAt}

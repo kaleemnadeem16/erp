@@ -13,6 +13,7 @@ import {
 } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Input } from '../../components/ui/input';
 import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -82,6 +83,7 @@ export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presenta
   const [countedDrafts, setCountedDrafts] = useState<Record<number, string>>({});
   const [foundCostDrafts, setFoundCostDrafts] = useState<Record<number, string>>({});
   const [actionError, setActionError] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState<'post' | 'cancel' | null>(null);
 
   const [newItemId, setNewItemId] = useState('');
   const [newLocationId, setNewLocationId] = useState('');
@@ -143,7 +145,7 @@ export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presenta
     );
   }
 
-  function handlePost() {
+  function postCountNow() {
     setActionError(null);
     const foundCosts = lines
       .filter((line) => isGain(lineVariance(line)))
@@ -152,18 +154,12 @@ export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presenta
         unit_cost: String(foundCostDrafts[line.id] ?? line.found_unit_cost ?? '0').trim(),
       }));
 
-    postCount.mutate(
-      { physicalCount: countId, data: { found_costs: foundCosts } },
-      { onSuccess: () => countQuery.refetch(), onError: (error) => setActionError(getApiErrorMessage(error)) }
-    );
+    return postCount.mutateAsync({ physicalCount: countId, data: { found_costs: foundCosts } }).then(() => countQuery.refetch());
   }
 
-  function handleCancel() {
+  function cancelCountNow() {
     setActionError(null);
-    cancelCount.mutate(
-      { physicalCount: countId },
-      { onSuccess: () => countQuery.refetch(), onError: (error) => setActionError(getApiErrorMessage(error)) }
-    );
+    return cancelCount.mutateAsync({ physicalCount: countId }).then(() => countQuery.refetch());
   }
 
   if (countQuery.isLoading) {
@@ -206,12 +202,12 @@ export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presenta
       actions={
           isDraft && (mayCreate || mayPost) && (
             <>
-              {mayCreate && <Button variant="outline" onClick={handleCancel} disabled={cancelCount.isPending}>
+              {mayCreate && <Button variant="outline" onClick={() => setConfirming('cancel')} disabled={cancelCount.isPending}>
                 Cancel count
               </Button>}
               {mayPost && <div className="flex flex-col items-end gap-1">
                 <Button
-                  onClick={handlePost}
+                  onClick={() => setConfirming('post')}
                   disabled={!everyLineCounted || postCount.isPending || isOwnCount || staleLines.length > 0 || needsRecount || missingFoundCost}
                   title={isOwnCount ? "You can't post a physical count you created" : undefined}
                 >
@@ -239,6 +235,29 @@ export function PhysicalCountDetailScreen({ presentation = 'sheet' }: { presenta
       listLabel="Physical Counts"
       size="xl"
     >
+
+      <ConfirmActionDialog
+        open={confirming === 'post'}
+        onOpenChange={(next) => !next && setConfirming(null)}
+        title="Post this count?"
+        description="Posting writes the count's variances into stock as adjustments. It cannot be undone; a mistake is corrected with a new adjustment."
+        confirmLabel="Post count"
+        pendingLabel="Posting…"
+        cancelLabel="Not yet"
+        onConfirm={postCountNow}
+        testId="count-post-dialog"
+      />
+      <ConfirmActionDialog
+        open={confirming === 'cancel'}
+        onOpenChange={(next) => !next && setConfirming(null)}
+        title="Cancel this count?"
+        description="The count is abandoned and nothing is posted to stock. A cancelled count cannot be reopened; start a new count instead."
+        confirmLabel="Cancel count"
+        pendingLabel="Cancelling…"
+        cancelLabel="Keep the count"
+        onConfirm={cancelCountNow}
+        testId="count-cancel-dialog"
+      />
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>

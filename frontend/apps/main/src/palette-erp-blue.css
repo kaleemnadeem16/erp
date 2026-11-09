@@ -69,8 +69,8 @@
   --erp-blue-color-field-bg-hover: #f8fafc;
   --erp-blue-color-field-bg-disabled: #f1f5f9;
 
-  --erp-blue-color-field-border: #cbd5e1;
-  --erp-blue-color-field-border-hover: #94a3b8;
+  --erp-blue-color-field-border: #8391a7; /* 3.2:1 on white (WCAG non-text contrast) */
+  --erp-blue-color-field-border-hover: #64748b;
   --erp-blue-color-field-border-focus: #2563eb;
 
   --erp-blue-color-field-text: #0f172a;

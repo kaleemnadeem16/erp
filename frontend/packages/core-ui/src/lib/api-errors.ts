@@ -51,12 +51,21 @@ export function shouldRetryQuery(failureCount: number, error: unknown): boolean 
   return failureCount < 2 && isTransientFailure(error);
 }
 
+/** A lookup that fetched only the first page of a longer list: offering it as the whole list would make the rest unreachable. */
+export class IncompleteLookupError extends Error {
+  constructor(shown: number, total: number) {
+    super(`Only the first ${shown} of ${total} could be listed here, so the rest could not be chosen. Ask for a search-based picker for this field.`);
+    this.name = 'IncompleteLookupError';
+  }
+}
+
 /**
  * What to tell a person whose list or lookup failed to load. The cause decides the next step —
  * sign in again, ask for access, change the filter, or just try again — so each gets its own words
  * rather than one message for everything.
  */
 export function describeLoadError(error: unknown): string {
+  if (error instanceof IncompleteLookupError) return error.message;
   if (!isApiError(error)) return "Can't reach the server. Check your connection and try again.";
 
   switch (error.status) {
@@ -133,3 +142,21 @@ export function lookupState(
 
 /** What `lookupState` returns, for passing a picker's state down to a filter-controls component. */
 export type LookupState = ReturnType<typeof lookupState>;
+
+/**
+ * `lookupState` for a picker that must offer EVERY record from one request (a short reference list fetched at `per_page: 100`):
+ * when the server says there are more rows than came back, the picker reports that instead of silently offering a partial list.
+ * Records that can grow without bound belong in a server-searched picker (`entity-comboboxes`), not here.
+ */
+export function completeLookupState(
+  query: { isLoading: boolean; isError: boolean; error: unknown; refetch: () => unknown; data?: unknown },
+  noun: string
+) {
+  const base = lookupState(query, noun);
+  const body = (query.data as { status?: number; data?: { data?: unknown[]; meta?: { total?: number } } } | undefined);
+  const shown = body?.status === 200 && Array.isArray(body.data?.data) ? body.data.data.length : 0;
+  const total = body?.status === 200 ? body.data?.meta?.total : undefined;
+  if (base.loadError || typeof total !== 'number' || total <= shown) return base;
+
+  return { ...base, loadError: { error: new IncompleteLookupError(shown, total), onRetry: () => void query.refetch(), noun } };
+}

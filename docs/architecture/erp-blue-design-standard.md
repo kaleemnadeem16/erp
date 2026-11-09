@@ -162,9 +162,8 @@ Selected rows have a tinted surface and edge. Fields use an accent border and so
 buttons/links use a visible outline with clearance. Destructive actions and errors keep semantic
 state colours, even if the company chooses an amber accent.
 
-Known inherited limitation: light-mode field borders `#CBD5E1` and hover `#94A3B8` remain the PO
-reference values, below 3:1 on white. The darker focus boundary is visible; this does not make the
-resting boundary compliant. Do not claim full WCAG conformance based only on an axe pass.
+Light-mode field borders are `#8391A7` (hover `#64748B`), at least 3:1 on white, so a resting field boundary meets non-text contrast.
+Do not claim full WCAG conformance based only on an axe pass.
 
 ## Motion and control states
 

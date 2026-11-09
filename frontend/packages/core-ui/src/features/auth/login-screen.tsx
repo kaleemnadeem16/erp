@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { primeCsrfCookie, useLogin } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { getApiErrorMessage, isApiError } from '../../lib/api-errors';
+import { clearPrivateQueryCache } from '../../lib/session-cache';
 import { useAuthStore } from '../../stores/auth-store';
 
 export function LoginScreen() {
@@ -16,6 +18,7 @@ export function LoginScreen() {
   const navigate = useNavigate();
   const setUser = useAuthStore((state) => state.setUser);
   const login = useLogin();
+  const queryClient = useQueryClient();
 
   // Nothing else on this page issues a prior request that would set the
   // XSRF-TOKEN cookie Sanctum's session auth needs — a user landing straight
@@ -35,6 +38,7 @@ export function LoginScreen() {
       {
         onSuccess: (result) => {
           if (result.status === 200) {
+            clearPrivateQueryCache(queryClient);
             setUser(result.data.data);
             navigate('/', { replace: true });
           }

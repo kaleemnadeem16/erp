@@ -9,6 +9,7 @@ import {
 } from '@erp/core-api';
 
 import { Button } from '../../components/ui/button';
+import { ConfirmActionDialog } from '../../components/confirm-action-dialog';
 import { Textarea } from '../../components/ui/textarea';
 import { Badge } from '../../components/ui/badge';
 import { StatusBadge, type StatusTone } from '../../components/ui/status-badge';
@@ -59,6 +60,7 @@ export function RecalculationRequestDetailScreen({ presentation = 'sheet' }: { p
   const [decideNotes, setDecideNotes] = useState('');
   const [resumeNotes, setResumeNotes] = useState('');
 
+  const [confirmExecute, setConfirmExecute] = useState(false);
   const decide = useRecalculationImpactVersionsDecide();
   const execute = useRecalculationImpactVersionsExecute();
   const resume = useRecalculationImpactVersionsResumeRegeneration();
@@ -86,18 +88,13 @@ export function RecalculationRequestDetailScreen({ presentation = 'sheet' }: { p
     );
   }
 
-  function handleExecute(versionId: number) {
+  // Executing posts the approved correction into stock history, so it asks first; a refusal shows inside the dialog.
+  function executeNow(versionId: number) {
     setActionError(null);
-    execute.mutate(
-      { recalculationImpactVersion: versionId },
-      {
-        onSuccess: refetch,
-        onError: (error) => {
-          setActionError(getApiErrorMessage(error));
-          refetch();
-        },
-      }
-    );
+    return execute.mutateAsync({ recalculationImpactVersion: versionId }).then(refetch, (error) => {
+      refetch();
+      throw error;
+    });
   }
 
   function handleResume(versionId: number) {
@@ -166,6 +163,20 @@ export function RecalculationRequestDetailScreen({ presentation = 'sheet' }: { p
       listLabel="Stock Recalculation"
       size="xl"
     >
+
+      {current && (
+        <ConfirmActionDialog
+          open={confirmExecute}
+          onOpenChange={setConfirmExecute}
+          title="Execute this recalculation?"
+          description="Executing replays the approved correction into stock history and revalues what it touches. It cannot be undone; run it only when the approved impact is still what you want."
+          confirmLabel="Execute"
+          pendingLabel="Executing…"
+          cancelLabel="Not yet"
+          onConfirm={() => executeNow(current.id)}
+          testId="recalculation-execute-dialog"
+        />
+      )}
 
       {actionError && (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{actionError}</div>
@@ -273,7 +284,7 @@ export function RecalculationRequestDetailScreen({ presentation = 'sheet' }: { p
               </div>
             ) : current.has_unexpired_full_approval && mayExecute ? (
               <div className="flex justify-end sm:col-span-2 border-t border-border pt-4">
-                <Button onClick={() => handleExecute(current.id)} disabled={execute.isPending}>
+                <Button onClick={() => setConfirmExecute(true)} disabled={execute.isPending}>
                   {execute.isPending ? 'Executing…' : 'Execute'}
                 </Button>
               </div>

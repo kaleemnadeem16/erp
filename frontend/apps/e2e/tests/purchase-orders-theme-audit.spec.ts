@@ -77,7 +77,7 @@ test.describe("Purchase Orders Light Palette Theme Audit", () => {
     );
     expect(inputBg).toBe("rgb(255, 255, 255)"); // #FFFFFF
     expect(inputColor).toBe("rgb(15, 23, 42)"); // #0F172A
-    expect(inputBorder).toBe("rgb(203, 213, 225)"); // #CBD5E1
+    expect(inputBorder).toBe("rgb(131, 145, 167)"); // #8391A7, 3:1 against white
 
     // 6. Table: Header, Rows, Separators
     const tableHeader = page.locator(".po-screen thead tr").first();

@@ -17,7 +17,7 @@ import {
 } from "../../components/ui/dialog";
 import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/ui/status-badge";
-import { formatDate, formatDateTime } from "../../lib/format-date";
+import { formatDate, formatDateTime, formatDateTimeWithZone } from "../../lib/format-date";
 import {
   getApiReasonCode,
   isApiError,
@@ -267,8 +267,8 @@ export function QuotationIssuedView({
         <DetailField label="Valid through">
           {formatDate(terms.valid_through_local_date)}
         </DetailField>
-        <DetailField label="Expires">
-          {formatDateTime(terms.expires_at)}
+        <DetailField label="Expires (shown in your time zone)">
+          {formatDateTimeWithZone(terms.expires_at)}
         </DetailField>
         {terms.totals === null ? (
           <p className="col-span-full text-sm" role="note">

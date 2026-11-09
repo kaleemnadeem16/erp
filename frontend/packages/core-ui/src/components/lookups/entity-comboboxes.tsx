@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   useApplicationRatesIndex,
   useApplicationRatesShow,
+  useAssembliesIndex,
+  useAssembliesShow,
   useAssemblyGroupsIndex,
   useAssemblyGroupsShow,
   useChartOfAccountsIndex,
@@ -22,6 +24,7 @@ import {
   useUomsIndex,
   useUomsShow,
   type ApplicationRateResource,
+  type AssemblyResource,
   type AssemblyGroupResource,
   type ChartOfAccountResource,
   type CustomerAccountResource,
@@ -299,6 +302,30 @@ export function CustomerCombobox({ onValueChange, leadingOptions, ...props }: En
       searching={search !== delayed || (search !== '' && list.isFetching)}
       selectedLabel={selected ? label(selected) : leading.find((option) => option.value === props.value)?.label}
       options={[...leading, ...rows.map((customer) => ({ value: String(customer.id), label: label(customer) }))]}
+    />
+  );
+}
+
+/** An assembly with its work unit and versions, searched on the server by code or name, named `CODE — Name`. The whole record comes back with the choice. */
+export function AssemblyCombobox({ onValueChange, ...props }: EntityComboboxProps<AssemblyResource>) {
+  const [search, setSearch] = useState('');
+  const delayed = useDelayed(search);
+  const list = useAssembliesIndex({ 'filter[search]': delayed || undefined, per_page: PAGE, sort: 'code', include: 'workUom,versions' });
+  const chosen = useAssembliesShow(chosenId(props.value), { include: 'workUom,versions' }, { query: { enabled: chosenId(props.value) > 0 } });
+  const rows = list.data?.status === 200 ? list.data.data.data : [];
+  const selected = chosen.data?.status === 200 ? chosen.data.data.data : undefined;
+  const label = (assembly: { code: string; name: string }) => `${assembly.code} — ${assembly.name}`;
+
+  return (
+    <RemoteLookupCombobox
+      {...lookupState(list, 'assemblies')}
+      {...props}
+      onValueChange={(value) => onValueChange(value, rows.find((row) => String(row.id) === value))}
+      search={search}
+      onSearchChange={setSearch}
+      searching={search !== delayed || (search !== '' && list.isFetching)}
+      selectedLabel={selected ? label(selected) : undefined}
+      options={rows.map((assembly) => ({ value: String(assembly.id), label: label(assembly) }))}
     />
   );
 }

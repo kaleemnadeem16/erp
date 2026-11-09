@@ -53,7 +53,7 @@ export function ListSearchInput({ input, searchProps, onClear, placeholder, aria
           type="button"
           onClick={onClear}
           aria-label="Clear search"
-          className="absolute right-1 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground md:right-1.5 md:h-7 md:w-7"
+          className="absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground md:right-1.5 md:h-7 md:w-7"
         >
           <X className="h-4 w-4" />
         </button>
@@ -87,13 +87,13 @@ export function ActiveFilterChips({ chips, onClearAll }: { chips: FilterChip[]; 
             type="button"
             onClick={chip.onRemove}
             aria-label={`Remove filter: ${chip.label}`}
-            className="inline-flex h-6 min-w-6 items-center justify-center rounded-full hover:bg-muted"
+            className="relative inline-flex h-6 min-w-6 items-center justify-center rounded-full hover:bg-muted before:absolute before:-inset-2.5 before:content-[''] md:before:-inset-1"
           >
             <X className="h-3 w-3" />
           </button>
         </Badge>
       ))}
-      <button type="button" className="ui-link-action ml-1 inline-flex min-h-6 shrink-0 cursor-pointer items-center text-xs" onClick={onClearAll}>
+      <button type="button" className="ui-link-action ml-1 inline-flex min-h-11 shrink-0 md:min-h-6 cursor-pointer items-center text-xs" onClick={onClearAll}>
         Clear all
       </button>
     </div>
