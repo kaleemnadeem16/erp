@@ -29,6 +29,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Events\TransactionBeginning;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -319,6 +320,21 @@ class QuotationIssueActionTest extends TestCase
         } catch (DomainInvariantException) {
         }
         $this->assertSame(1, DocumentManifest::query()->count());
+    }
+
+    public function test_the_issue_date_on_the_customer_document_uses_the_zone_pinned_at_issue_not_the_companys_current_one(): void
+    {
+        $revision = $this->preparedDraft();
+        $outcome = $this->issue($revision, key: 'tz1');
+        $issue = QuotationIssue::query()->findOrFail($outcome->issueId);
+        $expected = $issue->issued_at->setTimezone($issue->issued_timezone)->format('Y-m-d');
+        // A zone 25 hours apart from the other guarantees that one of them puts the issue moment on a different calendar day than the pinned zone does.
+        $other = Carbon::parse($issue->issued_at)->setTimezone('Pacific/Kiritimati')->format('Y-m-d') !== $expected ? 'Pacific/Kiritimati' : 'Pacific/Pago_Pago';
+        DB::table('companies')->where('id', $issue->company_id)->update(['timezone' => $other]);
+
+        $projection = QuotationCustomerProjection::forIssue(QuotationIssue::query()->findOrFail($issue->id), QuotationRevision::findOrFail($revision->id));
+
+        $this->assertSame($expected, $projection->payload['header']['issued_on']);
     }
 
     public function test_the_document_owner_refuses_to_freeze_an_original_for_anyone_but_the_issuer_of_that_issue(): void

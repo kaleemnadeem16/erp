@@ -208,9 +208,11 @@ prove its own snapshot/access/retention semantics; framework availability does n
 
 ## Company branding (ADR 0162)
 
-Company owns immutable brand versions (display name, tagline, sanitised PNG/JPEG logo). A manifest pins the current brand at the freeze (`brand_state PINNED`, `brand`, logo in `asset_manifest`); no brand pins `NOT_AVAILABLE` and renders exactly as before. A pinned logo that cannot be read back fails the generation. Managing the brand needs `company.branding.manage` (STAGED, granted to nobody).
+Company owns immutable brand versions (display name, tagline, sanitised PNG/JPEG logo). A manifest pins the current brand at the freeze (`brand_state PINNED`, `brand`, logo in `asset_manifest`); no brand pins `NOT_AVAILABLE` and renders exactly as before. A pinned logo that cannot be read back fails the generation. Managing the brand needs `company.branding.manage` (STAGED, granted to nobody). A pinned logo whose stored object is lost is recovered only by restoring the identical bytes under the same blob (`RestoreCompanyBrandLogo`, [0175](../decisions/0175-restore-a-missing-pinned-brand-logo-from-identical-bytes.md)); a new upload is never the recovery.
 
 ## Related
+
+- [0175](../decisions/0175-restore-a-missing-pinned-brand-logo-from-identical-bytes.md)
 
 - [0137](../decisions/0137-share-document-and-print-infrastructure-through-module-adapters.md)
 - [Framework sequence](../phases/document-print-framework-slices.md) · [R8 slices](../phases/phase-4-r8-implementation-slices.md)

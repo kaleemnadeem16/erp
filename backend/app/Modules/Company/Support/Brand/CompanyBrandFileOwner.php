@@ -17,7 +17,7 @@ use App\Support\CompanyContext;
  * Company as an owner of files in the shared Files store (ADR 0153, ADR 0162): its only purpose is the company logo, PNG or JPEG, at most 2 MB and 1 megapixel. The bytes are
  * sanitised by Company before they reach Files, so the purpose is internally authored. Producing the file (upload, stage, verify) needs the branding duty exactly as the Action
  * does; `read` is the trusted in-process read Documents makes through the Company contract for the logo a manifest pinned (no actor), and is limited to this company's own binding.
- * Reconcile and restore are not offered: a logo that went missing is simply uploaded again.
+ * A logo that went missing is NOT replaced by a new upload (a document pinned the original): `reconcile` and `restore` are offered to the branding duty only, and only the exact recorded bytes can be put back (ADR 0175).
  */
 final class CompanyBrandFileOwner implements FileAccess, FileOwnerAdapter
 {
@@ -58,7 +58,7 @@ final class CompanyBrandFileOwner implements FileAccess, FileOwnerAdapter
         if ($context->operation === 'read') {
             return true;
         }
-        if (! in_array($context->operation, ['upload', 'stage', 'verify'], true) || $context->actorId === null) {
+        if (! in_array($context->operation, ['upload', 'stage', 'verify', 'reconcile', 'restore'], true) || $context->actorId === null) {
             return false;
         }
         $member = User::query()->where('company_id', $context->companyId)->whereKey($context->actorId)->first();

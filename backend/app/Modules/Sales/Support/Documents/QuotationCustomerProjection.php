@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Documents;
 
-use App\Models\Company;
 use App\Models\Currency;
 use App\Models\Uom;
 use App\Modules\Documents\Support\DocumentProjection;
@@ -39,14 +38,13 @@ final class QuotationCustomerProjection
 
     public static function forIssue(QuotationIssue $issue, QuotationRevision $revision): DocumentProjection
     {
-        $company = Company::query()->findOrFail($issue->company_id);
         $lines = QuotationIssuedLine::query()->where('issue_id', $issue->id)->orderBy('sort_order')->orderBy('id')->get();
         $uoms = Uom::query()->whereIn('id', $lines->pluck('offered_uom_id')->filter()->all())->pluck('code', 'id');
         $currency = Currency::query()->findOrFail($issue->currency_id);
         $header = [
             'quotation_number' => $issue->official_number,
             'revision_ordinal' => $revision->revision_ordinal,
-            'issued_on' => $issue->issued_at->setTimezone($company->timezone)->format('Y-m-d'),
+            'issued_on' => $issue->issued_at->setTimezone($issue->issued_timezone)->format('Y-m-d'),
             'currency_code' => $currency->code,
             'recipient_name' => (string) $revision->recipient()->firstOrFail()->name,
             'net_total' => (string) $issue->net_total,

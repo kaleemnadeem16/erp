@@ -156,7 +156,7 @@ final class ImageSanitiser
         if ($expected > self::MAX_DECODED_BYTES) {
             throw self::refuse('The logo is too large to process; use a smaller image.', 'image_too_large');
         }
-        $raw = @gzuncompress($data, $expected + 1);
+        $raw = self::inflate($data, $expected + 1);
         if ($raw === false || strlen($raw) !== $expected) {
             throw self::refuse('The PNG image data is damaged.', 'logo_damaged');
         }
@@ -174,6 +174,17 @@ final class ImageSanitiser
         }
 
         return ['bytes' => $out.self::chunk('IDAT', $data).self::chunk('IEND', ''), 'media_type' => self::PNG, 'width' => $width, 'height' => $height];
+    }
+
+    /** Inflates with a hard output ceiling; malformed or over-long data is `false`, never a warning. */
+    private static function inflate(string $data, int $ceiling): string|false
+    {
+        set_error_handler(static fn (): bool => true);
+        try {
+            return gzuncompress($data, $ceiling);
+        } finally {
+            restore_error_handler();
+        }
     }
 
     private static function chunk(string $type, string $body): string

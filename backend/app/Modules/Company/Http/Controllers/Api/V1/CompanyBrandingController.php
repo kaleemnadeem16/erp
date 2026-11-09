@@ -10,6 +10,7 @@ use App\Modules\Company\Actions\ReadCompanyBrandLogo;
 use App\Modules\Company\Actions\SaveCompanyBranding;
 use App\Modules\Company\Http\Requests\SaveCompanyBrandingRequest;
 use App\Modules\Company\Http\Resources\CompanyBrandingResource;
+use App\Modules\Files\Support\FileException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 
@@ -40,12 +41,16 @@ class CompanyBrandingController extends Controller
         return new CompanyBrandingResource($brand->latest());
     }
 
-    /** The current logo, exactly the sanitised file that is printed. Private and never cached; a plain 404 when there is none. */
+    /** The current logo, exactly the sanitised file that is printed. Private and never cached; a plain 404 when there is none or it cannot be read. */
     public function logo(Request $request, ReadCompanyBrand $brand, ReadCompanyBrandLogo $read): Response
     {
         $current = $brand->current();
         abort_if($current === null || $current->logo === null, 404, 'The company has no logo.');
-        $bytes = $read->execute($current->logo, $request->user()?->id);
+        try {
+            $bytes = $read->execute($current->logo, $request->user()?->id);
+        } catch (FileException) {
+            abort(404, 'The company logo is not available.');
+        }
 
         return response($bytes, 200, [
             'Content-Type' => $current->logo->mediaType, 'X-Content-Type-Options' => 'nosniff', 'Cache-Control' => 'private, no-store',

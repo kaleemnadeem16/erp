@@ -36,6 +36,7 @@ import type {
   QuotationsDocumentCheck200,
   QuotationsDocumentDownloadParams,
   QuotationsDocumentGenerate200,
+  QuotationsDocumentGenerate409,
   QuotationsDocumentGenerateHeaders,
   QuotationsDocumentHistory200,
   QuotationsDocumentShow200,
@@ -286,6 +287,11 @@ export type quotationsDocumentGenerateResponse403 = {
   status: 403;
 };
 
+export type quotationsDocumentGenerateResponse409 = {
+  data: QuotationsDocumentGenerate409;
+  status: 409;
+};
+
 export type quotationsDocumentGenerateResponse422 = {
   data: ValidationExceptionResponse;
   status: 422;
@@ -298,6 +304,7 @@ export type quotationsDocumentGenerateResponseSuccess =
 export type quotationsDocumentGenerateResponseError = (
   | quotationsDocumentGenerateResponse401
   | quotationsDocumentGenerateResponse403
+  | quotationsDocumentGenerateResponse409
   | quotationsDocumentGenerateResponse422
 ) & {
   headers: Headers;
@@ -330,6 +337,7 @@ export const getQuotationsDocumentGenerateMutationOptions = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
+    | QuotationsDocumentGenerate409
     | ValidationExceptionResponse,
   TContext = unknown,
 >(options?: {
@@ -374,6 +382,7 @@ export type QuotationsDocumentGenerateMutationResult = NonNullable<
 export type QuotationsDocumentGenerateMutationError =
   | AuthenticationExceptionResponse
   | AuthorizationExceptionResponse
+  | QuotationsDocumentGenerate409
   | ValidationExceptionResponse;
 
 /**
@@ -383,6 +392,7 @@ export const useQuotationsDocumentGenerate = <
   TError =
     | AuthenticationExceptionResponse
     | AuthorizationExceptionResponse
+    | QuotationsDocumentGenerate409
     | ValidationExceptionResponse,
   TContext = unknown,
 >(

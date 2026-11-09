@@ -32,7 +32,8 @@ class CompanyBrandingResource extends JsonResource
             'logo' => $version?->logo_blob_id === null ? null : [
                 'media_type' => $version->logo_media_type, 'width' => $version->logo_width, 'height' => $version->logo_height, 'size_bytes' => $version->logo_size_bytes,
             ],
-            'reason' => $version?->reason,
+            // The internal note behind a change is for the people who may manage the brand; everyone else sees the brand itself.
+            'reason' => $user !== null && CompanyAccess::mayManageBranding($user) ? $version?->reason : null,
             'changed_at' => $version?->created_at?->toIso8601String(),
             'enabled' => app(CompanyDutyManifest::class)->isActive(CompanyDutyManifest::BRANDING),
             'can_manage' => $user !== null && CompanyAccess::mayManageBranding($user),

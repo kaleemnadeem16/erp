@@ -47,14 +47,13 @@ final class RequestDocumentGeneration
             DB::select('select pg_advisory_xact_lock(hashtext(?))', ["documents:generation:{$companyId}:{$manifest->id}"]);
 
             $receipt = DocumentOperationReceipt::query()->where(['operation' => self::OPERATION, 'operation_key' => $operationKey])->first();
-            if ($receipt !== null) {
-                if ($receipt->intent_digest !== $digest) {
-                    throw new DocumentException("Operation key '{$operationKey}' was already used for a different request.", 'operation_key', 'key_conflict');
-                }
-
-                return ['intent' => $this->find($manifest->id, $operationIdentity), 'replayed' => true];
+            if ($receipt !== null && $receipt->intent_digest !== $digest) {
+                throw new DocumentException("Operation key '{$operationKey}' was already used for a different request.", 'operation_key', 'key_conflict');
             }
             $existing = DocumentGenerationIntent::query()->where(['manifest_id' => $manifest->id, 'operation_identity' => $operationIdentity])->first();
+            if ($receipt !== null && $existing !== null) {
+                return ['intent' => $existing, 'replayed' => true];
+            }
             $created = $existing === null;
             if ($existing === null) {
                 if (DocumentGenerationIntent::query()->where('manifest_id', $manifest->id)->where('state', '<>', 'FAILED')->exists()) {
@@ -65,15 +64,34 @@ final class RequestDocumentGeneration
                     'fencing_generation' => 0, 'created_at' => now(), 'updated_at' => now(),
                 ])->refresh();
             }
-            DocumentOperationReceipt::create(['operation' => self::OPERATION, 'operation_key' => $operationKey, 'intent_digest' => $digest, 'binding_id' => $manifest->subject_binding_id,
-                'actor_id' => $actorId, 'recorded_at' => now()]);
+            if ($receipt === null) {
+                DocumentOperationReceipt::create(['operation' => self::OPERATION, 'operation_key' => $operationKey, 'intent_digest' => $digest, 'binding_id' => $manifest->subject_binding_id,
+                    'actor_id' => $actorId, 'recorded_at' => now()]);
+            }
 
             return ['intent' => $existing, 'replayed' => ! $created];
         });
     }
 
-    private function find(int $manifestId, string $operationIdentity): DocumentGenerationIntent
+    /**
+     * Records that this operation key belongs to this manifest and identity, or refuses it when an earlier request used it for something else. A caller whose document is
+     * already generated, or still being generated, never reaches {@see execute()}, yet the key must still mean one request only: a reused key would otherwise silently return an
+     * unrelated result instead of the documented conflict. A replay of the same request passes without writing again. {@see execute()} accepts a key recorded here.
+     */
+    public function claimKey(int $manifestId, string $operationIdentity, string $operationKey, ?int $actorId = null): void
     {
-        return DocumentGenerationIntent::query()->where(['manifest_id' => $manifestId, 'operation_identity' => $operationIdentity])->firstOrFail();
+        $manifest = DocumentManifest::query()->find($manifestId) ?? throw new DocumentException('The document manifest was not found.', 'manifest_id', 'manifest_not_found');
+        $digest = PinnedConfiguration::digest([$manifest->id, trim($operationIdentity)]);
+        $companyId = $this->company->id();
+        DB::transaction(function () use ($manifest, $operationKey, $digest, $actorId, $companyId): void {
+            DB::select('select pg_advisory_xact_lock(hashtext(?))', ["documents:generation:{$companyId}:{$manifest->id}"]);
+            $receipt = DocumentOperationReceipt::query()->where(['operation' => self::OPERATION, 'operation_key' => $operationKey])->first();
+            if ($receipt === null) {
+                DocumentOperationReceipt::create(['operation' => self::OPERATION, 'operation_key' => $operationKey, 'intent_digest' => $digest, 'binding_id' => $manifest->subject_binding_id,
+                    'actor_id' => $actorId, 'recorded_at' => now()]);
+            } elseif ($receipt->intent_digest !== $digest) {
+                throw new DocumentException("Operation key '{$operationKey}' was already used for a different request.", 'operation_key', 'key_conflict');
+            }
+        });
     }
 }

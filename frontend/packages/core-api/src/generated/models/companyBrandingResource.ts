@@ -7,13 +7,15 @@
 import type { CompanyBrandingResourceDisplayName } from "./companyBrandingResourceDisplayName";
 import type { CompanyBrandingResourceTagline } from "./companyBrandingResourceTagline";
 import type { CompanyBrandingResourceLogo } from "./companyBrandingResourceLogo";
+import type { CompanyBrandingResourceReason } from "./companyBrandingResourceReason";
 
 export interface CompanyBrandingResource {
   version: number;
   display_name: CompanyBrandingResourceDisplayName;
   tagline: CompanyBrandingResourceTagline;
   logo: CompanyBrandingResourceLogo;
-  reason: string;
+  /** The internal note behind a change is for the people who may manage the brand; everyone else sees the brand itself. */
+  reason: CompanyBrandingResourceReason;
   changed_at: string;
   enabled: string;
   can_manage: string;

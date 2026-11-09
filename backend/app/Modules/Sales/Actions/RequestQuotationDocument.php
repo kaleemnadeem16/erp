@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Actions;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Documents\Actions\GenerateDocumentArtefact;
 use App\Modules\Documents\Actions\RequestDocumentGeneration;
@@ -40,12 +41,18 @@ final class RequestQuotationDocument
 
             return $this->locator->manifest($revisionId);
         });
+        $identity = 'retry:'.substr(hash('sha256', $operationKey), 0, 32);
+        try {
+            $this->requests->claimKey($manifest->id, $identity, $operationKey, $actor->id);
+        } catch (DocumentException $e) {
+            throw new DomainInvariantException($e->getMessage(), 'operation_key', 'DELIVERY_KEY_REUSED');
+        }
         if ($this->locator->artefact($manifest) !== null) {
             return $this->disclose($actor, $revisionId);
         }
         $intent = DocumentGenerationIntent::query()->where('manifest_id', $manifest->id)->orderByDesc('id')->first();
         if ($intent === null || $intent->state === 'FAILED') {
-            $intent = $this->requests->execute($manifest->id, 'retry:'.substr(hash('sha256', $operationKey), 0, 32), $operationKey, $actor->id)['intent'];
+            $intent = $this->requests->execute($manifest->id, $identity, $operationKey, $actor->id)['intent'];
         }
         try {
             $this->generate->execute($intent->id, $actor->id);

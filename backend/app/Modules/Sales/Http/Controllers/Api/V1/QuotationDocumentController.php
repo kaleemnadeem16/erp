@@ -52,6 +52,7 @@ class QuotationDocumentController extends Controller
 
     /** Generates the PDF from the original frozen at issue, or retries a failed generation. A failed generation is a status (`FAILED` with `error_code`), not an error. */
     #[HeaderParameter('Idempotency-Key', 'Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).', required: true, type: 'string')]
+    #[Response(409, 'The Idempotency-Key was already used for a different quotation document (reason_code DELIVERY_KEY_REUSED).', type: 'array{message: string, reason_code: string, errors: array<string, list<string>>}')]
     public function generate(RequestQuotationDocumentRequest $request, int $revision, RequestQuotationDocument $generate): QuotationDocumentStatusResource
     {
         $key = trim((string) $request->header('Idempotency-Key'));

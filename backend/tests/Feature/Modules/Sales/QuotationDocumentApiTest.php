@@ -127,6 +127,24 @@ class QuotationDocumentApiTest extends TestCase
         }
     }
 
+    public function test_a_generation_key_cannot_be_reused_for_another_quotation_even_when_its_document_is_already_ready(): void
+    {
+        $this->activate();
+        Sanctum::actingAs($this->clerk);
+        $this->postJson($this->url('/document'), [], ['Idempotency-Key' => 'gen-key'])->assertOk()->assertJsonPath('data.state', 'READY');
+        // The same request replayed under the same key is the same answer, however many times.
+        $this->postJson($this->url('/document'), [], ['Idempotency-Key' => 'gen-key'])->assertOk()->assertJsonPath('data.state', 'READY');
+
+        $second = $this->preparedDraft();
+        app(IssueQuotation::class)($this->checker, $second->id, QuotationRevision::findOrFail($second->id)->input_generation, $this->issueKey());
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        DB::statement('SET CONSTRAINTS ALL DEFERRED');
+
+        $this->postJson("/api/v1/quotations/{$second->id}/document", [], ['Idempotency-Key' => 'gen-key'])
+            ->assertStatus(409)->assertJsonPath('reason_code', 'DELIVERY_KEY_REUSED');
+        $this->postJson("/api/v1/quotations/{$second->id}/document", [], ['Idempotency-Key' => 'gen-key-2'])->assertOk()->assertJsonPath('data.state', 'READY');
+    }
+
     public function test_an_unknown_or_unissued_quotation_is_a_plain_404_and_a_non_viewer_is_refused(): void
     {
         $this->activate();

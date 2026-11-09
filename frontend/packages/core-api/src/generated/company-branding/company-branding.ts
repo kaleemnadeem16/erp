@@ -359,7 +359,7 @@ export const useCompanyBrandingUpdate = <
   return useMutation(mutationOptions, queryClient);
 };
 /**
- * @summary The current logo, exactly the sanitised file that is printed. Private and never cached; a plain 404 when there is none
+ * @summary The current logo, exactly the sanitised file that is printed. Private and never cached; a plain 404 when there is none or it cannot be read
  */
 export type companyBrandingLogoResponse200 = {
   data: string;
@@ -511,7 +511,7 @@ export function useCompanyBrandingLogo<
   queryKey: DataTag<QueryKey, TData, TError>;
 };
 /**
- * @summary The current logo, exactly the sanitised file that is printed. Private and never cached; a plain 404 when there is none
+ * @summary The current logo, exactly the sanitised file that is printed. Private and never cached; a plain 404 when there is none or it cannot be read
  */
 
 export function useCompanyBrandingLogo<
