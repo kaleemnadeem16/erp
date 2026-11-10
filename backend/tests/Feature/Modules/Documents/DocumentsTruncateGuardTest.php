@@ -34,7 +34,7 @@ class DocumentsTruncateGuardTest extends TestCase
         try {
             DB::transaction($statement);
         } catch (QueryException $e) {
-            $this->assertMatchesRegularExpression($guardMustBeTheReason ? '/append-only/' : '/append-only|cannot truncate a table referenced/', $e->getMessage());
+            $this->assertMatchesRegularExpression($guardMustBeTheReason ? '/append-only/' : '/append-only|cannot truncate a table referenced|require scoped row maintenance/', $e->getMessage());
 
             return;
         }
@@ -73,8 +73,9 @@ class DocumentsTruncateGuardTest extends TestCase
 
     public function test_a_cascading_truncate_from_a_parent_table_is_refused_too(): void
     {
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE companies CASCADE'));
-        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE users CASCADE'));
+        // A cascade from a parent also reaches other tables with their own truncate guards (exchange rates, since the quotation-issue FX fence); whichever guard fires first refuses it.
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE companies CASCADE'), false);
+        $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE users CASCADE'), false);
     }
 
     public function test_each_table_has_one_truncate_trigger_on_the_documents_guard(): void
