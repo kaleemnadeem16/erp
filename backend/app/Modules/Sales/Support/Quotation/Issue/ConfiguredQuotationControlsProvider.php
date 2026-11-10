@@ -104,7 +104,7 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
             }
         }
         $document = DB::table('quotation_draft_document_discounts')->where('company_id', $this->company->id())->where('revision_id', $revision->id)->first();
-        if ($document !== null && $policy !== null && $pricingDate !== null) {
+        if ($document !== null && $policy !== null) {
             $before = BigDecimal::zero();
             $known = true;
             $rule = $policy->settlementRule(Currency::query()->findOrFail($revision->currency_id));
