@@ -1211,3 +1211,27 @@ The API tests passed again (**7 passed**); generated client
 files belong to the owner and were not edited/staged by this work. ADR 0164 review, owner codegen
 and `docker/backend/codegen.sh --check`, consequent frontend checks and clean CI remain explicit
 integration gates. No push, real grants, duty activation or company activation was performed.
+
+
+## 2026-11-10 — Quotation concessions and shared approval decision corrections (#96)
+
+C1–C4 and D delivered locally on `develop`: mandatory input controls cover all concession kinds;
+original attribution and append-only company-scoped participation survive re-entry/clearing;
+approval reasons follow the shared projection; FX maintenance and issue share the existing fence.
+Shared decisions reload actor/principal and recheck expiry/content under source-before-request locks,
+committing expiry/invalidation before refusal. ADR 0164 has a short decision-time review addendum.
+
+Verification: QuotationControlSetTest 12 passed; DiscountAuthorityApprovalTest and
+QuotationConcessionsTest 32 passed; QuotationApprovalApiTest 14 passed; issue/FX regression
+59 passed; focused Approvals/Purchasing/Sales regression 58 passed; ApprovalDecisionAuthorityRaceTest
+12 passed; required ratchets 46 passed, one docs-mount skip; all DiscountAuthority* plus
+SalesDutyRegistrationTest 79 passed. The skipped manifest assertion was executed separately
+against all 63 runtime duties and the actual rollout document, with no missing/status mismatches.
+Both new migrations passed apply/empty rollback/re-apply in private tests. Pint passed all 16
+changed PHP files; whole-project PHPStan passed using a private writable cache. No full suite run.
+
+Completion applicability: existing approved semantics and duties retained; direct Action, tenancy,
+immutable evidence, stale-state and two-session guards covered. No API shape, new duty, activation,
+UI, demo, codegen or frontend/browser work applies to these backend corrections. No push or dev
+database use. Task-register claim was refused because #86 remains open/in-review; the owner's
+explicit #96 instruction authorised the local work. ADR review and prior owner codegen gates remain.
