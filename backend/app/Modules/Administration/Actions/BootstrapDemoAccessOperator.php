@@ -24,14 +24,16 @@ use Illuminate\Support\Facades\DB;
  * - No activation: the duties must already be ACTIVE in the container's manifest (the local preview). The Action does not register or activate anything.
  * - Create-once per identity: the receipt is keyed by company and operator e-mail (not user id), so a renamed-and-recreated user is refused. The operator may hold no other sales duty (the ceiling). The grants and their provenance are written together with an append-only receipt. A rerun returns without writing - it never repairs or replenishes a grant that was revoked
  *   later - and a rerun that asks for a different grant set than the receipt fixed is refused. Issue and repair can never be part of the set: any set other than the approved one is refused.
+ * - The receipt and the activity row name the initiating member (`initiated_by_user_id`; NULL only on receipts written before it was recorded).
  * - Nothing here is a route, a screen or an ordinary-administration shortcut.
  */
 final class BootstrapDemoAccessOperator
 {
     /**
+     * @param  User  $initiator  the member who starts the bootstrap; recorded in the receipt and the activity row (never the operator itself)
      * @param  list<string>|null  $grants  the duty names to grant; null means the approved set
      * @return bool true when this call performed the bootstrap, false when it had already happened (and nothing was written) */
-    public function __invoke(User $operator, ?array $grants = null, string $provenance = 'Approved synthetic demo operator bootstrap (ADR 0155)'): bool
+    public function __invoke(User $operator, User $initiator, ?array $grants = null, string $provenance = 'Approved synthetic demo operator bootstrap (ADR 0155)'): bool
     {
         $grants ??= QuotationDemoBoundary::DUTIES;
         $approved = QuotationDemoBoundary::DUTIES;
@@ -52,10 +54,14 @@ final class BootstrapDemoAccessOperator
             }
         }
 
-        return DB::transaction(function () use ($operator, $approved, $provenance): bool {
+        return DB::transaction(function () use ($operator, $initiator, $approved, $provenance): bool {
             app(CompanyAccessFence::class)->lockAll();
             $company = app(CompanyContext::class)->id();
             $operator = User::query()->whereKey($operator->id)->lockForUpdate()->firstOrFail();
+            $initiator = User::query()->whereKey($initiator->id)->lockForUpdate()->firstOrFail();
+            if ((int) $initiator->company_id !== $company || $initiator->status !== MemberStatus::Active || $initiator->is($operator)) {
+                throw new DomainInvariantException('The bootstrap must be initiated by another active member of the same company.', 'initiated_by');
+            }
             if ((int) $operator->company_id !== $company || $operator->email !== QuotationDemoBoundary::OPERATOR_EMAIL) {
                 throw new DomainInvariantException('Only the approved synthetic demo access operator can be bootstrapped.', 'email');
             }
@@ -85,10 +91,10 @@ final class BootstrapDemoAccessOperator
             }
             $operator->givePermissionTo($approved);
             DB::table('demo_access_operator_bootstraps')->insert([
-                'company_id' => $company, 'user_id' => $operator->id, 'email' => $operator->email, 'grants' => json_encode($approved), 'provenance' => $provenance,
+                'company_id' => $company, 'user_id' => $operator->id, 'email' => $operator->email, 'grants' => json_encode($approved), 'provenance' => $provenance, 'initiated_by_user_id' => $initiator->id,
             ]);
             $operator->forceFill(['access_updated_at' => now()])->save();
-            activity()->performedOn($operator)->withProperties(['grants' => $approved, 'decision' => 'ADR 0155', 'provenance' => $provenance])->log('demo access operator bootstrapped');
+            activity()->performedOn($operator)->causedBy($initiator)->withProperties(['grants' => $approved, 'decision' => 'ADR 0155', 'provenance' => $provenance])->log('demo access operator bootstrapped');
 
             return true;
         });

@@ -84,8 +84,7 @@ the owner supplies the numbers later.
 
 **Bootstrap (ADR 0155).** `BootstrapDemoAccessOperator` is the only first-holder path: exact operator
 identity, Company 1, not production, duties already active, exactly the five approved duties, an
-append-only receipt, never replenished, any other set refused. It awaits exact-SHA review before it may
-merge. On the VM demo (non-local `DEMO_MODE`) the duties cannot be activated by this preview, so presets
+append-only receipt that names the initiating member (`initiated_by_user_id`, NULL on older receipts; the activity row records the same actor), never replenished, any other set refused. The missing exact-SHA CI run is an accepted exception ([0170](../decisions/0170-accept-the-missing-exact-sha-ci-evidence-for-the-demo-operator-bootstrap.md)). On the VM demo (non-local `DEMO_MODE`) the duties cannot be activated by this preview, so presets
 are local-only for now.
 
 ## Existing persona definitions before this extension

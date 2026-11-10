@@ -152,6 +152,8 @@ own/assigned scopes and time-bounded task access. Demo: Head office > Main site 
 - Deleting users corrupts actor history and breaks company-scoped actor foreign keys; suspend them.
 - A hidden button is not enforcement. Requests and consequential Actions still authorise on the
   backend.
+- Member history (`GET /members/{member}/history`) shows what happened, when and by whom to anyone with `administration.member.view`; the free-text `reason` is returned only to people who hold
+  `administration.member.manage` and is `null` for everyone else (the same rule as the brand change reason, [0175](../decisions/0175-restore-a-missing-pinned-brand-logo-from-identical-bytes.md)).
 - `team_id` currently represents the company assignment context. Do not reinterpret it as a
   department or warehouse before Q26 is resolved.
 - `access_updated_at` tracks direct member assignment, not effective access changed indirectly by

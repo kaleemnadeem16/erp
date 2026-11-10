@@ -116,6 +116,27 @@ class SalesDevPreviewTest extends TestCase
         $this->assertFalse($shipped->isActive(self::VIEW));
     }
 
+    /** Only the exact environment name `local` can ever switch the preview on; a look-alike, a different casing or any deployed name with the variable set activates nothing. */
+    #[DataProvider('lookAlikeEnvironments')]
+    public function test_no_environment_other_than_local_activates_any_duty_even_with_the_switch_set(string $environment): void
+    {
+        Log::spy();
+        $this->environment($environment, true);
+
+        $manifest = app(SalesDutyManifest::class);
+        $this->assertFalse(SalesDevPreview::enabled());
+        foreach (SalesDevPreview::activated() as $duty) {
+            $this->assertFalse($manifest->isActive($duty), "{$duty} must stay STAGED in {$environment}");
+        }
+        $this->assertSame(SalesDutyManifest::shipped()->activeNames(), $manifest->activeNames());
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function lookAlikeEnvironments(): array
+    {
+        return ['Local' => ['Local'], 'local-vm' => ['local-vm'], 'localhost' => ['localhost'], 'prod' => ['prod'], 'production' => ['production'], 'staging' => ['staging'], 'empty' => ['']];
+    }
+
     public function test_the_grant_command_refuses_unless_the_preview_is_enabled(): void
     {
         $user = User::factory()->create();

@@ -187,6 +187,7 @@ in the same commit.
 | [0164](0164-order-discount-authority-locks-before-quotation-and-approval-records.md) | Order discount authority locks before quotation and approval records | proposed (coordinator review) | 2026-11-06 |
 | [0165](0165-reconcile-purchase-order-fx-with-the-governed-rate.md) | Reconcile a purchase order's FX rate with the governed exchange rate | proposed (owner defaults pending) | 2026-11-06 |
 | [0175](0175-restore-a-missing-pinned-brand-logo-from-identical-bytes.md) | Restore a missing pinned brand logo from identical bytes; logo budgets and brand read hardening | accepted | 2026-11-09 |
+| [0170](0170-accept-the-missing-exact-sha-ci-evidence-for-the-demo-operator-bootstrap.md) | Accept the missing exact-SHA CI evidence for the demo operator bootstrap | accepted | 2026-11-10 |
 | [0180](0180-database-refuses-cross-family-and-broken-chain-rows-and-rollbacks-lock-first.md) | The database refuses cross-family and broken-chain rows; rollbacks lock before they look | accepted | 2026-11-09 |
 | [0181](0181-retire-the-reasonless-delivery-correction-and-judge-delivery-dates-by-the-company-calendar.md) | Retire the reasonless delivery correction; judge delivery dates by the company calendar | accepted | 2026-11-10 |
 

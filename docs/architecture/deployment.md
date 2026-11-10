@@ -230,6 +230,19 @@ production hostnames are deliberately not recorded in this public repository.)
 tag and repeating steps 8 and 10. Migrations are not automatically reversed — check
 whether the rollback target predates a schema change before rolling back.
 
+## The Sales developer preview must be off on every VM
+
+`SALES_DEV_QUOTATION_DUTIES` switches the staged quotation duties on for a developer's machine ([Sales README](../../backend/app/Modules/Sales/README.md)). It only takes effect when `APP_ENV` is exactly `local`; in
+any other environment (production, staging, testing, any other name or casing) it is ignored, logged at critical level and nothing is activated, granted or seeded. A VM is a deployment: it never runs
+`APP_ENV=local`. What to verify on a VM after a deploy:
+
+1. `APP_ENV` is `production` (or the named staging value), never `local`.
+2. `SALES_DEV_QUOTATION_DUTIES` is unset or `false` in the environment file the container reads.
+3. `php artisan sales:dev-grant-quotation <login>` refuses to run, and the application log holds no "SALES_DEV_QUOTATION_DUTIES is set outside a local environment" line.
+4. The staged quotation duties are absent from the active permission list (`php artisan permission:register` reports no new `sales.quotation.*` duty).
+
+Guarded by `SalesDevPreviewTest` (every non-`local` name stays STAGED with the switch set).
+
 ## What a customer deployment needs
 
 Worth stating now, because it constrains design:

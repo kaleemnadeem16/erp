@@ -74,7 +74,10 @@ class AccessAdministrationActionIsolationTest extends TestCase
         DB::table('companies')->insert(['id' => 2, 'name' => 'Foreign company']);
         DB::table('activity_log')->insert(['company_id' => 2, 'log_name' => 'default', 'description' => 'member access changed', 'subject_type' => User::class, 'subject_id' => $member->id, 'properties' => json_encode(['reason' => 'foreign-secret']), 'created_at' => now(), 'updated_at' => now()]);
         $this->actingAs($actor)->getJson("/api/v1/members/{$member->id}/history")->assertForbidden()->assertJsonMissing(['reason' => 'Approved duty']);
-        $response = $this->actingAs($viewer)->getJson("/api/v1/members/{$member->id}/history")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.reason', 'Approved duty');
+        // Owner decision (D3): a viewer sees what happened, never the free-text reason; a member manager who can also read does.
+        $this->actingAs($viewer)->getJson("/api/v1/members/{$member->id}/history")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.reason', null)->assertJsonMissing(['reason' => 'Approved duty']);
+        $manager = PermissionedActor::grant(User::factory()->create(), ['administration.member.view', 'administration.member.manage']);
+        $response = $this->actingAs($manager)->getJson("/api/v1/members/{$member->id}/history")->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.reason', 'Approved duty');
         foreach (['secret-hash', 'secret-token', 'unrelated-secret', 'foreign-secret'] as $secret) {
             $this->assertStringNotContainsString($secret, $response->getContent());
         }

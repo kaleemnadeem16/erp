@@ -7,6 +7,7 @@ namespace Tests\Feature\Support;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Administration\Actions\BootstrapDemoAccessOperator;
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Duty;
 use App\Support\Demo\QuotationDemoBoundary as Demo;
@@ -34,6 +35,13 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         return User::factory()->create(['email' => Demo::OPERATOR_EMAIL]);
     }
 
+    private function initiator(): User
+    {
+        return $this->initiator ??= User::factory()->create();
+    }
+
+    private ?User $initiator = null;
+
     /** @return list<string> */
     private function held(User $user): array
     {
@@ -52,14 +60,15 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
     {
         $this->activate();
         $operator = $this->operator();
-        $this->assertTrue(app(BootstrapDemoAccessOperator::class)($operator));
+        $this->assertTrue(app(BootstrapDemoAccessOperator::class)($operator, $this->initiator()));
 
         $this->assertSame($this->approved(), $this->held($operator));
         $this->assertSame([], array_intersect($this->held($operator), [Duty::QUOTATION_ISSUE, Duty::DOCUMENT_REPAIR, Duty::QUOTATION_APPROVE, Duty::QUOTATION_WITHDRAW]));
         $receipt = DB::table('demo_access_operator_bootstraps')->where('user_id', $operator->id)->first();
         $this->assertNotNull($receipt);
         $this->assertSame($this->approved(), collect(json_decode($receipt->grants, true))->sort()->values()->all());
-        $this->assertDatabaseHas('activity_log', ['description' => 'demo access operator bootstrapped', 'subject_id' => $operator->id]);
+        $this->assertDatabaseHas('activity_log', ['description' => 'demo access operator bootstrapped', 'subject_id' => $operator->id, 'causer_id' => $this->initiator()->id]);
+        $this->assertSame($this->initiator()->id, (int) $receipt->initiated_by_user_id);
         $this->assertDatabaseCount('access_scope_limits', 0);
     }
 
@@ -68,11 +77,11 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         $this->activate();
         $operator = $this->operator();
         $bootstrap = app(BootstrapDemoAccessOperator::class);
-        $bootstrap($operator);
+        $bootstrap($operator, $this->initiator());
         $operator->revokePermissionTo(Duty::QUOTATION_ACCESS_REVOKE);
         $audit = DB::table('activity_log')->count();
 
-        $this->assertFalse($bootstrap($operator->fresh()));
+        $this->assertFalse($bootstrap($operator->fresh(), $this->initiator()));
         $this->assertNotContains(Duty::QUOTATION_ACCESS_REVOKE, $this->held($operator), 'a rerun is not a repair');
         $this->assertSame($audit, DB::table('activity_log')->count());
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 1);
@@ -83,14 +92,14 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         $this->activate();
         $original = $this->operator();
         $bootstrap = app(BootstrapDemoAccessOperator::class);
-        $this->assertTrue($bootstrap($original));
+        $this->assertTrue($bootstrap($original, $this->initiator()));
 
         // The original is renamed away and a brand-new user takes the designated identity: it has a new id and no receipt of its own.
         DB::table('users')->where('id', $original->id)->update(['email' => 'renamed-operator@erp.x1techs.com']);
         $replacement = $this->operator();
         $this->assertNotSame($original->id, $replacement->id);
 
-        $this->assertThrows(fn () => $bootstrap($replacement), DomainInvariantException::class, 'already');
+        $this->assertThrows(fn () => $bootstrap($replacement, $this->initiator()), DomainInvariantException::class, 'already');
         $this->assertSame([], $this->held($replacement));
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 1);
     }
@@ -99,7 +108,7 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
     {
         $this->activate();
         $original = $this->operator();
-        app(BootstrapDemoAccessOperator::class)($original);
+        app(BootstrapDemoAccessOperator::class)($original, $this->initiator());
         $other = User::factory()->create();
 
         $this->assertThrows(fn () => DB::transaction(fn () => DB::table('demo_access_operator_bootstraps')->insert([
@@ -117,7 +126,7 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         $operator = $this->operator();
         $operator->givePermissionTo(Duty::QUOTATION_ISSUE);
 
-        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator), DomainInvariantException::class, 'outside');
+        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator, $this->initiator()), DomainInvariantException::class, 'outside');
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 0);
         $this->assertSame([Duty::QUOTATION_ISSUE], $this->held($operator));
     }
@@ -128,13 +137,13 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         $operator = $this->operator();
         $bootstrap = app(BootstrapDemoAccessOperator::class);
         foreach ([[...Demo::DUTIES, Duty::QUOTATION_ISSUE], [...Demo::DUTIES, Duty::DOCUMENT_REPAIR], [Duty::QUOTATION_VIEW, Duty::QUOTATION_PREPARE], []] as $set) {
-            $this->assertThrows(fn () => $bootstrap($operator, $set), DomainInvariantException::class, 'exactly the approved');
+            $this->assertThrows(fn () => $bootstrap($operator, $this->initiator(), $set), DomainInvariantException::class, 'exactly the approved');
         }
         $this->assertSame([], $this->held($operator));
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 0);
 
-        $bootstrap($operator);
-        $this->assertThrows(fn () => $bootstrap($operator, [...Demo::DUTIES, Duty::QUOTATION_ISSUE]), DomainInvariantException::class, 'exactly the approved');
+        $bootstrap($operator, $this->initiator());
+        $this->assertThrows(fn () => $bootstrap($operator, $this->initiator(), [...Demo::DUTIES, Duty::QUOTATION_ISSUE]), DomainInvariantException::class, 'exactly the approved');
         $this->assertSame($this->approved(), $this->held($operator), 'after success a different set is refused and nothing changes');
     }
 
@@ -143,19 +152,19 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
         $this->activate();
         $bootstrap = app(BootstrapDemoAccessOperator::class);
         $other = User::factory()->create(['email' => 'someone-else@erp.x1techs.com']);
-        $this->assertThrows(fn () => $bootstrap($other), DomainInvariantException::class, 'approved synthetic demo access operator');
+        $this->assertThrows(fn () => $bootstrap($other, $this->initiator()), DomainInvariantException::class, 'approved synthetic demo access operator');
         $main = User::factory()->create(['email' => Demo::MAIN_EMAIL]);
-        $this->assertThrows(fn () => $bootstrap($main), DomainInvariantException::class, 'approved synthetic demo access operator');
+        $this->assertThrows(fn () => $bootstrap($main, $this->initiator()), DomainInvariantException::class, 'approved synthetic demo access operator');
 
         $suspended = $this->operator();
         DB::table('users')->where('id', $suspended->id)->update(['status' => 'SUSPENDED']);
-        $this->assertThrows(fn () => $bootstrap($suspended), DomainInvariantException::class, 'active member');
+        $this->assertThrows(fn () => $bootstrap($suspended, $this->initiator()), DomainInvariantException::class, 'active member');
 
         // A look-alike in another company, hydrated as if it were ours, is refused before anything is written.
         $company = DB::table('companies')->insertGetId(['name' => 'Foreign synthetic company', 'created_at' => now(), 'updated_at' => now()]);
         $id = DB::table('users')->insertGetId(['company_id' => $company, 'name' => 'Foreign operator', 'email' => 'foreign-operator@fixture.test', 'password' => 'fixture-not-a-login', 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
         $foreign = User::withoutGlobalScopes()->findOrFail($id);
-        $this->assertThrows(fn () => $bootstrap($foreign), DomainInvariantException::class, 'unavailable');
+        $this->assertThrows(fn () => $bootstrap($foreign, $this->initiator()), DomainInvariantException::class, 'unavailable');
         $this->assertSame([], $this->held($other));
         $this->assertSame([], $this->held($main));
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 0);
@@ -165,16 +174,16 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
     {
         $operator = $this->operator();
         // The duties are STAGED in the shipped manifest: the Action never activates them.
-        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator), DomainInvariantException::class, 'never activates a duty');
+        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator, $this->initiator()), DomainInvariantException::class, 'never activates a duty');
 
         $this->activate();
         config(['demo.mode' => true]);
         $this->app->detectEnvironment(fn () => 'production');
-        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator), DomainInvariantException::class, 'unavailable');
+        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator, $this->initiator()), DomainInvariantException::class, 'unavailable');
         $this->app->detectEnvironment(fn () => 'testing');
         config(['demo.mode' => false]);
         $this->app->detectEnvironment(fn () => 'staging');
-        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator), DomainInvariantException::class, 'unavailable');
+        $this->assertThrows(fn () => app(BootstrapDemoAccessOperator::class)($operator, $this->initiator()), DomainInvariantException::class, 'unavailable');
 
         $this->assertSame([], $operator->fresh()->getDirectPermissions()->pluck('name')->all());
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 0);
@@ -184,10 +193,35 @@ final class BootstrapDemoAccessOperatorTest extends TestCase
     {
         $this->activate();
         $operator = $this->operator();
-        app(BootstrapDemoAccessOperator::class)($operator);
+        app(BootstrapDemoAccessOperator::class)($operator, $this->initiator());
         $this->assertThrows(fn () => DB::transaction(fn () => DB::table('demo_access_operator_bootstraps')->update(['provenance' => 'rewritten'])), QueryException::class);
         $this->assertThrows(fn () => DB::transaction(fn () => DB::table('demo_access_operator_bootstraps')->delete()), QueryException::class);
         $this->assertThrows(fn () => DB::transaction(fn () => DB::statement('TRUNCATE demo_access_operator_bootstraps')), QueryException::class);
         $this->assertDatabaseCount('demo_access_operator_bootstraps', 1);
+    }
+
+    public function test_the_initiator_must_be_another_active_member_of_the_same_company(): void
+    {
+        $this->activate();
+        $operator = $this->operator();
+        $bootstrap = app(BootstrapDemoAccessOperator::class);
+
+        $this->assertThrows(fn () => $bootstrap($operator, $operator), DomainInvariantException::class, 'initiated');
+        $suspended = User::factory()->create(['status' => MemberStatus::Suspended]);
+        $this->assertThrows(fn () => $bootstrap($operator, $suspended), DomainInvariantException::class, 'initiated');
+        $this->assertDatabaseCount('demo_access_operator_bootstraps', 0);
+        $this->assertSame([], $this->held($operator));
+    }
+
+    public function test_a_receipt_written_without_an_initiator_keeps_a_null_and_the_database_refuses_a_foreign_one(): void
+    {
+        $this->activate();
+        $operator = $this->operator();
+        $row = ['company_id' => 1, 'user_id' => $operator->id, 'email' => $operator->email, 'grants' => json_encode($this->approved()), 'provenance' => 'before the initiator was recorded'];
+        DB::table('demo_access_operator_bootstraps')->insert($row);
+        $this->assertNull(DB::table('demo_access_operator_bootstraps')->where('user_id', $operator->id)->value('initiated_by_user_id'));
+
+        $this->expectException(QueryException::class);
+        DB::table('demo_access_operator_bootstraps')->insert([...$row, 'user_id' => $this->initiator()->id, 'email' => 'x@example.com', 'initiated_by_user_id' => 999999]);
     }
 }

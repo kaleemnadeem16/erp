@@ -173,7 +173,7 @@ final class QuotationAccessDemoSeeder extends Seeder
                 ], $admin);
             app(SyncMemberAccess::class)($operator, ['role_ids' => [(int) $role->id], 'direct_permissions' => [], 'scope_limits' => [], 'reason' => 'Demo: the synthetic access operator administers access (ADR 0155).'], $admin);
         }
-        app(BootstrapDemoAccessOperator::class)($operator->refresh());
+        app(BootstrapDemoAccessOperator::class)($operator->refresh(), $admin);
 
         return $operator->refresh();
     }

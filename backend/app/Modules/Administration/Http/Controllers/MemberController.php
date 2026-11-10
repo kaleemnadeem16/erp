@@ -133,6 +133,8 @@ class MemberController extends Controller
     public function history(Request $request, User $member): JsonResponse
     {
         abort_unless($request->user()?->can('administration.member.view'), 403);
+        // The free-text reason behind a change is internal: only people who may manage members read it; viewers see what happened, when and by whom.
+        $mayReadReasons = (bool) $request->user()->can('administration.member.manage');
 
         $entries = Activity::query()
             ->where('company_id', $member->company_id)
@@ -150,7 +152,7 @@ class MemberController extends Controller
                 'id' => $activity->id,
                 'description' => $activity->description,
                 'actor' => $activity->causer?->getAttribute('name'),
-                'reason' => $activity->properties->get('reason'),
+                'reason' => $mayReadReasons ? $activity->properties->get('reason') : null,
                 'created_at' => $activity->created_at?->toISOString(),
             ]);
 

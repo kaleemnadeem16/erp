@@ -133,6 +133,19 @@ class AccessAdministrationApiTest extends TestCase
             ->assertOk()->assertJsonPath('data.0.description', 'member password reset link sent');
     }
 
+    public function test_member_history_free_text_reasons_are_read_only_by_member_managers(): void
+    {
+        $member = User::factory()->create();
+        activity()->performedOn($member)->withProperties(['reason' => 'Internal note about this person'])->log('member status changed');
+        $viewer = PermissionedActor::grant(User::factory()->create(), ['administration.member.view']);
+        $manager = PermissionedActor::grant(User::factory()->create(), ['administration.member.manage', 'administration.member.view']);
+
+        $this->actingAs($viewer)->getJson("/api/v1/members/{$member->id}/history")
+            ->assertOk()->assertJsonPath('data.0.description', 'member status changed')->assertJsonPath('data.0.reason', null);
+        $this->actingAs($manager)->getJson("/api/v1/members/{$member->id}/history")
+            ->assertOk()->assertJsonPath('data.0.reason', 'Internal note about this person');
+    }
+
     public function test_inviting_with_access_requires_the_access_assignment_permission(): void
     {
         Notification::fake();
