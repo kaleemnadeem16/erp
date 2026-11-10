@@ -29,6 +29,6 @@ test('a picker whose list failed says why and recovers on retry', async ({ page 
   failing = false;
   await alert.getByRole('button', { name: 'Try again' }).click();
   await expect(alert).toHaveCount(0);
-  await expect(page.getByPlaceholder('Search units…')).toBeVisible();
+  await expect(page.getByPlaceholder('Search work unit…')).toBeVisible();
   await expect(page.getByRole('option').first()).toBeVisible();
 });

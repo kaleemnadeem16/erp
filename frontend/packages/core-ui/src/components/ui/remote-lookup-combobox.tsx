@@ -87,7 +87,7 @@ export const RemoteLookupCombobox = forwardRef<HTMLButtonElement, RemoteLookupCo
           )}
         >
           <span className={cn('truncate text-left', !displayLabel && 'text-muted-foreground')}>
-            {displayLabel ?? (loading ? 'Loading…' : (placeholder ?? label))}
+            {displayLabel ?? (loadError ? `Couldn't load ${loadError.noun}` : loading ? 'Loading…' : (placeholder ?? label))}
           </span>
           <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
         </button>
