@@ -308,6 +308,11 @@ The Sales approval standing read uses the shared approval reason policy. Human-w
 reasons are visible to their author, an authorised evidence reader or a holder of
 `approvals.reason.view`; other viewers receive null reasons with the outcome unchanged.
 
+Exchange-rate insert, update and delete statements take the existing company access fence
+before touching rows and hold it through commit. Issue already holds that fence before
+resolving FX, so maintenance either commits first and is revalidated, or waits until issue
+commits. This includes raw writers; the established lock order is unchanged.
+
 ## Related
 
 - [API and rollout](quotation-discount-authority-api.md) · [Journey](../journeys/quotation-discount-authority.md)

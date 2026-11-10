@@ -3,11 +3,16 @@
 namespace Tests\Feature\Modules\Sales;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
+use App\Models\Currency;
+use App\Models\ExchangeRate;
 use App\Models\User;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Numbering\Support\NumberingContext;
+use App\Modules\Sales\Actions\CreateQuotationDraft;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Actions\PublishQuotationControlSet;
+use App\Modules\Sales\Actions\UpdateQuotationDraft;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
@@ -23,6 +28,7 @@ use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
+use Tests\Feature\Security\Concerns\TwoSessionRace;
 use Tests\TestCase;
 
 /**
@@ -33,6 +39,7 @@ class QuotationIssueCommitTest extends TestCase
 {
     use BuildsIssuableQuotations;
     use DatabaseMigrations;
+    use TwoSessionRace;
 
     public function runDatabaseMigrations(): void
     {
@@ -290,6 +297,66 @@ class QuotationIssueCommitTest extends TestCase
             $other->statement('ROLLBACK');
             DB::statement('RESET lock_timeout');
         }
+    }
+
+    /** @return array{QuotationRevision, ExchangeRate} */
+    private function foreignDraft(): array
+    {
+        $usd = Currency::firstOrCreate(['code' => 'USD'], ['name' => 'Dollar', 'symbol' => '$', 'decimal_places' => 2]);
+        $rate = ExchangeRate::create(['from_currency_id' => $usd->id, 'to_currency_id' => Company::findOrFail(1)->base_currency_id, 'rate' => '280.000000000', 'rate_date' => $this->today(), 'rate_type' => 'SPOT', 'source' => 'manual']);
+        $draft = app(CreateQuotationDraft::class)($this->maker, $this->issueKey(), ['recipient_party_id' => $this->customer->id, 'currency_id' => $usd->id, 'pricing_date' => $this->today(), 'valid_through_local_date' => now('Asia/Karachi')->addMonth()->format('Y-m-d')]);
+        app(UpdateQuotationDraft::class)($this->maker, $draft->revisionId, $draft->inputGeneration, $this->issueKey(), ['add_lines' => [['source_kind' => 'MANUAL', 'description' => 'Foreign service', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '100.0000']]]);
+
+        return [QuotationRevision::findOrFail($draft->revisionId), $rate];
+    }
+
+    public function test_fx_maintenance_waits_until_the_issue_commits(): void
+    {
+        [$revision, $rate] = $this->foreignDraft();
+        $waiting = null;
+        DB::listen(function ($query) use (&$waiting, $rate): void {
+            if ($waiting === null && str_contains($query->sql, 'select now() as now')) {
+                $waiting = [
+                    $this->otherSessionWaits('update exchange_rates set rate = ? where id = ?', ['300.000000000', $rate->id]),
+                    $this->otherSessionWaits('delete from exchange_rates where id = ?', [$rate->id]),
+                    $this->otherSessionWaits("insert into exchange_rates(company_id,from_currency_id,to_currency_id,rate,rate_date,rate_type,source,created_at,updated_at) values (1,?,?,?,?,'SPOT','manual',now(),now())", [$rate->from_currency_id, $rate->to_currency_id, '300.000000000', now('Asia/Karachi')->addDay()->format('Y-m-d')]),
+                ];
+            }
+        });
+        app(IssueQuotation::class)($this->checker, $revision->id, $revision->input_generation, $this->issueKey());
+        $this->assertSame([true, true, true], $waiting);
+        $this->assertSame('280.000000000', $rate->fresh()->rate);
+        $this->assertSame(1, DB::table('quotation_issues')->where('revision_id', $revision->id)->count());
+    }
+
+    public function test_issue_waits_for_fx_maintenance_and_refuses_changed_pinned_evidence(): void
+    {
+        [$revision, $rate] = $this->foreignDraft();
+        $checker = $this->checker->id;
+        $outcome = $this->raceAction($this->raceSession(), "update exchange_rates set rate = '300.000000000' where id = {$rate->id}",
+            fn () => app(IssueQuotation::class)(User::query()->findOrFail($checker), $revision->id, $revision->input_generation, 'fx-writer-first'), fn () => null);
+        $this->assertFalse($outcome['success'], json_encode($outcome));
+        $this->assertSame(DomainInvariantException::class, $outcome['class']);
+        $this->assertStringContainsString('FX_EVIDENCE_CHANGED', $outcome['message']);
+        $this->assertSame(0, DB::table('quotation_issues')->where('revision_id', $revision->id)->count());
+        $this->assertSame('DRAFT', $revision->fresh()->state);
+    }
+
+    public function test_fx_fence_migration_rolls_back_and_reapplies(): void
+    {
+        $migration = require database_path('migrations/2026_12_03_060000_fence_exchange_rate_writers_with_quotation_issue.php');
+        DB::transaction(function () use ($migration): void {
+            $migration->down();
+            $migration->up();
+        });
+        $this->assertSame(1, (int) DB::selectOne("select count(*) as n from pg_trigger where tgname = 'exchange_rate_writer_barrier'")->n);
+    }
+
+    public function test_exchange_rate_bulk_removal_is_refused(): void
+    {
+        $this->expectException(QueryException::class);
+        $this->expectExceptionMessage('Exchange rates require scoped row maintenance');
+        DB::statement('TRUNCATE exchange_rates');
     }
 
     private function admin(): User
