@@ -131,6 +131,22 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
         $this->assertSame($before, ['cases' => DB::table('customer_decision_cases')->count(), 'components' => DB::table('customer_decision_components')->count(), 'evidence' => DB::table('customer_decision_evidence')->count()]);
     }
 
+    public function test_nothing_outside_the_intake_storage_depends_on_it_so_it_can_always_be_rolled_back_on_its_own(): void
+    {
+        // Issue #101: a relationship from the receipts (or any other table) to the case table would make this rollback fail once that table exists. The receipt rule is a trigger on purpose.
+        $outside = DB::select("select conrelid::regclass::text as owner, conname from pg_constraint where contype = 'f' and confrelid::regclass::text like 'customer\\_decision\\_%' and conrelid::regclass::text not like 'customer\\_decision\\_%'");
+        $this->assertSame([], $outside, 'no foreign key from outside the intake storage may reference it');
+
+        $views = DB::select("select distinct v.relname from pg_depend d join pg_rewrite r on r.oid = d.objid join pg_class v on v.oid = r.ev_class join pg_class t on t.oid = d.refobjid where t.relname like 'customer\\_decision\\_%' and v.relname not like 'customer\\_decision\\_%'");
+        $this->assertSame([], $views, 'no view may depend on the intake storage');
+
+        $this->migration()->down();
+        $this->assertUninstalled();
+        $this->assertTrue(Schema::hasTable('sales_customer_decision_receipts'), 'the receipts sit outside and survive');
+        $this->migration()->up();
+        $this->assertInstalled();
+    }
+
     public function test_the_migration_stamp_is_unique_and_sorts_after_everything_it_depends_on(): void
     {
         $names = collect(glob(base_path('database/migrations/*.php')))->map(fn (string $path): string => basename($path))->sort()->values();
