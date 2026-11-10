@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { QuotationApprovalResourceRequestAnyOfExpiresAt } from "./quotationApprovalResourceRequestAnyOfExpiresAt";
 import type { QuotationApprovalResourceRequestAnyOfRequestedBy } from "./quotationApprovalResourceRequestAnyOfRequestedBy";
 import type { QuotationApprovalResourceRequestAnyOfClosedAt } from "./quotationApprovalResourceRequestAnyOfClosedAt";
 import type { QuotationApprovalResourceRequestAnyOfClosingReason } from "./quotationApprovalResourceRequestAnyOfClosingReason";
@@ -14,6 +15,8 @@ export type QuotationApprovalResourceRequestAnyOf = {
   id: number;
   status: string;
   requested_at: string;
+  expires_at: QuotationApprovalResourceRequestAnyOfExpiresAt;
+  expired: boolean;
   requested_by: QuotationApprovalResourceRequestAnyOfRequestedBy;
   closed_at: QuotationApprovalResourceRequestAnyOfClosedAt;
   closing_reason: QuotationApprovalResourceRequestAnyOfClosingReason;
