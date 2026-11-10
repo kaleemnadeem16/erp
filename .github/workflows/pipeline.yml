@@ -262,6 +262,10 @@ jobs:
       # 429 and send otherwise authenticated tests back to the sign-in page.
       API_RATE_LIMIT_PER_MINUTE: 10000
       LOGIN_RATE_LIMIT_PER_MINUTE: 10000
+      # Issue #100: the demo seed has no default password. This job's database lives only for this run, so one throwaway value
+      # is shared by the seed and the browser sign-in.
+      DEMO_USER_PASSWORD: ci-throwaway-Demo-Password-1!
+      E2E_USER_PASSWORD: ci-throwaway-Demo-Password-1!
     steps:
       - uses: actions/checkout@v5
       - uses: shivammathur/setup-php@v2
