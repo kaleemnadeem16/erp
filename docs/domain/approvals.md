@@ -256,6 +256,12 @@ submitter without evidence entitlement therefore does not read why their request
 reader, a delegator, a withdrawal and system reasons), `ApprovalAuditorReadsRolloutTest`, `ApprovalAuditorsDemoSeederTest`, and a browser
 spec for the withheld note.
 
+Decision-time checks repeat on fresh actors under the company access fence, including delegated
+principals. Review providers lock their source document before the approval request; the PO provider
+holds the header and ordered lines. Eligibility, document fingerprints and step deadlines are checked
+again before recording a decision. A late expiry or document change records EXPIRED or INVALIDATED
+and commits that state before returning the refusal; it appends no decision.
+
 ## Related
 
 - [ADR 0087](../decisions/0087-approval-limits-and-reasons-are-separate-auditor-capabilities.md)

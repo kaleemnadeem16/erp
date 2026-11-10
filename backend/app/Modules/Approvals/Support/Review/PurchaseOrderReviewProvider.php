@@ -21,6 +21,12 @@ final class PurchaseOrderReviewProvider implements ApprovalReviewProvider
         return 'PURCHASE_ORDER';
     }
 
+    public function lockForDecision(int $subjectId): void
+    {
+        $order = PurchaseOrder::query()->whereKey($subjectId)->lockForUpdate()->firstOrFail();
+        $order->lines()->orderBy('id')->lockForUpdate()->get();
+    }
+
     public function fingerprint(int $subjectId): string
     {
         return $this->digest($this->order($subjectId));

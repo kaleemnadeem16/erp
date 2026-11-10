@@ -11,5 +11,8 @@ interface ApprovalReviewProvider
     /** @return array<string, mixed> Explicit versioned whitelist, never a raw model. */
     public function capture(int $subjectId): array;
 
+    /** Hold the reviewed document before the engine locks its approval request. */
+    public function lockForDecision(int $subjectId): void;
+
     public function fingerprint(int $subjectId): string;
 }

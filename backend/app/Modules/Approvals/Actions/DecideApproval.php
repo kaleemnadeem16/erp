@@ -18,6 +18,7 @@ use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Approvals\Support\ExpiryAction;
 use App\Modules\Approvals\Support\Review\ApprovalReviewRegistry;
 use App\Modules\Approvals\Support\TransactionalApprovalSubject;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -42,14 +43,34 @@ final class DecideApproval
     {
         $subject = $this->subjects->get($request->subject_type);
         if ($subject instanceof TransactionalApprovalSubject) {
-            return $subject->approvalTransaction($request->subject_id, $actor,
-                fn (User $fresh): ApprovalRequest => $this->decide($request, $fresh, $decision, $reason, $stepId), 'decide') ?? throw new \LogicException('A decision must return its request.');
+            $refusal = null;
+            $result = $subject->approvalTransaction($request->subject_id, $actor,
+                function (User $fresh) use ($request, $decision, $reason, $stepId, &$refusal): ?ApprovalRequest {
+                    $result = $this->decide($request, $fresh, $decision, $reason, $stepId);
+                    if ($result instanceof DomainInvariantException) {
+                        $refusal = $result;
+
+                        return null;
+                    }
+
+                    return $result;
+                }, 'decide');
+            if ($refusal !== null) {
+                throw $refusal;
+            }
+
+            return $result ?? throw new \LogicException('A decision must return its request.');
         }
 
-        return $this->decide($request, $actor, $decision, $reason, $stepId);
+        $result = $this->decide($request, $actor, $decision, $reason, $stepId);
+        if ($result instanceof DomainInvariantException) {
+            throw $result;
+        }
+
+        return $result;
     }
 
-    private function decide(ApprovalRequest $request, User $actor, ApprovalDecisionKind $decision, ?string $reason, ?int $stepId): ApprovalRequest
+    private function decide(ApprovalRequest $request, User $actor, ApprovalDecisionKind $decision, ?string $reason, ?int $stepId): ApprovalRequest|DomainInvariantException
     {
         if ($decision === ApprovalDecisionKind::Rejected && trim((string) $reason) === '') {
             throw new DomainInvariantException('A rejection needs a reason.', 'reason');
@@ -63,17 +84,27 @@ final class DecideApproval
         }
         // Refuse an unrelated caller before examining document changes or settling expiry: both can write state.
         $this->authorisedStep($current, $actor, $stepId);
-        $this->preflight($current);
+        try {
+            $this->preflight($current);
+        } catch (DomainInvariantException $refusal) {
+            return $refusal;
+        }
 
-        return DB::transaction(function () use ($request, $actor, $decision, $reason, $stepId): ApprovalRequest {
+        return DB::transaction(function () use ($request, $actor, $decision, $reason, $stepId): ApprovalRequest|DomainInvariantException {
+            $actor = DecisionActor::fresh($actor, 'decide approvals');
+            app(ApprovalReviewRegistry::class)->lockForDecision($request);
             $request = ApprovalRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
             if (! $request->isOpen()) {
                 throw new DomainInvariantException("This approval is already {$request->status->value}.", 'status');
             }
 
             [$step, $grant] = $this->authorisedStep($request, $actor, $stepId);
-            if ($this->subjects->get($request->subject_type) instanceof TransactionalApprovalSubject) {
+            DecisionActor::require($grant->principal, (string) $grant->snapshot['permission'], 'decide approvals');
+            try {
                 $this->preflight($request);
+            } catch (DomainInvariantException $refusal) {
+                // Commit the recorded expiry/invalidation, then refuse outside all owned transactions.
+                return $refusal;
             }
 
             ApprovalDecision::query()->create([

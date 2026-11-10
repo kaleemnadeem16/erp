@@ -53,6 +53,13 @@ final class ApprovalReviewRegistry
             && is_array($snapshot['commercial'] ?? null) && $snapshot['commercial'] !== [];
     }
 
+    public function lockForDecision(ApprovalRequest $request): void
+    {
+        if ($this->has($request->subject_type)) {
+            $this->providers[$request->subject_type]->lockForDecision($request->subject_id);
+        }
+    }
+
     public function unchanged(ApprovalRequest $request): bool
     {
         // No invented evidence for legacy completed approvals or subjects not yet adopting review.

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Security;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Actions\DecideApproval;
 use App\Modules\Approvals\Actions\SubmitForApproval;
@@ -15,20 +16,12 @@ use App\Modules\Purchasing\Actions\IssuePurchaseOrder;
 use App\Modules\Purchasing\Actions\UpdatePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use PDO;
 use Tests\Feature\Security\Concerns\TwoSessionRace;
 use Tests\TestCase;
 
-/**
- * Issue #91 (audit F4/F5): DecideApproval against real concurrent PostgreSQL sessions. The test holds the approval request's row
- * lock so the Action has already finished its pre-transaction checks and is waiting for its own transaction; a security or
- * document change is then committed and the lock released (see Concerns\TwoSessionRace).
- *
- * These are the guards that HOLD today: authority and delegation are re-read from the database inside the decision transaction,
- * a delegator is re-hydrated there, the pending-approval freeze stops a normal edit, and a stale approval cannot be consumed.
- * The races that do NOT hold (the approver's own permission/suspension, expiry, a document change that bypasses the freeze) are
- * documented in docs/architecture/security-verification-matrix.md and are deliberately not asserted here.
- */
+/** Real two-session checks of approval authority, expiry and reviewed-document freshness at decision time. */
 class ApprovalDecisionAuthorityRaceTest extends TestCase
 {
     use RefreshDatabase;
@@ -65,9 +58,13 @@ class ApprovalDecisionAuthorityRaceTest extends TestCase
         return fn () => app(DecideApproval::class)(ApprovalRequest::query()->findOrFail($f['request']), User::query()->findOrFail($as), ApprovalDecisionKind::Approved);
     }
 
-    private function gate(array $f): string
+    /** @return list<string> */
+    private function gate(array $f): array
     {
-        return "select id from approval_requests where id = {$f['request']} for update";
+        return [
+            "select company_id from company_access_generations where company_id = {$f['r']['company']} for update",
+            "select id from approval_requests where id = {$f['request']} for update",
+        ];
     }
 
     public function test_control_nothing_changes(): void
@@ -79,6 +76,67 @@ class ApprovalDecisionAuthorityRaceTest extends TestCase
         } finally {
             $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
         }
+    }
+
+    public function test_approver_permission_revoked_while_waiting_records_no_decision(): void
+    {
+        $f = $this->fixture();
+        try {
+            $outcome = $this->raceAction($f['pdo'], $this->gate($f), $this->decide($f, $f['approver']), fn ($holder) => $this->raceRevoke($holder, $f['approver'], self::APPROVE));
+            $this->assertRefusedWithoutDecision($f, $outcome, 'PENDING');
+        } finally {
+            $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    public function test_approver_suspended_while_waiting_records_no_decision(): void
+    {
+        $f = $this->fixture();
+        try {
+            $outcome = $this->raceAction($f['pdo'], $this->gate($f), $this->decide($f, $f['approver']), fn ($holder) => $holder->exec("update users set status = 'SUSPENDED' where id = {$f['approver']}"));
+            $this->assertRefusedWithoutDecision($f, $outcome, 'PENDING');
+        } finally {
+            $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    public function test_deadline_passes_while_waiting_and_expiry_survives_the_refusal(): void
+    {
+        $f = $this->fixture(onExpiry: 'EXPIRE_REQUEST');
+        try {
+            $f['pdo']->exec("update approval_request_steps set deadline_at = date_trunc('second', clock_timestamp()) + interval '2 seconds' where request_id = {$f['request']}");
+            $decide = function () use ($f): void {
+                DB::listen(function ($query): void {
+                    if (str_contains($query->sql, 'SELECT set_config(name,')) {
+                        DB::statement("SET LOCAL lock_timeout = '5s'");
+                    }
+                });
+                ($this->decide($f, $f['approver']))();
+            };
+            $outcome = $this->raceAction($f['pdo'], $this->gate($f), $decide, fn () => null, 3.2);
+            $this->assertRefusedWithoutDecision($f, $outcome, 'EXPIRED');
+        } finally {
+            $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    public function test_document_changes_while_waiting_and_invalidation_survives_the_refusal(): void
+    {
+        $f = $this->fixture();
+        try {
+            $outcome = $this->raceAction($f['pdo'], $this->gate($f), $this->decide($f, $f['approver']), fn ($holder) => $holder->exec("update purchase_order_lines set unit_price = 12, line_amount = 120, base_unit_price = 12, base_line_amount = 120 where purchase_order_id = {$f['po']}"));
+            $this->assertRefusedWithoutDecision($f, $outcome, 'INVALIDATED');
+        } finally {
+            $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    private function assertRefusedWithoutDecision(array $fixture, array $outcome, string $status): void
+    {
+        $this->assertFalse($outcome['success'], json_encode($outcome));
+        $this->assertSame(DomainInvariantException::class, $outcome['class'], json_encode($outcome));
+        $this->assertSame('0', (string) $fixture['pdo']->query("select count(*) from approval_decisions where request_id = {$fixture['request']}")->fetchColumn());
+        $this->assertSame($status, $fixture['pdo']->query("select status from approval_requests where id = {$fixture['request']}")->fetchColumn());
     }
 
     public function test_authority_revoked(): void

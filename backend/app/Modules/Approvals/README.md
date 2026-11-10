@@ -37,7 +37,9 @@ Sales' `QUOTATION_REVISION` ([ADR 0158](../../../../docs/decisions/0158-approve-
 `TransactionalApprovalSubject` wraps submission, decision and withdrawal before engine preflight
 or request locks; it can pin submission evidence and check request-wide expiry. For opt-in subjects,
 a fresh submission ends stale/expired pending evidence before capturing a new request. The final locked
-decision repeats preflight for these subjects. `ProtectedApprovalEvidenceSubject` keeps independent
+decision repeats preflight for every subject. A fresh actor and principal are checked behind the
+company access fence; review providers lock the source document before the request and its steps.
+Expiry or changed-document invalidation commits before its refusal is returned. `ProtectedApprovalEvidenceSubject` keeps independent
 field authority on current and historical deciders too. Sales is the sole opt-in consumer; Purchasing
 and Estimating retain ADR 0070 selection and lifecycle semantics. Configuration statement barriers
 serialise shared engine policy/authority writers with Sales authority generations (proposed ADR 0164).

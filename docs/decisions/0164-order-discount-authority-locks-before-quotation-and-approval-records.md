@@ -82,6 +82,14 @@ Local transaction design based on CompanyAccessFence, QuotationOperation, Decide
 IssueQuotationReplacement inspected on local develop at 46858b98. Business rules remain in
 [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) and ADR 0139.
 
+## Decision-time review addendum (2026-11-10)
+
+Generic decisions take the company access fence before a review provider's document lock,
+then the request/steps. The PO review provider locks its header and lines in id order before
+any request lock. The final transaction reloads the actor and delegated principal and repeats
+evidence/expiry checks. It commits a recorded invalidation or expiry before returning a refusal.
+Sales retains its existing outer security/head/family/revision transaction hook.
+
 ## Related
 
 - [Domain specification](../domain/quotation-discount-authority.md)

@@ -3,7 +3,7 @@
 # Security verification matrix: revocation, suspension and decision-time change
 
 **Baseline:** `develop` at `a885ca0a`, 2026-11-06. **Issue:** #91 (audit F4 and F5), tracker #87.
-**Scope:** verification. Rows 1 to 7 were later fixed, and row 9 for the Purchasing and Inventory Actions that move stock (see Resolution); rows 10, 11, 15 and 17 (the approval decision) remain with the Approvals/Sales owner. This file records what real
+**Scope:** verification. Rows 1 to 7 were later fixed, and row 9 for the Purchasing and Inventory Actions that move stock (see Resolution); rows 10, 11, 15 and 17 are now corrected by the Approvals/Sales owner. This file records what real
 two-session PostgreSQL tests proved, so the fixes can be sized by the owning module.
 
 ## Resolution (rows 1 to 7 and 9)
@@ -21,6 +21,14 @@ two-session PostgreSQL tests proved, so the fixes can be sized by the owning mod
 
 Behaviour note: every Action above now waits at the company access barrier like the first three, with the same one-second lock-wait bound. Concurrent use in the Purchasing and Inventory suites showed no new lock-wait timeout.
 
+
+## Approval decision resolution (rows 10, 11, 15 and 17)
+
+`DecideApproval` reloads the actor and checks the effective principal through `DecisionActor`
+inside the transaction. The company access fence precedes the review provider's source lock
+(PO header, then lines in id order), then the request. Final evidence and expiry checks repeat
+under those locks. Expiry or invalidation commits before the refusal and records no decision.
+`ApprovalDecisionAuthorityRaceTest` covers all four races and unchanged/delegated controls.
 
 ## How it was tested
 
@@ -58,14 +66,14 @@ row lock another user holds (a second receipt on the same order, an approval bei
 | 7 | `PostPhysicalCount` | H2 an "only my units" limit added while waiting | **CONFIRMED** | Posted into a warehouse the person no longer reaches (`test_count_scope_limited`). The warehouse check runs before the transaction | Move the warehouse-scope check inside the transaction after the count lock. Scope limits are read from the database, so no new lock is needed for the fresh read | One extra scoped read. No data change |
 | 8 | `IssuePurchaseOrder`, `PostGoodsReceipt` | H2 record scope | NOT TESTABLE | Neither Action applies a record scope, so there is nothing to change mid-flight. If a scope is added later, add it inside the transaction | none | none |
 | 9 | `ActionAuthorization::require` (shared helper) | H1 | **CONFIRMED by construction** | It calls `$actor->hasAnyPermission()` on the held object. Every Action using it checks once and never again. Rows 1 to 6 are the three busiest callers that check before their transaction. The helper itself was not raced for each of its other callers | Offer a second helper (for example `require inside a transaction`) that re-reads the actor, and use it in the Actions that move money, stock or approvals first. Do not change the helper's cheap pre-check, which is still right for early refusal | Wide: many callers. Roll out per module, highest consequence first |
-| 10 | `DecideApproval` | H4 approver permission removed while waiting | **CONFIRMED** | Decision recorded and the request approved after the approver lost the approve permission (`ScratchApprovalRace::test_approver_permission_revoked`). The eligibility check inside the transaction reuses the same held user object whose permissions were loaded by the earlier check | Inside the decision transaction, load the approver afresh (a new `User` instance) before the eligibility test | One extra user read. No schema change |
-| 11 | `DecideApproval` | H4 approver suspended while waiting | **CONFIRMED** | `test_approver_suspended`. Eligibility reads `$person->status` from the held object | Same fresh load as row 10 | Same |
+| 10 | `DecideApproval` | H4 approver permission removed while waiting | **FIXED** | Passing real two-session guard: `test_approver_permission_revoked_while_waiting_records_no_decision` | Implemented as described in Approval decision resolution above | One extra user read. No schema change |
+| 11 | `DecideApproval` | H4 approver suspended while waiting | **FIXED** | Passing real two-session guard: `test_approver_suspended_while_waiting_records_no_decision` | Implemented as described in Approval decision resolution above | Same |
 | 12 | `DecideApproval` | H4 approval authority (limit) revoked while waiting | **SAFE** | Refused with "not eligible". The authority is queried from the database inside the transaction. Guard: `test_authority_revoked` | none | none |
 | 13 | `DecideApproval` | H4 delegation revoked while waiting | **SAFE** | Refused. Guard: `test_delegation_control_and_revoked` (with its control `test_delegation_control_ok`) | none | none |
 | 14 | `DecideApproval` | H4 delegator suspended, or delegator permission removed | **SAFE** | Both refused: the delegator is loaded inside the transaction. Guards: `test_delegator_suspended`, `test_delegator_permission_revoked` | none | none |
-| 15 | `DecideApproval` | H4 step deadline passes while waiting | **CONFIRMED** | Step set to expire in 3 seconds; the Action passed its expiry check, waited for the lock, and approved a request that was already past a "expire request" deadline (`test_deadline_passes_while_waiting`) | Repeat the deadline test inside the transaction after the request lock. Because an expiry must be recorded and survive the refusal, record it, commit, then throw after the transaction closes (the existing reason for checking before the transaction) | Behaviour change only for a decision made after the deadline. A person can see "expired" instead of an approval that arrived late |
+| 15 | `DecideApproval` | H4 step deadline passes while waiting | **FIXED** | Passing real two-session guard: `test_deadline_passes_while_waiting_and_expiry_survives_the_refusal` | Implemented as described in Approval decision resolution above | Behaviour change only for a decision made after the deadline. A person can see "expired" instead of an approval that arrived late |
 | 16 | `DecideApproval` | H3 order edited through the normal edit Action while the decision is in flight | **SAFE** | The edit is refused ("waiting for approval") because a pending request exists, and the approval completes against the unchanged order. Guard: `test_document_edit_through_the_action_is_refused_while_pending` | none | none |
-| 17 | `DecideApproval` | H3 order facts changed by a writer that does not honour the pending freeze | **CONFIRMED weakness, consumption SAFE** | The request became APPROVED against a changed order (`test_document_changed_by_raw_write`). No Action found does this today; a script, import or future Action could. Issuing is still refused: `RequireApproval` re-checks under the order lock and the order stayed a draft. Guard: `test_stale_approval_cannot_be_consumed_by_issue` | Re-run the document-unchanged check inside the decision transaction. Lock the order (the review provider already locks it) **before** the request, because the edit and issue Actions lock the order first; the opposite order can deadlock | Small. Needs a subject-lock hook in the approval subject registry |
+| 17 | `DecideApproval` | H3 order facts changed by a writer that does not honour the pending freeze | **FIXED** | Passing real two-session guard: `test_document_changes_while_waiting_and_invalidation_survives_the_refusal` | Implemented as described in Approval decision resolution above | Small. Needs a subject-lock hook in the approval subject registry |
 | 18 | `IssuePurchaseOrder` | H5 a stricter policy activated after the approval | **BY DESIGN** | An order approved under policy version 1 still issued after a two-stage version 2 was activated (scratch `test_h5_policy_activated_stricter_after_approval_then_issue`). ADR 0070 section 3 says a request keeps the version it was routed under. Activation and issuing share no lock, but the outcome is the same in either order, so there is no race to fix | Product decision only: if an approved-but-unissued order should be re-approved when a stricter policy takes effect, `RequireApproval` would compare the request's policy version to the current one | If chosen, existing approved-but-unissued orders would need re-approval on activation day |
 
 ## What is not a problem
