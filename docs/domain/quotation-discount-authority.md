@@ -294,6 +294,10 @@ missing evidence, changed terms, expired approval or unavailable authority. Pres
 when requesting again. A paged restricted audit will explain configuration and evaluation history.
 The backend contracts are delivered; these screens remain a separate workstream.
 
+Issue-time mandatory input-reduction controls judge line discounts, final-net override reductions
+and document discounts. The document input is judged once against counted net before its
+discount; approval does not waive a mandatory control.
+
 ## Related
 
 - [API and rollout](quotation-discount-authority-api.md) · [Journey](../journeys/quotation-discount-authority.md)

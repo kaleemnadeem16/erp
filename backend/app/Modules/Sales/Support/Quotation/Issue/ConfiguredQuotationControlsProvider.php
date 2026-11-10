@@ -23,7 +23,10 @@ use App\Modules\Sales\Support\Financial\Policy\ResolveRoundingPolicy;
 use App\Modules\Sales\Support\Financial\Policy\RoundingPolicy;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Modules\Sales\Support\Quotation\QuotationAdjustmentEngine;
 use App\Support\CompanyContext;
+use Brick\Math\BigDecimal;
+use Illuminate\Support\Facades\DB;
 
 /**
  * The company's published control set (D3) judged against every priced line of the revision, with the same evaluator the cost-blind seam uses. Fail-closed throughout: no set, an
@@ -50,12 +53,14 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
         }
         $rule = $policy->settlementRule(Currency::query()->findOrFail($currencyId));
         $list = Arithmetic::settleLine((string) $line->unit_price, (string) $line->offered_quantity, $rule)->settled;
-        $discretionary = match ($line->discount_kind) {
-            null => DiscretionaryInput::none(),
-            'PERCENT' => DiscretionaryInput::percent((string) $line->discount_value),
-            'PER_PRICED_UNIT' => DiscretionaryInput::amount((string) $line->discount_value, $currencyId, ControlBasis::PerUnit),
-            default => DiscretionaryInput::amount((string) $line->discount_value, $currencyId, ControlBasis::Line),
-        };
+        $discretionary = $line->net_override !== null
+            ? DiscretionaryInput::amount($list->minus((string) $line->net_override), $currencyId)
+            : match ($line->discount_kind) {
+                null => DiscretionaryInput::none(),
+                'PERCENT' => DiscretionaryInput::percent((string) $line->discount_value),
+                'PER_PRICED_UNIT' => DiscretionaryInput::amount((string) $line->discount_value, $currencyId, ControlBasis::PerUnit),
+                default => DiscretionaryInput::amount((string) $line->discount_value, $currencyId, ControlBasis::Line),
+            };
 
         return [new GovernedReference($list, $currencyId, 'ENTERED_PRICE'), $discretionary];
     }
@@ -96,6 +101,39 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
             }
             if ($evaluation->outcome()->severity() > $worst->severity()) {
                 $worst = $evaluation->outcome();
+            }
+        }
+        $document = DB::table('quotation_draft_document_discounts')->where('company_id', $this->company->id())->where('revision_id', $revision->id)->first();
+        if ($document !== null && $policy !== null && $pricingDate !== null) {
+            $before = BigDecimal::zero();
+            $known = true;
+            $rule = $policy->settlementRule(Currency::query()->findOrFail($revision->currency_id));
+            foreach ($lines as $line) {
+                if ($line->membership !== 'BASE' && ! ($line->membership === 'CHOOSE_ONE' && $line->is_baseline)) {
+                    continue;
+                }
+                if ($line->unit_price === null) {
+                    $known = false;
+                    break;
+                }
+                $figures = app(QuotationAdjustmentEngine::class)->line($line, $revision->currency_id, $pricingDate, $policy, $rule, (string) $line->offered_quantity);
+                $before = $before->plus($figures['net']);
+            }
+            if ($known) {
+                $input = $document->kind === 'PERCENT' ? DiscretionaryInput::percent((string) $document->value) : DiscretionaryInput::amount((string) $document->value, $revision->currency_id);
+                $inputControls = array_values(array_filter($set->controls, static fn (NetControl $c): bool => in_array($c->kind, [NetControlKind::InputReductionPercent, NetControlKind::InputReductionAmount], true)));
+                $evaluation = ($this->evaluate)(new SettledNetFacts($this->company->id(), $revision->currency_id, $before, '1', $pricingDate, new GovernedReference($before, $revision->currency_id, 'COUNTED_LINES_NET'), $input, null, [], $policy), new NetControlSet($set->companyId, $set->version, $inputControls, $set->roundingFingerprint));
+                $judged[] = ['document', $evaluation->fingerprint()];
+                foreach ($evaluation->results as $result) {
+                    if ($result->blocksIssue()) {
+                        $blockers[] = new IssueBlocker($result->outcome === ControlOutcome::Fail ? 'CONTROL_FAILED' : 'CONTROL_UNEVALUABLE', IssueBlocker::CONTROLS);
+                    }
+                }
+                if ($evaluation->outcome()->severity() > $worst->severity()) {
+                    $worst = $evaluation->outcome();
+                }
+            } else {
+                $blockers[] = new IssueBlocker('CONTROLS_NET_UNKNOWN', IssueBlocker::CONTROLS);
             }
         }
         if ($lines->isEmpty()) {

@@ -203,6 +203,44 @@ class QuotationControlSetTest extends TestCase
         $this->assertCount(2, array_filter($this->codes($revision), fn ($c) => str_starts_with($c, 'CONTROL_UNEVALUABLE@')));
     }
 
+    public function test_issue_rejects_a_line_discount_above_a_mandatory_input_limit(): void
+    {
+        $this->assertInputLimitBlocks('line');
+    }
+
+    public function test_issue_rejects_a_document_discount_above_a_mandatory_input_limit(): void
+    {
+        $this->assertInputLimitBlocks('document');
+    }
+
+    public function test_issue_rejects_a_final_net_override_above_a_mandatory_input_limit(): void
+    {
+        $this->assertInputLimitBlocks('override');
+    }
+
+    private function assertInputLimitBlocks(string $kind): void
+    {
+        $revision = $this->preparedDraft();
+        $line = $revision->lines()->orderBy('id')->firstOrFail();
+        $this->publish([['ref' => 'input', 'kind' => 'INPUT_REDUCTION_AMOUNT', 'mode' => 'MANDATORY', 'limit' => '10', 'currency_id' => $this->pkr]]);
+        $evidence = ['discount_entered_by' => $this->maker->id, 'discount_entered_at' => now()];
+        if ($kind === 'line') {
+            DB::table('quotation_draft_lines')->where('id', $line->id)->update($evidence + ['discount_kind' => 'PER_LINE', 'discount_value' => '30']);
+        } elseif ($kind === 'override') {
+            DB::table('quotation_draft_lines')->where('id', $line->id)->update(['net_override' => '170', 'override_reason' => 'Commercial concession', 'override_entered_by' => $this->maker->id, 'override_entered_at' => now()]);
+        } else {
+            DB::table('quotation_draft_document_discounts')->insert(['company_id' => 1, 'revision_id' => $revision->id, 'kind' => 'AMOUNT', 'value' => '30', 'entered_by' => $this->maker->id, 'entered_at' => now(), 'created_at' => now(), 'updated_at' => now()]);
+        }
+        $codes = $this->codes($revision);
+        $this->assertNotEmpty(array_filter($codes, fn ($code) => str_starts_with($code, 'CONTROL_FAILED')), implode(', ', $codes));
+        try {
+            app(IssueQuotation::class)($this->checker, $revision->id, $revision->fresh()->input_generation, $this->issueKey());
+            $this->fail('A mandatory input limit must block issue.');
+        } catch (DomainInvariantException) {
+            $this->assertSame(0, QuotationIssue::query()->count());
+        }
+    }
+
     public function test_populated_control_set_migration_refuses_rollback(): void
     {
         $this->publish($this->floor('1'));
