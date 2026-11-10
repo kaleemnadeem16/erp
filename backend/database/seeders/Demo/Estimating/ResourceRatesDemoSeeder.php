@@ -39,7 +39,7 @@ final class ResourceRatesDemoSeeder extends Seeder
         $hour = Uom::query()->where('code', 'hr')->firstOrFail();
         $services = Category::query()->where('code', 'demo-services')->firstOrFail();
 
-        $scaffold = Item::withTrashed()->updateOrCreate(
+        $scaffold = Item::withTrashed()->firstOrCreate(
             ['code' => 'demo-plant-scaffold'],
             [
                 'name' => 'Scaffold Hire', 'description' => 'Hourly-rated plant resource used in assembly costing.',
@@ -48,7 +48,6 @@ final class ResourceRatesDemoSeeder extends Seeder
                 'category_id' => $services->id, 'custom_fields' => [], 'status' => Status::Active,
             ],
         );
-        $scaffold->restore();
 
         $painter = Item::query()->where('code', 'demo-painter-hour')->firstOrFail();
 

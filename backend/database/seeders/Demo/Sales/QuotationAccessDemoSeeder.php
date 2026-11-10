@@ -134,13 +134,32 @@ final class QuotationAccessDemoSeeder extends Seeder
             return;
         }
 
-        DB::transaction(function () use ($admin, $alpha, $metro, $pkr): void {
-            $operator = $this->operator($admin);
-            $people = $this->personas($admin, $operator);
-            $this->enterMainUserIntoHeadOffice($admin);
-            $this->accessScenarios($people, $alpha, $metro, $pkr);
-            $this->approvalTiers($admin, $metro, $pkr);
-        });
+        // The login works the approval scenarios, so it holds these duties only while this runs: what the run adds is taken away again (issue #100), so a rerun or another seeder
+        // never leaves a persisted direct grant behind. A grant the login already held directly is left exactly as it was.
+        $duties = [Sales::QUOTATION_VIEW, Sales::QUOTATION_PREPARE, Sales::QUOTATION_DISCOUNT, Sales::QUOTATION_PRICE_OVERRIDE];
+        foreach ($duties as $duty) {
+            Permission::findOrCreate($duty, 'web');
+        }
+        $heldBefore = $admin->getDirectPermissions()->pluck('name')->all();
+        $admin->givePermissionTo($duties);
+        $shipped = app(SalesDutyManifest::class);
+        $staged = array_values(array_filter($duties, fn (string $duty): bool => ! $shipped->isActive($duty)));
+        app()->instance(SalesDutyManifest::class, $staged === [] ? $shipped : $shipped->withActivated($staged));
+        try {
+            DB::transaction(function () use ($admin, $alpha, $metro, $pkr): void {
+                $operator = $this->operator($admin);
+                $people = $this->personas($admin, $operator);
+                $this->enterMainUserIntoHeadOffice($admin);
+                $this->accessScenarios($people, $alpha, $metro, $pkr);
+                $this->approvalTiers($admin, $metro, $pkr);
+            });
+        } finally {
+            app()->instance(SalesDutyManifest::class, $shipped);
+            $added = array_values(array_diff($duties, $heldBefore));
+            if ($added !== []) {
+                $admin->revokePermissionTo($added);
+            }
+        }
     }
 
     private function operator(User $admin): User

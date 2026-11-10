@@ -44,7 +44,7 @@ trait SeedsDedicatedStockItems
         ItemTracking $tracking = ItemTracking::None,
     ): Item {
         $category = Category::query()->where('code', $categoryCode)->firstOrFail();
-        $item = Item::withTrashed()->updateOrCreate(
+        $item = Item::withTrashed()->firstOrCreate(
             ['code' => $code],
             [
                 'name' => $name, 'description' => $description, 'type' => ItemType::Raw,
@@ -54,7 +54,6 @@ trait SeedsDedicatedStockItems
                 'tracking' => $tracking, 'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
             ],
         );
-        $item->restore();
         if ($item->resolveInventoryAccountId() === null) {
             $item->update(['inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id]);
         }

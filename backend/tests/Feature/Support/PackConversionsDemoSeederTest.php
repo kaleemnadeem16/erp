@@ -122,7 +122,7 @@ final class PackConversionsDemoSeederTest extends TestCase
         }
     }
 
-    public function test_a_rerun_is_idempotent_and_reconciles_only_the_rows_it_owns(): void
+    public function test_a_rerun_is_create_only_and_never_rewrites_an_existing_conversion(): void
     {
         $before = ItemQuantityUnit::query()->orderBy('id')->pluck('id')->all();
         $this->assertCount(6, $before);
@@ -134,9 +134,9 @@ final class PackConversionsDemoSeederTest extends TestCase
 
         $this->artisan('demo:seed')->assertSuccessful();
 
-        // Same rows, drifted factor restored, nothing owned by someone else touched.
+        // Same rows; demo seeders are create-only (issue #100), so a hand-edited factor is kept, not restored; nothing owned by someone else touched.
         $this->assertSame($before, ItemQuantityUnit::query()->whereKeyNot($local->id)->orderBy('id')->pluck('id')->all());
-        $this->assertSame('25.000000000', (string) $this->factor('demo-pig-blue', 'bag'));
+        $this->assertSame('99.000000000', (string) $this->factor('demo-pig-blue', 'bag'));
         $this->assertSame('12.000000000', ItemQuantityUnit::query()->findOrFail($local->id)->factor);
         $this->assertSame('0.500000000', $this->item('demo-pig-red')->quantity_precision);
         $this->assertSame(1, DB::table('item_quantity_units')->where('item_id', $this->item('demo-masking-tape')->id)->count());

@@ -89,7 +89,8 @@ class DiscountAuthorityDemoSeederTest extends TestCase
                 return $this->companyId;
             }
         });
-        app(DiscountAuthorityDemoSeeder::class)->run();
+        // The central demo guard (issue #100) now refuses a non-demo company outright instead of returning quietly; nothing is written either way.
+        $this->assertThrows(fn () => app(DiscountAuthorityDemoSeeder::class)->run(), \RuntimeException::class, 'designated demo company');
         $this->assertDatabaseCount('sales_discount_policy_versions', 0);
         $this->assertDatabaseCount('sales_price_reference_versions', 0);
     }

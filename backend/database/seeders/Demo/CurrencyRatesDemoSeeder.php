@@ -49,7 +49,7 @@ final class CurrencyRatesDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
 
-        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->demoCompanyId());
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $manage = app(ManageExchangeRate::class);
         $ids = Currency::query()->pluck('id', 'code');

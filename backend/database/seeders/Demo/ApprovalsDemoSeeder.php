@@ -81,7 +81,7 @@ final class ApprovalsDemoSeeder extends Seeder
     public function run(): void
     {
         $this->ensureDemoEnvironment();
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
 
         $this->admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $this->buyer = $this->persona('demo-buyer@erp.x1techs.com', 'Demo Buyer', ['purchasing.purchase-order.view', 'purchasing.purchase-order.create', 'purchasing.purchase-order.submit', 'purchasing.commercial-cost.view', 'purchasing.item-supplier.view']);
@@ -105,7 +105,7 @@ final class ApprovalsDemoSeeder extends Seeder
     private function persona(string $email, string $name, array $permissions): User
     {
         $user = $this->demoMember($email, $name);
-        $user->syncPermissions($permissions);
+        $user->givePermissionTo($permissions);
 
         return $user;
     }

@@ -49,7 +49,7 @@ final class MaterialVarianceDemoSeeder extends Seeder
         $this->ensureDemoEnvironment();
 
         foreach (self::REASONS as $reason) {
-            MaterialVarianceReason::query()->updateOrCreate(['code' => $reason['code']], $reason + ['active' => true]);
+            MaterialVarianceReason::query()->firstOrCreate(['code' => $reason['code']], $reason + ['active' => true]);
         }
 
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();

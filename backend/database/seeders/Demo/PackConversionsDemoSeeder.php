@@ -50,8 +50,8 @@ use Illuminate\Database\Seeder;
  * on Roll / Box, because the form defaults a line's unit from that row.
  *
  * Idempotency: a pack conversion is mutable reference data keyed by its natural identity
- * (item + pack unit, unique in the table), so `updateOrCreate` reconciles factor and precision on
- * every run without touching other rows. A conversion is never repointed — its item and unit are
+ * (item + pack unit, unique in the table), so `firstOrCreate` adds a missing conversion and never
+ * rewrites an existing factor or precision (demo seeders are create-only, issue #100). A conversion is never repointed — its item and unit are
  * the key — which is also what the model itself enforces.
  */
 final class PackConversionsDemoSeeder extends Seeder
@@ -79,7 +79,7 @@ final class PackConversionsDemoSeeder extends Seeder
             $item = Item::query()->where('code', $scenario['item'])->firstOrFail();
             $uom = Uom::query()->where('code', $scenario['uom'])->firstOrFail();
 
-            ItemQuantityUnit::query()->updateOrCreate(
+            ItemQuantityUnit::query()->firstOrCreate(
                 ['item_id' => $item->getKey(), 'uom_id' => $uom->getKey()],
                 ['factor' => $scenario['factor'], 'quantity_precision' => $scenario['precision']],
             );

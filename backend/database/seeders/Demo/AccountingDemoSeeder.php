@@ -28,7 +28,7 @@ final class AccountingDemoSeeder extends Seeder
         ];
 
         foreach ($accounts as $account) {
-            ChartOfAccount::query()->updateOrCreate(
+            ChartOfAccount::query()->firstOrCreate(
                 ['code' => $account['code']],
                 [...$account, 'parent_id' => null, 'is_postable' => true, 'currency_id' => null, 'status' => Status::Active],
             );

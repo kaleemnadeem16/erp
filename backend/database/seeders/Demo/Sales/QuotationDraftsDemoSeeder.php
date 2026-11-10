@@ -54,7 +54,7 @@ final class QuotationDraftsDemoSeeder extends Seeder
             return;
         }
 
-        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->demoCompanyId());
         foreach ([Sales::QUOTATION_PREPARE, Sales::QUOTATION_VIEW, Sales::PIPELINE_VIEW] as $duty) {
             Permission::findOrCreate($duty, 'web');
         }

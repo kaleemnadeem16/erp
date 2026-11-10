@@ -57,7 +57,7 @@ final class InventoryDemoSeeder extends Seeder
         ];
 
         foreach ($items as $data) {
-            $item = Item::withTrashed()->updateOrCreate(
+            $item = Item::withTrashed()->firstOrCreate(
                 ['code' => $data['code']],
                 // Only an item whose scenario defines a precision has it reconciled, so an
                 // unrelated demo item's locally-edited precision is left alone.
@@ -80,7 +80,6 @@ final class InventoryDemoSeeder extends Seeder
                     'status' => Status::Active,
                 ],
             );
-            $item->restore();
         }
 
         $this->warehouse('demo-main', 'Main Warehouse', 'stock', 'Main Stock');
@@ -89,7 +88,7 @@ final class InventoryDemoSeeder extends Seeder
 
     private function category(string $code, string $name, ?int $parentId, ?ValuationMethod $method, ?int $incomeId, ?int $expenseId, ?int $inventoryId): Category
     {
-        return Category::query()->updateOrCreate(
+        return Category::query()->firstOrCreate(
             ['code' => $code],
             [
                 'name' => $name,
@@ -109,12 +108,12 @@ final class InventoryDemoSeeder extends Seeder
             ->where('code', '!=', $code)
             ->exists();
 
-        $warehouse = Warehouse::query()->updateOrCreate(
+        $warehouse = Warehouse::query()->firstOrCreate(
             ['code' => $code],
             ['name' => $name, 'is_default' => $code === 'demo-main' && ! $hasOtherDefault, 'active' => true],
         );
 
-        $warehouse->locations()->updateOrCreate(
+        $warehouse->locations()->firstOrCreate(
             ['code' => $locationCode],
             ['name' => $locationName, 'active' => true],
         );

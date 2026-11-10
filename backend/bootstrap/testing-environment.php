@@ -19,6 +19,8 @@ $testEnvironment = [
     // Defence in depth for code that reads DB_DATABASE directly or a misconfigured fallback.
     'DB_DATABASE' => 'erp_testing',
     'DB_URL' => '',
+    // The demo password has no default in code or config (issue #100); tests state theirs explicitly.
+    'DEMO_USER_PASSWORD' => 'Test-Demo-Password-1!',
     // The dev .env raises the login limit for browser tests; the tests assert the real default of five attempts a minute.
     'LOGIN_RATE_LIMIT_PER_MINUTE' => '5',
     'MAIL_MAILER' => 'array',

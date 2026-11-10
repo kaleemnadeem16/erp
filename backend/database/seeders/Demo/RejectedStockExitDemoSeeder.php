@@ -62,7 +62,7 @@ final class RejectedStockExitDemoSeeder extends Seeder
     public function run(): void
     {
         $this->ensureDemoEnvironment();
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $actor->givePermissionTo(['inventory.package-state.view', 'inventory.package-state.activate', 'inventory.physical_count.create', 'purchasing.quality-disposition.post',
             'purchasing.supplier-return.create', 'purchasing.supplier-return.post', 'inventory.scrap.create', 'inventory.scrap.post']);

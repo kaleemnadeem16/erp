@@ -10,6 +10,7 @@ use App\Models\Currency;
 use App\Models\Uom;
 use App\Models\User;
 use App\Support\Currency\IsoCurrencyDataset;
+use App\Support\Demo\DemoCredentials;
 use App\Support\UomDimension;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
@@ -24,16 +25,20 @@ final class FoundationDemoSeeder extends Seeder
 
         // Reference currencies come from the same ISO 4217 dataset and Action that production synchronises with (ADR 0143, `erp:sync-currencies`);
         // the demo seeder owns no currency rules. It only inserts what is missing, so a rerun changes nothing and a used minor unit is never touched.
+        $existingCurrencies = Currency::query()->pluck('code')->all();
         $sync = app(SyncCurrencies::class);
         $sync->apply($sync->plan(IsoCurrencyDataset::load()));
-        // ISO 4217 has no symbols, so a new row carries its code. Give the familiar demo currencies a display symbol, only where still unset.
+        // ISO 4217 has no symbols, so a new row carries its code. Give the familiar demo currencies a display symbol, only on rows created by this run (an existing row is never edited).
         foreach (['PKR' => 'Rs', 'USD' => '$', 'EUR' => '€', 'GBP' => '£', 'JPY' => '¥', 'KWD' => 'KD'] as $code => $symbol) {
+            if (in_array($code, $existingCurrencies, true)) {
+                continue;
+            }
             Currency::query()->where('code', $code)->whereColumn('symbol', 'code')->update(['symbol' => $symbol]);
         }
 
         $pkr = Currency::query()->where('code', 'PKR')->firstOrFail();
         // Governed company settings are never overwritten: the demo name and base currency are set only while the company still has its install defaults.
-        $company = Company::query()->findOrFail(1);
+        $company = Company::query()->findOrFail($this->demoCompanyId());
         if ($company->base_currency_id === null) {
             $company->base_currency_id = $pkr->getKey();
         }
@@ -44,7 +49,7 @@ final class FoundationDemoSeeder extends Seeder
 
         // The company profile and its time zone (ADR 0080): filled only where still empty, so re-seeding never overwrites what
         // someone has set on Settings → Company.
-        $company = Company::query()->findOrFail(1);
+        $company = Company::query()->findOrFail($this->demoCompanyId());
         $profile = [
             'code' => 'X1', 'legal_name' => 'X1 ERP Demo Company (Pvt) Ltd', 'country_code' => 'PK',
             'address_line1' => '12 Industrial Estate Road', 'city' => 'Lahore', 'state' => 'Punjab', 'postal_code' => '54000',
@@ -81,13 +86,15 @@ final class FoundationDemoSeeder extends Seeder
         ];
 
         foreach ($units as $unit) {
-            Uom::query()->updateOrCreate(['code' => $unit['code']], $unit);
+            Uom::query()->firstOrCreate(['code' => $unit['code']], $unit);
         }
 
-        $user = User::query()->updateOrCreate(
+        $user = User::query()->firstOrCreate(
             ['email' => config('demo.user.email')],
-            ['name' => config('demo.user.name'), 'password' => config('demo.user.password')],
+            fn (): array => ['name' => config('demo.user.name'), 'password' => DemoCredentials::password()], // evaluated only when the account is created
         );
-        $user->forceFill(['email_verified_at' => now()])->save();
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
     }
 }

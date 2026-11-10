@@ -86,10 +86,10 @@ final class QuotationDocumentsDemoSeeder extends Seeder
             return;
         }
 
-        $this->brand($maker);
-
         try {
             DB::transaction(function () use ($maker, $customer, $service, $pkr): void {
+                // The brand and the document are one unit: a failure below leaves neither behind.
+                $this->brand($maker);
                 $created = app(CreateQuotationDraft::class)($maker, 'demo-doc-draft', ['recipient_party_id' => $customer->id, 'currency_id' => $pkr->id, 'pricing_date' => now()->format('Y-m-d'),
                     'tax_estimate_date' => now()->format('Y-m-d'), 'valid_through_local_date' => now()->addMonth()->format('Y-m-d')]);
                 $revision = QuotationRevision::query()->findOrFail($created->revisionId);
@@ -117,7 +117,10 @@ final class QuotationDocumentsDemoSeeder extends Seeder
             });
             $this->say('Quotation documents demo: one issued quotation with its official PDF, a manual delivery record, a corrected delivery and a withdrawn one.');
         } catch (Throwable $e) {
+            // Never swallowed (issue #100): the whole transaction is rolled back and the seed run fails loudly, so a half-built demo is not mistaken for a complete one.
             $this->say('Quotation documents demo not built: '.$e->getMessage());
+
+            throw $e;
         }
     }
 
@@ -140,8 +143,6 @@ final class QuotationDocumentsDemoSeeder extends Seeder
         $stream = fopen($path, 'rb');
         try {
             app(SaveCompanyBranding::class)($maker, ['display_name' => 'XYZ Paints', 'tagline' => 'Colour done right'], $stream, 'Demo branding (illustrative logo drawn for the demo)');
-        } catch (Throwable $e) {
-            $this->say('Quotation documents demo: the demo branding was not made: '.$e->getMessage());
         } finally {
             if (is_resource($stream)) {
                 fclose($stream);

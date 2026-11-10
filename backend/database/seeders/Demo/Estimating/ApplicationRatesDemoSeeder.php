@@ -46,9 +46,9 @@ use Illuminate\Database\Seeder;
  *                                             for this work unit
  *
  * application_rates has no natural business code, unlike RateDimension/
- * RateDimensionValue — rebuilding this item's demo rates from scratch each
- * run is simpler and just as idempotent as a partial-match updateOrCreate
- * would be.
+ * RateDimensionValue, so the seeder is create-only per work unit: a work unit
+ * (square metre, metre) that already has a rate for this item is skipped
+ * whole. Existing rates are never deleted or rebuilt (issue #100).
  */
 final class ApplicationRatesDemoSeeder extends Seeder
 {
@@ -63,27 +63,31 @@ final class ApplicationRatesDemoSeeder extends Seeder
         $metre = Uom::query()->where('code', 'm')->firstOrFail();
         $litre = Uom::query()->where('code', 'l')->firstOrFail();
 
-        ApplicationRate::query()
-            ->where('item_id', $item->getKey())
-            ->whereIn('work_uom_id', [$sqm->getKey(), $metre->getKey()])
-            ->get()
-            ->each(fn (ApplicationRate $rate) => $rate->delete());
-
         $smooth = RateDimensionValue::query()->where('code', 'demo-smooth')->firstOrFail();
         $rough = RateDimensionValue::query()->where('code', 'demo-rough')->firstOrFail();
         $metal = RateDimensionValue::query()->where('code', 'demo-metal')->firstOrFail();
         $oneCoat = RateDimensionValue::query()->where('code', 'demo-1-coat')->firstOrFail();
 
-        $this->rate($item, $sqm, $litre, '0.083300', [$smooth->getKey()]);
-        $this->rate($item, $sqm, $litre, '0.133300', [$rough->getKey()]);
-        $this->rate($item, $sqm, $litre, '0.071400', [$metal->getKey()]);
-        $this->rate($item, $sqm, $litre, '0.090000', [$smooth->getKey(), $oneCoat->getKey()]);
-        $this->rate($item, $sqm, $litre, '0.100000', [], isDefault: true);
+        // Create-only (issue #100): a work unit that already has any rate for this item is left exactly as it is, including a hand-edited one.
+        if (! $this->hasRates($item, $sqm)) {
+            $this->rate($item, $sqm, $litre, '0.083300', [$smooth->getKey()]);
+            $this->rate($item, $sqm, $litre, '0.133300', [$rough->getKey()]);
+            $this->rate($item, $sqm, $litre, '0.071400', [$metal->getKey()]);
+            $this->rate($item, $sqm, $litre, '0.090000', [$smooth->getKey(), $oneCoat->getKey()]);
+            $this->rate($item, $sqm, $litre, '0.100000', [], isDefault: true);
+        }
 
         // Per-metre trim/edge touch-up — deliberately has no default, so an
         // unmatched combination genuinely fails loudly instead of always
         // being rescued by tier 3.
-        $this->rate($item, $metre, $litre, '0.500000', [$smooth->getKey()]);
+        if (! $this->hasRates($item, $metre)) {
+            $this->rate($item, $metre, $litre, '0.500000', [$smooth->getKey()]);
+        }
+    }
+
+    private function hasRates(Item $item, Uom $workUom): bool
+    {
+        return ApplicationRate::query()->where('item_id', $item->getKey())->where('work_uom_id', $workUom->getKey())->exists();
     }
 
     /** @param list<int> $dimensionValueIds */

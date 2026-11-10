@@ -77,7 +77,7 @@ final class NegativeStockLifecycleDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
 
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
 
         $this->requester = User::query()->where('email', 'demo-ops@erp.x1techs.com')->firstOrFail();
         $this->supervisor = User::query()->where('email', 'demo-supervisor@erp.x1techs.com')->firstOrFail();
@@ -88,7 +88,7 @@ final class NegativeStockLifecycleDemoSeeder extends Seeder
         $this->location = Warehouse::query()->where('code', 'demo-main')->firstOrFail()->locations()->where('code', 'stock')->firstOrFail();
         $this->currency = Currency::query()->where('code', 'PKR')->firstOrFail();
 
-        $company = Company::query()->findOrFail(1);
+        $company = Company::query()->findOrFail($this->demoCompanyId());
         // A mutable company setting, safe to reconcile every run (unlike the immutable rows below).
         $company->update(['negative_stock_mode' => 'AUTHORISED_OVERRIDE']);
 

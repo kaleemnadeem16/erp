@@ -184,13 +184,13 @@ automated release is still the verification point for this job.
     flag overrides `app()->environment()` for that one process only, without touching the
     real `APP_ENV=production` the running containers use for anything else (verified via
     `app()->environment()` vs `env('APP_ENV')` before trusting this): `docker compose run
-    --rm app php artisan demo:seed --env=local`. **Always override the demo login's
-    credentials** for a real deployment — its defaults (`user@erp.x1techs.com` /
-    `!User@Erp@123`, from `config/demo.php`) are written throughout this repo's dev docs,
-    so leaving them as-is on a public site hands out a working login:
+    --rm app php artisan demo:seed --env=local`. **Always set the demo login's
+    credentials** for a real deployment — there is no default password any more (a generated
+    one is printed once if `DEMO_USER_PASSWORD` is unset), but the default e-mail
+    (`user@erp.x1techs.com`) is written throughout this repo's dev docs:
     `docker compose run --rm -e DEMO_USER_EMAIL=… -e DEMO_USER_PASSWORD=… app php artisan
     demo:seed --env=local`. The seeder's other demo actors (`demo-ops@…`,
-    `demo-supervisor@…`) already get a random 40-character password each run and are never
+    `demo-supervisor@…`) already get a random password when first created and are never
     meant to be signed into directly, so they need no such override.
 
 ### Production data changes

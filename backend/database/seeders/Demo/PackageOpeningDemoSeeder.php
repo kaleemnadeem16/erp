@@ -28,7 +28,7 @@ final class PackageOpeningDemoSeeder extends Seeder
     public function run(): void
     {
         $this->ensureDemoEnvironment();
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $actor->givePermissionTo(['inventory.package-state.view', 'inventory.physical_count.create']);
         if (PackageOperation::query()->where('request_key', 'demo-package-opening-checkpoint')->exists()) {

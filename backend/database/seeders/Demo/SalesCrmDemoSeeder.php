@@ -26,6 +26,7 @@ use App\Modules\Sales\Models\Lead;
 use App\Modules\Sales\Support\OpportunityOutcome;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use App\Support\CompanyContext;
+use App\Support\Demo\DemoCredentials;
 use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\CreatesDemoRolePersonas;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
@@ -58,7 +59,7 @@ final class SalesCrmDemoSeeder extends Seeder
     public function run(): void
     {
         $this->ensureDemoEnvironment();
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
         $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         // Everything except retrospective attribution, which is a sensitive duty granted explicitly (to the reviewer persona below), never by an all-capabilities shortcut.
         $admin->givePermissionTo(array_values(array_diff(Sales::all(), [Sales::OPPORTUNITY_ATTRIBUTION_CORRECT])));
@@ -106,8 +107,10 @@ final class SalesCrmDemoSeeder extends Seeder
             app(CloseOpportunity::class)($lost, OpportunityOutcome::Lost, 'Lost on price to a cheaper bidder', $admin);
 
             // A deal whose owner has since left: it is flagged, never silently reassigned.
-            $leaver = User::query()->firstOrCreate(['email' => self::LEAVER], ['name' => 'Demo Sales Leaver', 'password' => config('demo.user.password'), 'status' => MemberStatus::Active]);
-            $leaver->forceFill(['email_verified_at' => now()])->save();
+            $leaver = User::query()->firstOrCreate(['email' => self::LEAVER], fn (): array => ['name' => 'Demo Sales Leaver', 'password' => DemoCredentials::password(), 'status' => MemberStatus::Active]);
+            if ($leaver->email_verified_at === null) {
+                $leaver->forceFill(['email_verified_at' => now()])->save();
+            }
             $leaver->givePermissionTo([Sales::OPPORTUNITY_MANAGE]);
             app(CreateOpportunity::class)(['title' => 'Showroom repaint (owner has left)', 'party_id' => $metro->id, 'owner_id' => $leaver->id], $admin);
             app(ChangeMemberStatus::class)($leaver->refresh(), MemberStatus::Suspended, 'Demo: left the company', $admin);
@@ -169,7 +172,7 @@ final class SalesCrmDemoSeeder extends Seeder
             ['team_id' => $company, 'name' => 'Sales attribution reviewer', 'guard_name' => 'web'],
             ['description' => 'May read the pipeline and correct who the record says was responsible on a closed deal, with a reason and without reopening it. Cannot edit, assign or close. A demo recipe, not a production grant.'],
         );
-        $role->syncPermissions([...$read, Sales::OPPORTUNITY_ATTRIBUTION_CORRECT]);
+        $role->givePermissionTo([...$read, Sales::OPPORTUNITY_ATTRIBUTION_CORRECT]);
         $member->assignRole($role);
     }
 }

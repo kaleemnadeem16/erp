@@ -6,6 +6,8 @@ namespace Database\Seeders\Demo\Concerns;
 
 use App\Models\User;
 use App\Modules\Administration\Support\MemberStatus;
+use App\Support\Demo\DemoCompanyGuard;
+use App\Support\Demo\DemoCredentials;
 use RuntimeException;
 
 trait EnsuresDemoEnvironment
@@ -14,8 +16,8 @@ trait EnsuresDemoEnvironment
     private function demoMember(string $email, string $name): User
     {
         $this->ensureDemoEnvironment();
-        $member = User::query()->firstOrCreate(['email' => $email], [
-            'name' => $name, 'password' => config('demo.user.password'), 'status' => MemberStatus::Active,
+        $member = User::query()->firstOrCreate(['email' => $email], fn (): array => [
+            'name' => $name, 'password' => DemoCredentials::password(), 'status' => MemberStatus::Active,
         ]);
         // PostgreSQL defaults (including credential state) are not hydrated by an Eloquent insert.
         // Reload persisted state; never reactivate or bypass a temporary-password requirement.
@@ -30,10 +32,15 @@ trait EnsuresDemoEnvironment
         return $member;
     }
 
+    /** The single guard every demo seeder passes first: allowed environment, verified demo company, create-only (DemoCompanyGuard). */
     private function ensureDemoEnvironment(): void
     {
-        if (! app()->environment(['local', 'testing'])) {
-            throw new RuntimeException('Demo data may only be seeded in local or testing environments.');
-        }
+        DemoCompanyGuard::verifiedCompanyId();
+    }
+
+    /** The verified demo company id; seeders use this instead of a literal company id. */
+    private function demoCompanyId(): int
+    {
+        return DemoCompanyGuard::verifiedCompanyId();
     }
 }

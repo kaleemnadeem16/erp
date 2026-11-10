@@ -55,6 +55,8 @@ final class QuotationConcessionsDemoSeeder extends Seeder
         foreach (self::DUTIES as $duty) {
             Permission::findOrCreate($duty, 'web');
         }
+        // Only what this run adds is taken away again afterwards (a grant the login already held directly is left exactly as it was).
+        $heldBefore = $admin->getDirectPermissions()->pluck('name')->all();
         $admin->givePermissionTo(self::DUTIES);
 
         $shipped = app(SalesDutyManifest::class);
@@ -64,6 +66,10 @@ final class QuotationConcessionsDemoSeeder extends Seeder
             DB::transaction(fn () => $this->seed($admin));
         } finally {
             app()->instance(SalesDutyManifest::class, $shipped);
+            $added = array_values(array_diff(self::DUTIES, $heldBefore));
+            if ($added !== []) {
+                $admin->revokePermissionTo($added);
+            }
         }
     }
 

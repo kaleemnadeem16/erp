@@ -28,12 +28,12 @@ final class AssembliesDemoSeeder extends Seeder
         $sqm = Uom::query()->where('code', 'sqm')->firstOrFail();
         $hour = Uom::query()->where('code', 'hr')->firstOrFail();
 
-        $labour = AssemblyGroup::query()->updateOrCreate(
+        $labour = AssemblyGroup::query()->firstOrCreate(
             ['code' => 'demo-labour'],
             ['name' => 'Labour & Installation'],
         );
 
-        Assembly::query()->updateOrCreate(
+        Assembly::query()->firstOrCreate(
             ['code' => 'demo-asm-wall-paint'],
             [
                 'name' => 'Wall Painting — 2 coat',
@@ -45,7 +45,7 @@ final class AssembliesDemoSeeder extends Seeder
             ],
         );
 
-        Assembly::query()->updateOrCreate(
+        Assembly::query()->firstOrCreate(
             ['code' => 'demo-asm-consult'],
             [
                 'name' => 'Site Consultation',

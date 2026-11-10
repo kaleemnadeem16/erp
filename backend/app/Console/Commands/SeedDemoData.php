@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Support\Demo\DemoCompanyGuard;
+use App\Support\Demo\DemoCredentials;
 use Database\Seeders\Demo\DemoDatabaseSeeder;
 use Illuminate\Console\Command;
 
@@ -11,12 +13,12 @@ final class SeedDemoData extends Command
 {
     protected $signature = 'demo:seed';
 
-    protected $description = 'Create or refresh the development demonstration dataset';
+    protected $description = 'Create the development demonstration dataset (create-only: existing data is never changed)';
 
     public function handle(DemoDatabaseSeeder $seeder): int
     {
-        if (! app()->environment(['local', 'testing'])) {
-            $this->components->error('Demo data may only be seeded in local or testing environments.');
+        if (! DemoCompanyGuard::allowedEnvironment()) {
+            $this->components->error(DemoCompanyGuard::ENVIRONMENT_MESSAGE);
 
             return self::FAILURE;
         }
@@ -27,6 +29,10 @@ final class SeedDemoData extends Command
 
         $this->newLine();
         $this->components->info('Demo data is ready. Sign in with '.config('demo.user.email').'.');
+        if (($generated = DemoCredentials::generated()) !== null) {
+            // Shown once: nothing stores it in plain text, and a rerun never changes an existing account's password.
+            $this->components->warn('Generated demo password (shown once; set DEMO_USER_PASSWORD to choose your own): '.$generated);
+        }
 
         return self::SUCCESS;
     }

@@ -33,7 +33,7 @@ final class PartiesDemoSeeder extends Seeder
 
         foreach ($suppliers as $data) {
             $party = $this->party($data['code'], $data['name']);
-            $account = SupplierAccount::withTrashed()->updateOrCreate(
+            $account = SupplierAccount::withTrashed()->firstOrCreate(
                 ['party_id' => $party->getKey()],
                 [
                     'code' => $data['code'],
@@ -45,7 +45,6 @@ final class PartiesDemoSeeder extends Seeder
                     'status' => Status::Active,
                 ],
             );
-            $account->restore();
         }
 
         $customers = [
@@ -55,7 +54,7 @@ final class PartiesDemoSeeder extends Seeder
 
         foreach ($customers as $data) {
             $party = $this->party($data['code'], $data['name']);
-            $account = CustomerAccount::withTrashed()->updateOrCreate(
+            $account = CustomerAccount::withTrashed()->firstOrCreate(
                 ['party_id' => $party->getKey()],
                 [
                     'code' => $data['code'],
@@ -68,13 +67,12 @@ final class PartiesDemoSeeder extends Seeder
                     'status' => Status::Active,
                 ],
             );
-            $account->restore();
         }
     }
 
     private function party(string $code, string $name): Party
     {
-        $party = Party::withTrashed()->updateOrCreate(
+        $party = Party::withTrashed()->firstOrCreate(
             ['code' => $code],
             [
                 'name' => $name,
@@ -85,7 +83,6 @@ final class PartiesDemoSeeder extends Seeder
                 'status' => Status::Active,
             ],
         );
-        $party->restore();
 
         return $party;
     }

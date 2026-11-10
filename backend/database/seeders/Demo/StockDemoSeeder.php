@@ -78,7 +78,7 @@ final class StockDemoSeeder extends Seeder
         $this->ensureDemoEnvironment();
 
         $permissions = app(PermissionRegistry::class);
-        $permissions->registerForTeam(1);
+        $permissions->registerForTeam($this->demoCompanyId());
         $demoUser = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $permissions->syncAutomatic($demoUser);
 
@@ -110,9 +110,11 @@ final class StockDemoSeeder extends Seeder
     /** @param  list<string>  $permissions */
     private function seedActor(string $email, string $name, array $permissions): User
     {
-        $user = User::query()->updateOrCreate(['email' => $email], ['name' => $name, 'password' => (string) str()->random(40)]);
-        $user->forceFill(['email_verified_at' => now()])->save();
-        $user->syncPermissions($permissions);
+        $user = User::query()->firstOrCreate(['email' => $email], ['name' => $name, 'password' => bin2hex(random_bytes(20))]);
+        if ($user->email_verified_at === null) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+        $user->givePermissionTo($permissions);
 
         return $user;
     }
@@ -249,7 +251,7 @@ final class StockDemoSeeder extends Seeder
     private function seedNegativeStockOverrides(Location $location, User $requester): void
     {
         $item = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
-        $company = Company::query()->findOrFail(1);
+        $company = Company::query()->findOrFail($this->demoCompanyId());
         // A mutable company setting, not a transactional fact — safe (and
         // desirable) to reconcile on every run regardless of whether either
         // request row below still needs creating, unlike the immutable rows
@@ -310,7 +312,7 @@ final class StockDemoSeeder extends Seeder
             return;
         }
 
-        $company = Company::query()->findOrFail(1);
+        $company = Company::query()->findOrFail($this->demoCompanyId());
         $company->update([
             'authorised_forward_recalculation_enabled' => true,
             'backdating_horizon_mode' => 'POSTING_FLOOR',
@@ -320,7 +322,7 @@ final class StockDemoSeeder extends Seeder
 
         $uom = Uom::query()->where('code', 'l')->firstOrFail();
         $category = Category::query()->where('code', 'demo-solvents')->firstOrFail();
-        $item = Item::withTrashed()->updateOrCreate(
+        $item = Item::withTrashed()->firstOrCreate(
             ['code' => 'demo-recalc-thinner'],
             [
                 'name' => 'Recalc Demo Thinner', 'description' => 'Dedicated item for the stock recalculation demo.',
@@ -329,7 +331,6 @@ final class StockDemoSeeder extends Seeder
                 'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
             ],
         );
-        $item->restore();
         if ($item->resolveInventoryAccountId() === null) {
             $item->update(['inventory_account_id' => ChartOfAccount::query()->firstOr(fn () => ChartOfAccount::create(['code' => 'inv', 'name' => 'Inventory', 'type' => AccountType::Asset]))->id]);
         }

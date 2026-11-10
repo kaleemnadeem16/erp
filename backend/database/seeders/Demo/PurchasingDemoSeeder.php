@@ -27,6 +27,7 @@ use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Support\Demo\DemoCredentials;
 use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
@@ -60,7 +61,7 @@ final class PurchasingDemoSeeder extends Seeder
         $this->ensureDemoEnvironment();
 
         $permissions = app(PermissionRegistry::class);
-        $permissions->registerForTeam(1);
+        $permissions->registerForTeam($this->demoCompanyId());
         $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $permissions->syncAutomatic($this->actor);
 
@@ -89,7 +90,7 @@ final class PurchasingDemoSeeder extends Seeder
             $item = Item::query()->where('code', $data['item'])->firstOrFail();
             $supplier = SupplierAccount::query()->where('code', $data['supplier'])->firstOrFail();
 
-            ItemSupplier::query()->updateOrCreate(
+            ItemSupplier::query()->firstOrCreate(
                 ['item_id' => $item->getKey(), 'supplier_account_id' => $supplier->getKey()],
                 [
                     'supplier_item_code' => $data['supplier_code'],
@@ -221,12 +222,14 @@ final class PurchasingDemoSeeder extends Seeder
      */
     private function seedReceivingClerkDraftReceipt(Location $location, Currency $currency): void
     {
-        $clerk = User::query()->updateOrCreate(
+        $clerk = User::query()->firstOrCreate(
             ['email' => 'demo-receiver@erp.x1techs.com'],
-            ['name' => 'Demo Receiving Clerk', 'password' => config('demo.user.password')],
+            fn (): array => ['name' => 'Demo Receiving Clerk', 'password' => DemoCredentials::password()],
         );
-        $clerk->forceFill(['email_verified_at' => now()])->save();
-        $clerk->syncPermissions([
+        if ($clerk->email_verified_at === null) {
+            $clerk->forceFill(['email_verified_at' => now()])->save();
+        }
+        $clerk->givePermissionTo([
             'purchasing.purchase-order.view', 'purchasing.goods-receipt.view', 'purchasing.goods-receipt.create',
             'purchasing.quality-disposition.post',
         ]);
@@ -287,7 +290,7 @@ final class PurchasingDemoSeeder extends Seeder
 
         $category = Category::query()->where('code', 'demo-finished')->firstOrFail();
         $each = Uom::query()->where('code', 'ea')->firstOrFail();
-        $item = Item::withTrashed()->updateOrCreate(
+        $item = Item::withTrashed()->firstOrCreate(
             ['code' => 'demo-paint-grey'],
             [
                 'name' => 'Grey Primer Paint 20L', 'description' => 'Dedicated item for the goods-receipt reversal demo.',
@@ -296,7 +299,6 @@ final class PurchasingDemoSeeder extends Seeder
                 'category_id' => $category->id, 'inventory_account_id' => null, 'custom_fields' => [],
             ],
         );
-        $item->restore();
         if ($item->resolveInventoryAccountId() === null) {
             $item->update(['inventory_account_id' => ChartOfAccount::query()->firstOrFail()->id]);
         }

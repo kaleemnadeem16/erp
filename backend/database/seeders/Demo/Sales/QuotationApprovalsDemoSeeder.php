@@ -83,11 +83,14 @@ final class QuotationApprovalsDemoSeeder extends Seeder
             return;
         }
 
-        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($this->demoCompanyId());
         foreach (self::DUTIES as $duty) {
             Permission::findOrCreate($duty, 'web');
         }
-        $admin->givePermissionTo(array_values(array_diff(self::DUTIES, [Sales::QUOTATION_APPROVE])));
+        // Only what this run adds to the login is taken away again afterwards; the approver persona's own view/approve rows are its definition.
+        $adminDuties = array_values(array_diff(self::DUTIES, [Sales::QUOTATION_APPROVE]));
+        $heldBefore = $admin->getDirectPermissions()->pluck('name')->all();
+        $admin->givePermissionTo($adminDuties);
         $approver = $this->demoMember(self::APPROVER, 'Demo Quotation Approver');
         $approver->givePermissionTo([Sales::QUOTATION_VIEW, Sales::QUOTATION_APPROVE]);
 
@@ -101,6 +104,10 @@ final class QuotationApprovalsDemoSeeder extends Seeder
             });
         } finally {
             app()->instance(SalesDutyManifest::class, $shipped);
+            $added = array_values(array_diff($adminDuties, $heldBefore));
+            if ($added !== []) {
+                $admin->revokePermissionTo($added);
+            }
         }
     }
 

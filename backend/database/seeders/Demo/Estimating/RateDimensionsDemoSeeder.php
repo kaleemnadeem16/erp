@@ -22,7 +22,7 @@ final class RateDimensionsDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
 
-        $surfaceType = RateDimension::query()->updateOrCreate(
+        $surfaceType = RateDimension::query()->firstOrCreate(
             ['code' => 'demo-surface-type'],
             ['name' => 'Surface Type', 'sort_order' => 1, 'is_required' => true],
         );
@@ -32,7 +32,7 @@ final class RateDimensionsDemoSeeder extends Seeder
             ['code' => 'demo-metal', 'name' => 'Metal', 'sort_order' => 3],
         ]);
 
-        $coatCount = RateDimension::query()->updateOrCreate(
+        $coatCount = RateDimension::query()->firstOrCreate(
             ['code' => 'demo-coat-count'],
             ['name' => 'Coat Count', 'sort_order' => 2, 'is_required' => false],
         );
@@ -46,7 +46,7 @@ final class RateDimensionsDemoSeeder extends Seeder
     private function values(RateDimension $dimension, array $values): void
     {
         foreach ($values as $value) {
-            $dimension->values()->updateOrCreate(
+            $dimension->values()->firstOrCreate(
                 ['code' => $value['code']],
                 ['name' => $value['name'], 'sort_order' => $value['sort_order']],
             );

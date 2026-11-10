@@ -56,7 +56,7 @@ final class PackagedPurchasingDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
         $registry = app(PermissionRegistry::class);
-        $registry->registerForTeam(1);
+        $registry->registerForTeam($this->demoCompanyId());
         $this->actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $registry->syncAutomatic($this->actor);
         $this->litre = Uom::query()->where('code', 'l')->firstOrFail();

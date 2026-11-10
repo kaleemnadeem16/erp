@@ -168,10 +168,13 @@ negative-stock and recalculation lifecycles, Stock Transfers and Estimating in d
 lifecycles after Stock because they reuse that seeder's actors and resting policy; the stock
 workflow seeders share `SeedsDedicatedStockItems`, one dedicated item per scenario); a new module
 adds its own seeder to that list. Both the command and every module seeder
-refuse to run unless Laravel's environment is `local` or `testing`, so a normal production
-`db:seed` cannot install demo data. The demo login defaults to `user@erp.x1techs.com` /
-`!User@Erp@123`; local environment variables `DEMO_USER_EMAIL`, `DEMO_USER_PASSWORD` and
-`DEMO_USER_NAME` may override it. `StockDemoSeeder` grants this login every
+pass one central guard (`App\Support\Demo\DemoCompanyGuard`, via `EnsuresDemoEnvironment`): they refuse to run in `production` (even with `DEMO_MODE`),
+refuse unless the environment is `local`, `testing` or a deployment that sets `DEMO_MODE=true`, and write only to the designated demo company (Company 1; a seeder gets its company id from
+the guard, never a literal). So a normal production `db:seed` cannot install demo data, and demo data cannot be written into another company. Every demo seeder is **create-only**: it adds what is
+missing and never updates, deletes or rebuilds what exists, and never resets a password (a ratchet test, `DemoSeederGuardTest`, bans the patterns that did).
+The demo login is `user@erp.x1techs.com`; `DEMO_USER_EMAIL` and `DEMO_USER_NAME` may override it. **There is no default password** (issue #100): set `DEMO_USER_PASSWORD` in your local environment
+before `demo:seed`, or leave it unset and `demo:seed` generates one random password for that run and prints it once (`Generated demo password: …`) — note it then, because an existing account keeps whatever
+password it already has, so a rerun neither changes nor reprints it. Tests set an explicit value in `bootstrap/testing-environment.php`. Browser specs read `E2E_USER_PASSWORD`. `StockDemoSeeder` grants this login every
 `inventory.physical_count.*`, `inventory.cutover.*`, `inventory.negative-stock.*` and
 `inventory.recalculation.*` permission those screens gate on — without it the demo login could
 not use any of the four workflows at all.
@@ -204,8 +207,8 @@ semi-finished formulation as the base consumed by a named derived formulation. C
 `demo-...` establish ownership and idempotency; they do not explain the scenario to a person
 exploring the application.
 
-**Conventions every demo seeder follows** (the checklist's demo line): it is a module seeder registered in `DemoDatabaseSeeder` in dependency order and refuses to run outside `local`/`testing`; it is **idempotent**
-(stable codes or keys; mutable reference data reconciled, **immutable history created once and recognised-and-skipped on rerun — never recomputed, never mutated**); it builds the scenario through the real Actions
+**Conventions every demo seeder follows** (the checklist's demo line): it is a module seeder registered in `DemoDatabaseSeeder` in dependency order and passes the central demo guard (above); it is **idempotent**
+(stable codes or keys; **create-only: existing rows, grants and credentials are never reconciled or rewritten**, and any duty it grants temporarily is taken away again; **immutable history created once and recognised-and-skipped on rerun — never recomputed, never mutated**); it builds the scenario through the real Actions
 (never raw inserts that bypass the rules) with a named actor who holds the needed capabilities; it creates a small number of named, explained scenarios that exercise the feature's decision points, verified by a
 test that also proves the rerun adds nothing (`…DemoSeederTest`); and it leaves another developer able to exercise the workflow by hand from the UI. Anything a demo grants (a capability, a persona) is documented
 here or in the domain doc; a persona that must sign in gets the demo password, one that only supplies a second actor does not.

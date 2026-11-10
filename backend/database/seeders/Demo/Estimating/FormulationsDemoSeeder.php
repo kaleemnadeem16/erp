@@ -61,7 +61,7 @@ final class FormulationsDemoSeeder extends Seeder
         $pigment = Item::query()->where('code', 'demo-pig-blue')->firstOrFail();
         $paintWhite = Item::query()->where('code', 'demo-paint-white')->firstOrFail();
 
-        $binder = Item::withTrashed()->updateOrCreate(
+        $binder = Item::withTrashed()->firstOrCreate(
             ['code' => 'demo-formulation-binder'],
             [
                 'name' => 'Acrylic Binder', 'description' => 'Binder used in formulation demo recipes.',
@@ -71,11 +71,10 @@ final class FormulationsDemoSeeder extends Seeder
                 'custom_fields' => [], 'status' => Status::Active,
             ],
         );
-        $binder->restore();
         $this->pool($pigment, '18.0000');
         $this->pool($binder, '6.0000');
 
-        $tintedBase = Item::withTrashed()->updateOrCreate(
+        $tintedBase = Item::withTrashed()->firstOrCreate(
             ['code' => 'demo-tinted-base'],
             [
                 'name' => 'Tinted Base',
@@ -86,10 +85,9 @@ final class FormulationsDemoSeeder extends Seeder
                 'custom_fields' => [], 'status' => Status::Active,
             ],
         );
-        $tintedBase->restore();
 
         // Tinted Base's own formulation: 0.4 kg pigment (5% wastage) + 0.6 L binder, per litre.
-        $this->replaceFormulation(
+        $this->createFormulation(
             $tintedBase, 'demo-f-tinted-base', 'Tinted Base', $litre, null,
             [
                 ['input_item_id' => $pigment->id, 'qty' => '0.400000', 'uom_id' => $kg->id, 'wastage_pct' => '5.0000'],
@@ -99,19 +97,21 @@ final class FormulationsDemoSeeder extends Seeder
 
         // White Enamel Paint's company default: v1 then a revised v2 (superseding v1),
         // 0.5 L tinted base (nested) + 0.05 kg pigment direct per can.
-        $defaultFormulation = $this->replaceFormulation(
+        $defaultFormulation = $this->createFormulation(
             $paintWhite, 'demo-f-paint-white', 'White Enamel Paint — default', $each, null,
             [['input_item_id' => $tintedBase->id, 'qty' => '0.400000', 'uom_id' => $litre->id]],
         );
-        $this->reviseFormulation($defaultFormulation, [
-            ['input_item_id' => $tintedBase->id, 'qty' => '0.500000', 'uom_id' => $litre->id],
-            ['input_item_id' => $pigment->id, 'qty' => '0.050000', 'uom_id' => $kg->id, 'wastage_pct' => '5.0000'],
-        ]);
+        if ($defaultFormulation !== null) { // the revision exists only with the formulation this run created
+            $this->reviseFormulation($defaultFormulation, [
+                ['input_item_id' => $tintedBase->id, 'qty' => '0.500000', 'uom_id' => $litre->id],
+                ['input_item_id' => $pigment->id, 'qty' => '0.050000', 'uom_id' => $kg->id, 'wastage_pct' => '5.0000'],
+            ]);
+        }
 
         // A customer override with a richer, more pigment-heavy mix.
         $alpha = CustomerAccount::query()->where('code', 'cus-alpha')->first();
         if ($alpha !== null) {
-            $this->replaceFormulation(
+            $this->createFormulation(
                 $paintWhite, 'demo-f-paint-white-alpha', 'White Enamel Paint — Alpha Decorators', $each, $alpha->id,
                 [
                     ['input_item_id' => $tintedBase->id, 'qty' => '0.500000', 'uom_id' => $litre->id],
@@ -123,7 +123,8 @@ final class FormulationsDemoSeeder extends Seeder
 
     private function pool(Item $item, string $avgUnitCost): void
     {
-        AvcoPool::query()->updateOrCreate(
+        // Create-only: a pool that exists holds real stock facts and is never overwritten.
+        AvcoPool::query()->firstOrCreate(
             ['item_id' => $item->id, 'scope' => AvcoPoolScope::CompanyItem],
             [
                 'qty_on_hand' => '500', 'inventory_value' => bcmul($avgUnitCost, '500', 4),
@@ -134,11 +135,11 @@ final class FormulationsDemoSeeder extends Seeder
     }
 
     /** @param list<array<string, mixed>> $lines */
-    private function replaceFormulation(Item $output, string $code, string $name, Uom $outputUom, ?int $customerId, array $lines): Formulation
+    private function createFormulation(Item $output, string $code, string $name, Uom $outputUom, ?int $customerId, array $lines): ?Formulation
     {
-        $existing = Formulation::query()->where('code', $code)->first();
-        $existing?->versions()->delete();
-        $existing?->delete();
+        if (Formulation::query()->where('code', $code)->exists()) {
+            return null; // create-only: an existing formulation and its versions are never deleted or rebuilt
+        }
 
         $formulation = Formulation::create([
             'output_item_id' => $output->id, 'code' => $code, 'name' => $name,

@@ -64,7 +64,7 @@ final class StructuredLocationsDemoSeeder extends Seeder
 
     private function ensureStructured(User $actor): void
     {
-        if (Company::query()->findOrFail(1)->inventory_location_mode === InventoryLocationMode::Structured) {
+        if (Company::query()->findOrFail($this->demoCompanyId())->inventory_location_mode === InventoryLocationMode::Structured) {
             return;
         }
 
@@ -105,7 +105,7 @@ final class StructuredLocationsDemoSeeder extends Seeder
     /** @param array<string, mixed> $extra */
     private function location(Warehouse $warehouse, string $code, string $name, LocationType $type, ?Location $parent, array $extra = []): Location
     {
-        return Location::query()->updateOrCreate(
+        return Location::query()->firstOrCreate(
             ['warehouse_id' => $warehouse->id, 'code' => $code],
             ['name' => $name, 'type' => $type, 'parent_id' => $parent?->id, 'active' => true] + $extra,
         );
@@ -120,7 +120,7 @@ final class StructuredLocationsDemoSeeder extends Seeder
             WarehouseLocationRole::Transit->value => 'transit', WarehouseLocationRole::Production->value => 'wip',
         ];
         foreach ($roles as $role => $code) {
-            WarehouseLocationAssignment::query()->updateOrCreate(
+            WarehouseLocationAssignment::query()->firstOrCreate(
                 ['warehouse_id' => $main->id, 'role' => $role],
                 ['location_id' => $locations[$code]->id],
             );

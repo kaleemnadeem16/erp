@@ -46,7 +46,7 @@ final class DemoDataSeederTest extends TestCase
         $this->assertSame(6, (int) DB::table('item_quantity_units')->whereIn('item_id', $idsBeforeRerun['items'])->count());
 
         $user = User::query()->where('email', 'user@erp.x1techs.com')->firstOrFail();
-        $this->assertTrue(Hash::check('!User@Erp@123', $user->password));
+        $this->assertTrue(Hash::check('Test-Demo-Password-1!', $user->password));
 
         $this->artisan('demo:seed')->assertSuccessful();
 

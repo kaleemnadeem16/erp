@@ -32,7 +32,7 @@ final class ReceiptPackageEvidenceDemoSeeder extends Seeder
     public function run(): void
     {
         $this->ensureDemoEnvironment();
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
         $actor = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $base = Item::query()->where('code', 'demo-pack-thinner')->firstOrFail();
         $unit = Uom::query()->where('code', 'l')->firstOrFail();

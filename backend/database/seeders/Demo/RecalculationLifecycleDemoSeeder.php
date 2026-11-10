@@ -92,7 +92,7 @@ final class RecalculationLifecycleDemoSeeder extends Seeder
     {
         $this->ensureDemoEnvironment();
 
-        app(PermissionRegistry::class)->registerForTeam(1);
+        app(PermissionRegistry::class)->registerForTeam($this->demoCompanyId());
 
         $this->requester = User::query()->where('email', 'demo-ops@erp.x1techs.com')->firstOrFail();
         $this->supervisor = User::query()->where('email', 'demo-supervisor@erp.x1techs.com')->firstOrFail();
@@ -105,7 +105,7 @@ final class RecalculationLifecycleDemoSeeder extends Seeder
 
         // Mutable company settings, safe to reconcile every run: without them a backdated
         // receipt is refused outright. StockDemoSeeder sets the same values on its first run.
-        Company::query()->findOrFail(1)->update([
+        Company::query()->findOrFail($this->demoCompanyId())->update([
             'authorised_forward_recalculation_enabled' => true,
             'backdating_horizon_mode' => 'POSTING_FLOOR',
             'backdating_posting_floor_subtype' => 'FIXED_DATE',
@@ -125,7 +125,7 @@ final class RecalculationLifecycleDemoSeeder extends Seeder
 
     private function ensureHighRiskThreshold(): void
     {
-        $company = Company::query()->findOrFail(1);
+        $company = Company::query()->findOrFail($this->demoCompanyId());
         if ($company->recalculation_high_risk_threshold_base_amount === null) {
             $company->update(['recalculation_high_risk_threshold_base_amount' => '10000.0000']);
         }
