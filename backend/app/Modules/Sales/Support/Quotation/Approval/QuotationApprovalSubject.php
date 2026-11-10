@@ -203,6 +203,10 @@ final class QuotationApprovalSubject implements ProtectedApprovalEvidenceSubject
     /** The person who created the draft or entered any concession on it prepared it: they can never approve it. */
     public function tookPart(int $userId, int $revisionId): bool
     {
+        $revision = QuotationRevision::query()->find($revisionId);
+        if ($revision !== null && DB::table('quotation_concession_participants')->where('company_id', $revision->company_id)->where('revision_id', $revisionId)->where('actor_id', $userId)->exists()) {
+            return true;
+        }
         if ($this->strictPolicySelection()) {
             $revision = QuotationRevision::query()->find($revisionId);
             if ($revision !== null && in_array($userId, app(AuthorityParticipants::class)->ids($revision), true)) {

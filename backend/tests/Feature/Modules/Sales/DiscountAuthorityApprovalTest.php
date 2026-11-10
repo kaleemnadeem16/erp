@@ -6,6 +6,7 @@ namespace Tests\Feature\Modules\Sales;
 
 use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
+use App\Models\User;
 use App\Modules\Approvals\Actions\DecideApproval;
 use App\Modules\Approvals\Actions\ResolveApprovalPolicy;
 use App\Modules\Approvals\Models\ApprovalPolicy;
@@ -55,6 +56,72 @@ class DiscountAuthorityApprovalTest extends TestCase
         $policy->steps()->create(['stage' => 1, 'name' => 'Independent approval', 'required_approvals' => 1]);
 
         return $policy;
+    }
+
+    public function test_same_value_reentry_preserves_the_concession_author_and_independence_in_off_mode(): void
+    {
+        $revision = $this->preparedDraft();
+        $this->checker->givePermissionTo([Duty::QUOTATION_PREPARE, Duty::QUOTATION_DISCOUNT]);
+        $line = $revision->lines()->where('membership', 'BASE')->firstOrFail();
+        $input = ['update_lines' => [['id' => $line->id, 'discount' => ['kind' => 'PERCENT', 'value' => '8']]]];
+        app(UpdateQuotationDraft::class)($this->checker, $revision->id, $revision->input_generation, $this->issueKey(), $input);
+        $originalTime = $line->fresh()->discount_entered_at;
+        app(UpdateQuotationDraft::class)($this->maker, $revision->id, $revision->fresh()->input_generation, $this->issueKey(), $input);
+        $this->assertSame($this->checker->id, $line->fresh()->discount_entered_by);
+        $this->assertEquals($originalTime, $line->fresh()->discount_entered_at);
+        $this->routingPolicy();
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->fresh()->input_generation, $this->issueKey());
+        $request = app(QuotationApprovals::class)->latest($revision->id);
+        $this->assertFalse(app(QuotationApprovalSubject::class)->mayDecide($this->checker, $request, false));
+        app(UpdateQuotationDraft::class)($this->maker, $revision->id, $revision->fresh()->input_generation, $this->issueKey(), ['update_lines' => [['id' => $line->id, 'discount' => null]]]);
+        $this->assertTrue(app(QuotationApprovalSubject::class)->tookPart($this->checker->id, $revision->id));
+    }
+
+    public function test_document_and_override_same_value_reentry_preserve_authorship_and_participation(): void
+    {
+        $this->checker->givePermissionTo([Duty::QUOTATION_PREPARE, Duty::QUOTATION_DISCOUNT, Duty::QUOTATION_PRICE_OVERRIDE]);
+        foreach (['document', 'override'] as $kind) {
+            $revision = $this->preparedDraft();
+            $line = $revision->lines()->where('membership', 'BASE')->firstOrFail();
+            $input = $kind === 'document' ? ['document_discount' => ['kind' => 'PERCENT', 'value' => '8']]
+                : ['update_lines' => [['id' => $line->id, 'net_override' => ['amount' => '180', 'reason' => 'Commercial concession']]]];
+            app(UpdateQuotationDraft::class)($this->checker, $revision->id, $revision->input_generation, $this->issueKey(), $input);
+            app(UpdateQuotationDraft::class)($this->maker, $revision->id, $revision->fresh()->input_generation, $this->issueKey(), $input);
+            $author = $kind === 'document' ? DB::table('quotation_draft_document_discounts')->where('revision_id', $revision->id)->value('entered_by') : $line->fresh()->override_entered_by;
+            $this->assertSame($this->checker->id, $author);
+            $clear = $kind === 'document' ? ['document_discount' => null] : ['update_lines' => [['id' => $line->id, 'net_override' => null]]];
+            app(UpdateQuotationDraft::class)($this->maker, $revision->id, $revision->fresh()->input_generation, $this->issueKey(), $clear);
+            $this->assertTrue(app(QuotationApprovalSubject::class)->tookPart($this->checker->id, $revision->id));
+        }
+    }
+
+    public function test_participation_evidence_is_append_only_and_company_scoped(): void
+    {
+        $revision = $this->preparedDraft();
+        $foreignCompany = Company::create(['name' => 'Other company']);
+        $foreignActor = User::withoutEvents(fn () => User::factory()->create(['company_id' => $foreignCompany->id]));
+        foreach ([
+            fn () => DB::table('quotation_concession_participants')->where('revision_id', $revision->id)->update(['actor_id' => $this->checker->id]),
+            fn () => DB::table('quotation_concession_participants')->where('revision_id', $revision->id)->delete(),
+            fn () => DB::statement('TRUNCATE quotation_concession_participants'),
+            fn () => DB::table('quotation_concession_participants')->insert(['company_id' => 1, 'revision_id' => $revision->id, 'actor_id' => $foreignActor->id]),
+            fn () => DB::table('quotation_concession_participants')->insert(['company_id' => $foreignCompany->id, 'revision_id' => $revision->id, 'actor_id' => $foreignActor->id]),
+        ] as $write) {
+            try {
+                DB::transaction($write);
+                $this->fail('Participation evidence must retain its original company and actor.');
+            } catch (QueryException $e) {
+                $this->assertContains($e->getCode(), ['23514', '23503']);
+            }
+        }
+    }
+
+    public function test_participation_migration_rolls_back_and_reapplies_when_empty(): void
+    {
+        $migration = require database_path('migrations/2026_12_03_050000_preserve_quotation_concession_participants.php');
+        $migration->down();
+        $migration->up();
+        $this->assertSame(0, DB::table('quotation_concession_participants')->count());
     }
 
     public function test_routes_the_evaluated_concession_and_refuses_equal_priority_instead_of_using_ids(): void

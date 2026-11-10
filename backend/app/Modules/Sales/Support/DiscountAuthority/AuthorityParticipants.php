@@ -25,6 +25,9 @@ final class AuthorityParticipants
             ->whereIn('operation', ['quotation.create_draft', 'quotation.create_revision', 'quotation.update_draft'])->pluck('actor_id') as $id) {
             $ids[] = (int) $id;
         }
+        foreach (DB::table('quotation_concession_participants')->where('company_id', $revision->company_id)->where('revision_id', $revision->id)->pluck('actor_id') as $id) {
+            $ids[] = (int) $id;
+        }
         $ids = array_values(array_unique($ids));
         sort($ids, SORT_NUMERIC);
 

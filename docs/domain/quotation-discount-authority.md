@@ -298,6 +298,12 @@ Issue-time mandatory input-reduction controls judge line discounts, final-net ov
 and document discounts. The document input is judged once against counted net before its
 discount; approval does not waive a mandatory control.
 
+Commercial editors are retained in append-only `quotation_concession_participants`
+(company, revision and actor composite relationships), including existing operation-receipt
+participants at migration. Same-value concession entry preserves its original author and time.
+Clearing or replacing a concession does not restore its participants’ approval eligibility,
+in OFF, SHADOW or ENFORCE mode.
+
 ## Related
 
 - [API and rollout](quotation-discount-authority-api.md) · [Journey](../journeys/quotation-discount-authority.md)

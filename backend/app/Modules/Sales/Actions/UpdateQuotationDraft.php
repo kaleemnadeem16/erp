@@ -12,6 +12,7 @@ use App\Modules\Sales\Models\QuotationChoiceGroup;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationLogicalScope;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityParticipants;
 use App\Modules\Sales\Support\Financial\Arithmetic;
 use App\Modules\Sales\Support\Financial\Policy\RoundingPolicyBinding;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
@@ -101,6 +102,10 @@ final class UpdateQuotationDraft
         }
         if ($revision->input_generation !== $expectedGeneration) {
             throw QuotationRefusal::make(QuotationRefusal::QUOTATION_DRAFT_STALE, "The draft is at generation {$revision->input_generation}, not {$expectedGeneration}; reload it before changing it.", 'expected_generation');
+        }
+        // Every commercial editor remains a participant, even after a concession is cleared.
+        foreach (array_unique([$actor->id, ...app(AuthorityParticipants::class)->ids($revision)]) as $participant) {
+            DB::table('quotation_concession_participants')->insertOrIgnore(['company_id' => $revision->company_id, 'revision_id' => $revision->id, 'actor_id' => $participant]);
         }
         $header = $changes->header;
         if (($header['currency_id'] ?? $revision->currency_id) !== $revision->currency_id && $this->pricedLines($revision)->exists()) {
@@ -264,6 +269,16 @@ final class UpdateQuotationDraft
             $out += $o === null ? ['net_override' => null, 'override_reason' => null, 'override_entered_by' => null, 'override_entered_at' => null]
                 : ['net_override' => $o['amount'], 'override_reason' => $o['reason'], 'override_entered_by' => $actor->id, 'override_entered_at' => $now];
         }
+        if ($line !== null && isset($out['discount_kind']) && $out['discount_kind'] === $line->discount_kind
+            && BigDecimal::of((string) $out['discount_value'])->isEqualTo((string) $line->discount_value)) {
+            $out['discount_entered_by'] = $line->discount_entered_by;
+            $out['discount_entered_at'] = $line->discount_entered_at;
+        }
+        if ($line !== null && isset($out['net_override']) && $line->net_override !== null
+            && BigDecimal::of((string) $out['net_override'])->isEqualTo((string) $line->net_override)) {
+            $out['override_entered_by'] = $line->override_entered_by;
+            $out['override_entered_at'] = $line->override_entered_at;
+        }
         $discount = array_key_exists('discount_kind', $out) ? $out['discount_kind'] : $line?->discount_kind;
         $override = array_key_exists('net_override', $out) ? $out['net_override'] : $line?->net_override;
         if ($discount !== null && $override !== null) {
@@ -293,7 +308,12 @@ final class UpdateQuotationDraft
             return;
         }
         $values = ['kind' => $changes->documentDiscount['kind'], 'value' => $changes->documentDiscount['value'], 'entered_by' => $actor->id, 'entered_at' => now(), 'approval_required' => false, 'approval_reason' => null];
-        if ($existing->exists()) {
+        $previous = $existing->first();
+        if ($previous !== null && $previous->kind === $values['kind'] && BigDecimal::of((string) $previous->value)->isEqualTo($values['value'])) {
+            $values['entered_by'] = $previous->entered_by;
+            $values['entered_at'] = $previous->entered_at;
+        }
+        if ($previous !== null) {
             DB::table('quotation_draft_document_discounts')->where('revision_id', $revision->id)->update($values);
         } else {
             DB::table('quotation_draft_document_discounts')->insert($values + ['company_id' => $revision->company_id, 'revision_id' => $revision->id, 'created_at' => now(), 'updated_at' => now()]);
