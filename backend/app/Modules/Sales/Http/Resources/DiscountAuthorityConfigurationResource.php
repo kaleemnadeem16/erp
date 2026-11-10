@@ -12,7 +12,9 @@ class DiscountAuthorityConfigurationResource extends JsonResource
     /** @return array{generation:int, mode:string, page:int, per_page:int, total:int, records:list<array<string,string|int|bool|null>>} */
     public function toArray(Request $request): array
     {
-        return ['generation' => $this->resource['generation'], 'mode' => $this->resource['mode'], 'page' => $this->resource['page'], 'per_page' => $this->resource['per_page'],
-            'total' => $this->resource['total'], 'records' => $this->resource['records']];
+        /** @var array{generation:int, mode:string, page:int, per_page:int, total:int, records:list<array<string,string|int|bool|null>>} $data */
+        $data = $this->resource;
+
+        return $data;
     }
 }

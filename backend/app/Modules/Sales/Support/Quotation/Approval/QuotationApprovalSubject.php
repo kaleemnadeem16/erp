@@ -16,6 +16,7 @@ use App\Modules\Approvals\Support\StrictApprovalSubject;
 use App\Modules\Approvals\Support\TransactionalApprovalSubject;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityFence;
+use App\Modules\Sales\Support\DiscountAuthority\AuthorityParticipants;
 use App\Modules\Sales\Support\DiscountAuthority\AuthorityRefusal;
 use App\Modules\Sales\Support\DiscountAuthority\DiscountConfiguration;
 use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
@@ -65,7 +66,9 @@ final class QuotationApprovalSubject implements ProtectedApprovalEvidenceSubject
     /** Nothing monetary is routed or shown, so there is no figure to guard; the summary is the same for everyone. */
     public function canViewEvidence(User $user): bool
     {
-        return $this->strictPolicySelection() && SalesAccess::may(ActiveActor::current($user), PermissionVocabulary::AUTHORITY_EVIDENCE_VIEW);
+        $current = ActiveActor::current($user);
+
+        return $current !== null && ! $current->must_change_password && SalesAccess::may($current, PermissionVocabulary::AUTHORITY_EVIDENCE_VIEW);
     }
 
     public function routing(int $subjectId): ApprovalRouting
@@ -110,6 +113,9 @@ final class QuotationApprovalSubject implements ProtectedApprovalEvidenceSubject
             throw $refusal;
         }
 
+        if ($this->requestHasExpired($request) || ! hash_equals($request->facts_hash, $this->routing($revisionId)->hash())) {
+            return false;
+        }
         if ($this->strictPolicySelection()) {
             return app(QuotationAuthorityApproval::class)->mayDecide($person, QuotationRevision::query()->findOrFail($revisionId));
         }
@@ -171,9 +177,10 @@ final class QuotationApprovalSubject implements ProtectedApprovalEvidenceSubject
         }
         $revision = QuotationRevision::query()->findOrFail($request->subject_id);
         $policy = app(DiscountConfiguration::class)->policy($revision);
-        $assignment = app(DiscountConfiguration::class)->assignment($actor, $revision, $policy, 'APPROVE');
+        $fresh = ActiveActor::require($actor, 'record reviewer authority');
+        $assignment = app(DiscountConfiguration::class)->assignment($fresh, $revision, $policy, 'APPROVE');
 
-        return ['sales_authority_policy_id' => $policy->id, 'sales_authority_assignment_id' => $assignment?->id,
+        return ['sales_actor_authorization_generation' => (int) $fresh->getAttribute('authorization_generation'), 'sales_authority_policy_id' => $policy->id, 'sales_authority_assignment_id' => $assignment?->id,
             'sales_authority_band_id' => $assignment?->band_id, 'sales_authority_fingerprint' => app(QuotationAuthorityApproval::class)->assessment($revision)['fingerprint']];
     }
 
@@ -196,6 +203,12 @@ final class QuotationApprovalSubject implements ProtectedApprovalEvidenceSubject
     /** The person who created the draft or entered any concession on it prepared it: they can never approve it. */
     public function tookPart(int $userId, int $revisionId): bool
     {
+        if ($this->strictPolicySelection()) {
+            $revision = QuotationRevision::query()->find($revisionId);
+            if ($revision !== null && in_array($userId, app(AuthorityParticipants::class)->ids($revision), true)) {
+                return true;
+            }
+        }
         if (DB::table('quotation_revisions')->where('id', $revisionId)->where('created_by', $userId)->exists()) {
             return true;
         }

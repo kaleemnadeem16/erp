@@ -8,7 +8,7 @@ use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use Closure;
 
-/** Acquire the owning module's fences before any engine preflight or request lock. */
+/** Opt in to owning-module fences, frozen evidence checks and fresh submission after stale/expired pending evidence. */
 interface TransactionalApprovalSubject extends ApprovalSubject
 {
     /** @param Closure(User): (ApprovalRequest|null) $work */

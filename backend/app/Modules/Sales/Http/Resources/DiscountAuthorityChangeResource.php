@@ -12,6 +12,9 @@ class DiscountAuthorityChangeResource extends JsonResource
     /** @return array{id:int, mode:string|null} */
     public function toArray(Request $request): array
     {
-        return ['id' => (int) $this->resource['id'], 'mode' => $this->resource['mode'] ?? null];
+        /** @var array{id:int,mode?:string|null} $data */
+        $data = $this->resource;
+
+        return ['id' => (int) $data['id'], 'mode' => $data['mode'] ?? null];
     }
 }

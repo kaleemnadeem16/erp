@@ -1187,3 +1187,27 @@ negative tests cover evidence mutation/removal and a successful decision afterwa
 Sales/Purchasing/Estimating approval regression **46 passed**. Pint, whole-project PHPStan and the
 isolated migration cycle passed again. API/client shapes are unchanged by this safeguard; the
 owner-run codegen/check and proposed ADR 0164 review gates above remain.
+
+## 2026-11-10 — #86 final lifecycle and protected evidence handoff
+
+Stale Sales approval requests can be explicitly withdrawn or superseded by a fresh submission;
+stale/expired requests are not actionable in the inbox. Decision evidence records the reviewer's
+authorisation generation, so restoration after suspension/revocation cannot revive an earlier
+approval. Commercial editors are excluded from approving their own reductions. Protected history
+remains available with current evidence/family access after switching authority mode off. Protected
+current/history evidence now includes the matching immutable required-band limits and policy rules,
+without requiring the financial configuration duty. This adds nullable `current.required_band` and
+`records[].evaluation.required_band`; owner generation/check must include these final fields.
+
+Final-source verification: lifecycle/API and Sales/Purchasing/Estimating approval tests **55 passed**;
+all named access/duty/read/share/tenant-FK ratchets plus six direct two-session cases **50 passed,
+1 skipped**. The skipped manifest-document check lacks the container's docs mount; its exact
+row/status assertions were independently checked against all **63** runtime duties and passed.
+Pint (nine changed PHP files), whole-project PHPStan (private single-worker cache), and diff checks
+passed. Earlier module regression, demo, migration-cycle and broader focused results remain recorded
+above; the whole backend suite was not run. Final OpenAPI was exported separately and scalar/nested evidence types verified after correcting
+array-backed Resource inference (25 existing-style JR001 warnings; no missing-model schemas).
+The API tests passed again (**7 passed**); generated client
+files belong to the owner and were not edited/staged by this work. ADR 0164 review, owner codegen
+and `docker/backend/codegen.sh --check`, consequent frontend checks and clean CI remain explicit
+integration gates. No push, real grants, duty activation or company activation was performed.

@@ -68,7 +68,7 @@ final class ReadQuotationApproval
                 ],
                 'can' => [
                     'request' => $preparer && $revision->isDraft() && $needed && in_array($standing['state'], [QuotationApprovals::NOT_REQUESTED], true),
-                    'withdraw' => $preparer && $open && $request->submitted_by === $actor->id,
+                    'withdraw' => $preparer && $request !== null && $request->isOpen() && $request->submitted_by === $actor->id,
                     'decide' => $decider && $open && $revision->isDraft() && $request->submitted_by !== $actor->id && $this->subject->mayDecide($actor, $request, false),
                 ],
             ];

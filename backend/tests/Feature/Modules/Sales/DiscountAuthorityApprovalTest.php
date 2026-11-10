@@ -176,6 +176,8 @@ class DiscountAuthorityApprovalTest extends TestCase
         $this->assertTrue(app(QuotationApprovals::class)->isCurrent($revision, $request));
         DB::table('users')->where('id', $this->checker->id)->update(['status' => 'SUSPENDED']);
         $this->assertFalse(app(QuotationApprovals::class)->isCurrent($revision, $request));
+        DB::table('users')->where('id', $this->checker->id)->update(['status' => 'ACTIVE']);
+        $this->assertFalse(app(QuotationApprovals::class)->isCurrent($revision, $request), 'Restoring access cannot revive an older decision epoch.');
     }
 
     public function test_an_expired_pending_request_can_be_submitted_again_with_a_fresh_deadline(): void
@@ -231,6 +233,11 @@ class DiscountAuthorityApprovalTest extends TestCase
         Sanctum::actingAs($this->maker);
         $this->getJson('/api/v1/approval-requests/'.$request->id)->assertOk()->assertJsonPath('data.evidence_visible', false)
             ->assertJsonPath('data.evidence', [])->assertJsonPath('data.amount_base', null)->assertJsonPath('data.policy.name', 'Quotation review')->assertJsonPath('data.steps.0.name', 'Review step');
+        $this->maker->givePermissionTo(Duty::AUTHORITY_EVIDENCE_VIEW);
+        $this->authorityMode('OFF');
+        $this->getJson('/api/v1/approval-requests/'.$request->id)->assertOk()->assertJsonPath('data.evidence_visible', true)->assertJsonPath('data.amount_base', '16.0000');
+        DB::table('users')->where('id', $this->maker->id)->update(['must_change_password' => true]);
+        $this->assertFalse(app(QuotationApprovalSubject::class)->mayReadRequestEvidence($this->maker, $request));
     }
 
     public function test_the_sales_request_evidence_is_immutable_but_decision_status_can_advance(): void
@@ -263,5 +270,42 @@ class DiscountAuthorityApprovalTest extends TestCase
         }
         $approved = app(DecideApproval::class)($request, $this->checker, ApprovalDecisionKind::Approved);
         $this->assertSame('APPROVED', $approved->status->value);
+    }
+
+    public function test_a_configuration_change_can_be_resubmitted_without_leaving_a_stale_pending_request(): void
+    {
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $policy = $this->authorityPolicy();
+        $this->authorityAssignment($policy, 3, $this->checker, ['purpose' => 'APPROVE']);
+        $this->authorityMode('ENFORCE');
+        $this->routingPolicy();
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
+        $old = app(QuotationApprovals::class)->latest($revision->id);
+        $this->assertTrue(app(QuotationApprovalSubject::class)->mayDecide($this->checker, $old, false));
+        $this->authorityAssignment($policy, 1);
+        $this->assertFalse(app(QuotationApprovalSubject::class)->mayDecide($this->checker, $old, false));
+        Sanctum::actingAs($this->maker);
+        $this->getJson('/api/v1/quotations/'.$revision->id.'/approval')->assertOk()->assertJsonPath('data.can.withdraw', true)->assertJsonPath('data.can.request', true);
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
+        $fresh = app(QuotationApprovals::class)->latest($revision->id);
+        $this->assertNotSame($old->id, $fresh->id);
+        $this->assertSame('INVALIDATED', $old->refresh()->status->value);
+        $this->assertTrue(app(QuotationApprovalSubject::class)->mayDecide($this->checker, $fresh, false));
+    }
+
+    public function test_a_commercial_editor_cannot_review_their_own_undeclared_price_reduction(): void
+    {
+        $revision = $this->authorityDraft();
+        $this->checker->givePermissionTo(Duty::QUOTATION_PREPARE);
+        $line = $revision->lines()->where('membership', 'BASE')->firstOrFail();
+        app(UpdateQuotationDraft::class)($this->checker, $revision->id, $revision->input_generation, $this->issueKey(), ['update_lines' => [['id' => $line->id, 'unit_price' => '99.0000']]]);
+        $policy = $this->authorityPolicy();
+        $this->authorityAssignment($policy, 1, $this->checker, ['purpose' => 'APPROVE']);
+        $this->authorityMode('ENFORCE');
+        $this->routingPolicy();
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->refresh()->input_generation, $this->issueKey());
+        $request = app(QuotationApprovals::class)->latest($revision->id);
+        $this->assertTrue(app(QuotationApprovalSubject::class)->tookPart($this->checker->id, $revision->id));
+        $this->assertFalse(app(QuotationApprovalSubject::class)->mayDecide($this->checker, $request, false));
     }
 }

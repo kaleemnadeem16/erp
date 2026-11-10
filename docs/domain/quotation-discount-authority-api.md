@@ -51,7 +51,9 @@ business dates. Request rules/OpenAPI describe policy bands and reference/source
 A configuration duty does not substitute for evidence view or record access. Ordinary preview,
 readiness and quotation approval summaries remain amount/ceiling blind. Protected evidence returns
 reference/final/reduction amounts, pinned base exposure, exact percentage, required rank and line
-explanations; it carries no cost. History explicitly projects the same fields rather than returning
+explanations; it carries no cost. The nullable `required_band` object exposes the matching immutable
+band limits, enforcement rule and higher-approver rule within this protected quotation context;
+reviewers do not need the financial configuration duty to inspect these limits. History explicitly projects the same fields rather than returning
 raw stored snapshots. For an issued revision the current endpoint reads its pinned issue evaluation,
 including the captured mode; it never recomputes issued evidence from current policy. Legacy issued
 records without a pin return an explicit null. ENFORCE requires a captured family/scope reference before clearance. Binding
@@ -59,8 +61,12 @@ is explicit and inherits across revisions; incompatible established evidence ref
 
 Existing request/decision/withdrawal/issue paths enforce current authority inside their transaction.
 The Sales request input envelope (including frozen expiry/evaluation evidence) is immutable in the
-database; status transitions remain available. An expired pending request is ended when submitted again; a new request receives a fresh deadline.
-Approval never replaces current issue permission, record scope, tax or mandatory financial controls.
+database; status transitions remain available. A stale or expired pending request is ended when submitted again; a new request receives a fresh deadline.
+Stale/expired evidence is not actionable in the shared inbox. The preparer can also withdraw a
+stale pending request explicitly. Commercial editors cannot approve their own reduction. Reviewer
+authorisation generations are captured at decision time: restoring a suspended or revoked reviewer
+does not revive an earlier approval. Protected history remains readable with current evidence and
+record access after the company switches authority mode off. Approval never replaces current issue permission, record scope, tax or mandatory financial controls.
 The existing safe quotation approval summary also returns nullable `request.expires_at` and server-derived
 `request.expired`; its `approval_needed`/`can.request` flags now reflect routine clearance and undeclared
 reductions without disclosing authority figures. The configurable missing-evidence response remains 422 by default; only

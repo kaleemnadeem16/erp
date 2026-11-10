@@ -71,6 +71,10 @@ final class SubmitForApproval
                 app(InvalidateApprovals::class)($open, 'The approval expired before a fresh submission.', ApprovalRequestStatus::Expired);
                 $open = null;
             }
+            if ($open !== null && $subject instanceof TransactionalApprovalSubject && $open->facts_hash !== $routing->hash()) {
+                app(InvalidateApprovals::class)($open, 'The subject evidence changed before a fresh submission.');
+                $open = null;
+            }
             if ($open !== null) {
                 if ($open->facts_hash === $routing->hash() && app(ApprovalReviewRegistry::class)->unchanged($open)) {
                     return $open;

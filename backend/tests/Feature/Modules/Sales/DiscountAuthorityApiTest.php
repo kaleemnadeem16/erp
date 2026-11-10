@@ -95,8 +95,8 @@ class DiscountAuthorityApiTest extends TestCase
         Permission::findOrCreate(Duty::AUTHORITY_EVIDENCE_VIEW, 'web');
         $this->app->instance(SalesDutyManifest::class, app(SalesDutyManifest::class)->withActivated([Duty::AUTHORITY_EVIDENCE_VIEW]));
         $this->maker->givePermissionTo(Duty::AUTHORITY_EVIDENCE_VIEW);
-        $this->getJson($uri)->assertOk()->assertJsonPath('data.current.reduction_base_amount', '6.0000');
-        $this->getJson($uri.'/history?per_page=1')->assertOk()->assertJsonPath('data.per_page', 1)->assertJsonCount(1, 'data.records');
+        $this->getJson($uri)->assertOk()->assertJsonPath('data.current.reduction_base_amount', '6.0000')->assertJsonPath('data.current.required_band.line_percent', '3.0000')->assertJsonPath('data.current.required_band.enforcement', 'BOTH');
+        $this->getJson($uri.'/history?per_page=1')->assertOk()->assertJsonPath('data.per_page', 1)->assertJsonCount(1, 'data.records')->assertJsonPath('data.records.0.evaluation.required_band.line_percent', '3.0000');
         DB::table('users')->where('id', $this->maker->id)->update(['status' => 'SUSPENDED']);
         $this->expectException(AuthorizationException::class);
         app(ReadDiscountAuthorityConfiguration::class)($this->maker, 'policies');

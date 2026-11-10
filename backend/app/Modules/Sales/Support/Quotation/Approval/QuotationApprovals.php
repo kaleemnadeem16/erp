@@ -43,7 +43,9 @@ final class QuotationApprovals
                 foreach ($request->steps()->with('decisions')->get() as $step) {
                     foreach ($step->decisions as $decision) {
                         $person = User::query()->find($decision->decided_by);
-                        if ($person === null || app(ApprovalEligibility::class)->grantFor($person, $request, $step) === null) {
+                        $recordedEpoch = $decision->authority_snapshot['sales_actor_authorization_generation'] ?? null;
+                        if ($person === null || $recordedEpoch === null || (int) $person->getAttribute('authorization_generation') !== (int) $recordedEpoch
+                            || app(ApprovalEligibility::class)->grantFor($person, $request, $step) === null) {
                             return false;
                         }
                     }
