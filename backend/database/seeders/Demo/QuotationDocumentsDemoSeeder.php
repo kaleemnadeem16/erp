@@ -21,6 +21,7 @@ use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Support\CompanyContext;
+use App\Support\Demo\DemoQuotationReplay;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -90,6 +91,10 @@ final class QuotationDocumentsDemoSeeder extends Seeder
             DB::transaction(function () use ($maker, $customer, $service, $pkr): void {
                 // The brand and the document are one unit: a failure below leaves neither behind.
                 $this->brand($maker);
+                // Built by an earlier run (possibly on another day: its dates came from that day): nothing is resubmitted, nothing is added.
+                if (DemoQuotationReplay::done($maker, 'demo-doc-draft')) {
+                    return;
+                }
                 $created = app(CreateQuotationDraft::class)($maker, 'demo-doc-draft', ['recipient_party_id' => $customer->id, 'currency_id' => $pkr->id, 'pricing_date' => now()->format('Y-m-d'),
                     'tax_estimate_date' => now()->format('Y-m-d'), 'valid_through_local_date' => now()->addMonth()->format('Y-m-d')]);
                 $revision = QuotationRevision::query()->findOrFail($created->revisionId);

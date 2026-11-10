@@ -28,13 +28,13 @@ use App\Modules\Sales\Actions\DecideQuotationApproval;
 use App\Modules\Sales\Actions\ReassignQuotationOwner;
 use App\Modules\Sales\Actions\RequestQuotationApproval;
 use App\Modules\Sales\Actions\UpdateQuotationDraft;
-use App\Modules\Sales\Models\QuotationOperationReceipt;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Support\CompanyContext;
+use App\Support\Demo\DemoQuotationReplay;
 use App\Support\Demo\QuotationDemoBoundary;
 use App\Support\PermissionRegistry;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
@@ -248,7 +248,7 @@ final class QuotationAccessDemoSeeder extends Seeder
         $draft = function (User $by, string $marker, Party $to, string $text, string $price) use ($header, $line): int {
             $by->refresh(); // a share or revocation advances the actor's authorization epoch; never act on a stale copy
             // A rerun must not call the creator's Actions again: once a quotation was reassigned or placed in a unit the creator no longer reaches it, and a replay is checked against current reach.
-            $done = QuotationOperationReceipt::query()->where('actor_id', $by->id)->where('request_key', "demo-acc-{$marker}-lines")->first();
+            $done = DemoQuotationReplay::receipt($by, "demo-acc-{$marker}-lines");
             if ($done !== null) {
                 return (int) $done->family_id;
             }
@@ -327,11 +327,16 @@ final class QuotationAccessDemoSeeder extends Seeder
         };
         $decide = fn (User $by, QuotationRevision $draft, string $marker, string $why) => app(DecideQuotationApproval::class)($by, $draft->id, $draft->input_generation, ApprovalDecisionKind::Approved, $why, "demo-acc-{$marker}-decide");
 
-        $first = $this->step('tier stage1 make', fn () => $make('stage1-done', '42000'));
-        $this->step('tier stage1 lead', fn () => $decide($lead, $first, 'stage1-done-lead', 'Demo: the sales lead agrees; the director still has to decide.'));
+        // Dates in these drafts come from today: a scenario an earlier run built is skipped whole rather than resubmitted under its old key.
+        if (! DemoQuotationReplay::done($admin, 'demo-acc-stage1-done')) {
+            $first = $this->step('tier stage1 make', fn () => $make('stage1-done', '42000'));
+            $this->step('tier stage1 lead', fn () => $decide($lead, $first, 'stage1-done-lead', 'Demo: the sales lead agrees; the director still has to decide.'));
+        }
 
-        $both = $this->step('tier both make', fn () => $make('both-done', '41000'));
-        $this->step('tier both lead', fn () => $decide($lead, $both, 'both-done-lead', 'Demo: the sales lead agrees.'));
-        $this->step('tier both director', fn () => $decide($director, $both, 'both-done-director', 'Demo: the director agrees.'));
+        if (! DemoQuotationReplay::done($admin, 'demo-acc-both-done')) {
+            $both = $this->step('tier both make', fn () => $make('both-done', '41000'));
+            $this->step('tier both lead', fn () => $decide($lead, $both, 'both-done-lead', 'Demo: the sales lead agrees.'));
+            $this->step('tier both director', fn () => $decide($director, $both, 'both-done-director', 'Demo: the director agrees.'));
+        }
     }
 }

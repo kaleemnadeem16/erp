@@ -27,6 +27,7 @@ use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Sales;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Support\CompanyContext;
+use App\Support\Demo\DemoQuotationReplay;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -136,31 +137,46 @@ final class QuotationApprovalsDemoSeeder extends Seeder
         $line = fn (array $more): array => ['source_kind' => 'SERVICE_ITEM', 'item_id' => $service->id, 'offered_quantity' => '2', 'unit_price' => '25000.0000'] + $more;
         $override = fn (string $amount, string $why): array => ['net_override' => ['amount' => $amount, 'reason' => $why]];
 
-        $waiting = $this->draft($admin, 'waiting', $header($metro), $line($override('48500', 'Framework customer: small goodwill reduction on the site visit.')));
-        $this->request($admin, 'waiting', $waiting);
+        // A scenario an earlier run already built is skipped whole (its dates came from that day; a later day would resubmit a different payload under the same key).
+        $fresh = fn (string $marker): bool => ! DemoQuotationReplay::done($admin, "demo-appr-{$marker}");
 
-        $approved = $this->draft($admin, 'approved', $header($alpha), $line($override('48000', 'Repeat customer: reduced after the site visit.')));
-        $this->request($admin, 'approved', $approved);
-        $this->decide($approver, 'approved', $approved, ApprovalDecisionKind::Approved, 'Within what we agreed for repeat customers.');
+        if ($fresh('waiting')) {
+            $waiting = $this->draft($admin, 'waiting', $header($metro), $line($override('48500', 'Framework customer: small goodwill reduction on the site visit.')));
+            $this->request($admin, 'waiting', $waiting);
+        }
 
-        $issued = $this->draft($admin, 'issued', $header($alpha), $line($override('47500', 'Repeat customer: reduced after the site visit.')));
-        $this->request($admin, 'issued', $issued);
-        $this->decide($approver, 'issued', $issued, ApprovalDecisionKind::Approved, 'Approved for this customer.');
-        app(IssueQuotation::class)($admin, $issued->id, $issued->input_generation, 'demo-appr-issued-issue');
+        if ($fresh('approved')) {
+            $approved = $this->draft($admin, 'approved', $header($alpha), $line($override('48000', 'Repeat customer: reduced after the site visit.')));
+            $this->request($admin, 'approved', $approved);
+            $this->decide($approver, 'approved', $approved, ApprovalDecisionKind::Approved, 'Within what we agreed for repeat customers.');
+        }
 
-        $rejected = $this->draft($admin, 'rejected', $header($metro), $line(['discount' => ['kind' => 'PERCENT', 'value' => '25']]));
-        $this->request($admin, 'rejected', $rejected);
-        $this->decide($approver, 'rejected', $rejected, ApprovalDecisionKind::Rejected, 'Too deep for this customer: offer at most 10%.');
+        if ($fresh('issued')) {
+            $issued = $this->draft($admin, 'issued', $header($alpha), $line($override('47500', 'Repeat customer: reduced after the site visit.')));
+            $this->request($admin, 'issued', $issued);
+            $this->decide($approver, 'issued', $issued, ApprovalDecisionKind::Approved, 'Approved for this customer.');
+            app(IssueQuotation::class)($admin, $issued->id, $issued->input_generation, 'demo-appr-issued-issue');
+        }
 
-        $withdrawn = $this->draft($admin, 'withdrawn', $header($alpha), $line($override('46000', 'Reduced to match a competitor.')));
-        $this->request($admin, 'withdrawn', $withdrawn);
-        app(WithdrawQuotationApproval::class)($admin, $withdrawn->id, $withdrawn->input_generation, 'The customer asked for a different scope; the draft will be corrected first.', 'demo-appr-withdrawn-withdraw');
+        if ($fresh('rejected')) {
+            $rejected = $this->draft($admin, 'rejected', $header($metro), $line(['discount' => ['kind' => 'PERCENT', 'value' => '25']]));
+            $this->request($admin, 'rejected', $rejected);
+            $this->decide($approver, 'rejected', $rejected, ApprovalDecisionKind::Rejected, 'Too deep for this customer: offer at most 10%.');
+        }
 
-        $changed = $this->draft($admin, 'changed', $header($alpha), $line($override('47000', 'Repeat customer.')));
-        $this->request($admin, 'changed', $changed);
-        $this->decide($approver, 'changed', $changed, ApprovalDecisionKind::Approved, 'Approved.');
-        $lineId = (int) DB::table('quotation_draft_lines')->where('revision_id', $changed->id)->value('id');
-        app(UpdateQuotationDraft::class)($admin, $changed->id, $changed->input_generation, 'demo-appr-changed-edit', ['update_lines' => [['id' => $lineId, 'net_override' => ['amount' => '45000', 'reason' => 'Increased reduction after the approval.']]]]);
+        if ($fresh('withdrawn')) {
+            $withdrawn = $this->draft($admin, 'withdrawn', $header($alpha), $line($override('46000', 'Reduced to match a competitor.')));
+            $this->request($admin, 'withdrawn', $withdrawn);
+            app(WithdrawQuotationApproval::class)($admin, $withdrawn->id, $withdrawn->input_generation, 'The customer asked for a different scope; the draft will be corrected first.', 'demo-appr-withdrawn-withdraw');
+        }
+
+        if ($fresh('changed')) {
+            $changed = $this->draft($admin, 'changed', $header($alpha), $line($override('47000', 'Repeat customer.')));
+            $this->request($admin, 'changed', $changed);
+            $this->decide($approver, 'changed', $changed, ApprovalDecisionKind::Approved, 'Approved.');
+            $lineId = (int) DB::table('quotation_draft_lines')->where('revision_id', $changed->id)->value('id');
+            app(UpdateQuotationDraft::class)($admin, $changed->id, $changed->input_generation, 'demo-appr-changed-edit', ['update_lines' => [['id' => $lineId, 'net_override' => ['amount' => '45000', 'reason' => 'Increased reduction after the approval.']]]]);
+        }
     }
 
     /**
@@ -171,7 +187,6 @@ final class QuotationApprovalsDemoSeeder extends Seeder
      */
     private function draft(User $admin, string $marker, array $header, array $line): QuotationRevision
     {
-        // Every call replays its stored result on a rerun (the receipt is read before any state check), so the generations below are always the first run's.
         $created = app(CreateQuotationDraft::class)($admin, "demo-appr-{$marker}", $header);
         $generation = app(UpdateQuotationDraft::class)($admin, $created->revisionId, $created->inputGeneration, "demo-appr-{$marker}-lines", ['add_lines' => [$line]])->inputGeneration;
         $revision = QuotationRevision::query()->findOrFail($created->revisionId);

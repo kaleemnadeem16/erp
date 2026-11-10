@@ -29,6 +29,7 @@ use App\Modules\Tax\Support\EffectivePeriod;
 use App\Modules\Tax\Support\TaxDutyManifest;
 use App\Modules\Tax\Support\TaxVersionKind;
 use App\Support\CompanyContext;
+use App\Support\Demo\DemoQuotationReplay;
 use Database\Seeders\Demo\Concerns\EnsuresDemoEnvironment;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
@@ -143,24 +144,38 @@ final class QuotationIssuingDemoSeeder extends Seeder
         $service = ['source_kind' => 'SERVICE_ITEM', 'item_id' => $declared->id, 'offered_quantity' => '2', 'unit_price' => '25000.0000'];
         $month = now()->addMonths(2)->format('Y-m-d');
 
-        $ready = $this->draft($admin, 'ready', $header($month), [$service]);
-        $this->assertReady($ready);
+        // A scenario an earlier run already built is skipped whole: its dates were derived from that day, and a later day would resubmit a different payload under the same key.
+        $fresh = fn (string $marker): bool => ! DemoQuotationReplay::done($admin, "demo-iss-{$marker}");
 
-        $issued = $this->draft($admin, 'issued', $header($month), [$service]);
-        $this->issue($admin, 'issued', $issued);
+        if ($fresh('ready')) {
+            $this->assertReady($this->draft($admin, 'ready', $header($month), [$service]));
+        }
+
+        if ($fresh('issued')) {
+            $issued = $this->draft($admin, 'issued', $header($month), [$service]);
+            $this->issue($admin, 'issued', $issued);
+        }
 
         // The last valid day is today in the COMPANY's calendar; the UTC date is still yesterday for part of every Karachi day, which the issue check would call past.
-        $expiring = $this->draft($admin, 'expiring', $header(now(Company::query()->findOrFail($admin->company_id)->timezone)->format('Y-m-d')), [$service]);
-        $this->issue($admin, 'expiring', $expiring);
+        if ($fresh('expiring')) {
+            $expiring = $this->draft($admin, 'expiring', $header(now(Company::query()->findOrFail($admin->company_id)->timezone)->format('Y-m-d')), [$service]);
+            $this->issue($admin, 'expiring', $expiring);
+        }
 
-        $withdrawn = $this->draft($admin, 'withdrawn', $header($month), [$service]);
-        $this->issue($admin, 'withdrawn', $withdrawn);
-        app(WithdrawQuotationOffer::class)($admin, $withdrawn->id, 'demo-iss-withdraw', 'Priced against the wrong scope; a corrected quotation will follow.');
+        if ($fresh('withdrawn')) {
+            $withdrawn = $this->draft($admin, 'withdrawn', $header($month), [$service]);
+            $this->issue($admin, 'withdrawn', $withdrawn);
+            app(WithdrawQuotationOffer::class)($admin, $withdrawn->id, 'demo-iss-withdraw', 'Priced against the wrong scope; a corrected quotation will follow.');
+        }
 
-        $cancelled = $this->draft($admin, 'cancelled', $header($month), [$service]);
-        app(CancelQuotationDraft::class)($admin, $cancelled->id, QuotationRevision::query()->findOrFail($cancelled->id)->input_generation, 'demo-iss-cancel', 'The customer withdrew the enquiry.');
+        if ($fresh('cancelled')) {
+            $cancelled = $this->draft($admin, 'cancelled', $header($month), [$service]);
+            app(CancelQuotationDraft::class)($admin, $cancelled->id, QuotationRevision::query()->findOrFail($cancelled->id)->input_generation, 'demo-iss-cancel', 'The customer withdrew the enquiry.');
+        }
 
-        $this->draft($admin, 'blocked', $header($month), [['source_kind' => 'DIRECT_ITEM', 'item_id' => $undeclared->id, 'offered_quantity' => '4', 'unit_price' => '8000.0000']]);
+        if ($fresh('blocked')) {
+            $this->draft($admin, 'blocked', $header($month), [['source_kind' => 'DIRECT_ITEM', 'item_id' => $undeclared->id, 'offered_quantity' => '4', 'unit_price' => '8000.0000']]);
+        }
     }
 
     /**
