@@ -190,8 +190,9 @@ in the same commit.
 | [0170](0170-accept-the-missing-exact-sha-ci-evidence-for-the-demo-operator-bootstrap.md) | Accept the missing exact-SHA CI evidence for the demo operator bootstrap | accepted | 2026-11-10 |
 | [0180](0180-database-refuses-cross-family-and-broken-chain-rows-and-rollbacks-lock-first.md) | The database refuses cross-family and broken-chain rows; rollbacks lock before they look | accepted | 2026-11-09 |
 | [0181](0181-retire-the-reasonless-delivery-correction-and-judge-delivery-dates-by-the-company-calendar.md) | Retire the reasonless delivery correction; judge delivery dates by the company calendar | accepted | 2026-11-10 |
+| [0182](0182-reapprove-unissued-purchase-orders-by-materiality-when-a-stricter-policy-takes-effect.md) | Reapprove unissued purchase orders by materiality when a stricter policy takes effect | proposed (owner questions open) | 2026-11-10 |
 
-**Next number: 0166** (0158 approvals and 0160 delivery correction came from other work in flight; the demo patch decision was renumbered 0158 -> 0159 at the merge to avoid a collision)
+**Next number: 0183** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
