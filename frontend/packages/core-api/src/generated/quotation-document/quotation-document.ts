@@ -1262,7 +1262,7 @@ export function useQuotationsDeliveriesIndex<
 }
 
 /**
- * @summary Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer
+ * @summary Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer. This route only records a new delivery: sending `corrects_id` is refused (422); a correction or withdrawal always goes to the correction route with its reason
  */
 export type quotationsDeliveriesStoreResponse200 = {
   data: QuotationsDeliveriesStore200;
@@ -1403,7 +1403,7 @@ export type QuotationsDeliveriesStoreMutationError =
   | ValidationExceptionResponse;
 
 /**
- * @summary Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer
+ * @summary Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer. This route only records a new delivery: sending `corrects_id` is refused (422); a correction or withdrawal always goes to the correction route with its reason
  */
 export const useQuotationsDeliveriesStore = <
   TError =

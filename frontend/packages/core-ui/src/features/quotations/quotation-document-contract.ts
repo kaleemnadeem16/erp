@@ -62,7 +62,6 @@ export interface DeliveryInput {
   recipient_name: string;
   recipient_detail?: string | null;
   note?: string | null;
-  corrects_id?: number | null;
 }
 
 /** A correction names the record it replaces and always says why. A withdrawal says the delivery did not happen as recorded; the server repeats the old values. */

@@ -7,7 +7,6 @@
 import type { RecordQuotationDeliveryRequestChannel } from "./recordQuotationDeliveryRequestChannel";
 import type { RecordQuotationDeliveryRequestRecipientDetail } from "./recordQuotationDeliveryRequestRecipientDetail";
 import type { RecordQuotationDeliveryRequestNote } from "./recordQuotationDeliveryRequestNote";
-import type { RecordQuotationDeliveryRequestCorrectsId } from "./recordQuotationDeliveryRequestCorrectsId";
 
 /**
  * Records that the PDF was handed over outside the system: `sales.delivery.record`. Default-deny: the duty is STAGED, so nobody passes until it is activated; the Action asks again and also needs the right to see the quotation.
@@ -21,6 +20,6 @@ export interface RecordQuotationDeliveryRequest {
   recipient_detail?: RecordQuotationDeliveryRequestRecipientDetail;
   /** @maxLength 1000 */
   note?: RecordQuotationDeliveryRequestNote;
-  /** @minimum 1 */
-  corrects_id?: RecordQuotationDeliveryRequestCorrectsId;
+  /** A correction always needs a reason and has its own route (ADR 0181): this route only records. */
+  corrects_id?: string;
 }

@@ -92,7 +92,7 @@ class QuotationDocumentController extends Controller
         return QuotationDeliveryResource::collection($this->refusing(fn () => $read($request->user(), $revision)));
     }
 
-    /** Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer. */
+    /** Records that the official PDF was handed over by hand or outside the system. A statement by a person: not receipt, reading or acceptance by the customer. This route only records a new delivery: sending `corrects_id` is refused (422); a correction or withdrawal always goes to the correction route with its reason. */
     #[HeaderParameter('Idempotency-Key', 'Chosen by the client for each distinct request (1 to 120 characters, unique per person). Retrying the same request with the same key returns the stored result; the same key with different content is refused (409, reason_code DELIVERY_KEY_REUSED).', required: true, type: 'string')]
     #[Response(201, 'The delivery was recorded.', type: 'array{data: QuotationDeliveryResource}')]
     #[Response(200, 'An exact retry: the stored record, with the header Idempotency-Replayed: true.', type: 'array{data: QuotationDeliveryResource}')]
@@ -103,7 +103,7 @@ class QuotationDocumentController extends Controller
         $result = $this->refusing(fn () => $record($request->user(), $revision, [
             'channel' => (string) $request->input('channel'), 'delivered_on' => (string) $request->input('delivered_on'), 'recipient_name' => (string) $request->input('recipient_name'),
             'recipient_detail' => $request->input('recipient_detail'), 'note' => $request->input('note'),
-        ], $key, $request->filled('corrects_id') ? $request->integer('corrects_id') : null));
+        ], $key));
         $response = (new QuotationDeliveryResource($result['delivery']))->response()->setStatusCode($result['replayed'] ? 200 : 201);
         if ($result['replayed']) {
             $response->header('Idempotency-Replayed', 'true');

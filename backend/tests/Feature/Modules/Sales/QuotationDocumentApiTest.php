@@ -118,7 +118,10 @@ class QuotationDocumentApiTest extends TestCase
         $this->postJson($this->url('/deliveries'), [...$body, 'recipient_name' => 'Other'], ['Idempotency-Key' => 'd-1'])->assertStatus(409)->assertJsonPath('reason_code', 'DELIVERY_KEY_REUSED');
         $this->postJson($this->url('/deliveries'), [...$body, 'channel' => 'EMAIL'], ['Idempotency-Key' => 'd-2'])->assertStatus(422);
         $this->postJson($this->url('/deliveries'), [...$body, 'delivered_on' => now()->addDays(9)->format('Y-m-d')], ['Idempotency-Key' => 'd-3'])->assertStatus(422);
-        $this->postJson($this->url('/deliveries'), [...$body, 'recipient_name' => 'Ms Customer', 'corrects_id' => $first->json('data.id')], ['Idempotency-Key' => 'd-4'])->assertCreated();
+        // Retired by ADR 0181: the record route no longer corrects (a correction without a reason); it is refused, and the correction route needs a reason.
+        $this->postJson($this->url('/deliveries'), [...$body, 'recipient_name' => 'Ms Customer', 'corrects_id' => $first->json('data.id')], ['Idempotency-Key' => 'd-4'])->assertStatus(422)->assertJsonValidationErrors('corrects_id');
+        $this->postJson($this->url('/deliveries/'.$first->json('data.id').'/correction'), [...$body, 'recipient_name' => 'Ms Customer'], ['Idempotency-Key' => 'd-5'])->assertStatus(422);
+        $this->postJson($this->url('/deliveries/'.$first->json('data.id').'/correction'), [...$body, 'recipient_name' => 'Ms Customer', 'reason' => 'Wrong name'], ['Idempotency-Key' => 'd-6'])->assertCreated();
         $this->getJson($this->url('/deliveries'))->assertOk()->assertJsonCount(2, 'data');
 
         $all = json_encode([$made->json(), $history->json(), $this->getJson($this->url('/deliveries'))->json()]);
@@ -352,16 +355,20 @@ class QuotationDocumentApiTest extends TestCase
         $this->assertSame($before, $this->writes(), 'refused direct calls neither disclose cached evidence nor write anything');
     }
 
-    public function test_manual_delivery_uses_the_database_date_bound_even_when_the_php_clock_differs(): void
+    /** Replaces the earlier "database date bound" test: ADR 0181 judges the window by the COMPANY calendar day, taken from the application clock, never the database session date. */
+    public function test_manual_delivery_window_follows_the_company_calendar_day_when_the_clock_moves(): void
     {
         $this->activate();
         $this->documentWithEvidence();
-        $dates = DB::selectOne('SELECT (current_date + 1)::text AS allowed, (current_date + 2)::text AS future');
-        $fields = ['channel' => 'HAND', 'delivered_on' => $dates->allowed, 'recipient_name' => 'Synthetic recipient'];
-        $out = Carbon::withTestNow(now()->subDays(10), fn () => app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, $fields, 'db-date-bound'));
-        $this->assertSame($dates->allowed, DB::table('quotation_document_deliveries')->where('id', $out['delivery']->id)->value('delivered_on'));
-        Carbon::withTestNow(now()->addDays(10), function () use ($dates, $fields): void {
-            foreach ([$dates->future, '2026-02-31', "2026-01-01\0"] as $date) {
+        $zone = Company::findOrFail(1)->timezone;
+        $past = now()->subDays(10);
+        $allowed = $past->copy()->setTimezone($zone)->addDay()->format('Y-m-d');
+        $future = $past->copy()->setTimezone($zone)->addDays(2)->format('Y-m-d');
+        $fields = ['channel' => 'HAND', 'delivered_on' => $allowed, 'recipient_name' => 'Synthetic recipient'];
+        $out = Carbon::withTestNow($past, fn () => app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, $fields, 'company-date-bound'));
+        $this->assertSame($allowed, DB::table('quotation_document_deliveries')->where('id', $out['delivery']->id)->value('delivered_on'));
+        Carbon::withTestNow($past, function () use ($future, $fields): void {
+            foreach ([$future, '2026-02-31', "2026-01-01\0"] as $date) {
                 try {
                     app(RecordManualQuotationDelivery::class)($this->clerk, $this->revision, [...$fields, 'delivered_on' => $date], 'invalid-date');
                     $this->fail('An invalid date must be refused by the Action.');

@@ -7,6 +7,7 @@ namespace App\Modules\Sales\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationDocumentDelivery;
+use App\Modules\Sales\Support\Documents\DeliveryDateWindow;
 use App\Modules\Sales\Support\Documents\QuotationDocumentLocator;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
@@ -25,7 +26,7 @@ use Illuminate\Support\Facades\DB;
  */
 final class CorrectManualQuotationDelivery
 {
-    public function __construct(private readonly QuotationDocumentLocator $locator) {}
+    public function __construct(private readonly QuotationDocumentLocator $locator, private readonly DeliveryDateWindow $window) {}
 
     /**
      * @param  array{channel: string, delivered_on: string, recipient_name: string, recipient_detail?: string|null, note?: string|null}|null  $fields  the replacement values; null withdraws
@@ -102,7 +103,7 @@ final class CorrectManualQuotationDelivery
         $detail = isset($fields['recipient_detail']) ? trim((string) $fields['recipient_detail']) : null;
         $note = isset($fields['note']) ? trim((string) $fields['note']) : null;
         $date = preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/D', $fields['delivered_on']) === 1 ? \DateTimeImmutable::createFromFormat('!Y-m-d', $fields['delivered_on']) : false;
-        $maximumDate = (string) DB::selectOne('SELECT (current_date + 1)::text AS maximum_date')->maximum_date;
+        $maximumDate = $this->window->latest();
         if ($recipient === '' || mb_strlen($recipient) > 200 || ($detail !== null && mb_strlen($detail) > 200) || ($note !== null && mb_strlen($note) > 1000)
             || ! in_array($fields['channel'], RecordManualQuotationDelivery::CHANNELS, true) || ! $date || $date->format('Y-m-d') !== $fields['delivered_on'] || $fields['delivered_on'] > $maximumDate) {
             throw new DomainInvariantException('A corrected delivery needs a recipient, a channel (HAND, COURIER, POST, OTHER) and the actual date, which cannot be in the future.', 'delivery', 'DELIVERY_INVALID');

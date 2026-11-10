@@ -2,7 +2,7 @@
 
 # 0160 — Correct manual quotation deliveries by appending reasoned records
 
-- **Status:** accepted as the safest default under the existing append-correction rule (0137, DOC4); the owner may refine it. Business rules marked "decision" were not specified in the docs.
+- **Status:** accepted; the legacy reasonless correction exception is superseded by [0181](0181-retire-the-reasonless-delivery-correction-and-judge-delivery-dates-by-the-company-calendar.md). Originally accepted as the safest default under the existing append-correction rule (0137, DOC4); the owner may refine it. Business rules marked "decision" were not specified in the docs.
 - **Date:** 2026-11-05
 - **Affects:** Sales manual delivery evidence (`quotation_document_deliveries`), the document screen, `sales.delivery.record` (still STAGED)
 

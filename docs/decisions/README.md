@@ -180,7 +180,7 @@ in the same commit.
 
 | [0159](0159-patch-only-approved-quotation-access-for-the-main-demo-user.md) | Patch only approved quotation access for the main demo user | accepted | 2026-11-06 |
 
-| [0160](0160-correct-manual-quotation-deliveries-by-appending-reasoned-records.md) | Correct manual quotation deliveries by appending reasoned records | accepted (safest default; owner may refine) | 2026-11-05 |
+| [0160](0160-correct-manual-quotation-deliveries-by-appending-reasoned-records.md) | Correct manual quotation deliveries by appending reasoned records | accepted (reasonless exception superseded by 0181) | 2026-11-05 |
 | [0161](0161-switchable-quotation-demo-presets-and-local-preview-activation.md) | Switchable quotation demo presets and local-preview activation | accepted (owner-approved defaults) | 2026-11-06 |
 | [0162](0162-company-branding-versions-with-a-sanitised-logo-pinned-into-documents.md) | Company branding: immutable versions with a sanitised logo, pinned into documents | accepted (owner-approved answers) | 2026-11-06 |
 | [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) | Govern quotation discount authority with independent reference evidence | accepted (owner decision pack; implementation pending) | 2026-11-06 |
@@ -188,6 +188,7 @@ in the same commit.
 | [0165](0165-reconcile-purchase-order-fx-with-the-governed-rate.md) | Reconcile a purchase order's FX rate with the governed exchange rate | proposed (owner defaults pending) | 2026-11-06 |
 | [0175](0175-restore-a-missing-pinned-brand-logo-from-identical-bytes.md) | Restore a missing pinned brand logo from identical bytes; logo budgets and brand read hardening | accepted | 2026-11-09 |
 | [0180](0180-database-refuses-cross-family-and-broken-chain-rows-and-rollbacks-lock-first.md) | The database refuses cross-family and broken-chain rows; rollbacks lock before they look | accepted | 2026-11-09 |
+| [0181](0181-retire-the-reasonless-delivery-correction-and-judge-delivery-dates-by-the-company-calendar.md) | Retire the reasonless delivery correction; judge delivery dates by the company calendar | accepted | 2026-11-10 |
 
 **Next number: 0166** (0158 approvals and 0160 delivery correction came from other work in flight; the demo patch decision was renumbered 0158 -> 0159 at the merge to avoid a collision)
 

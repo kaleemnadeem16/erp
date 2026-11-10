@@ -2091,7 +2091,6 @@ export type * from "./recordPhysicalCountCompositionRequestCompositionItemQuanti
 export type * from "./recordPhysicalCountLineRequest";
 export type * from "./recordQuotationDeliveryRequest";
 export * from "./recordQuotationDeliveryRequestChannel";
-export type * from "./recordQuotationDeliveryRequestCorrectsId";
 export type * from "./recordQuotationDeliveryRequestNote";
 export type * from "./recordQuotationDeliveryRequestRecipientDetail";
 export type * from "./rejectedStockShow200";

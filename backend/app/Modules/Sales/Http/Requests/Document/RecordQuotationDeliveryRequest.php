@@ -24,7 +24,8 @@ class RecordQuotationDeliveryRequest extends SalesRequest
             'recipient_name' => ['required', 'string', 'max:200'],
             'recipient_detail' => ['nullable', 'string', 'max:200'],
             'note' => ['nullable', 'string', 'max:1000'],
-            'corrects_id' => ['nullable', 'integer', 'min:1'],
+            // A correction always needs a reason and has its own route (ADR 0181): this route only records.
+            'corrects_id' => ['prohibited'],
         ];
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Feature\Modules\Sales;
 
 use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
 use App\Models\User;
 use App\Modules\Sales\Actions\CorrectManualQuotationDelivery;
 use App\Modules\Sales\Actions\IssueQuotation;
@@ -12,12 +13,14 @@ use App\Modules\Sales\Support\Authority\DutyStatus;
 use App\Modules\Sales\Support\Authority\SalesDuty;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
+use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
@@ -181,5 +184,61 @@ class QuotationDeliveryCorrectionTest extends TestCase
         $this->assertSame(4, DB::table('quotation_document_deliveries')->count());
         $this->assertSame($first, $journey());
         $this->assertSame(4, DB::table('quotation_document_deliveries')->count());
+    }
+
+    public function test_the_record_route_no_longer_corrects_without_a_reason(): void
+    {
+        $first = $this->record();
+        // ADR 0181 retired the older shape: a correction target on the record route is refused outright, never turned into a plain new record.
+        $this->postJson($this->url('/deliveries'), $this->body(['corrects_id' => $first, 'recipient_name' => 'Ms Customer']), ['Idempotency-Key' => 'legacy-1'])
+            ->assertStatus(422)->assertJsonValidationErrors('corrects_id');
+        $this->assertSame(1, DB::table('quotation_document_deliveries')->count());
+        $this->assertSame(1, DB::table('quotation_document_deliveries')->whereNull('corrects_id')->count());
+    }
+
+    /** @return array<string, array{0: string, 1: string, 2: string, 3: string}> zone, the instant, the latest accepted date, the first refused date */
+    public static function companyCalendarEdges(): array
+    {
+        return [
+            // 01:00 on the 16th in Karachi while UTC is still the 15th: the UTC date is a day behind, so a UTC-based window would refuse the 17th.
+            'east of UTC (Karachi)' => ['Asia/Karachi', '2026-01-15 20:00:00', '2026-01-17', '2026-01-18'],
+            // 19:00 on the 14th in Los Angeles while UTC is already the 15th: the UTC date is a day ahead, so a UTC-based window would accept the 16th.
+            'west of UTC (Los Angeles)' => ['America/Los_Angeles', '2026-01-15 03:00:00', '2026-01-15', '2026-01-16'],
+        ];
+    }
+
+    #[DataProvider('companyCalendarEdges')]
+    public function test_the_delivery_date_window_is_the_company_calendar_day_on_both_edges(string $zone, string $instant, string $latest, string $firstRefused): void
+    {
+        Company::query()->whereKey(1)->update(['timezone' => $zone]);
+        $this->travelTo(CarbonImmutable::parse($instant, 'UTC'));
+        try {
+            $this->postJson($this->url('/deliveries'), $this->body(['delivered_on' => $latest]), ['Idempotency-Key' => 'win-1'])->assertCreated();
+            $this->postJson($this->url('/deliveries'), $this->body(['delivered_on' => $firstRefused]), ['Idempotency-Key' => 'win-2'])
+                ->assertStatus(422)->assertJsonPath('reason_code', 'DELIVERY_INVALID');
+            // The same window judges a correction's replacement date.
+            $first = (int) DB::table('quotation_document_deliveries')->value('id');
+            $this->postJson($this->url("/deliveries/{$first}/correction"), $this->body(['delivered_on' => $firstRefused, 'reason' => 'Date']), ['Idempotency-Key' => 'win-3'])
+                ->assertStatus(422)->assertJsonPath('reason_code', 'DELIVERY_INVALID');
+            $this->postJson($this->url("/deliveries/{$first}/correction"), $this->body(['delivered_on' => $latest, 'reason' => 'Date']), ['Idempotency-Key' => 'win-4'])->assertCreated();
+        } finally {
+            $this->travelBack();
+        }
+        $this->assertSame(2, DB::table('quotation_document_deliveries')->count());
+    }
+
+    /** Whatever the real time of day, one of these two zones has a calendar day different from the database's: the trigger must follow the company zone, not `current_date`. */
+    public function test_the_database_backstop_follows_the_company_calendar_day_not_the_session_date(): void
+    {
+        $first = $this->record();
+        $row = (array) DB::table('quotation_document_deliveries')->where('id', $first)->first();
+        unset($row['id']);
+        foreach (['Pacific/Kiritimati', 'Pacific/Pago_Pago'] as $n => $zone) {
+            Company::query()->whereKey(1)->update(['timezone' => $zone]);
+            $latest = CarbonImmutable::now($zone)->addDay();
+            $base = [...$row, 'operation_key' => "raw-win-{$n}", 'intent_digest' => str_repeat((string) $n, 64)];
+            DB::transaction(fn () => DB::table('quotation_document_deliveries')->insert([...$base, 'delivered_on' => $latest->format('Y-m-d')]));
+            $this->assertThrows(fn () => DB::transaction(fn () => DB::table('quotation_document_deliveries')->insert([...$base, 'operation_key' => "raw-over-{$n}", 'delivered_on' => $latest->addDay()->format('Y-m-d')])), QueryException::class);
+        }
     }
 }

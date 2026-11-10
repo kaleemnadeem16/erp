@@ -8,6 +8,7 @@ use App\Modules\Documents\Models\DocumentAccessEvent;
 use App\Modules\Documents\Models\DocumentArtefact;
 use App\Modules\Files\Models\FileBlob;
 use App\Modules\Files\Support\StoredObject;
+use App\Modules\Sales\Actions\CorrectManualQuotationDelivery;
 use App\Modules\Sales\Actions\DownloadQuotationDocument;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Actions\ReadQuotationDocumentDeliveries;
@@ -205,10 +206,13 @@ class QuotationDocumentFeatureTest extends TestCase
         $this->assertSame('DELIVERY_INVALID', $this->refusal(fn () => $record($this->clerk, $revision, [...$fields, 'channel' => 'EMAIL'], 'del-2')));
         $this->assertSame('DELIVERY_INVALID', $this->refusal(fn () => $record($this->clerk, $revision, [...$fields, 'delivered_on' => now()->addDays(5)->format('Y-m-d')], 'del-3')));
 
-        $fix = $record($this->clerk, $revision, [...$fields, 'recipient_name' => 'Ms Customer'], 'del-4', $first['delivery']->id);
+        // A correction always carries a reason (ADR 0181): the record Action takes no correction target any more.
+        $correct = app(CorrectManualQuotationDelivery::class);
+        $this->assertSame('DELIVERY_INVALID', $this->refusal(fn () => $correct($this->clerk, $revision, $first['delivery']->id, [...$fields, 'recipient_name' => 'Ms Customer'], '  ', 'del-4')));
+        $fix = $correct($this->clerk, $revision, $first['delivery']->id, [...$fields, 'recipient_name' => 'Ms Customer'], 'Wrong name', 'del-4');
         $this->assertSame($first['delivery']->id, $fix['delivery']->corrects_id);
-        $this->assertSame('DELIVERY_ALREADY_CORRECTED', $this->refusal(fn () => $record($this->clerk, $revision, [...$fields, 'recipient_name' => 'Third'], 'del-5', $first['delivery']->id)));
-        $this->assertSame('DELIVERY_NOT_FOUND', $this->refusal(fn () => $record($this->clerk, $revision, $fields, 'del-6', 999999)));
+        $this->assertSame('DELIVERY_ALREADY_CORRECTED', $this->refusal(fn () => $correct($this->clerk, $revision, $first['delivery']->id, [...$fields, 'recipient_name' => 'Third'], 'Again', 'del-5')));
+        $this->assertSame('DELIVERY_NOT_FOUND', $this->refusal(fn () => $correct($this->clerk, $revision, 999999, $fields, 'Unknown', 'del-6')));
         $this->assertSame([$first['delivery']->id, $fix['delivery']->id], array_map(fn ($d) => $d->id, app(ReadQuotationDocumentDeliveries::class)($this->clerk, $revision)));
 
         foreach ([fn () => DB::table('quotation_document_deliveries')->update(['note' => 'edited']), fn () => DB::table('quotation_document_deliveries')->delete(),
