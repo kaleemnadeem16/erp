@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, type ReactNode } from 'react';
 import { ItemCombobox } from '../../components/lookups/entity-comboboxes';
 import { useLocation, useNavigate, useParams } from 'react-router';
 import {
@@ -13,6 +13,8 @@ import {
   useInventoryCutoversNegativeOpeningsStore,
   useInventoryCutoverNegativeOpeningsApprove,
   useLocationsIndex,
+  type InventoryCutoverBatchResource,
+  type InventoryCutoverNegativeOpeningResource,
   type RequestInventoryCutoverNegativeOpeningRequest,
 } from '@erp/core-api';
 
@@ -28,7 +30,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { DetailPageLayout, DetailSection } from '../../components/detail/detail-page-layout';
 import { DetailField } from '../../components/detail/detail-field';
 import { getApiErrorMessage, lookupState } from '../../lib/api-errors';
-import { formatDateTime } from '../../lib/format-date';
+import { formatDate, formatDateTime } from '../../lib/format-date';
 import { useAuthStore } from '../../stores/auth-store';
 import { formatLocation } from '../../lib/format-location';
 import { usePermission } from '../../hooks/use-permission';
@@ -46,12 +48,41 @@ const STATUS_TONE: Record<string, StatusTone> = {
 
 type ConfirmSpec = {
   title: string;
-  description: string;
+  description: ReactNode;
   confirmLabel: string;
   pendingLabel: string;
   destructive?: boolean;
   run: () => Promise<unknown>;
 };
+
+type SummaryRow = { label: string; value: ReactNode };
+
+/** The record being acted on, shown inside a confirmation so the person sees exactly what they are about to make permanent. */
+function ConfirmSummary({ consequence, rows, label }: { consequence: ReactNode; rows: SummaryRow[]; label: string }) {
+  return (
+    <div className="space-y-3 text-left">
+      <p className="text-sm text-foreground">{consequence}</p>
+      <dl aria-label={label} className="divide-y divide-border rounded-md border border-border bg-muted/40 text-sm" data-testid="cutover-confirm-summary">
+        {rows.map((row) => (
+          <div key={row.label} className="flex flex-col gap-0.5 px-3 py-2 sm:flex-row sm:justify-between sm:gap-4">
+            <dt className="text-muted-foreground">{row.label}</dt>
+            <dd className="min-w-0 break-words font-medium tabular-nums text-foreground sm:text-right">{row.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function batchRows(batches: InventoryCutoverBatchResource[]): SummaryRow[] {
+  const total = (key: 'accepted_record_count' | 'source_record_count') => batches.reduce((sum, batch) => sum + batch[key], 0);
+  return [
+    { label: 'Batches', value: String(batches.length) },
+    { label: 'Records (accepted / in batch)', value: `${total('accepted_record_count')} / ${total('source_record_count')}` },
+    { label: 'Quantity', value: batches.reduce((sum, batch) => sum + Number(batch.source_quantity), 0).toLocaleString('en-US', { maximumFractionDigits: 4 }) },
+    { label: 'Value', value: batches.reduce((sum, batch) => sum + Number(batch.source_value), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+  ];
+}
 
 const NEGATIVE_OPENING_STATUS_VARIANT: Record<string, 'secondary' | 'success'> = {
   REQUESTED: 'secondary',
@@ -156,9 +187,23 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
   }
 
   function askFinalise() {
+    const committed = batches.filter((batch) => batch.status === 'COMMITTED').length;
     setConfirming({
       title: 'Finalise this cutover?',
-      description: 'Finalising freezes the cutover and its batches. It cannot be undone; later corrections are made with stock adjustments.',
+      description: (
+        <ConfirmSummary
+          label="Cutover being finalised"
+          consequence="Finalising closes the cutover for good. The cutover and all its batches become read-only, no more batches can be attached or committed, and nobody can reopen it. If a balance is wrong afterwards it can only be corrected with a stock adjustment."
+          rows={[
+            { label: 'Cutover', value: `#${cutover?.id ?? cutoverId} (${cutover?.mode ?? '—'})` },
+            { label: 'Source system', value: cutover?.source_system ?? '—' },
+            { label: 'Cutover date', value: formatDate(cutover?.cutover_at) ?? '—' },
+            { label: 'Batches committed', value: `${committed} of ${batches.length}` },
+            ...batchRows(batches).slice(1),
+            { label: 'Control quantity / value', value: `${cutover?.control_quantity ?? '—'} / ${cutover?.control_value ?? '—'}` },
+          ]}
+        />
+      ),
       confirmLabel: 'Finalise',
       pendingLabel: 'Finalising…',
       run: () => finaliseCutover.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
@@ -166,23 +211,50 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
   }
 
   function askCommitOpenPurchaseOrders() {
+    const orderBatches = batches.filter((batch) => batch.entity_type === 'OPEN_PURCHASE_ORDER');
     setConfirming({
       title: 'Commit the open purchase orders?',
-      description: 'This creates the open purchase orders from the attached batches in live purchasing. It cannot be undone from this screen.',
+      description: (
+        <ConfirmSummary
+          label="Open purchase orders being committed"
+          consequence="This creates real purchase orders in live purchasing from the open-order batches below. Goods can then be received against them. The step cannot be undone from this screen; a wrong order has to be cancelled or corrected in purchasing."
+          rows={[
+            { label: 'Cutover date', value: formatDate(cutover?.cutover_at) ?? '—' },
+            { label: 'Source system', value: cutover?.source_system ?? '—' },
+            ...batchRows(orderBatches),
+            { label: 'Import batches', value: orderBatches.map((batch) => `#${batch.import_batch_id}`).join(', ') || 'None attached' },
+          ]}
+        />
+      ),
       confirmLabel: 'Commit open purchase orders',
       pendingLabel: 'Committing…',
       run: () => commitOpenPurchaseOrders.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
     });
   }
 
-  function askApproveNegativeOpening(id: number) {
+  function askApproveNegativeOpening(exception: InventoryCutoverNegativeOpeningResource) {
     setConfirming({
       title: 'Approve this negative opening?',
-      description: 'Approving accepts an opening balance below zero for this item and location, at the provisional cost shown. It cannot be undone from this screen.',
+      description: (
+        <ConfirmSummary
+          label="Negative opening being approved"
+          consequence="Approving accepts that this item starts below zero stock at this location, valued at the provisional cost shown. The shortage is carried into live inventory at the opening and can distort stock value until the resolution plan is carried out. This cannot be undone from this screen."
+          rows={[
+            { label: 'Item', value: exception.item ? `${exception.item.code} — ${exception.item.name}` : `#${exception.item_id}` },
+            { label: 'Warehouse / location', value: formatLocation(exception.location) ?? `#${exception.location_id}` },
+            { label: 'Opening quantity', value: exception.source_quantity },
+            { label: 'Provisional unit cost', value: exception.provisional_unit_cost },
+            { label: 'Opening value', value: exception.source_value },
+            { label: 'Reason', value: exception.reason },
+            { label: 'Resolution plan', value: exception.resolution_plan },
+            { label: 'Resolve by', value: formatDate(exception.target_date) ?? exception.target_date },
+          ]}
+        />
+      ),
       confirmLabel: 'Approve',
       pendingLabel: 'Approving…',
       destructive: false,
-      run: () => approveNegativeOpening.mutateAsync({ inventoryCutoverNegativeOpening: id }).then(refetch),
+      run: () => approveNegativeOpening.mutateAsync({ inventoryCutoverNegativeOpening: exception.id }).then(refetch),
     });
   }
 
@@ -454,7 +526,7 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
                       </TableCell>
                       <TableCell className="text-right">
                         {exception.status === 'REQUESTED' && mayApproveNegativeOpening && (
-                          <Button variant="outline" size="sm" onClick={() => askApproveNegativeOpening(exception.id)} disabled={approveNegativeOpening.isPending}>
+                          <Button variant="outline" size="sm" onClick={() => askApproveNegativeOpening(exception)} disabled={approveNegativeOpening.isPending}>
                             Approve
                           </Button>
                         )}

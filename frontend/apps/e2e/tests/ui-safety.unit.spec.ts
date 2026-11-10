@@ -138,6 +138,48 @@ test.describe("high-impact actions ask first", () => {
     expect(writes).toHaveLength(0);
   });
 
+  const richCutover = {
+    ...cutover,
+    batches: [
+      { id: 1, import_batch_id: 31, entity_type: "OPEN_PURCHASE_ORDER", status: "VALIDATED", source_record_count: 4, accepted_record_count: 4, rejected_record_count: 0, source_quantity: "40", source_value: "1200.00" },
+      { id: 2, import_batch_id: 32, entity_type: "OPENING_STATE", status: "COMMITTED", source_record_count: 9, accepted_record_count: 8, rejected_record_count: 1, source_quantity: "90", source_value: "800.00" },
+    ],
+    negative_openings: [
+      {
+        id: 3, item_id: 1, item: { code: "I-1", name: "Widget" }, location_id: 1, location: { code: "stock", warehouse: { code: "main" } },
+        source_quantity: "-5", provisional_unit_cost: "10.00", source_value: "-50.00", reason: "Receipt not yet booked", resolution_plan: "Book the receipt", target_date: "2026-12-01", status: "REQUESTED",
+      },
+    ],
+  };
+
+  test("finalise explains the consequence and shows the cutover's totals", async ({ page }) => {
+    await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } } });
+    await page.getByRole("button", { name: "Finalise" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("nobody can reopen it");
+    await expect(dialog.getByTestId("cutover-confirm-summary")).toContainText("1 of 2");
+    await expect(dialog.getByTestId("cutover-confirm-summary")).toContainText("2,000.00");
+  });
+
+  test("committing open purchase orders shows only the order batches", async ({ page }) => {
+    await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } } });
+    await page.getByRole("button", { name: "Commit open purchase orders" }).click();
+    const summary = page.getByRole("dialog").getByTestId("cutover-confirm-summary");
+    await expect(summary).toContainText("1,200.00");
+    await expect(summary).toContainText("#31");
+    await expect(summary).not.toContainText("#32");
+  });
+
+  test("approving a negative opening shows the item, warehouse, cost and plan", async ({ page }) => {
+    const writes = await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } } });
+    await page.getByRole("button", { name: "Approve" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("starts below zero stock");
+    const summary = dialog.getByTestId("cutover-confirm-summary");
+    for (const text of ["I-1 — Widget", "main / stock", "-5", "10.00", "Book the receipt"]) await expect(summary).toContainText(text);
+    expect(writes).toHaveLength(0);
+  });
+
   const count = {
     id: 5, status: "DRAFT", warehouse_id: 1, created_by: 1, reference: "C1",
     lines: [{ id: 1, item_id: 1, location_id: 1, counted_qty: "3", book_qty: "3", grouped: false, stale_reason: null, item: { code: "I", name: "Item" } }],

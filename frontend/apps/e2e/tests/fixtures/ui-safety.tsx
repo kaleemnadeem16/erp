@@ -16,6 +16,8 @@ const permissions = new URLSearchParams(location.search).get("permissions")?.spl
   "inventory.cutover.approve",
   "inventory.cutover.commit",
   "inventory.cutover.finalise",
+  "inventory.cutover.negative_opening.approve",
+  "purchasing.cutover.commit",
   "inventory.physical_count.create",
   "inventory.physical_count.post",
   "inventory.stock.view",
