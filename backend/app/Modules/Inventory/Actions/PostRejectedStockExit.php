@@ -24,6 +24,7 @@ use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -83,7 +84,12 @@ final class PostRejectedStockExit
             return $existing;
         }
 
-        return DB::transaction(fn (): RejectedStockExit => $this->post($input, $kind, $capability, $actor, $key, $hash, $reason, $changeReason, $quantity, $lines));
+        return DB::transaction(function () use ($input, $kind, $capability, $actor, $key, $hash, $reason, $changeReason, $quantity, $lines): RejectedStockExit {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, $capability, $kind === RejectedStockExit::SUPPLIER_RETURN ? 'post a supplier return' : 'post a scrap');
+
+            return $this->post($input, $kind, $capability, $actor, $key, $hash, $reason, $changeReason, $quantity, $lines);
+        });
     }
 
     /**

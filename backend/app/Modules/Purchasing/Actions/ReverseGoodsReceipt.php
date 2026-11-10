@@ -16,6 +16,7 @@ use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,8 @@ final class ReverseGoodsReceipt
         }
 
         return DB::transaction(function () use ($receipt, $reason, $actorId, $actor, $packageDraws): GoodsReceipt {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.goods-receipt.reverse', 'reverse a goods receipt', 'reversed_by');
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status === GoodsReceiptStatus::Reversed) {
                 return $receipt->load('lines');

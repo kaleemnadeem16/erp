@@ -29,6 +29,7 @@ use App\Modules\Inventory\Support\RecalculationMovementKind;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Carbon;
@@ -103,6 +104,9 @@ final class ExecuteRecalculation
         WarehouseScope::requireUnrestricted($actor, 'inventory.recalculation.execute', 'execute a recalculation');
 
         $outcome = DB::transaction(function () use ($version, $actor): RecalculationExecution|null {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.recalculation.execute', 'execute recalculation requests', 'executed_by');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.recalculation.execute', 'execute a recalculation');
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($version->recalculation_request_id);
             PackageWriteScope::refuse($request->item_id, 'executing a stock recalculation');

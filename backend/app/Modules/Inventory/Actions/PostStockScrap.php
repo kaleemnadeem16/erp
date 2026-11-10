@@ -12,6 +12,7 @@ use App\Modules\Inventory\Numbering\StockScrapNumbering;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Numbering\Services\NumberingService;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -31,6 +32,9 @@ final class PostStockScrap
         WarehouseScope::requireWarehouse($actor, 'inventory.scrap.post', (int) $document->warehouse_id, 'post a Scrap document');
 
         return DB::transaction(function () use ($document, $actor): StockScrap {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.scrap.post', 'post a Scrap document');
+            WarehouseScope::requireWarehouse($actor, 'inventory.scrap.post', (int) $document->warehouse_id, 'post a Scrap document');
             $locked = StockScrap::query()->lockForUpdate()->findOrFail($document->id);
             if ($locked->status === StockScrap::POSTED) {
                 return $locked->load('lines');

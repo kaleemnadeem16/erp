@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\NegativeStockOverrideRequest;
 use App\Modules\Inventory\Support\NegativeStockApprovalDecision;
 use App\Modules\Inventory\Support\NegativeStockAuthorisationMode;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class DecideNegativeStockOverride
@@ -18,6 +19,8 @@ final class DecideNegativeStockOverride
     public function __invoke(NegativeStockOverrideRequest $request, NegativeStockApprovalDecision $decision, string $notes, User $actor): NegativeStockOverrideApproval
     {
         return DB::transaction(function () use ($request, $decision, $notes, $actor): NegativeStockOverrideApproval {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::fresh($actor, 'decide this inventory approval');
             if (trim($notes) === '') {
                 throw new DomainInvariantException('An approval decision requires notes.', 'notes');
             }

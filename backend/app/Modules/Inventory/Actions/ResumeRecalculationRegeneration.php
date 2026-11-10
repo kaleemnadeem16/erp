@@ -14,6 +14,7 @@ use App\Modules\Inventory\Models\RecalculationRegenerationReview;
 use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /** Manual coordination after a cap hit; records the review and requires fresh approvals. */
@@ -26,6 +27,8 @@ final class ResumeRecalculationRegeneration
         WarehouseScope::requireUnrestricted($actor, 'inventory.recalculation.review-regeneration', 'resume a recalculation regeneration');
 
         return DB::transaction(function () use ($pausedVersion, $notes, $actor): RecalculationImpactVersion {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::fresh($actor, 'decide this inventory approval');
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($pausedVersion->recalculation_request_id);
             if (trim($notes) === '' || $actor->id === $request->requested_by || ! $actor->can('inventory.recalculation.review-regeneration')) {

@@ -15,6 +15,7 @@ use App\Modules\Inventory\Support\InventoryCutoverBatchStatus;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,7 +41,10 @@ final class CommitInventoryCutoverOpeningState
         }
         WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.commit', 'commit an inventory cutover opening state');
 
-        return DB::transaction(function () use ($cutover): InventoryCutover {
+        return DB::transaction(function () use ($cutover, $actor): InventoryCutover {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.cutover.commit', 'commit an inventory cutover opening state', 'status');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.commit', 'commit an inventory cutover opening state');
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
             $batches = $cutover->batches()->lockForUpdate()->get();
             $openingBatches = $batches->where('entity_type', 'OPENING_STATE');

@@ -16,6 +16,7 @@ use App\Modules\Inventory\Models\RecalculationRequest;
 use App\Modules\Inventory\Support\RecalculationApprovalDecision;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -82,6 +83,8 @@ final class DecideRecalculationApproval
         // of throwing, and the actual exception is raised below, once that
         // commit has already landed.
         $outcome = DB::transaction(function () use ($version, $decision, $notes, $actor): RecalculationApproval|null {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::fresh($actor, 'decide this inventory approval');
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             $request = RecalculationRequest::query()->lockForUpdate()->findOrFail($version->recalculation_request_id);
             $version = RecalculationImpactVersion::query()->lockForUpdate()->with('approvals')->findOrFail($version->id);

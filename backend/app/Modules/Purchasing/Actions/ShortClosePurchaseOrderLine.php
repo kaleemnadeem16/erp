@@ -11,6 +11,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -22,7 +23,9 @@ final class ShortClosePurchaseOrderLine
             throw new DomainInvariantException('The actor is not permitted to short-close a purchase-order line.', 'status');
         }
 
-        return DB::transaction(function () use ($line): PurchaseOrderLine {
+        return DB::transaction(function () use ($line, $actor): PurchaseOrderLine {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            DecisionActor::require($actor, 'purchasing.purchase-order.short-close', 'short-close a purchase-order line', 'status');
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($line->purchase_order_id);
             $line = PurchaseOrderLine::query()->lockForUpdate()->findOrFail($line->id);
             if ($order->status !== PurchaseOrderStatus::Issued) {

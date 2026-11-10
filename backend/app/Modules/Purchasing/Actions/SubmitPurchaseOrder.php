@@ -11,6 +11,7 @@ use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,6 +30,8 @@ final class SubmitPurchaseOrder
         }
 
         return DB::transaction(function () use ($order, $actor): ?ApprovalRequest {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.purchase-order.submit', 'submit a purchase order for approval', 'submitted_by');
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft || ! $order->lines()->exists()) {
                 throw new DomainInvariantException('Only a non-empty draft purchase order can be submitted for approval.', 'status');

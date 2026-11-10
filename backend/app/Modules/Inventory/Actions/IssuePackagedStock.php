@@ -20,6 +20,7 @@ use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PostedMovement;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -70,6 +71,8 @@ final class IssuePackagedStock
         ], JSON_THROW_ON_ERROR));
 
         return DB::transaction(function () use ($input, $actor, $company, $key, $reason, $hash, $lines, $stated): array {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::requireAll($actor, ['inventory.package-state.issue', 'inventory.package-state.view'], 'issue packaged stock');
             // All evidence writers share this namespace, so an absent key is serialised even across locations.
             DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', ["package-checkpoint:{$company}:{$key}"]);
             $existing = PackageOperation::query()->where('request_key', $key)->first();

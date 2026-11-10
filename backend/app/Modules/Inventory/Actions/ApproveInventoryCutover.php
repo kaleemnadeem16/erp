@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\InventoryCutover;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class ApproveInventoryCutover
@@ -21,6 +22,9 @@ final class ApproveInventoryCutover
         WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.approve', 'approve an inventory cutover');
 
         return DB::transaction(function () use ($cutover, $actor): InventoryCutover {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.cutover.approve', 'approve an inventory cutover', 'status');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.approve', 'approve an inventory cutover');
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
             if ($cutover->status === InventoryCutoverStatus::Approved) {
                 return $cutover;

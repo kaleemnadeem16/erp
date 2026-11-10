@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\InventoryCutoverNegativeOpening;
 use App\Modules\Inventory\Support\InventoryCutoverNegativeOpeningStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +28,9 @@ final class ApproveInventoryCutoverNegativeOpening
         WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.negative_opening.approve', 'approve a cutover negative-opening exception');
 
         return DB::transaction(function () use ($exception, $actor): InventoryCutoverNegativeOpening {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.cutover.negative_opening.approve', 'approve a cutover negative-opening exception', 'status');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.negative_opening.approve', 'approve a cutover negative-opening exception');
             $exception = InventoryCutoverNegativeOpening::query()->whereKey($exception->id)->lockForUpdate()->firstOrFail();
             if ($exception->status === InventoryCutoverNegativeOpeningStatus::Approved) {
                 return $exception;

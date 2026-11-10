@@ -15,6 +15,7 @@ use App\Modules\Inventory\Models\PackageTrackedLevel;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\PackageTrackedLevels;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -48,6 +49,8 @@ final class ActivateGroupedPackageTracking
         $hash = hash('sha256', json_encode(['actor' => $actor->id, 'item' => $input['item_id'], 'reason' => $reason, 'checkpoints' => $checkpoints, 'levels' => $explicit], JSON_THROW_ON_ERROR));
 
         return DB::transaction(function () use ($input, $actor, $company, $key, $reason, $hash, $checkpoints, $explicit): PackageActivation {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::requireAll($actor, ['inventory.package-state.activate', 'inventory.package-state.view'], 'activate grouped package tracking');
             DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', ["package-checkpoint:{$company}:{$key}"]);
             $existing = PackageActivation::query()->where('request_key', $key)->first();
             if ($existing !== null) {

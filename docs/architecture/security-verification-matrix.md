@@ -3,12 +3,24 @@
 # Security verification matrix: revocation, suspension and decision-time change
 
 **Baseline:** `develop` at `a885ca0a`, 2026-11-06. **Issue:** #91 (audit F4 and F5), tracker #87.
-**Scope:** verification. Rows 1 to 7 were later fixed (see Resolution); rows 10, 11, 15 and 17 (the approval decision) remain with the Approvals/Sales owner. This file records what real
+**Scope:** verification. Rows 1 to 7 were later fixed, and row 9 for the Purchasing and Inventory Actions that move stock (see Resolution); rows 10, 11, 15 and 17 (the approval decision) remain with the Approvals/Sales owner. This file records what real
 two-session PostgreSQL tests proved, so the fixes can be sized by the owning module.
 
-## Resolution (rows 1 to 7)
+## Resolution (rows 1 to 7 and 9)
 
 `IssuePurchaseOrder`, `PostGoodsReceipt` and `PostPhysicalCount` keep their early permission check as a fast refusal, then decide inside the transaction through `App\Support\Scope\DecisionActor`: the shared company access barrier first (before any row lock), then an active-only reload of the person with no cached duties, then the duty (and, for a count, the warehouse reach) is checked again on that reloaded person. A suspended or removed member is now refused even without a race. Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityRaceTest.php` (real two-session staging; every case has a control). Because the access barrier bounds lock waits to one second for the rest of the transaction, a receipt waiting longer than that for another user's order lock now fails and is retried by the caller.
+
+**Row 9, second batch (stock and commitment).** The same pattern now covers every Purchasing and Inventory Action that moves stock or settles a commitment: `ReverseGoodsReceipt`, `PostQualityDisposition`, `PostSupplierReturn`, `CancelSupplierReturn`, `PostStockScrap`, `PostRejectedStockExit`, `IssuePackagedStock`, `TransferPackagedStock` (and through them the grouped issue and transfer entry points), `PostPackageOpening`, `ActivateGroupedPackageTracking`, `CommitInventoryCutoverOpeningState`, `CommitInventoryCutoverOpenPurchaseOrders`, `ApproveInventoryCutover`, `ApproveInventoryCutoverNegativeOpening`, `FinaliseInventoryCutover`, `ExecuteRecalculation`, `CancelPurchaseOrder`, `ShortClosePurchaseOrderLine` and `SubmitPurchaseOrder`. `DecideNegativeStockOverride`, `ReviewNegativeStockOverride`, `DecideRecalculationApproval` and `ResumeRecalculationRegeneration` already decided inside their transaction but on the held person; they now take the barrier and reload first. `DecisionActor::requireAll` covers the Actions that need two duties together. Actions called inside another's transaction (`ReverseGroupedReceiptLine`, `RecordQaDispositionEvidence`, `PostRejectedExitLines`) inherit the decision made by the outer Action. Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityStockRaceTest.php` (reversal, disposition, supplier return, scrap, order cancellation; each with a control).
+
+**Row 9, still early-check only, ranked by consequence** (none moves stock or money directly):
+
+1. `RequestStockRecalculation`, `RequestNegativeStockOverride`, `RequestInventoryCutoverNegativeOpening`, `ValidateInventoryCutover`, `CreateInventoryCutover`, `AttachInventoryCutoverBatch`: they open or advance a controlled process that a later, already fenced step decides.
+2. `RecordPackageCheckpoint`, `RecordPhysicalCountLine`, `RecordPhysicalCountComposition`, `AddPhysicalCountLine`, `RefreshPhysicalCountLine`, `PackageCountCapture`, `RecordReceiptPackageEvidence`, `RecordReceiptComposition`: evidence capture on drafts; posting is fenced.
+3. `CreateSupplierReturn`, `UpdateSupplierReturn`, `CreateStockScrap`, `UpdateStockScrap`, `CancelStockScrap`, `CancelPhysicalCount`, `CreatePhysicalCount`, `CreateGoodsReceipt`, `UpdateGoodsReceipt`, `CreatePurchaseOrder`, `UpdatePurchaseOrder`: drafts that move nothing.
+4. `UpdatePurchasingSettings`, `UpdateInventorySettings`, `ReconcilePurchaseOrderFx` (Purchasing FX is owned by ADR 0165), and the master-data Create/Update/Archive Actions for items, categories, warehouses, locations, assignments, quantity units, item suppliers and supplier offers.
+
+Behaviour note: every Action above now waits at the company access barrier like the first three, with the same one-second lock-wait bound. Concurrent use in the Purchasing and Inventory suites showed no new lock-wait timeout.
+
 
 ## How it was tested
 

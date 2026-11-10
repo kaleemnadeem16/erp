@@ -30,6 +30,21 @@ final class DecisionActor
         return $fresh;
     }
 
+    /**
+     * @param  list<string>  $permissions  every one of them is needed
+     */
+    public static function requireAll(User $held, array $permissions, string $action, ?string $field = null): User
+    {
+        $fresh = self::fresh($held, $action, $field);
+        foreach ($permissions as $permission) {
+            if (! $fresh->hasPermissionTo($permission)) {
+                throw new DomainInvariantException("The actor is not permitted to {$action}.", $field);
+            }
+        }
+
+        return $fresh;
+    }
+
     /** Barrier first, then an active-only reload; the caller checks whatever duties its own rules need on the returned user. */
     public static function fresh(User $held, string $action, ?string $field = null): User
     {

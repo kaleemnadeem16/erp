@@ -10,6 +10,7 @@ use App\Modules\Approvals\Actions\InvalidateApprovals;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class CancelPurchaseOrder
@@ -22,7 +23,9 @@ final class CancelPurchaseOrder
             throw new DomainInvariantException('The actor is not permitted to cancel a purchase order.', 'cancelled_by');
         }
 
-        return DB::transaction(function () use ($order, $reason): PurchaseOrder {
+        return DB::transaction(function () use ($order, $reason, $actor): PurchaseOrder {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            DecisionActor::require($actor, 'purchasing.purchase-order.cancel', 'cancel a purchase order', 'cancelled_by');
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if (! in_array($order->status, [PurchaseOrderStatus::Draft, PurchaseOrderStatus::Issued], true)) {
                 throw new DomainInvariantException('This purchase order cannot be cancelled.', 'status');

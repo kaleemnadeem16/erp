@@ -13,6 +13,7 @@ use App\Modules\Numbering\Services\NumberingService;
 use App\Modules\Purchasing\Models\SupplierReturn;
 use App\Modules\Purchasing\Numbering\SupplierReturnNumbering;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 
@@ -32,6 +33,9 @@ final class PostSupplierReturn
         WarehouseScope::requireWarehouse($actor, 'purchasing.supplier-return.post', (int) $document->warehouse_id, 'post a Supplier Return');
 
         return DB::transaction(function () use ($document, $actor): SupplierReturn {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.supplier-return.post', 'post a Supplier Return');
+            WarehouseScope::requireWarehouse($actor, 'purchasing.supplier-return.post', (int) $document->warehouse_id, 'post a Supplier Return');
             $locked = SupplierReturn::query()->lockForUpdate()->findOrFail($document->id);
             if ($locked->status === SupplierReturn::POSTED) {
                 return $locked->load('lines');

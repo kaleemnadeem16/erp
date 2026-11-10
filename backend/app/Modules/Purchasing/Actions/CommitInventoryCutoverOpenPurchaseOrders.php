@@ -16,6 +16,7 @@ use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -45,6 +46,9 @@ final class CommitInventoryCutoverOpenPurchaseOrders
         WarehouseScope::requireUnrestricted($actor, 'purchasing.cutover.commit', 'commit cutover purchase orders');
 
         return DB::transaction(function () use ($actor, $cutover): Collection {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.cutover.commit', 'commit cutover purchase orders', 'status');
+            WarehouseScope::requireUnrestricted($actor, 'purchasing.cutover.commit', 'commit cutover purchase orders');
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
             if ($cutover->status !== InventoryCutoverStatus::Approved) {
                 throw new DomainInvariantException('Only an approved cutover can materialise open purchase orders.', 'status');

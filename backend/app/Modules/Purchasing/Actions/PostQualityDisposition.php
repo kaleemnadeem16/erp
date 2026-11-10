@@ -11,6 +11,7 @@ use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\QualityDisposition;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,8 @@ final class PostQualityDisposition
         }
 
         return DB::transaction(function () use ($line, $attributes, $actor, $actorId, $idempotencyKey): QualityDisposition {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.quality-disposition.post', 'post a quality disposition', 'disposed_by');
             $sourceDispositionId = $attributes['source_disposition_id'] ?? null;
 
             // Locking the line first, then re-checking the idempotency key, is what
