@@ -25,6 +25,7 @@ import {
 } from "../../lib/api-errors";
 import { IntentKey } from "./request-key";
 import { QuotationScreenShell } from "./quotation-screen-shell";
+import { QuotationDiscountAuthorityPanel } from "../discount-authority/quotation-discount-authority-panel";
 import { liveIssueGateway } from "./quotation-live-gateways";
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
@@ -462,6 +463,7 @@ function GatedIssue({
         rechecking={readiness.isFetching}
         approvalTo={approvalTo}
       />
+      <QuotationDiscountAuthorityPanel revisionId={revisionId} />
       {mayIssue && (
         <IssueConfirmDialog
           open={confirming}

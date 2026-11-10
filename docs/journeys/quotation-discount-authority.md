@@ -2,7 +2,7 @@
 
 # Govern a quotation concession
 
-- **Implementation status:** implemented backend; screens follow later
+- **Implementation status:** implemented backend; configuration and evidence screens built, gated off outside local development
 - **Audience:** configuration holder, preparer, independent reviewer and issuer
 - **Starting point:** the versioned configuration and quotation APIs
 - **Successful end state:** a permitted quotation is issued with pinned evaluation/approval evidence
@@ -10,7 +10,7 @@
 
 ## Purpose
 
-This is the backend journey; screens are a later delivery. Duties remain STAGED and no real holder
+Screens exist for configuration (Settings > Discount authority: policy versions, activation, named assignments and revocation, read-only company mode) and for the result on the quotation issue and approval screens (state, approver needed, reasons, request expiry). They follow the quotation UI gate, so they open only in local development, and the company mode is not changed from any screen. Duties remain STAGED and no real holder
 is granted access by this milestone. See the [API contract](../domain/quotation-discount-authority-api.md).
 
 ## Before you start

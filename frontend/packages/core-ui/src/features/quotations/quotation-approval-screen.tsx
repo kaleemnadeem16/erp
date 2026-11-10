@@ -30,6 +30,7 @@ import { useAuthStore } from "../../stores/auth-store";
 import { IntentKey } from "./request-key";
 import { QuotationScreenShell } from "./quotation-screen-shell";
 import { QuotationFailure } from "./quotation-display";
+import { QuotationDiscountAuthorityPanel } from "../discount-authority/quotation-discount-authority-panel";
 import { liveApprovalGateway } from "./quotation-live-gateways";
 import { quotationApprovalAccess } from "./quotation-approval-access";
 import {
@@ -232,7 +233,22 @@ export function QuotationApprovalView({
             <DetailField label="Requested at">
               {formatDateTime(request.requested_at)}
             </DetailField>
+            {request.status === "PENDING" && request.expires_at && (
+              <DetailField label="Request valid until">
+                {request.expired ? (
+                  <StatusBadge tone="danger">Expired</StatusBadge>
+                ) : (
+                  formatDateTime(request.expires_at)
+                )}
+              </DetailField>
+            )}
           </>
+        )}
+        {request?.status === "PENDING" && request.expired === true && (
+          <p className="col-span-full text-sm" role="alert">
+            This approval request has expired. It can no longer be decided;
+            ask for approval again to get a fresh deadline.
+          </p>
         )}
         {waitingOnOthers && (
           <p className="col-span-full text-sm" role="note">
@@ -457,6 +473,7 @@ function GatedApproval({
         busy={write.isPending}
         backTo={`/quotations/${revisionId}/issue`}
       />
+      <QuotationDiscountAuthorityPanel revisionId={revisionId} />
       <ApprovalActionDialog
         action={action}
         onClose={() => setAction(null)}

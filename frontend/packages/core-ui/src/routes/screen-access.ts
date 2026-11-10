@@ -4,6 +4,7 @@ import {
 } from "../features/quotations/quotation-access";
 import { quotationMilestoneAccess } from "../features/quotations/quotation-milestone-access";
 import { quotationApprovalAccess } from "../features/quotations/quotation-approval-access";
+import { discountAuthorityAccess } from "../features/discount-authority/discount-authority-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -253,6 +254,9 @@ export function canAccessScreen(
   pathname: string,
   permissions: ReadonlySet<string>,
 ): boolean {
+  // Behind the same production gate as the quotation screens (owner decision D13: inactive by default).
+  if (pathname === "/settings/discount-authority")
+    return discountAuthorityAccess(permissions).configure;
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
     if (pathname === "/quotations") return access.detail || access.review;

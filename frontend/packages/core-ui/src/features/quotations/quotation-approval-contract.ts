@@ -34,6 +34,9 @@ export const approvalRequestSchema = z.object({
   status: z.string(),
   requested_at: z.string(),
   requested_by: person,
+  /** When the authority evidence for this request lapses (null when none applies); `expired` is decided by the server. */
+  expires_at: z.string().nullable().optional(),
+  expired: z.boolean().optional(),
   closed_at: z.string().nullable(),
   closing_reason: z.string().nullable(),
   concessions: z.string().nullable(),

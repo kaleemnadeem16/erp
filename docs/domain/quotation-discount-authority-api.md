@@ -86,7 +86,7 @@ the development or production database as part of this task.
 Real limits, people, trusted sources and mode activation remain owner decisions. All illustrative
 values say DEMO ONLY. The default expiry is fourteen company-local calendar days, capped by
 quotation validity. Owner review of proposed ADR 0164 and generated-client verification are
-integration gates. Screens remain a separate workstream; their needs are in the
+integration gates. Configuration and evidence screens are delivered behind the quotation UI gate; what remains is listed in the
 [screen handoff](quotation-discount-authority.md#screen-handoff).
 
 ## Backend completion checks

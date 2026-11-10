@@ -89,6 +89,7 @@ export const SETTINGS_GROUPS: SettingsGroup[] = [
     description: "Who can do what, and what needs a second pair of eyes.",
     entries: [
       { to: "/settings/approvals", label: "Approvals", description: "Which actions need approval and from whom.", icon: ShieldCheck, kind: "policy", permission: "approvals.policy.manage" },
+      { to: "/settings/discount-authority", label: "Discount authority", description: "Who may clear or approve how much discount on a quotation. Off unless the company switches it on.", icon: Percent, kind: "policy", permission: "sales.financial.configure" },
       { to: "/settings/members", label: "Members", description: "People in the company and their status.", icon: Users, kind: "policy", permission: "administration.member.view" },
       { to: "/settings/roles", label: "Roles and permissions", description: "What each role may do.", icon: UserRoundCog, kind: "policy", permission: "administration.role.view" },
       { to: "/settings/organisation", label: "Organisation", description: "Teams and reporting structure.", icon: Network, kind: "policy", permission: "administration.organisation.view" },

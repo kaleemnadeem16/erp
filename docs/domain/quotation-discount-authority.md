@@ -292,7 +292,7 @@ status; only authorised evidence readers may see its reference, percentage, base
 qualified band. The approver needs that evidence and a visible expiry, with plain messages for
 missing evidence, changed terms, expired approval or unavailable authority. Preserve draft context
 when requesting again. A paged restricted audit will explain configuration and evaluation history.
-The backend contracts are delivered; these screens remain a separate workstream.
+The backend contracts are delivered. Delivered screens (feature folder `frontend/packages/core-ui/src/features/discount-authority/`): configuration of policy versions, activation and assignments/revocation, the mode shown read-only, and the evidence panel with request expiry on the quotation issue/approval screens. Not yet built: reference proposal/approval, the mode transition, the restricted audit/history view and binding references from a quotation; each is a later, separately approved step (the mode stays OFF by owner decision D13).
 
 Issue-time mandatory input-reduction controls judge line discounts, final-net override reductions
 and document discounts. The document input is judged once against counted net before its

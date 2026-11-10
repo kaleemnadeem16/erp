@@ -27,6 +27,7 @@ import {
   EstimatingSettingsScreen,
   ApprovalsInboxScreen,
   ApprovalsSettingsScreen,
+  DiscountAuthoritySettingsScreen,
   MaterialSelectionSettingsScreen,
   CompanySettingsScreen,
   NumberingEditorScreen,
@@ -1859,6 +1860,18 @@ export function AppRouter() {
             <ProtectedRoute>
               <AppShell>
                 <ApprovalsSettingsScreen />
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/discount-authority"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <PermissionRoute permission="sales.financial.configure">
+                  <DiscountAuthoritySettingsScreen />
+                </PermissionRoute>
               </AppShell>
             </ProtectedRoute>
           }
