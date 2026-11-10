@@ -330,8 +330,8 @@ test("Download and Print hand over the gateway's PDF bytes only; anything else i
     { revisionId: 12, intent: "print" },
     { revisionId: 12, intent: "download" },
   ]);
-  // No link was built or shown: the only URLs on the page are none.
-  await expect(page.locator("a[href]")).toHaveCount(0);
+  // No link was built or shown: the only URL on the page is the header's back arrow to the quotation.
+  await expect(page.locator("a[href]:not([aria-label='Back'])")).toHaveCount(0);
 });
 
 test("Record delivery: retry replays, edited details get a new key, success clears the form", async ({

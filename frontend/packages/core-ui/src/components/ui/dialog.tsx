@@ -4,6 +4,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import { useRestoreFocus } from "../../lib/use-restore-focus";
 
 const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
@@ -38,6 +39,7 @@ const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => {
   const design = useScreenDesign();
+  const focus = useRestoreFocus(props);
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -54,6 +56,7 @@ const DialogContent = React.forwardRef<
           className,
         )}
         {...props}
+        {...focus}
         style={{ ...design, ...props.style }}
       >
         <div className="grid gap-4 overflow-y-auto p-6">{children}</div>

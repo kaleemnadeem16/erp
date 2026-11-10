@@ -58,23 +58,27 @@ export function CompanySettingsScreen() {
 
   if (companyQuery.isError && !company) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
+      <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
+        <PageHeader title="Company" description="Who the company is and the settings every part of the system shares." />
         <div role="alert" className="space-y-2 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <p>{describeLoadError(companyQuery.error)}</p>
           <Button type="button" variant="outline" size="sm" className="min-h-11 md:min-h-9" onClick={() => void companyQuery.refetch()}>
             Try again
           </Button>
         </div>
-      </div>
+      </ScreenTemplate>
     );
   }
 
   if (companyQuery.isLoading || !company) {
     return (
-      <div className="space-y-4 p-4 md:p-6">
-        <Skeleton className="h-9 w-64" />
-        <Skeleton className="h-64 w-full" />
-      </div>
+      <ScreenTemplate kind="form" className="space-y-4 p-4 md:p-6">
+        <PageHeader title="Company" description="Who the company is and the settings every part of the system shares." />
+        <div role="status">
+          <Skeleton className="h-64 w-full" />
+          <span className="sr-only">Loading company settings…</span>
+        </div>
+      </ScreenTemplate>
     );
   }
 
@@ -164,6 +168,8 @@ export function CompanySettingsScreen() {
             maxLength={field.max_length ?? undefined}
             type={field.type === 'EMAIL' ? 'email' : field.type === 'URL' ? 'url' : field.type === 'PHONE' ? 'tel' : 'text'}
             className={field.type === 'CODE' ? 'uppercase' : undefined}
+            aria-invalid={errors[field.key] ? true : undefined}
+            aria-describedby={errors[field.key] ? `company-${field.key}-error` : undefined}
             onChange={(event) => setValue(field.key, field.type === 'CODE' ? event.target.value.toUpperCase() : event.target.value)}
           />
         );
@@ -175,7 +181,7 @@ export function CompanySettingsScreen() {
       <PageHeader title="Company" description="Who the company is and the settings every part of the system shares." />
 
       {company.timezone_is_default && (
-        <div role="status" className="rounded-md border border-amber-500/50 bg-amber-500/10 p-3 text-sm">
+        <div role="status" className="rounded-md border border-[var(--erp-blue-color-warning-border)] bg-[var(--erp-blue-color-warning-bg)] p-3 text-sm text-[var(--erp-blue-color-warning-text)]">
           The company time zone is still the default (UTC). Document numbers, backdating limits and accounting days all follow it, so set it to where the business operates.
         </div>
       )}
@@ -197,27 +203,43 @@ export function CompanySettingsScreen() {
                     field.description && <p className="text-xs text-muted-foreground">{field.description}</p>
                   )}
                   {!field.can_edit && !field.locked && <p className="text-xs text-muted-foreground">You don't have permission to change this.</p>}
-                  {errors[field.key] && <p className="text-xs text-destructive">{errors[field.key]}</p>}
+                  {errors[field.key] && (
+                    <p id={`company-${field.key}-error`} role="alert" className="text-xs text-destructive">
+                      {errors[field.key]}
+                    </p>
+                  )}
                 </div>
               ))}
           </DetailSection>
         ))}
 
         <div className="col-span-full space-y-3">
-          {formError && <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
+          {formError && <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{formError}</div>}
           {needsReason && (
             <div className="space-y-1">
               <Label htmlFor="company-reason">Reason for the change</Label>
               <Textarea id="company-reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Why are these settings changing? It is kept in the history." />
-              {errors.reason && <p className="text-xs text-destructive">{errors.reason}</p>}
+              {errors.reason && <p role="alert" className="text-xs text-destructive">{errors.reason}</p>}
             </div>
           )}
           <div className="flex items-center gap-3">
-            <Button onClick={save} disabled={changedFields.length === 0 || update.isPending || (needsReason && reason.trim().length < 3)}>
+            <Button
+              className="min-h-11 md:min-h-9"
+              onClick={save}
+              disabled={changedFields.length === 0 || update.isPending || (needsReason && reason.trim().length < 3)}
+              aria-describedby="company-save-hint"
+            >
               {update.isPending ? 'Saving…' : 'Save changes'}
             </Button>
             {saved && <span className="text-sm text-muted-foreground" role="status">Saved.</span>}
           </div>
+          <p id="company-save-hint" className="text-xs text-muted-foreground">
+            {changedFields.length === 0
+              ? 'Change a setting above to enable saving.'
+              : needsReason && reason.trim().length < 3
+                ? 'Give a reason for the change (at least 3 characters) to enable saving.'
+                : 'Ready to save.'}
+          </p>
         </div>
 
         <CompanyBrandingSection />

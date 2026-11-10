@@ -106,6 +106,9 @@ content and workflow actions once, then reuse them in either presentation. `Reco
   posting, issue and short-close retain their own guarded confirmation/reason flows.
 - Missing data shows the shared placeholder or a meaningful “not specified” statement. A company's
   own address is not automatically a delivery destination; current master data is not a snapshot.
+- A page-sized child of a record (the quotation issue, approval and document screens) is still a `ScreenTemplate kind="detail"` with a `PageHeader` (heading,
+  one-line purpose, back arrow to the parent record); loading and failed states render inside that shell, never as a bare skeleton or message.
+  Where a control needs a duty the person lacks, say which duty and why instead of leaving a dead end; the server stays the authority.
 - On mobile, actions wrap left below identity and line details can use cards. Do not squeeze a
   wide table into the screen; its own scroll container must be usable.
 
@@ -264,7 +267,8 @@ switchable and catalogued ([ui-building-blocks.md](ui-building-blocks.md#alterna
 helpers, never floats. Features live in `core-ui/src/features/<feature>/`; shared pieces in `components/`; the app (`apps/main`) only wires routes and presentation choices.
 
 **Accessibility.** Keyboard operation and visible, unobscured focus for every new control and dialog (focus moves into a dialog and returns on close); labels for every input; text alternatives for icon-only buttons;
-errors announced. The axe and contrast specs run on new pages.
+errors announced. The axe and contrast specs run on new pages. The shared `Dialog` and `Sheet` remember what had focus when they opened and give it
+back on close (`lib/use-restore-focus.ts`), including dialogs opened from a button without a Radix trigger, so a screen needs nothing extra.
 
 ## Required checklist before shipping a screen
 

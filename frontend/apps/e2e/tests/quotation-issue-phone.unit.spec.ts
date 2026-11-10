@@ -195,3 +195,49 @@ test("the PDF link is hidden from someone without document access", async ({
   await expect(page.getByText("Expired", { exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: /Official PDF/ })).toHaveCount(0);
 });
+
+test("the issue screen has a heading and a way back, and the confirm dialog gives focus back to the Issue button", async ({
+  page,
+}) => {
+  await mount(
+    page,
+    {
+      readiness: [
+        {
+          ok: {
+            revision_id: 12,
+            input_generation: 4,
+            issue_ready: true,
+            blockers: [],
+          },
+        },
+      ],
+    },
+    ALL,
+  );
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Issue quotation" }),
+  ).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back" })).toBeVisible();
+  const issue = page.getByRole("button", { name: "Issue quotation" });
+  await issue.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(issue).toBeFocused();
+});
+
+test("someone who may issue but not prepare is told why issuing is not offered, and no readiness request is made", async ({
+  page,
+}) => {
+  await mount(page, { readiness: [] }, [QUOTATION_VIEW, QUOTATION_ISSUE]);
+  await expect(
+    page.getByText("Issuing is not available to you here"),
+  ).toBeVisible();
+  await expect(page.getByText(/duty to prepare quotations/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Issue quotation" }),
+  ).toHaveCount(0);
+  await expectPhoneSafe(page);
+});

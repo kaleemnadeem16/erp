@@ -5,6 +5,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 
 import { cn } from "../../lib/utils";
+import { useRestoreFocus } from "../../lib/use-restore-focus";
 
 const Sheet = DialogPrimitive.Root;
 const SheetTrigger = DialogPrimitive.Trigger;
@@ -53,6 +54,7 @@ const SheetContent = React.forwardRef<
   SheetContentProps
 >(({ side, className, children, ...props }, ref) => {
   const design = useScreenDesign();
+  const focus = useRestoreFocus(props);
   return (
     <SheetPortal>
       <SheetOverlay />
@@ -65,6 +67,7 @@ const SheetContent = React.forwardRef<
           className,
         )}
         {...props}
+        {...focus}
         style={{ ...design, ...props.style }}
       >
         {children}

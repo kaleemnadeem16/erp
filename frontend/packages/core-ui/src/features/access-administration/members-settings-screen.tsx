@@ -21,6 +21,7 @@ import { Checkbox } from "../../components/ui/checkbox";
 import {
   ActiveFilterChips,
   DataTable,
+  FilterSelect,
   toTanStackColumns,
   type FilterChip,
 } from "../../components/data-table";
@@ -45,6 +46,7 @@ import {
 import { PageHeader } from "../../components/page/page-header";
 import { Textarea } from "../../components/ui/textarea";
 import { getApiErrorMessage } from "../../lib/api-errors";
+import { useListQueryState } from "../../lib/list-query-state";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { usePermission } from "../../hooks/use-permission";
 import { useAuthStore } from "../../stores/auth-store";
@@ -86,6 +88,7 @@ interface HistoryEntry {
   created_at: string | null;
 }
 type StatusAction = "suspend" | "reactivate";
+const MEMBER_STATUS_FILTERS = ["ACTIVE", "INVITED", "SUSPENDED"];
 const dateTime = (value?: string | null) =>
   value ? new Date(value).toLocaleString() : "—";
 
@@ -146,10 +149,24 @@ export function MembersSettingsScreen() {
   });
   const companyHasUnits =
     unitsQuery.data?.status === 200 && unitsQuery.data.data.data.length > 0;
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("ALL");
-  const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(25);
+  // Search, status, page and page size live in the URL, so a refresh, a shared link and Back keep the same directory view.
+  const listState = useListQueryState<{ search: string; status: string }>({
+    defaultPerPage: 25,
+  });
+  const search = listState.filters.search ?? "";
+  const status = MEMBER_STATUS_FILTERS.includes(listState.filters.status ?? "")
+    ? (listState.filters.status as string)
+    : "ALL";
+  const page = listState.page;
+  const perPage = [10, 25, 50, 100].includes(listState.perPage)
+    ? listState.perPage
+    : 25;
+  const setSearch = (value: string) =>
+    listState.setFilter("search", value || undefined);
+  const setStatus = (value: string) =>
+    listState.setFilter("status", value === "ALL" ? undefined : value);
+  const setPage = listState.setPage;
+  const setPerPage = listState.setPerPage;
   const { view, setView } = useListViewPreference("members-list");
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
@@ -490,7 +507,6 @@ export function MembersSettingsScreen() {
             label: `Search: ${search}`,
             onRemove: () => {
               setSearch("");
-              setPage(1);
               setSelectedId(null);
             },
           },
@@ -503,7 +519,6 @@ export function MembersSettingsScreen() {
             label: `Status: ${statusLabels[status] ?? status}`,
             onRemove: () => {
               setStatus("ALL");
-              setPage(1);
               setSelectedId(null);
             },
           },
@@ -529,7 +544,7 @@ export function MembersSettingsScreen() {
       {notice && (
         <div
           role="status"
-          className="rounded-md border border-emerald-300 bg-emerald-50 p-3 text-sm text-emerald-900"
+          className="rounded-md border border-[var(--erp-blue-color-success-border)] bg-[var(--erp-blue-color-success-bg)] p-3 text-sm text-[var(--erp-blue-color-success-text)]"
         >
           {notice}
         </div>
@@ -544,38 +559,30 @@ export function MembersSettingsScreen() {
       )}
       <div className="flex flex-wrap gap-2">
         <Input
-          className="max-w-sm"
+          className="h-11 max-w-sm md:h-10"
           aria-label="Search users by name or email"
           placeholder="Search name or email"
           value={search}
           onChange={(event) => {
             setSearch(event.target.value);
-            setPage(1);
             setSelectedId(null);
           }}
         />
-        <select
-          aria-label="Filter users by status"
-          className="h-9 rounded-md border border-input bg-background px-3 text-sm"
-          value={status}
-          onChange={(event) => {
-            setStatus(event.target.value);
-            setPage(1);
+        <FilterSelect
+          label="Filter users by status"
+          allLabel="All statuses"
+          value={status === "ALL" ? undefined : status}
+          options={MEMBER_STATUS_FILTERS}
+          onChange={(value) => {
+            setStatus(value ?? "ALL");
             setSelectedId(null);
           }}
-        >
-          <option value="ALL">All statuses</option>
-          <option value="ACTIVE">Active</option>
-          <option value="INVITED">Invited</option>
-          <option value="SUSPENDED">Suspended</option>
-        </select>
+        />
       </div>
       <ActiveFilterChips
         chips={filterChips}
         onClearAll={() => {
-          setSearch("");
-          setStatus("ALL");
-          setPage(1);
+          listState.clearFilters();
           setSelectedId(null);
         }}
       />
@@ -593,7 +600,6 @@ export function MembersSettingsScreen() {
           setSelectedId(null);
           if (next.pageSize !== perPage) {
             setPerPage(next.pageSize);
-            setPage(1);
           } else setPage(next.pageIndex + 1);
         }}
         sorting={sorting}
@@ -660,7 +666,10 @@ export function MembersSettingsScreen() {
                 )}
               </div>
               {notice && (
-                <p role="status" className="text-sm text-emerald-700">
+                <p
+                  role="status"
+                  className="text-sm text-[var(--erp-blue-color-success-text)]"
+                >
                   {notice}
                 </p>
               )}

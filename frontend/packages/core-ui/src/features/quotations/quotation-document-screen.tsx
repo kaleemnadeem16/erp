@@ -28,6 +28,7 @@ import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { QuotationFailure } from "./quotation-display";
 import { IntentKey } from "./request-key";
+import { QuotationScreenShell } from "./quotation-screen-shell";
 import { liveDocumentGateway } from "./quotation-live-gateways";
 import {
   CHANNEL_LABELS,
@@ -618,7 +619,17 @@ export function QuotationDocumentScreen({
   );
   if (!access.documents && !access.deliveries) return <AccessDenied />;
   return (
-    <GatedDocument revisionId={revisionId} gateway={gateway} access={access} />
+    <QuotationScreenShell
+      title="Official PDF"
+      description="The issued quotation's document and the record of how it was delivered."
+      revisionId={revisionId}
+    >
+      <GatedDocument
+        revisionId={revisionId}
+        gateway={gateway}
+        access={access}
+      />
+    </QuotationScreenShell>
   );
 }
 
@@ -753,15 +764,28 @@ function GatedDocument({
             <span className="sr-only">Loading document…</span>
           </div>
         ))}
-      {access.documents && history.data && (
-        <QuotationDocumentHistoryView entries={history.data} />
-      )}
+      {access.documents &&
+        (history.isError ? (
+          <QuotationFailure
+            error={history.error}
+            retry={() => void history.refetch()}
+          />
+        ) : (
+          history.data && (
+            <QuotationDocumentHistoryView entries={history.data} />
+          )
+        ))}
       {access.deliveries &&
         (deliveries.isError ? (
           <QuotationFailure
             error={deliveries.error}
             retry={() => void deliveries.refetch()}
           />
+        ) : deliveries.isPending ? (
+          <div role="status">
+            <Skeleton className="h-24 w-full" />
+            <span className="sr-only">Loading deliveries…</span>
+          </div>
         ) : (
           deliveries.data && (
             <QuotationDeliveriesView

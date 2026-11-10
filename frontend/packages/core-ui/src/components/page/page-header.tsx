@@ -49,7 +49,7 @@ export function PageHeader({ title, description, breadcrumbs, backTo, actions, p
     <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-start sm:justify-between">
       <div>
         {(backTo || (breadcrumbs && breadcrumbs.length > 0)) && (
-          <nav className="-ml-1 mb-1 flex items-center gap-1 text-sm text-muted-foreground">
+          <nav aria-label="Breadcrumb" className="-ml-1 mb-1 flex items-center gap-1 text-sm text-muted-foreground">
             {backTo && (
               <Link to={backTo} aria-label="Back" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded p-1 hover:bg-accent hover:text-foreground md:min-h-0 md:min-w-0">
                 <ArrowLeft className="h-4 w-4" />

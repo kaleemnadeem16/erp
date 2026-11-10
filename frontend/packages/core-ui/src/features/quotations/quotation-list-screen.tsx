@@ -10,6 +10,7 @@ import {
   toTanStackColumns,
   type DataColumn,
 } from "../../components/data-table";
+import { ActiveFilterChips } from "../../components/data-table";
 import { FilterToggle } from "../../components/ui/filter-toggle";
 import { Label } from "../../components/ui/label";
 import {
@@ -133,6 +134,8 @@ export interface QuotationListViewProps {
   error: unknown;
   onRetry?: () => void;
   onOpen: (row: QuotationSummary) => void;
+  /** Resets every filter; the chips' "Clear all". */
+  onClearFilters?: () => void;
   /** Whether the person may create drafts; the action is hidden otherwise. */
   mayCreate: boolean;
 }
@@ -190,6 +193,35 @@ export function QuotationListView(props: QuotationListViewProps) {
           Mine
         </FilterToggle>
       </div>
+      <ActiveFilterChips
+        chips={[
+          ...(props.state
+            ? [
+                {
+                  id: "state",
+                  label: `Status: ${STATE_LABELS[props.state]}`,
+                  onRemove: () => props.onStateChange(undefined),
+                },
+              ]
+            : []),
+          ...(props.mine
+            ? [
+                {
+                  id: "mine",
+                  label: "Mine",
+                  onRemove: () => props.onMineChange(false),
+                },
+              ]
+            : []),
+        ]}
+        onClearAll={() => {
+          if (props.onClearFilters) props.onClearFilters();
+          else {
+            props.onStateChange(undefined);
+            props.onMineChange(false);
+          }
+        }}
+      />
       <DataTable
         columns={columns}
         data={props.rows}
@@ -320,6 +352,7 @@ function GatedQuotationList({
         error={result.isError ? result.error : null}
         onRetry={() => void result.refetch()}
         onOpen={(row) => setOpen(row.revision_id)}
+        onClearFilters={query.clearFilters}
         mayCreate={mayCreate}
       />
       {openId !== null && (

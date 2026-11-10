@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchBlob, getCompanyBrandingLogoUrl, getCompanyBrandingShowQueryKey, useCompanyBrandingShow, useCompanyBrandingUpdate } from '@erp/core-api';
 
 import { DetailSection } from '../../components/detail/detail-page-layout';
 import { Button } from '../../components/ui/button';
+import { Checkbox } from '../../components/ui/checkbox';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
@@ -82,7 +83,7 @@ export function CompanyBrandingSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brand?.version]);
 
-  const previewUrl = file ? URL.createObjectURL(file) : null;
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
 
   if (query.isLoading || !brand) {
@@ -96,7 +97,7 @@ export function CompanyBrandingSection() {
             </Button>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">Loading…</p>
+          <p role="status" className="text-sm text-muted-foreground">Loading branding…</p>
         )}
       </DetailSection>
     );
@@ -196,10 +197,19 @@ export function CompanyBrandingSection() {
               <p className="text-xs text-muted-foreground">PNG or JPEG, up to 2 MB and 1000 × 1000 pixels. It is cleaned of hidden data (such as camera details) when saved.</p>
             </div>
             {brand.logo && (
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={removeLogo} onChange={(event) => { setRemoveLogo(event.target.checked); if (event.target.checked) setFile(null); }} />
-                Remove the current logo
-              </label>
+              <div className="flex min-h-11 items-center gap-2 text-sm md:min-h-0">
+                <Checkbox
+                  id="branding-remove-logo"
+                  checked={removeLogo}
+                  onCheckedChange={(checked) => {
+                    setRemoveLogo(checked === true);
+                    if (checked === true) setFile(null);
+                  }}
+                />
+                <Label htmlFor="branding-remove-logo" className="font-normal">
+                  Remove the current logo
+                </Label>
+              </div>
             )}
             <div className="space-y-1">
               <Label htmlFor="branding-reason">Reason for the change</Label>
@@ -207,11 +217,14 @@ export function CompanyBrandingSection() {
             </div>
             {error && <div role="alert" className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
             <div className="flex items-center gap-3">
-              <Button onClick={save} disabled={!changed || reason.trim().length < 3 || update.isPending} data-testid="branding-save">
+              <Button className="min-h-11 md:min-h-9" onClick={save} disabled={!changed || reason.trim().length < 3 || update.isPending} data-testid="branding-save" aria-describedby="branding-save-hint">
                 {update.isPending ? 'Saving…' : 'Save branding'}
               </Button>
               {saved && <span className="text-sm text-muted-foreground" role="status">Saved as a new version.</span>}
             </div>
+            <p id="branding-save-hint" className="text-xs text-muted-foreground">
+              {!changed ? 'Change the name, tagline or logo to enable saving.' : reason.trim().length < 3 ? 'Give a reason for the change (at least 3 characters) to enable saving.' : 'Ready to save.'}
+            </p>
           </div>
         )}
         {brand.version !== null && (

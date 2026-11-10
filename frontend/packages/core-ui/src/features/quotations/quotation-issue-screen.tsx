@@ -24,6 +24,7 @@ import {
   shouldRetryQuery,
 } from "../../lib/api-errors";
 import { IntentKey } from "./request-key";
+import { QuotationScreenShell } from "./quotation-screen-shell";
 import { liveIssueGateway } from "./quotation-live-gateways";
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
@@ -324,18 +325,24 @@ export function QuotationIssueScreen({
   );
   if (!access.readiness && !access.issue) return <AccessDenied />;
   return (
-    <GatedIssue
+    <QuotationScreenShell
+      title="Issue quotation"
+      description="Check the draft is ready, then issue it. Issuing freezes it."
       revisionId={revisionId}
-      gateway={gateway}
-      mayIssue={access.issue}
-      mayReadiness={access.readiness}
-      documentsTo={
-        access.documents ? `/quotations/${revisionId}/document` : undefined
-      }
-      approvalTo={
-        approvalAccess.read ? `/quotations/${revisionId}/approval` : undefined
-      }
-    />
+    >
+      <GatedIssue
+        revisionId={revisionId}
+        gateway={gateway}
+        mayIssue={access.issue}
+        mayReadiness={access.readiness}
+        documentsTo={
+          access.documents ? `/quotations/${revisionId}/document` : undefined
+        }
+        approvalTo={
+          approvalAccess.read ? `/quotations/${revisionId}/approval` : undefined
+        }
+      />
+    </QuotationScreenShell>
   );
 }
 
@@ -401,18 +408,37 @@ function GatedIssue({
         />
       );
     if (record.isPending) return <Loading />;
+    // A 404 here is a cancelled draft (nothing issued) and gets the plain message below; any other failure is shown with a retry.
+    if (record.isError && !(isApiError(record.error) && record.error.status === 404))
+      return (
+        <QuotationFailure
+          error={record.error}
+          retry={() => void record.refetch()}
+        />
+      );
     return (
-      <p role="status" className="p-4 text-sm">
+      <p role="status" className="text-sm">
         Only a draft quotation can be issued. This quotation is no longer a
         draft.
       </p>
     );
   }
+  // D7 (owner decision): issuing is gated on seeing readiness (prepare duty) because the server decides readiness and the issue
+  // action is only offered against a reviewed result. Without it the screen explains why instead of offering a dead end.
   if (!mayReadiness)
     return (
-      <p className="p-4 text-sm">
-        Issuing needs the readiness result, which your access does not include.
-      </p>
+      <div
+        role="status"
+        className="space-y-2 rounded-lg border border-border bg-card p-4 text-sm"
+      >
+        <h2 className="font-semibold">Issuing is not available to you here</h2>
+        <p>
+          Issuing a quotation needs its readiness check, and seeing that check
+          needs the duty to prepare quotations, which your access does not
+          include. Ask someone who prepares quotations to review it, or ask an
+          administrator to adjust your access.
+        </p>
+      </div>
     );
   if (readiness.isError)
     return (

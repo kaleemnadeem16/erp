@@ -28,6 +28,7 @@ import {
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
 import { IntentKey } from "./request-key";
+import { QuotationScreenShell } from "./quotation-screen-shell";
 import { QuotationFailure } from "./quotation-display";
 import { liveApprovalGateway } from "./quotation-live-gateways";
 import { quotationApprovalAccess } from "./quotation-approval-access";
@@ -343,7 +344,15 @@ export function QuotationApprovalScreen({
     ),
   );
   if (!access.read) return <AccessDenied />;
-  return <GatedApproval revisionId={revisionId} gateway={gateway} />;
+  return (
+    <QuotationScreenShell
+      title="Discount approval"
+      description="Where this draft stands with its discount or price override approval."
+      revisionId={revisionId}
+    >
+      <GatedApproval revisionId={revisionId} gateway={gateway} />
+    </QuotationScreenShell>
+  );
 }
 
 function GatedApproval({

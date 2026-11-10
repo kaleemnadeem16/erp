@@ -41,6 +41,7 @@ test.describe('Settings → Company', () => {
       await choose('Lisbon', /Europe\/Lisbon/);
       const save = page.getByRole('button', { name: 'Save changes' });
       await expect(save).toBeDisabled(); // a governed change is not saved without a reason
+      await expect(page.locator('#company-save-hint')).toContainText('reason'); // and the screen says why
       await page.getByLabel('Reason for the change').fill('End-to-end check');
       await save.click();
       await expect(page.getByText('Saved.')).toBeVisible();
