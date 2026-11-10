@@ -96,6 +96,21 @@ class QuotationApprovalApiTest extends TestCase
         return array_map(fn (array $b): string => $b['code'], app(AssessQuotationIssueReadiness::class)($this->maker, $revision->id)['blockers']);
     }
 
+    public function test_sales_approval_reasons_follow_the_shared_author_and_evidence_projection(): void
+    {
+        $revision = $this->discounted();
+        $this->request($revision)->assertCreated();
+        Sanctum::actingAs($this->approver);
+        $this->decide($revision, 'REJECTED', 'Independent review reason')->assertCreated();
+        $url = "/api/v1/quotations/{$revision->id}/approval";
+        $this->getJson($url)->assertOk()->assertJsonPath('data.request.decisions.0.reason', 'Independent review reason')->assertJsonPath('data.request.closing_reason', 'Independent review reason');
+        Sanctum::actingAs($this->maker);
+        $this->getJson($url)->assertOk()->assertJsonPath('data.request.decisions.0.reason', null)->assertJsonPath('data.request.closing_reason', null);
+        Permission::findOrCreate('approvals.reason.view', 'web');
+        $this->maker->givePermissionTo('approvals.reason.view');
+        $this->getJson($url)->assertOk()->assertJsonPath('data.request.decisions.0.reason', 'Independent review reason')->assertJsonPath('data.request.closing_reason', 'Independent review reason');
+    }
+
     public function test_request_decide_and_issue_with_the_approval_named_on_the_issued_record(): void
     {
         $revision = $this->discounted();
@@ -200,7 +215,7 @@ class QuotationApprovalApiTest extends TestCase
         $this->assertContains('APPROVAL_REJECTED', $this->blockers($revision));
 
         Sanctum::actingAs($this->maker);
-        $this->getJson("/api/v1/quotations/{$revision->id}/approval")->assertJsonPath('data.state', 'REJECTED')->assertJsonPath('data.request.decisions.0.reason', 'Too deep for this customer');
+        $this->getJson("/api/v1/quotations/{$revision->id}/approval")->assertJsonPath('data.state', 'REJECTED')->assertJsonPath('data.request.decisions.0.reason', null)->assertJsonPath('data.request.closing_reason', null);
         $this->request($revision)->assertUnprocessable()->assertJsonPath('reason_code', 'APPROVAL_REJECTED');
         $line = (int) $revision->lines()->where('membership', 'BASE')->value('id');
         $this->patchJson("/api/v1/quotations/{$revision->id}", ['expected_generation' => $this->generation($revision), 'update_lines' => [['id' => $line, 'discount' => ['kind' => 'PERCENT', 'value' => '15']]]], ['Idempotency-Key' => $this->issueKey()])->assertOk();
@@ -220,6 +235,10 @@ class QuotationApprovalApiTest extends TestCase
         Sanctum::actingAs($this->maker);
         $withdraw('')->assertUnprocessable();
         $withdraw()->assertCreated()->assertJsonPath('data.status', 'WITHDRAWN');
+        $this->getJson("/api/v1/quotations/{$revision->id}/approval")->assertOk()->assertJsonPath('data.request.closing_reason', 'Customer changed the scope');
+        Sanctum::actingAs($other);
+        $this->getJson("/api/v1/quotations/{$revision->id}/approval")->assertOk()->assertJsonPath('data.request.closing_reason', null);
+        Sanctum::actingAs($this->maker);
         $this->assertContains('APPROVAL_REQUIRED', $this->blockers($revision));
         $this->request($revision)->assertCreated();
     }

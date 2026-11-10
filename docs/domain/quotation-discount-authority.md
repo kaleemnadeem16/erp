@@ -304,6 +304,10 @@ participants at migration. Same-value concession entry preserves its original au
 Clearing or replacing a concession does not restore its participants’ approval eligibility,
 in OFF, SHADOW or ENFORCE mode.
 
+The Sales approval standing read uses the shared approval reason policy. Human-written
+reasons are visible to their author, an authorised evidence reader or a holder of
+`approvals.reason.view`; other viewers receive null reasons with the outcome unchanged.
+
 ## Related
 
 - [API and rollout](quotation-discount-authority-api.md) · [Journey](../journeys/quotation-discount-authority.md)

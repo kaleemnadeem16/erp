@@ -7,6 +7,7 @@ namespace App\Modules\Sales\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalDecision;
+use App\Modules\Approvals\Support\ApprovalReasonAccess;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\DiscountAuthority\AssessDiscountAuthority;
@@ -49,6 +50,8 @@ final class ReadQuotationApproval
             $standing = $this->approvals->standing($revision);
             $request = $standing['request'];
             $open = $request !== null && $request->isOpen() && $standing['current'];
+            $reasons = app(ApprovalReasonAccess::class);
+            $readsAll = $reasons->readsAll($actor, $request !== null && $this->subject->mayReadRequestEvidence($actor, $request));
 
             return [
                 'revision_id' => $revision->id, 'input_generation' => $revision->input_generation, 'is_draft' => $revision->isDraft(),
@@ -60,10 +63,10 @@ final class ReadQuotationApproval
                     'id' => $request->id, 'status' => $request->status->value, 'requested_at' => $request->submitted_at->toIso8601String(),
                     'requested_by' => $this->person($request->submitted_by),
                     'expires_at' => $request->facts['evidence']['authority_expires_at'] ?? null, 'expired' => $this->subject->requestHasExpired($request),
-                    'closed_at' => $request->closed_at?->toIso8601String(), 'closing_reason' => $request->status === ApprovalRequestStatus::Pending ? null : $request->closing_reason,
+                    'closed_at' => $request->closed_at?->toIso8601String(), 'closing_reason' => $request->status !== ApprovalRequestStatus::Pending && $reasons->closingReason($actor, $request, $readsAll) ? $request->closing_reason : null,
                     'concessions' => $request->facts['facts']['concessions'] ?? null,
                     'decisions' => ApprovalDecision::query()->where('request_id', $request->id)->orderBy('id')->get()->map(fn (ApprovalDecision $decision): array => [
-                        'decision' => $decision->decision->value, 'reason' => $decision->reason, 'decided_at' => $decision->decided_at->toIso8601String(), 'decided_by' => $this->person($decision->decided_by),
+                        'decision' => $decision->decision->value, 'reason' => $reasons->decisionReason($actor, $decision, $readsAll) ? $decision->reason : null, 'decided_at' => $decision->decided_at->toIso8601String(), 'decided_by' => $this->person($decision->decided_by),
                     ])->all(),
                 ],
                 'can' => [
