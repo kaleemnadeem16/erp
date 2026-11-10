@@ -117,16 +117,19 @@ trait TwoSessionRace
      * Hold `$gateSql` (a locking SELECT) in the test's own transaction, run `$action` in a forked process, wait until
      * PostgreSQL shows that process blocked on a lock, then let `$mutate` change the world and commit everything.
      *
+     * @param  string|list<string>  $gateSql  one or several locking statements, run in order
      * @param  callable(): mixed  $action  runs in the child on its own connection; its return value is discarded
      * @param  callable(PDO): void  $mutate  runs in the holder's transaction while the child is blocked
      * @return array{success: bool, message: string|null, class: string|null}
      */
-    private function raceAction(PDO $holder, string $gateSql, callable $action, callable $mutate, float $settleSeconds = 0.0): array
+    private function raceAction(PDO $holder, string|array $gateSql, callable $action, callable $mutate, float $settleSeconds = 0.0): array
     {
         $result = sys_get_temp_dir().'/sec_race_'.getmypid().'_'.bin2hex(random_bytes(3)).'.json';
         @unlink($result);
         $holder->beginTransaction();
-        $holder->query($gateSql)->fetchAll();
+        foreach ((array) $gateSql as $statement) {
+            $holder->query($statement)->fetchAll();
+        }
 
         $pid = pcntl_fork();
         if ($pid === -1) {

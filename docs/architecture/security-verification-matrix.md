@@ -3,8 +3,12 @@
 # Security verification matrix: revocation, suspension and decision-time change
 
 **Baseline:** `develop` at `a885ca0a`, 2026-11-06. **Issue:** #91 (audit F4 and F5), tracker #87.
-**Scope:** verification only. No application code was changed. This file records what real
+**Scope:** verification. Rows 1 to 7 were later fixed (see Resolution); rows 10, 11, 15 and 17 (the approval decision) remain with the Approvals/Sales owner. This file records what real
 two-session PostgreSQL tests proved, so the fixes can be sized by the owning module.
+
+## Resolution (rows 1 to 7)
+
+`IssuePurchaseOrder`, `PostGoodsReceipt` and `PostPhysicalCount` keep their early permission check as a fast refusal, then decide inside the transaction through `App\Support\Scope\DecisionActor`: the shared company access barrier first (before any row lock), then an active-only reload of the person with no cached duties, then the duty (and, for a count, the warehouse reach) is checked again on that reloaded person. A suspended or removed member is now refused even without a race. Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityRaceTest.php` (real two-session staging; every case has a control). Because the access barrier bounds lock waits to one second for the rest of the transaction, a receipt waiting longer than that for another user's order lock now fails and is retried by the caller.
 
 ## How it was tested
 

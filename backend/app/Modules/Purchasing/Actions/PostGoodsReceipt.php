@@ -18,6 +18,7 @@ use App\Modules\Purchasing\Numbering\GoodsReceiptNumbering;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Carbon\CarbonImmutable;
@@ -35,6 +36,8 @@ final class PostGoodsReceipt
         }
 
         return DB::transaction(function () use ($receipt, $actor): GoodsReceipt {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.goods-receipt.post', 'post a goods receipt', 'posted_by');
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status === GoodsReceiptStatus::Posted) {
                 return $receipt->load('lines');

@@ -16,6 +16,7 @@ use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -48,6 +49,9 @@ final class PostPhysicalCount
         WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.post', (int) $count->warehouse_id, 'post a physical count');
 
         return DB::transaction(function () use ($count, $foundCosts, $actor): PhysicalCount {
+            // The early checks only fail fast. The decision and the warehouse reach are taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.physical_count.post', 'post a physical count', 'posted_by');
+            WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.post', (int) $count->warehouse_id, 'post a physical count');
             $count = PhysicalCount::query()->whereKey($count->id)->lockForUpdate()->firstOrFail();
             if ($count->status === PhysicalCountStatus::Posted) {
                 return $count->refresh()->load('lines');
