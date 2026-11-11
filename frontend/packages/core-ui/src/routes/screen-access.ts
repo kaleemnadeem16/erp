@@ -257,6 +257,8 @@ export function canAccessScreen(
   // Behind the same production gate as the quotation screens (owner decision D13: inactive by default).
   if (pathname === "/settings/discount-authority")
     return discountAuthorityAccess(permissions).configure;
+  if (pathname === "/settings/discount-authority/references")
+    return discountAuthorityAccess(permissions).references;
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
     if (pathname === "/quotations") return access.detail || access.review;
@@ -272,6 +274,8 @@ export function canAccessScreen(
       return milestone.readiness || milestone.issue;
     if (/^\/quotations\/[1-9]\d*\/approval$/.test(pathname))
       return quotationApprovalAccess(permissions).read;
+    if (/^\/quotations\/[1-9]\d*\/discount-authority-history$/.test(pathname))
+      return discountAuthorityAccess(permissions).evidence;
     if (/^\/quotations\/[1-9]\d*\/document$/.test(pathname))
       return milestone.documents || milestone.deliveries;
     return false;

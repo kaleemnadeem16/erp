@@ -3,6 +3,7 @@ import { QuotationListScreen } from "./quotation-list-screen";
 import { QuotationIssueScreen } from "./quotation-issue-screen";
 import { QuotationDocumentScreen } from "./quotation-document-screen";
 import { QuotationApprovalScreen } from "./quotation-approval-screen";
+import { QuotationAuthorityHistoryScreen } from "../discount-authority/quotation-authority-history-screen";
 
 /**
  * Route entries for the list, issue and document screens. Every screen denies before any query when the production
@@ -52,5 +53,14 @@ export function QuotationApprovalRoute() {
     <Unavailable />
   ) : (
     <QuotationApprovalScreen revisionId={revision} />
+  );
+}
+
+export function QuotationAuthorityHistoryRoute() {
+  const revision = revisionFrom(useParams().revision);
+  return revision === null ? (
+    <Unavailable />
+  ) : (
+    <QuotationAuthorityHistoryScreen revisionId={revision} />
   );
 }

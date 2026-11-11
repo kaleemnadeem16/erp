@@ -6,6 +6,7 @@ import {
   QuotationApprovalRoute,
   QuotationIssueRoute,
   QuotationDocumentRoute,
+  QuotationAuthorityHistoryRoute,
   QuotationCreateScreen,
   QuotationEditScreen,
   QuotationDetailScreen,
@@ -28,6 +29,7 @@ import {
   ApprovalsInboxScreen,
   ApprovalsSettingsScreen,
   DiscountAuthoritySettingsScreen,
+  DiscountAuthorityReferencesScreen,
   MaterialSelectionSettingsScreen,
   CompanySettingsScreen,
   NumberingEditorScreen,
@@ -206,6 +208,7 @@ export function AppRouter() {
         <Route path="/quotations/all" element={<ProtectedRoute><AppShell><QuotationListRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/approval" element={<ProtectedRoute><AppShell><QuotationApprovalRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/issue" element={<ProtectedRoute><AppShell><QuotationIssueRoute /></AppShell></ProtectedRoute>} />
+        <Route path="/quotations/:revision/discount-authority-history" element={<ProtectedRoute><AppShell><QuotationAuthorityHistoryRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/document" element={<ProtectedRoute><AppShell><QuotationDocumentRoute /></AppShell></ProtectedRoute>} />
         <Route
           path="/quotations/:revision"
@@ -1872,6 +1875,17 @@ export function AppRouter() {
                 <PermissionRoute permission="sales.financial.configure">
                   <DiscountAuthoritySettingsScreen />
                 </PermissionRoute>
+              </AppShell>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings/discount-authority/references"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                {/* Proposing and approving are separate duties; the screen checks either and the server checks each action. */}
+                <DiscountAuthorityReferencesScreen />
               </AppShell>
             </ProtectedRoute>
           }

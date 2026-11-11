@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router";
 import { DetailField } from "../../components/detail/detail-field";
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import { Button } from "../../components/ui/button";
@@ -37,8 +38,11 @@ export { bandLimits };
 /** Presentational: the plain state, and the figures only because the caller already passed the evidence duty. */
 export function AuthorityResultView({
   authority,
+  historyTo,
 }: {
   authority: QuotationAuthority;
+  /** Where the recorded history of this quotation is, when this person may open it. */
+  historyTo?: string;
 }) {
   const state = authorityState(authority);
   const mode = MODE_VIEW[authority.mode];
@@ -125,6 +129,13 @@ export function AuthorityResultView({
               cannot be cleared yet. Ask an administrator.
             </p>
           )}
+        </div>
+      )}
+      {historyTo && (
+        <div className="col-span-full">
+          <Link className="ui-link-action inline-flex min-h-11 items-center" to={historyTo}>
+            Recorded results for this quotation
+          </Link>
         </div>
       )}
       {reasons.length > 0 && state.key !== "INACTIVE" && (
@@ -216,5 +227,10 @@ function PanelQuery({
       </DetailSection>
     );
   }
-  return <AuthorityResultView authority={query.data} />;
+  return (
+    <AuthorityResultView
+      authority={query.data}
+      historyTo={`/quotations/${revisionId}/discount-authority-history`}
+    />
+  );
 }

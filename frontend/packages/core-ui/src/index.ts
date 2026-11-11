@@ -298,8 +298,9 @@ export { DecimalText, MoneyText } from "./components/ui/decimal-text";
 
 export { configureQuotationDevMode } from "./lib/quotation-dev-mode";
 export { QuotationsWorkspaceScreen } from "./features/quotations/quotations-workspace-screen";
-export { QuotationListRoute, QuotationIssueRoute, QuotationDocumentRoute, QuotationApprovalRoute } from "./features/quotations/quotation-milestone-routes";
+export { QuotationListRoute, QuotationIssueRoute, QuotationDocumentRoute, QuotationApprovalRoute, QuotationAuthorityHistoryRoute } from "./features/quotations/quotation-milestone-routes";
 export { DiscountAuthoritySettingsScreen } from "./features/discount-authority/discount-authority-settings-screen";
+export { DiscountAuthorityReferencesScreen } from "./features/discount-authority/discount-authority-references-screen";
 export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
 
 export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";

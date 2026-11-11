@@ -156,6 +156,9 @@ export interface DiscountAuthorityGateway {
   read(): Promise<AuthorityConfiguration>;
   /** Named people for the assignment form; may fail (no member access), in which case the form asks for a reference number. */
   people(): Promise<Person[]>;
+  /** Role and organisation unit lookups for the assignment form; either may fail (no access), then the form asks for a reference number. */
+  roles(): Promise<Person[]>;
+  units(): Promise<Person[]>;
   createPolicy(input: {
     policy: PolicyInput;
     reason: string;
@@ -232,6 +235,24 @@ export const AUTHORITY_REFUSALS: Record<string, string> = {
   REQUEST_KEY_REUSED:
     "This request was already used for different details. Start again.",
   REQUEST_KEY_REQUIRED: "The request could not be identified. Try again.",
+  REFERENCE_INVALID:
+    "This reference is not accepted. Name the item and its measure, or a project baseline with its family and measure; a customer agreement must name its customer; the price must be more than zero.",
+  REFERENCE_INDEPENDENT_APPROVAL_REQUIRED:
+    "Someone other than the person who proposed this price must approve it.",
+  REFERENCE_ALREADY_APPROVED: "This reference version has already been approved.",
+  REFERENCE_BACKDATE_REFUSED:
+    "A reference can’t take effect on a date that has already passed. Propose a new version with a current start date.",
+  REFERENCE_NOT_BOUND:
+    "Capture the approved reference for this quotation before authority can clear a line.",
+  REFERENCE_MISSING:
+    "No independently approved price reference covers this quotation. Propose one and have someone else approve it first.",
+  REFERENCE_AMBIGUOUS:
+    "Two equally ranked price references apply. Change a priority or end one of them.",
+  REFERENCE_CHANGED:
+    "The source or measure of this quotation changed, so its reference needs independent review first.",
+  REFERENCE_UNMEASURABLE:
+    "The reference price is zero, so no percentage can be checked.",
+  QUOTATION_NOT_EDITABLE: "Only a draft quotation can have references captured.",
 };
 
 /** Plain wording for each reason the evaluation can give; unknown codes get the generic line. */
@@ -265,6 +286,98 @@ export const EVALUATION_REASONS: Record<string, string> = {
   AUTHORITY_APPROVAL_EXPIRED: "The approval for this concession has expired.",
   AUTHORITY_DISABLED: "Discount authority is not active.",
 };
+
+export const SOURCE_KINDS = [
+  "CUSTOMER_AGREEMENT",
+  "PRICE_LIST",
+  "PROJECT_BASELINE",
+] as const;
+export type SourceKind = (typeof SOURCE_KINDS)[number];
+export const SOURCE_KIND_LABEL: Record<SourceKind, string> = {
+  CUSTOMER_AGREEMENT: "Customer agreement",
+  PRICE_LIST: "Price list",
+  PROJECT_BASELINE: "Project baseline",
+};
+export const referenceSchema = z.object({
+  id,
+  code: z.string(),
+  version_no: z.number().int(),
+  source_kind: z.enum(SOURCE_KINDS),
+  source_key: z.string(),
+  source_version: z.string(),
+  family_id: id.nullable(),
+  customer_id: id.nullable(),
+  item_id: id.nullable(),
+  manual_measure: z.string().nullable(),
+  uom_id: id.nullable(),
+  currency_id: id,
+  unit_price: z.string(),
+  effective_from: z.string(),
+  effective_to: z.string().nullable(),
+  priority: z.number().int(),
+  proposed_by: id.nullable(),
+  reason: z.string().nullable(),
+});
+export const referenceApprovalSchema = z.object({
+  id,
+  reference_id: id,
+  approved_by: id.nullable(),
+  reason: z.string().nullable(),
+  recorded_at: z.string(),
+});
+export type PriceReference = z.infer<typeof referenceSchema>;
+export type ReferenceApproval = z.infer<typeof referenceApprovalSchema>;
+export const readReferencePage = (value: unknown) =>
+  page(referenceSchema).parse(value);
+export const readReferenceApprovalPage = (value: unknown) =>
+  page(referenceApprovalSchema).parse(value);
+
+export interface ReferenceConfiguration {
+  generation: number;
+  mode: AuthorityMode;
+  references: PriceReference[];
+  approvals: ReferenceApproval[];
+  truncated: boolean;
+}
+/** What the reference form sends; ids and the price are validated by the form model, the server stays authoritative. */
+export interface ReferenceInput {
+  code: string;
+  source_kind: SourceKind;
+  source_key: string;
+  source_version: string;
+  family_id: number | null;
+  customer_id: number | null;
+  item_id: number | null;
+  manual_measure: string | null;
+  uom_id: number | null;
+  currency_id: number;
+  unit_price: string;
+  effective_from: string;
+  effective_to: string | null;
+  priority: number;
+}
+export interface Currency {
+  id: number;
+  code: string;
+  name: string;
+}
+export interface ReferenceGateway {
+  read(): Promise<ReferenceConfiguration>;
+  people(): Promise<Person[]>;
+  currencies(): Promise<Currency[]>;
+  propose(input: {
+    reference: ReferenceInput;
+    reason: string;
+    expectedGeneration: number;
+    requestKey: string;
+  }): Promise<{ id: number }>;
+  approve(input: {
+    referenceId: number;
+    reason: string;
+    expectedGeneration: number;
+    requestKey: string;
+  }): Promise<{ id: number }>;
+}
 
 const decimal = z.string();
 export const requiredBandSchema = z.object({
@@ -321,6 +434,52 @@ export const readQuotationAuthority = (value: unknown) =>
 
 export interface QuotationAuthorityGateway {
   read(revisionId: number): Promise<QuotationAuthority>;
+  /** The immutable evaluation summaries recorded for one revision, newest first. */
+  history(revisionId: number, page: number): Promise<AuthorityHistoryPage>;
+  /** Capture the approved reference for each line of a draft. Changes no price and clears nothing by itself. */
+  bind(input: {
+    revisionId: number;
+    expectedGeneration: number;
+    requestKey: string;
+  }): Promise<BindResult>;
+}
+
+export const historyRecordSchema = z.object({
+  id,
+  actor_id: id,
+  mode: z.enum(MODES),
+  input_generation: z.number().int(),
+  recorded_at: z.string(),
+  evaluation: evaluationSchema,
+});
+export const historyPageSchema = z.object({
+  revision_id: id,
+  mode: z.enum(MODES),
+  page: z.number().int().positive(),
+  per_page: z.number().int().positive(),
+  total: z.number().int().nonnegative(),
+  records: z.array(historyRecordSchema),
+});
+export type AuthorityHistoryRecord = z.infer<typeof historyRecordSchema>;
+export type AuthorityHistoryPage = z.infer<typeof historyPageSchema>;
+export const readAuthorityHistory = (value: unknown) =>
+  historyPageSchema.parse(value);
+
+export const bindResultSchema = z.object({
+  family_id: id,
+  revision_id: id,
+  bound_lines: z.number().int().nonnegative(),
+});
+export type BindResult = z.infer<typeof bindResultSchema>;
+export const readBindResult = (value: unknown) => bindResultSchema.parse(value);
+
+/** What the history rows say about each stored result, in the same plain wording as the live result. */
+export function historyState(record: AuthorityHistoryRecord): AuthorityStateView {
+  return authorityState({
+    revision_id: 1,
+    mode: record.mode,
+    current: record.evaluation,
+  });
 }
 
 /** The single plain-language state a person sees for one quotation. */
@@ -545,6 +704,105 @@ export function mockConfiguration(
       },
     ],
     revocations: [],
+    truncated: false,
+    ...overrides,
+  };
+}
+
+export function mockHistoryPage(
+  overrides: Partial<AuthorityHistoryPage> = {},
+): AuthorityHistoryPage {
+  return {
+    revision_id: 12,
+    mode: "ENFORCE",
+    page: 1,
+    per_page: 25,
+    total: 2,
+    records: [
+      {
+        id: 9,
+        actor_id: 21,
+        mode: "ENFORCE",
+        input_generation: 5,
+        recorded_at: "2026-11-09T08:30:00Z",
+        evaluation: mockEvaluation(),
+      },
+      {
+        id: 4,
+        actor_id: 21,
+        mode: "SHADOW",
+        input_generation: 3,
+        recorded_at: "2026-11-08T07:00:00Z",
+        evaluation: mockEvaluation({
+          result: "ROUTINE",
+          reasons: [],
+          required_band: null,
+          reduction_amount: "30.0000",
+          final_net_amount: "970.0000",
+          document_percent_exact: "3.0000",
+        }),
+      },
+    ],
+    ...overrides,
+  };
+}
+export function mockReferenceConfiguration(
+  overrides: Partial<ReferenceConfiguration> = {},
+): ReferenceConfiguration {
+  return {
+    generation: 6,
+    mode: "OFF",
+    references: [
+      {
+        id: 11,
+        code: "demo-only-price-list",
+        version_no: 1,
+        source_kind: "PRICE_LIST",
+        source_key: "DEMO ONLY list",
+        source_version: "2026-11",
+        family_id: null,
+        customer_id: null,
+        item_id: 31,
+        manual_measure: null,
+        uom_id: 4,
+        currency_id: 1,
+        unit_price: "100.0000",
+        effective_from: "2026-11-01",
+        effective_to: null,
+        priority: 0,
+        proposed_by: 5,
+        reason: "DEMO ONLY illustrative reference",
+      },
+      {
+        id: 12,
+        code: "demo-only-baseline",
+        version_no: 1,
+        source_kind: "PROJECT_BASELINE",
+        source_key: "DEMO ONLY baseline",
+        source_version: "1",
+        family_id: 3,
+        customer_id: null,
+        item_id: null,
+        manual_measure: "per square metre",
+        uom_id: null,
+        currency_id: 1,
+        unit_price: "250.0000",
+        effective_from: "2026-11-01",
+        effective_to: "2026-12-31",
+        priority: 1,
+        proposed_by: 5,
+        reason: "DEMO ONLY proposed baseline",
+      },
+    ],
+    approvals: [
+      {
+        id: 2,
+        reference_id: 11,
+        approved_by: 6,
+        reason: "DEMO ONLY independent review",
+        recorded_at: "2026-11-02T08:00:00Z",
+      },
+    ],
     truncated: false,
     ...overrides,
   };

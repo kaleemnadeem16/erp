@@ -1,5 +1,6 @@
 import { quotationDevModeEnabled } from "../../lib/quotation-dev-mode";
 import {
+  QUOTATION_PREPARE,
   QUOTATION_UI_ENABLED,
   QUOTATION_VIEW,
 } from "../quotations/quotation-access";
@@ -7,6 +8,7 @@ import {
 /** Staged duties (server: PermissionVocabulary). Neither is granted to anyone by the screens. */
 export const FINANCIAL_CONFIGURE = "sales.financial.configure";
 export const AUTHORITY_EVIDENCE_VIEW = "sales.discount-authority.evidence.view";
+export const PRICE_REFERENCE_APPROVE = "sales.pricing.reference.approve";
 
 /**
  * Presentation gate for the discount authority screens. Same pattern as the other quotation duties: the production constant
@@ -25,5 +27,15 @@ export function discountAuthorityAccess(
       enabled &&
       permissions.has(QUOTATION_VIEW) &&
       permissions.has(AUTHORITY_EVIDENCE_VIEW),
+    /** Price references: proposing needs the configuration duty; approving is a separate, independent duty. Either may open the screen. */
+    referencePropose: enabled && permissions.has(FINANCIAL_CONFIGURE),
+    referenceApprove: enabled && permissions.has(PRICE_REFERENCE_APPROVE),
+    references:
+      enabled &&
+      (permissions.has(FINANCIAL_CONFIGURE) ||
+        permissions.has(PRICE_REFERENCE_APPROVE)),
+    /** Capturing a draft's references: prepare with the independent quotation view (as the server requires). */
+    bind:
+      enabled && permissions.has(QUOTATION_VIEW) && permissions.has(QUOTATION_PREPARE),
   };
 }

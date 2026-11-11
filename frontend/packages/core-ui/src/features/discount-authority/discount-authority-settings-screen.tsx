@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Link } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PageHeader } from "../../components/page/page-header";
 import { ScreenTemplate } from "../../components/page/screen-template";
@@ -13,6 +14,7 @@ import { StatusBadge } from "../../components/ui/status-badge";
 import { describeLoadError, shouldRetryQuery } from "../../lib/api-errors";
 import { formatDate, formatDateTime } from "../../lib/format-date";
 import { AccessDenied } from "../../routes/permission-route";
+import { useCompanyToday } from "../company/company-calendar";
 import { useAuthStore } from "../../stores/auth-store";
 import { IntentKey } from "../quotations/request-key";
 import { discountAuthorityAccess } from "./discount-authority-access";
@@ -37,16 +39,6 @@ import {
   ReasonDialog,
   type ReasonAction,
 } from "./discount-authority-forms";
-
-/** The company's calendar day (Asia/Karachi), not the browser's or UTC's. */
-export function companyToday(now: Date = new Date()): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Karachi",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now);
-}
 
 function DemoBadge({ text }: { text: string | null | undefined }) {
   return isDemoOnly(text) ? <StatusBadge tone="pending">Demo only</StatusBadge> : null;
@@ -124,6 +116,8 @@ function PolicyCard({
 export function DiscountAuthorityView({
   config,
   people,
+  today,
+  referencesTo,
   mayWrite,
   busy = false,
   onNewPolicy,
@@ -133,6 +127,10 @@ export function DiscountAuthorityView({
 }: {
   config: AuthorityConfiguration;
   people: Person[] | null;
+  /** The company's calendar day, for "expired" and "starts later". */
+  today: string;
+  /** Where the price references screen is, when this person may open it. */
+  referencesTo?: string;
   mayWrite: boolean;
   busy?: boolean;
   onNewPolicy?: () => void;
@@ -148,7 +146,6 @@ export function DiscountAuthorityView({
   const nameOf = (id: number) => people?.find((p) => p.id === id)?.name ?? `Person #${id}`;
   const noBands = config.bands.length === 0;
   const noActivated = config.policies.every((p) => !activations.has(p.id));
-  const today = companyToday();
   return (
     <DetailPageLayout>
       <DetailSection title="Status" fullWidth>
@@ -179,6 +176,13 @@ export function DiscountAuthorityView({
           <p className="col-span-full text-sm" role="note">
             Only the newest 100 records of each list are shown.
           </p>
+        )}
+        {referencesTo && (
+          <div className="col-span-full">
+            <Link className="ui-link-action inline-flex min-h-11 items-center" to={referencesTo}>
+              Price references
+            </Link>
+          </div>
         )}
         {!mayWrite && (
           <p className="col-span-full text-sm" role="note">
@@ -305,7 +309,12 @@ export function DiscountAuthoritySettingsScreen({
         description="Who may clear or approve how much discount on a quotation. Off unless the company switches it on."
         backTo="/settings"
       />
-      <GatedConfiguration key={String(user?.id)} gateway={gateway} actorId={user?.id} />
+      <GatedConfiguration
+        key={String(user?.id)}
+        gateway={gateway}
+        actorId={user?.id}
+        referencesTo={access.references ? "/settings/discount-authority/references" : undefined}
+      />
     </ScreenTemplate>
   );
 }
@@ -313,11 +322,14 @@ export function DiscountAuthoritySettingsScreen({
 function GatedConfiguration({
   gateway,
   actorId,
+  referencesTo,
 }: {
   gateway: DiscountAuthorityGateway;
   actorId: number | string | undefined;
+  referencesTo?: string;
 }) {
   const client = useQueryClient();
+  const today = useCompanyToday();
   const [sheet, setSheet] = useState<Sheet>(null);
   const [reasonAction, setReasonAction] = useState<ReasonAction | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -333,6 +345,19 @@ function GatedConfiguration({
   const people = useQuery({
     queryKey: ["discount-authority-people", actorId ?? "fixture"],
     queryFn: () => gateway.people(),
+    enabled: sheet === "assignment",
+    retry: false,
+  });
+  // Role and unit names are a convenience: each may be unavailable to this person, and the form then asks for a reference number.
+  const roles = useQuery({
+    queryKey: ["discount-authority-roles", actorId ?? "fixture"],
+    queryFn: () => gateway.roles(),
+    enabled: sheet === "assignment",
+    retry: false,
+  });
+  const units = useQuery({
+    queryKey: ["discount-authority-units", actorId ?? "fixture"],
+    queryFn: () => gateway.units(),
     enabled: sheet === "assignment",
     retry: false,
   });
@@ -398,6 +423,8 @@ function GatedConfiguration({
       <DiscountAuthorityView
         config={data}
         people={people.data ?? null}
+        today={today}
+        referencesTo={referencesTo}
         mayWrite
         busy={busy}
         onNewPolicy={() => { createPolicy.reset(); setNotice(null); setSheet("policy"); }}
@@ -407,7 +434,7 @@ function GatedConfiguration({
       />
       {sheet === "policy" && (
         <PolicyVersionSheet
-          today={companyToday()}
+          today={today}
           pending={createPolicy.isPending}
           error={createPolicy.error}
           onClose={() => setSheet(null)}
@@ -416,10 +443,12 @@ function GatedConfiguration({
       )}
       {sheet === "assignment" && (
         <AssignmentSheet
-          today={companyToday()}
+          today={today}
           bands={data.bands}
           policies={data.policies}
           people={people.isError ? null : (people.data ?? null)}
+          roles={roles.isError ? null : (roles.data ?? null)}
+          units={units.isError ? null : (units.data ?? null)}
           pending={assign.isPending}
           error={assign.error}
           onClose={() => setSheet(null)}
@@ -433,7 +462,7 @@ function GatedConfiguration({
         onClose={() => setReasonAction(null)}
         onConfirm={(reason) => {
           if (reasonAction?.kind === "activate") activate.mutate({ policyId: reasonAction.policy.id, reason });
-          else if (reasonAction) revoke.mutate({ assignmentId: reasonAction.assignmentId, reason });
+          else if (reasonAction?.kind === "revoke") revoke.mutate({ assignmentId: reasonAction.assignmentId, reason });
         }}
       />
     </>

@@ -26,6 +26,8 @@ import {
 import { IntentKey } from "./request-key";
 import { QuotationScreenShell } from "./quotation-screen-shell";
 import { QuotationDiscountAuthorityPanel } from "../discount-authority/quotation-discount-authority-panel";
+import { BindQuotationReferencesAction } from "../discount-authority/quotation-bind-references-action";
+import type { QuotationAuthorityGateway } from "../discount-authority/discount-authority-contract";
 import { liveIssueGateway } from "./quotation-live-gateways";
 import { AccessDenied } from "../../routes/permission-route";
 import { useAuthStore } from "../../stores/auth-store";
@@ -304,9 +306,11 @@ export function QuotationIssuedView({
 export function QuotationIssueScreen({
   revisionId,
   gateway = liveIssueGateway,
+  authorityGateway,
 }: {
   revisionId: number;
   gateway?: QuotationIssueGateway;
+  authorityGateway?: QuotationAuthorityGateway;
 }) {
   const user = useAuthStore((s) => s.user);
   const access = quotationMilestoneAccess(
@@ -334,6 +338,7 @@ export function QuotationIssueScreen({
       <GatedIssue
         revisionId={revisionId}
         gateway={gateway}
+        authorityGateway={authorityGateway}
         mayIssue={access.issue}
         mayReadiness={access.readiness}
         documentsTo={
@@ -350,6 +355,7 @@ export function QuotationIssueScreen({
 function GatedIssue({
   revisionId,
   gateway,
+  authorityGateway,
   mayIssue,
   mayReadiness,
   documentsTo,
@@ -357,6 +363,7 @@ function GatedIssue({
 }: {
   revisionId: number;
   gateway: QuotationIssueGateway;
+  authorityGateway?: QuotationAuthorityGateway;
   mayIssue: boolean;
   mayReadiness: boolean;
   documentsTo?: string;
@@ -463,7 +470,12 @@ function GatedIssue({
         rechecking={readiness.isFetching}
         approvalTo={approvalTo}
       />
-      <QuotationDiscountAuthorityPanel revisionId={revisionId} />
+      <QuotationDiscountAuthorityPanel revisionId={revisionId} gateway={authorityGateway} />
+      <BindQuotationReferencesAction
+        revisionId={revisionId}
+        expectedGeneration={reviewed.input_generation}
+        gateway={authorityGateway}
+      />
       {mayIssue && (
         <IssueConfirmDialog
           open={confirming}

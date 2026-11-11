@@ -16,16 +16,25 @@ import {
 } from "../../components/ui/dialog";
 import { getApiReasonCode, isApiError } from "../../lib/api-errors";
 import {
+  CustomerCombobox,
+  ItemCombobox,
+  UomCombobox,
+} from "../../components/lookups/entity-comboboxes";
+import {
   AUTHORITY_REFUSALS,
   ENFORCEMENT_LABEL,
   OPERATION_LABEL,
   PURPOSE_LABEL,
+  SOURCE_KIND_LABEL,
   isDemoOnly,
   type AssignmentInput,
+  type Currency,
   type DiscountBand,
   type DiscountPolicy,
   type Person,
   type PolicyInput,
+  type PriceReference,
+  type ReferenceInput,
 } from "./discount-authority-contract";
 import {
   CEILINGS,
@@ -33,11 +42,14 @@ import {
   emptyAssignmentForm,
   emptyBand,
   emptyPolicyForm,
+  emptyReferenceForm,
   validateAssignmentForm,
   validatePolicyForm,
+  validateReferenceForm,
   type AssignmentForm,
   type FormErrors,
   type PolicyForm,
+  type ReferenceForm,
 } from "./discount-authority-form-model";
 
 /** The reason shown for a refused configuration write; only the stable code decides the text. */
@@ -259,6 +271,8 @@ export function AssignmentSheet({
   bands,
   policies,
   people,
+  roles = null,
+  units = null,
   pending,
   error,
   onSubmit,
@@ -269,6 +283,9 @@ export function AssignmentSheet({
   policies: DiscountPolicy[];
   /** null while unavailable: the form then asks for a reference number. */
   people: Person[] | null;
+  /** Named roles and organisation units; null when the lookup is not available to this person, then a reference number is asked for. */
+  roles?: Person[] | null;
+  units?: Person[] | null;
   pending: boolean;
   error: unknown;
   onSubmit: (input: AssignmentInput, reason: string) => void;
@@ -333,11 +350,25 @@ export function AssignmentSheet({
           <Field id={`${uid}-to`} label="Effective to (optional)" error={errors.effective_to}>
             <DateField id={`${uid}-to`} value={form.effective_to} aria-invalid={!!errors.effective_to} onChange={(v) => set("effective_to", v)} />
           </Field>
-          <Field id={`${uid}-role`} label="Only in role (optional)" error={errors.role_id} hint="Role reference number.">
-            <Input id={`${uid}-role`} inputMode="numeric" value={form.role_id} aria-invalid={!!errors.role_id} onChange={(e) => set("role_id", e.target.value)} />
+          <Field id={`${uid}-role`} label="Only in role (optional)" error={errors.role_id} hint={roles === null ? "The list of roles is not available to you. Enter the role’s reference number." : undefined}>
+            {roles === null ? (
+              <Input id={`${uid}-role`} inputMode="numeric" value={form.role_id} aria-invalid={!!errors.role_id} onChange={(e) => set("role_id", e.target.value)} />
+            ) : (
+              <select id={`${uid}-role`} className={selectClass} value={form.role_id} aria-invalid={!!errors.role_id} onChange={(e) => set("role_id", e.target.value)}>
+                <option value="">Any role</option>
+                {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+              </select>
+            )}
           </Field>
-          <Field id={`${uid}-unit`} label="Only in unit (optional)" error={errors.unit_id} hint="Organisation unit reference number.">
-            <Input id={`${uid}-unit`} inputMode="numeric" value={form.unit_id} aria-invalid={!!errors.unit_id} onChange={(e) => set("unit_id", e.target.value)} />
+          <Field id={`${uid}-unit`} label="Only in unit (optional)" error={errors.unit_id} hint={units === null ? "The list of units is not available to you. Enter the unit’s reference number." : undefined}>
+            {units === null ? (
+              <Input id={`${uid}-unit`} inputMode="numeric" value={form.unit_id} aria-invalid={!!errors.unit_id} onChange={(e) => set("unit_id", e.target.value)} />
+            ) : (
+              <select id={`${uid}-unit`} className={selectClass} value={form.unit_id} aria-invalid={!!errors.unit_id} onChange={(e) => set("unit_id", e.target.value)}>
+                <option value="">Any unit</option>
+                {units.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+              </select>
+            )}
           </Field>
         </div>
         <Field id={`${uid}-reason`} label="Reason" error={errors.reason}>
@@ -351,7 +382,8 @@ export function AssignmentSheet({
 
 export type ReasonAction =
   | { kind: "activate"; policy: DiscountPolicy }
-  | { kind: "revoke"; assignmentId: number; who: string };
+  | { kind: "revoke"; assignmentId: number; who: string }
+  | { kind: "approve"; reference: PriceReference };
 
 /** Confirm activating a version or revoking an assignment, with the reason the server records. */
 export function ReasonDialog({
@@ -372,7 +404,13 @@ export function ReasonDialog({
   const copy =
     action === null
       ? null
-      : action.kind === "activate"
+      : action.kind === "approve"
+        ? {
+            title: `Approve ${action.reference.code} version ${action.reference.version_no}?`,
+            body: `This makes the price ${action.reference.unit_price} the trusted reference for the quotations it covers${isDemoOnly(action.reference.reason) ? " (demonstration data)" : ""}. It must be approved by someone other than the person who proposed it, it can’t be edited, and it has no effect while discount authority is switched off.`,
+            confirm: "Approve reference",
+          }
+        : action.kind === "activate"
         ? {
             title: `Activate ${action.policy.code} version ${action.policy.version_no}?`,
             body: `This version becomes the one used for quotations it covers${isDemoOnly(action.policy.reason) ? " (demonstration data)" : ""}. It has no effect while discount authority is switched off, and it can’t be edited later.`,
@@ -417,5 +455,121 @@ export function ReasonDialog({
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** Propose a governed price reference. It stays unusable until someone other than the proposer approves it. */
+export function ReferenceSheet({
+  today,
+  currencies,
+  pending,
+  error,
+  onSubmit,
+  onClose,
+}: {
+  today: string;
+  /** null while unavailable: the form then asks for a reference number. */
+  currencies: Currency[] | null;
+  pending: boolean;
+  error: unknown;
+  onSubmit: (input: ReferenceInput, reason: string) => void;
+  onClose: () => void;
+}) {
+  const uid = useId();
+  const [form, setForm] = useState<ReferenceForm>(() => emptyReferenceForm(today));
+  const [errors, setErrors] = useState<FormErrors>({});
+  const set = <K extends keyof ReferenceForm>(key: K, value: ReferenceForm[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+  const manual = form.basis === "manual";
+  return (
+    <RecordSheet
+      title="Propose a price reference"
+      description="The trusted price a discount is measured against. It can’t be edited after it is saved, and it only counts once someone other than you approves it."
+      size="lg"
+      dismissOnOutsideClick={false}
+      onClose={onClose}
+    >
+      <form
+        noValidate
+        className="space-y-4 p-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const result = validateReferenceForm(form);
+          if ("errors" in result) {
+            setErrors(result.errors);
+            return;
+          }
+          setErrors({});
+          onSubmit(result.input, result.reason);
+        }}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field id={`${uid}-code`} label="Reference code" error={errors.code} hint="Reuse a code to add a new version of the same reference.">
+            <Input id={`${uid}-code`} value={form.code} maxLength={80} aria-invalid={!!errors.code} onChange={(e) => set("code", e.target.value)} />
+          </Field>
+          <Field id={`${uid}-kind`} label="Source" error={errors.source_kind}>
+            <select id={`${uid}-kind`} className={selectClass} value={form.source_kind} aria-invalid={!!errors.source_kind} onChange={(e) => set("source_kind", e.target.value as ReferenceForm["source_kind"])}>
+              {Object.entries(SOURCE_KIND_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </Field>
+          <Field id={`${uid}-key`} label="Source document" error={errors.source_key} hint="For example the price list or agreement number.">
+            <Input id={`${uid}-key`} value={form.source_key} maxLength={160} aria-invalid={!!errors.source_key} onChange={(e) => set("source_key", e.target.value)} />
+          </Field>
+          <Field id={`${uid}-version`} label="Source version" error={errors.source_version}>
+            <Input id={`${uid}-version`} value={form.source_version} maxLength={80} aria-invalid={!!errors.source_version} onChange={(e) => set("source_version", e.target.value)} />
+          </Field>
+          <Field id={`${uid}-basis`} label="Priced by">
+            <select id={`${uid}-basis`} className={selectClass} value={form.basis} onChange={(e) => set("basis", e.target.value as ReferenceForm["basis"])}>
+              <option value="item">An item</option>
+              <option value="manual">A manual measure (project baseline)</option>
+            </select>
+          </Field>
+          {manual ? (
+            <Field id={`${uid}-measure`} label="Measure" error={errors.manual_measure} hint="For example per square metre.">
+              <Input id={`${uid}-measure`} value={form.manual_measure} maxLength={80} aria-invalid={!!errors.manual_measure} onChange={(e) => set("manual_measure", e.target.value)} />
+            </Field>
+          ) : (
+            <Field id={`${uid}-item`} label="Item" error={errors.item_id}>
+              <ItemCombobox id={`${uid}-item`} label="Item" value={form.item_id} aria-invalid={!!errors.item_id} onValueChange={(v) => set("item_id", v)} />
+            </Field>
+          )}
+          <Field id={`${uid}-uom`} label="Unit (optional)" error={errors.uom_id}>
+            <UomCombobox id={`${uid}-uom`} label="Unit" value={form.uom_id || "all"} allLabel="Any unit" onValueChange={(v) => set("uom_id", v === "all" ? "" : v)} />
+          </Field>
+          <Field id={`${uid}-customer`} label={form.source_kind === "CUSTOMER_AGREEMENT" ? "Customer" : "Customer (optional)"} error={errors.customer_id}>
+            <CustomerCombobox id={`${uid}-customer`} label="Customer" value={form.customer_id || (form.source_kind === "CUSTOMER_AGREEMENT" ? "" : "all")} allLabel={form.source_kind === "CUSTOMER_AGREEMENT" ? undefined : "No customer"} onValueChange={(v) => set("customer_id", v === "all" ? "" : v)} />
+          </Field>
+          <Field id={`${uid}-family`} label={manual ? "Quotation family" : "Quotation family (optional)"} error={errors.family_id} hint="Quotation family reference number; limits this reference to one quotation family.">
+            <Input id={`${uid}-family`} inputMode="numeric" value={form.family_id} aria-invalid={!!errors.family_id} onChange={(e) => set("family_id", e.target.value)} />
+          </Field>
+          <Field id={`${uid}-currency`} label="Currency" error={errors.currency_id} hint={currencies === null ? "The list of currencies is not available to you. Enter the currency’s reference number." : undefined}>
+            {currencies === null ? (
+              <Input id={`${uid}-currency`} inputMode="numeric" value={form.currency_id} aria-invalid={!!errors.currency_id} onChange={(e) => set("currency_id", e.target.value)} />
+            ) : (
+              <select id={`${uid}-currency`} className={selectClass} value={form.currency_id} aria-invalid={!!errors.currency_id} onChange={(e) => set("currency_id", e.target.value)}>
+                <option value="">Choose a currency</option>
+                {currencies.map((c) => <option key={c.id} value={c.id}>{c.code} · {c.name}</option>)}
+              </select>
+            )}
+          </Field>
+          <Field id={`${uid}-price`} label="Unit price" error={errors.unit_price}>
+            <Input id={`${uid}-price`} inputMode="decimal" value={form.unit_price} aria-invalid={!!errors.unit_price} onChange={(e) => set("unit_price", e.target.value)} />
+          </Field>
+          <Field id={`${uid}-priority`} label="Priority" error={errors.priority} hint="Where two references cover the same line, the higher number is used.">
+            <Input id={`${uid}-priority`} inputMode="numeric" value={form.priority} aria-invalid={!!errors.priority} onChange={(e) => set("priority", e.target.value)} />
+          </Field>
+          <Field id={`${uid}-from`} label="Effective from" error={errors.effective_from}>
+            <DateField id={`${uid}-from`} value={form.effective_from} aria-invalid={!!errors.effective_from} onChange={(v) => set("effective_from", v)} />
+          </Field>
+          <Field id={`${uid}-to`} label="Effective to (optional)" error={errors.effective_to}>
+            <DateField id={`${uid}-to`} value={form.effective_to} aria-invalid={!!errors.effective_to} onChange={(v) => set("effective_to", v)} />
+          </Field>
+        </div>
+        <Field id={`${uid}-reason`} label="Reason" error={errors.reason}>
+          <Textarea id={`${uid}-reason`} value={form.reason} maxLength={1000} aria-required aria-invalid={!!errors.reason} onChange={(e) => set("reason", e.target.value)} />
+        </Field>
+        <FormActions pending={pending} error={error} onCancel={onClose} submitLabel="Save reference" />
+      </form>
+    </RecordSheet>
   );
 }
