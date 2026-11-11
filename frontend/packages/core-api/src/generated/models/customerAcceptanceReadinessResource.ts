@@ -4,11 +4,14 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { CustomerAcceptanceReadinessResourceNextActionsItem } from "./customerAcceptanceReadinessResourceNextActionsItem";
 
 export interface CustomerAcceptanceReadinessResource {
   acceptance_id: number;
   assessment_version: string;
   path: string;
   status: string;
+  preparation_ready: boolean;
   missing: string[];
+  next_actions: CustomerAcceptanceReadinessResourceNextActionsItem[];
 }

@@ -11,6 +11,7 @@ use App\Modules\Sales\Actions\PreviewCustomerAcceptance;
 use App\Modules\Sales\Actions\ReadCustomerAcceptance;
 use App\Modules\Sales\Actions\RecordCustomerAcceptance;
 use App\Modules\Sales\Http\Requests\CustomerDecision\AssessAcceptanceReadinessRequest;
+use App\Modules\Sales\Http\Requests\CustomerDecision\HandoverFields;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PreviewCustomerAcceptanceRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\RecordCustomerAcceptanceRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\ShowCustomerAcceptanceRequest;
@@ -68,7 +69,7 @@ final class CustomerAcceptanceController extends Controller
     /** Current readiness, separate from acceptance truth. No delivered target adapter in slice 2. */
     public function readiness(AssessAcceptanceReadinessRequest $request, int $acceptance, AssessAcceptanceReadiness $assess): CustomerAcceptanceReadinessResource
     {
-        return new CustomerAcceptanceReadinessResource($this->refusing(fn (): array => $assess($request->user(), $acceptance, (string) $request->input('path', 'SERVICE_JOB'))));
+        return new CustomerAcceptanceReadinessResource($this->refusing(fn (): array => $assess($request->user(), $acceptance, (string) $request->input('path', 'SERVICE_JOB'), HandoverFields::from($request))));
     }
 
     /**

@@ -69,7 +69,7 @@ return new class extends Migration
             $t->foreign('contact_id')->references('id')->on('party_contacts');
             $t->foreign('site_id')->references('id')->on('party_sites');
         });
-        DB::statement("ALTER TABLE handover_baselines ADD CONSTRAINT handover_baseline_shape CHECK (version=1 AND jsonb_typeof(operational_snapshot)='object' AND jsonb_exists_all(operational_snapshot, ARRAY['deliverable_identity','description','measure_id','quantity','completion_conditions']) AND operational_snapshot->'measure_id'='null'::jsonb AND operational_snapshot->'quantity'='null'::jsonb AND operational_snapshot->'completion_conditions'='null'::jsonb)");
+        DB::statement("ALTER TABLE handover_baselines ADD CONSTRAINT handover_baseline_shape CHECK (version=1 AND jsonb_typeof(operational_snapshot)='object' AND jsonb_exists_all(operational_snapshot, ARRAY['deliverable_identity','description','measure_id','quantity','completion_conditions','location_kind','instructions','contact','site']) AND (operational_snapshot - ARRAY['deliverable_identity','description','measure_id','quantity','completion_conditions','location_kind','instructions','contact','site'])='{}'::jsonb AND operational_snapshot->'measure_id'='null'::jsonb AND operational_snapshot->'quantity'='null'::jsonb AND operational_snapshot->'completion_conditions'='null'::jsonb)");
         Schema::create('handover_readiness_evidence', function (Blueprint $t): void {
             $t->id();
             $t->foreignId('company_id')->constrained();
@@ -80,7 +80,7 @@ return new class extends Migration
             $t->unique(['company_id', 'stage_id']);
             $t->foreign(['company_id', 'stage_id'])->references(['company_id', 'id'])->on('handover_stages');
         });
-        DB::statement("ALTER TABLE handover_readiness_evidence ADD CONSTRAINT handover_readiness_pending CHECK (assessment->>'status'='NOT_READY' AND assessment->>'assessment_version'='SERVICE_PREPARATION.1' AND jsonb_typeof(assessment->'missing')='array' AND jsonb_array_length(assessment->'missing')>0)");
+        DB::statement("ALTER TABLE handover_readiness_evidence ADD CONSTRAINT handover_readiness_pending CHECK (jsonb_exists_all(assessment, ARRAY['status','assessment_version','missing','preparation_ready','next_actions']) AND jsonb_typeof(assessment->'preparation_ready')='boolean' AND jsonb_typeof(assessment->'next_actions')='array' AND assessment->>'status'='NOT_READY' AND assessment->>'assessment_version'='SERVICE_PREPARATION.1' AND jsonb_typeof(assessment->'missing')='array' AND jsonb_array_length(assessment->'missing')>0)");
         DB::unprepared(<<<'SQL'
 CREATE OR REPLACE FUNCTION handover_preparation_parent_guard() RETURNS trigger LANGUAGE plpgsql AS $$
 DECLARE a record; l record; party bigint; expected_line bigint;

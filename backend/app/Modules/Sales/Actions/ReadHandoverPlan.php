@@ -37,7 +37,7 @@ final class ReadHandoverPlan
 
             return ['id' => $plan->id, 'acceptance_id' => $plan->acceptance_id, 'path' => $plan->path, 'prepared_by' => $plan->prepared_by, 'recorded_at' => $plan->recorded_at->toIso8601String(),
                 'allocation_id' => $a->id, 'stage_id' => $stage->id, 'baseline_id' => $baseline->id, 'issued_line_id' => $baseline->issued_line_id,
-                'state' => 'PREPARED', 'operational' => $baseline->operational_snapshot, 'readiness_at_preparation' => $evidence->assessment,
+                'state' => 'PREPARED', 'operational' => array_intersect_key($baseline->operational_snapshot, array_flip(['deliverable_identity', 'description', 'measure_id', 'quantity', 'completion_conditions', 'location_kind', 'instructions', 'contact', 'site'])), 'readiness_at_preparation' => $evidence->assessment,
                 'withheld' => ['commercial_prices', 'commercial_quantities', 'tax_fx_evidence', 'costs_and_margins'], 'release_performed' => false];
         });
     }

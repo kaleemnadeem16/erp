@@ -112,6 +112,54 @@ class HandoverActionsTest extends TestCase
         $this->prepare('one', 'expired');
     }
 
+    public function test_a_failure_after_the_baseline_rolls_back_the_whole_plan_and_receipt(): void
+    {
+        $p = $this->preview();
+        DB::unprepared("CREATE OR REPLACE FUNCTION test_handover_readiness_failure() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN RAISE EXCEPTION 'Synthetic final evidence failure' USING ERRCODE='23514'; END \$\$; CREATE TRIGGER test_handover_readiness_failure BEFORE INSERT ON handover_readiness_evidence FOR EACH ROW EXECUTE FUNCTION test_handover_readiness_failure()");
+        try {
+            $this->prepare('forced-failure', $p['preview_token']);
+            $this->fail('A final evidence failure must abort all earlier inserts.');
+        } catch (QueryException $e) {
+            $this->assertSame('23514', $e->errorInfo[0]);
+        }
+        foreach (['handover_plans', 'handover_allocations', 'handover_stages', 'handover_baselines', 'handover_readiness_evidence'] as $table) {
+            $this->assertDatabaseCount($table, 0);
+        }
+        $this->assertDatabaseMissing('sales_customer_decision_receipts', ['request_key' => 'forced-failure']);
+    }
+
+    public function test_populated_migration_refuses_backout_with_guards_intact(): void
+    {
+        $this->prepare('prepare', $this->preview()['preview_token']);
+        $migration = require database_path('migrations/2026_12_12_100000_create_service_handover_preparation.php');
+        try {
+            DB::transaction(fn () => $migration->down());
+            $this->fail('Preparation evidence cannot be discarded.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('separately approved backout', $e->getMessage());
+        }
+        $this->assertDatabaseCount('handover_plans', 1);
+    }
+
+    public function test_database_rejects_incomplete_readiness_and_extra_commercial_fields_in_operational_snapshot(): void
+    {
+        $this->prepare('prepare', $this->preview()['preview_token']);
+        $baseline = DB::table('handover_baselines')->first();
+        $snapshot = json_decode($baseline->operational_snapshot, true, 32, JSON_THROW_ON_ERROR);
+        $writes = [
+            fn () => DB::table('handover_readiness_evidence')->insert(['company_id' => 1, 'stage_id' => $baseline->stage_id, 'assessment' => '{}']),
+            fn () => DB::table('handover_baselines')->insert(['company_id' => 1, 'stage_id' => $baseline->stage_id, 'issued_line_id' => $baseline->issued_line_id, 'version' => 1, 'operational_snapshot' => json_encode($snapshot + ['unit_price' => '1.0000'], JSON_THROW_ON_ERROR)]),
+        ];
+        foreach ($writes as $write) {
+            try {
+                DB::transaction($write);
+                $this->fail('Invalid evidence must fail its CHECK, before uniqueness checks.');
+            } catch (QueryException $e) {
+                $this->assertSame('23514', $e->errorInfo[0]);
+            }
+        }
+    }
+
     public function test_expired_or_changed_input_review_is_refused(): void
     {
         $p = $this->preview();

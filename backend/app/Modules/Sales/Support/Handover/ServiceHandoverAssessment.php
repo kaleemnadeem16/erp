@@ -33,8 +33,8 @@ final class ServiceHandoverAssessment
             $this->sources->requirePreparation($s->line->source_kind, $inputs['path']);
         }
         $item = Item::withTrashed()->sharedLock()->find($s->line->item_id);
-        $contact = $inputs['contact_id'] === null ? null : PartyContact::withTrashed()->where('party_id', $s->case->party_id)->sharedLock()->find($inputs['contact_id']);
-        $site = $inputs['site_id'] === null ? null : PartySite::withTrashed()->where('party_id', $s->case->party_id)->sharedLock()->find($inputs['site_id']);
+        $contact = $inputs['contact_id'] === null ? null : PartyContact::withTrashed()->where('party_id', $s->case->party_id)->sharedLock()->findOrFail($inputs['contact_id']);
+        $site = $inputs['site_id'] === null ? null : PartySite::withTrashed()->where('party_id', $s->case->party_id)->sharedLock()->findOrFail($inputs['site_id']);
         $itemValid = $item !== null && $item->type === ItemType::Service && ! $item->is_stocked && $item->status === Status::Active && ! $item->trashed();
         $contactValid = $contact !== null && ! $contact->trashed() && (trim((string) $contact->email) !== '' || trim((string) $contact->phone) !== '');
         $siteValid = $site !== null && ! $site->trashed() && $site->status === Status::Active;

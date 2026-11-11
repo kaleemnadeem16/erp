@@ -4,8 +4,24 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
-import type { CustomerAcceptancesReadinessPath } from "./customerAcceptancesReadinessPath";
+import type { CustomerAcceptancesReadinessLocationKind } from "./customerAcceptancesReadinessLocationKind";
 
 export type CustomerAcceptancesReadinessParams = {
-  path?: CustomerAcceptancesReadinessPath;
+  /**
+   * @maxLength 30
+   */
+  path?: string;
+  location_kind?: CustomerAcceptancesReadinessLocationKind;
+  /**
+   * @minimum 1
+   */
+  contact_id?: number | null;
+  /**
+   * @minimum 1
+   */
+  site_id?: number | null;
+  /**
+   * @maxLength 2000
+   */
+  instructions?: string | null;
 };

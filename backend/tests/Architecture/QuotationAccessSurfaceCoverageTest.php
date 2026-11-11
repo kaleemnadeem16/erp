@@ -16,6 +16,9 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
     private const SURFACES = [
         'GET api/v1/quotations/{revision}/acceptance-preview' => ['PreviewCustomerAcceptance', 'lock', 'accept + decision.view + quotation.view', 'exact issued terms, opaque review', 'CustomerAcceptanceApiTest'],
         'POST api/v1/quotations/{revision}/acceptances' => ['RecordCustomerAcceptance', 'lock', 'accept + decision.view + quotation.view', 'acceptance identity receipt', 'CustomerAcceptanceApiTest'],
+        'GET api/v1/customer-acceptances/{acceptance}/handover-preview' => ['PreviewHandover', 'lock', 'handover.prepare + acceptance view + quotation view', 'permitted operational preview, pending readiness', 'HandoverApiTest'],
+        'POST api/v1/customer-acceptances/{acceptance}/handover-plans' => ['PrepareHandoverPlan', 'lock', 'handover.prepare + acceptance view + quotation view', 'plan receipt identity', 'HandoverApiTest'],
+        'GET api/v1/handover-plans/{plan}' => ['ReadHandoverPlan', 'lock', 'acceptance view + quotation view', 'immutable operational plan without token or commercial terms', 'HandoverApiTest'],
         'GET api/v1/quotations' => ['ListQuotations', 'queryFor', 'view', 'safe identities', 'QuotationListApiTest'],
         'POST api/v1/quotations' => ['CreateQuotationDraft', 'queryFor', 'prepare', 'receipt identity', 'QuotationDraftWriteApiTest'],
         'GET api/v1/quotations/{revision}' => ['ReadQuotationDraft', 'requireRevision', 'view', 'safe header', 'QuotationDraftReviewApiTest'],
@@ -49,7 +52,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
     {
         $found = [];
         foreach (app('router')->getRoutes() as $route) {
-            if (! str_starts_with($route->uri(), 'api/v1/quotations')) {
+            if (! preg_match('#^api/v1/(quotations(?:/|$)|customer-acceptances/\{acceptance\}/handover-|handover-plans(?:/|$))#', $route->uri())) {
                 continue;
             }
             foreach (array_diff($route->methods(), ['HEAD', 'OPTIONS']) as $method) {

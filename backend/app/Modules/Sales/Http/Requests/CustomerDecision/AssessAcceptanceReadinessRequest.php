@@ -9,6 +9,7 @@ final class AssessAcceptanceReadinessRequest extends ShowCustomerAcceptanceReque
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        return ['path' => ['sometimes', 'string', 'in:SERVICE_JOB,GOODS_ORDER']];
+        return ['path' => ['sometimes', 'string', 'max:30'], 'location_kind' => ['sometimes', 'string', 'in:UNKNOWN,REMOTE,ON_SITE'],
+            'contact_id' => ['nullable', 'integer', 'min:1'], 'site_id' => ['nullable', 'integer', 'min:1'], 'instructions' => ['sometimes', 'nullable', 'string', 'max:2000']];
     }
 }

@@ -100,3 +100,4 @@ export * from "./generated/discount-authority/discount-authority";
 export * from "./generated/quotation-document/quotation-document";
 export * from "./generated/customer-decision-case/customer-decision-case";
 export * from "./generated/customer-acceptance/customer-acceptance";
+export * from "./generated/handover-plan/handover-plan";
