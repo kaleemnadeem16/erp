@@ -324,7 +324,8 @@ class CustomerDecisionIntakeFoundationTest extends TestCase
     {
         $tables = collect(DB::select("select table_name from information_schema.tables where table_schema = 'public' and table_name like 'customer\\_decision%'"))->pluck('table_name')->sort()->values()->all();
         $this->assertSame(['customer_decision_cases', 'customer_decision_components', 'customer_decision_evidence'], $tables);
-        $this->assertSame([], DB::select("select table_name from information_schema.tables where table_schema = 'public' and table_name ~ '^customer_(acceptance|claim|entitlement|decision_receipt)'"), 'no acceptance, claim, entitlement or receipt table exists');
+        // Slice 2 (ADR 0183) added the gated acceptance storage; nothing else of that family exists: no entitlement table and no receipt table of this slice.
+        $this->assertSame(['customer_acceptance_lines', 'customer_acceptances', 'customer_claim_events'], collect(DB::select("select table_name from information_schema.tables where table_schema = 'public' and table_name ~ '^customer_(acceptance|claim|entitlement|decision_receipt)' order by 1"))->pluck('table_name')->all(), 'only the gated acceptance storage exists beside the intake tables');
         foreach ($tables as $table) {
             $columns = DB::table('information_schema.columns')->where('table_name', $table)->pluck('column_name')->all();
             $this->assertSame([], array_values(array_filter($columns, fn (string $c): bool => preg_match('/amount|price|cost|quantity|currency|digest|object|attachment|accepted|target|job_id|revision_id/', $c) === 1)), "{$table} carries no money, quantity, attachment, issued-source or target column");

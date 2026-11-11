@@ -46,6 +46,9 @@ test('changing whether a location counts needs a reason, is applied, and can be 
   await page.getByLabel('Why is this changing?').fill('End-to-end check: WIP is fit for use in this test');
   await page.getByRole('button', { name: 'Save rule' }).click();
   await expect(row.getByText('Counts as usable (marked)')).toBeVisible();
+  // The refreshed list can show the new mark a moment before the saved form closes itself; reopening in that gap
+  // would be closed again by the save finishing, so wait for the form to be gone first.
+  await expect(page.getByRole('form', { name: /Usable stock rule/ })).toHaveCount(0);
 
   await row.getByRole('button', { name: /Change usable stock rule/ }).click();
   await pickSelect(page, 'Stock in this location', 'Follow the location type (default)');

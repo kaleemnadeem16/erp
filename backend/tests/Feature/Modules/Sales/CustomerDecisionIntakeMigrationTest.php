@@ -44,6 +44,34 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
         return require base_path('database/migrations/2026_10_27_140000_create_customer_decision_intake_foundation.php');
     }
 
+    /**
+     * The later gated slices that reference the intake storage, in the order they were applied (acceptance, then the handover that references an acceptance). They roll back in reverse
+     * before the intake can, and apply again after it.
+     *
+     * @return list<object>
+     */
+    private function dependants(): array
+    {
+        return [
+            require base_path('database/migrations/2026_12_11_100000_create_customer_acceptance_foundation.php'),
+            require base_path('database/migrations/2026_12_12_100000_create_service_handover_preparation.php'),
+        ];
+    }
+
+    private function rollBackDependants(): void
+    {
+        foreach (array_reverse($this->dependants()) as $migration) {
+            $migration->down();
+        }
+    }
+
+    private function applyDependants(): void
+    {
+        foreach ($this->dependants() as $migration) {
+            $migration->up();
+        }
+    }
+
     /** @return list<string> */
     private function ourFunctions(): array
     {
@@ -91,8 +119,12 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
     {
         $migration = $this->migration();
         $this->assertInstalled();
+        $everything = $this->otherTriggers();
+        $this->assertNotEmpty($everything, 'there are existing guards to compare');
+        // The acceptance and handover storage reference the intake tables, so they roll back first (their own empty-store rollback) and are applied again last.
+        $this->rollBackDependants();
         $others = $this->otherTriggers();
-        $this->assertNotEmpty($others, 'there are existing guards to compare');
+        $this->assertNotEmpty($others);
         $families = DB::table('quotation_families')->count();
 
         $migration->down();
@@ -106,6 +138,9 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
         $migration->up();
         $this->assertInstalled();
         $this->assertSame($others, $this->otherTriggers(), 'nor by applying it again');
+
+        $this->applyDependants();
+        $this->assertSame($everything, $this->otherTriggers(), 'every guard, including the later slices, is back after the whole chain is applied again');
     }
 
     /** @return array<string, array{0: string}> */
@@ -134,17 +169,20 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
     public function test_nothing_outside_the_intake_storage_depends_on_it_so_it_can_always_be_rolled_back_on_its_own(): void
     {
         // Issue #101: a relationship from the receipts (or any other table) to the case table would make this rollback fail once that table exists. The receipt rule is a trigger on purpose.
-        $outside = DB::select("select conrelid::regclass::text as owner, conname from pg_constraint where contype = 'f' and confrelid::regclass::text like 'customer\\_decision\\_%' and conrelid::regclass::text not like 'customer\\_decision\\_%'");
-        $this->assertSame([], $outside, 'no foreign key from outside the intake storage may reference it');
+        // The only dependants are the later gated acceptance foundation's own two relationships; they are named so a new one cannot appear unnoticed, and they roll back first (below).
+        $outside = DB::select("select conrelid::regclass::text as owner, conname from pg_constraint where contype = 'f' and confrelid::regclass::text like 'customer\\_decision\\_%' and conrelid::regclass::text not like 'customer\\_decision\\_%' order by 1, 2");
+        $this->assertSame(['customer_acceptances.customer_acceptance_component_fk', 'customer_acceptances.customer_acceptance_evidence_fk'], array_map(fn (object $row): string => "{$row->owner}.{$row->conname}", $outside), 'only the acceptance foundation may reference the intake storage');
 
         $views = DB::select("select distinct v.relname from pg_depend d join pg_rewrite r on r.oid = d.objid join pg_class v on v.oid = r.ev_class join pg_class t on t.oid = d.refobjid where t.relname like 'customer\\_decision\\_%' and v.relname not like 'customer\\_decision\\_%'");
         $this->assertSame([], $views, 'no view may depend on the intake storage');
 
+        $this->rollBackDependants();
         $this->migration()->down();
         $this->assertUninstalled();
         $this->assertTrue(Schema::hasTable('sales_customer_decision_receipts'), 'the receipts sit outside and survive');
         $this->migration()->up();
         $this->assertInstalled();
+        $this->applyDependants();
     }
 
     public function test_the_migration_stamp_is_unique_and_sorts_after_everything_it_depends_on(): void

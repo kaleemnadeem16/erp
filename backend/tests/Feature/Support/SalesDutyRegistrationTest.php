@@ -297,6 +297,9 @@ class SalesDutyRegistrationTest extends TestCase
             'api/v1/quotations/{revision}/deliveries' => ['GET', 'HEAD', 'POST'],
             // Append a reasoned correction or withdrawal of a recorded delivery (default-deny, STAGED delivery.record): QuotationDeliveryCorrectionTest.
             'api/v1/quotations/{revision}/deliveries/{delivery}/correction' => ['POST'],
+            // Acceptance of an issued quotation (ADR 0183; default-deny, STAGED customer-decision.view + accept): CustomerAcceptanceApiTest.
+            'api/v1/quotations/{revision}/acceptance-preview' => ['GET', 'HEAD'],
+            'api/v1/quotations/{revision}/acceptances' => ['POST'],
         ];
 
         foreach (Route::getRoutes() as $route) {
