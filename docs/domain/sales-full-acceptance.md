@@ -5,7 +5,7 @@
 **Implemented locally, inactive (2026-11-11).** The screens are delivered (below) behind the quotation UI gate, which is off in production. No live duty registration,
 permission holder, development-preview activation or new demo grant. The owner authorised the
 backend under the [brief's provisional defaults](../phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).
-The earlier built/missing inventory in that brief is historical. Slices 3–4 are not implemented.
+The earlier built/missing inventory in that brief is historical. Service preparation backend is now [delivered inactive in slice 3](sales-service-handover-preparation.md); slice 4 remains unimplemented.
 
 ## Semantics and storage
 
@@ -81,11 +81,12 @@ No hidden competing identity or quantity appears in a refusal.
 
 ## Readiness and rollout
 
-Readiness is deliberately NOT_READY: SERVICE_JOB_ADAPTER_NOT_DELIVERED for SERVICE_JOB;
-HANDOVER_PATH_UNSUPPORTED for GOODS_ORDER. No receiver or source-support registry is delivered
-here. Site/contact/warehouse/cost and financial clearance are **not certified** by this assessment;
-path-specific checks arrive with the handover adapter in separately authorised slices. Accepted
-business remains valid and visible while readiness is outstanding.
+Readiness now uses the [slice-3 source-specific assessment](sales-service-handover-preparation.md):
+current service/contact/site facts and owning-domain next actions, with preparation_ready distinct
+from release readiness. Overall NOT_READY remains honest while canonical conditions, service-cost
+certainty, Inventory/Purchasing applicability and the Job receiver are undelivered. Goods remain
+pending; unsupported manual/Assembly paths are refused. Consent remains valid while readiness is
+outstanding; no financial clearance is implied.
 
 Holder recipe (not executed): separately review administrative evidence recorders and named sales
 acceptance approvers, their independent decision/Party/quotation reads and unrestricted decision
@@ -113,7 +114,7 @@ API limits the screens work around (no backend change): the issued read gives sc
 - Rollout: additive migration apply → rollback → re-apply passed; no activation or historical consent backfill.
 - UI/lookup/browser/phone/accessibility: delivered (see Screens); browser and unit specs cover gate, states, 320/390 px, light/dark and keyboard.
 - Demo: no new grant or acceptance seed, as required by inactive rollout.
-- Deferred: partial quantity, late reconciliation, corrections, claim release, evidence upload, handover and automatic WON.
+- Deferred: partial quantity, late reconciliation, corrections, claim release, evidence upload, handover release and automatic WON.
 
 ## Related
 

@@ -91,15 +91,17 @@ final class PermissionVocabulary
      */
     public const CUSTOMER_DECISION_EVIDENCE_RECORD = 'sales.customer-decision.evidence.record';
 
+    /** Prepare one immutable pending service plan; STAGED, no registration, grant, release or Job creation. */
+    public const HANDOVER_PREPARE = 'sales.handover.prepare';
+
+    /** Record full ordinary consent; STAGED, independent decision/source read still required. */
+    public const CUSTOMER_DECISION_ACCEPT = 'sales.customer-decision.accept';
+
     /**
      * Reading what was recorded for a customer (CA1 slice 1): the case list, the case with its components and the observation chain. STAGED exactly like the record duty: the read
      * Actions and routes exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates it. It is an independent right: recording does not imply
      * reading, and reading never implies recording. Not in `all()`.
      */
-    public const HANDOVER_PREPARE = 'sales.handover.prepare';
-
-    public const CUSTOMER_DECISION_ACCEPT = 'sales.customer-decision.accept';
-
     public const CUSTOMER_DECISION_VIEW = 'sales.customer-decision.view';
 
     /**

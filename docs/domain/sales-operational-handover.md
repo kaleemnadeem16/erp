@@ -2,7 +2,7 @@
 
 # Sales operational handover
 
-**2026-10-14 · ACCEPTED architecture (0131–0132 and 0136), SPECIFIED contracts; not IMPLEMENTED or VERIFIED.**
+**2026-10-14 · ACCEPTED architecture (0131–0132 and 0136), SPECIFIED contracts. Slice 3 service preparation backend is implemented locally and inactive (2026-11-11); release/receivers remain undelivered.**
 Accepted customer business feeds explicit operational allocations and stage-specific owning targets.
 These coordinate goods/services/projects without becoming a second commercial value ledger.
 No public surface or application implementation is authorised by this document.
@@ -160,7 +160,7 @@ reservation, production, work and actuals; Finance owns invoicing/payment/credit
 Required R5/R6 partial-family operations remain blocked until actual supported integrated adapters
 are delivered and verified under separate code authority; architecture acceptance alone is insufficient.
 
-## Slice 3 implementation in progress (2026-11-11)
+## Delivered: service preparation backend (slice 3, inactive, 2026-11-11)
 
 Five append-only tables now define inactive preparation: handover_plans (one per acceptance,
 private review token and exact inputs), handover_allocations (one full accepted line),
@@ -172,6 +172,8 @@ protect every table. Rollback locks first and refuses populated storage. All con
 on new tables; no historical violation needs registry entry. Receipts reuse the existing decision
 operation. [ADR 0184](../decisions/0184-prepare-pending-service-handovers-without-release.md)
 records scope and explicit unresolved release dependencies. No grants or activation.
+[Full backend contract](sales-service-handover-preparation.md) and
+[preparation journey](../journeys/prepare-service-handover.md) describe API, next actions and verification.
 
 ## Related
 

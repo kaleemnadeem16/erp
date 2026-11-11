@@ -1280,3 +1280,32 @@ Verification (ERP_AGENT=codex-ca2, wrapper/private databases, focused class filt
 Inactive append-only plan/allocation/stage/baseline/readiness storage with tenant/parent guards
 and deferred aggregate completeness. ADR 0184 records pending-plan semantics and source-owned
 release dependencies. No Job, release, grant, preview activation or demo grant.
+
+### 2026-11-11 — Service preparation slice 3 backend delivered inactive
+
+Five immutable tables/models; SERVICE_ITEM preparation registry; PreviewHandover,
+PrepareHandoverPlan, ReadHandoverPlan; real service/contact/site readiness with fact-owner next
+actions, one full root allocation and pending initial baseline. Three authenticated guarded
+routes, additive readiness inputs/results and generated client. Only sales.handover.prepare
+moves to STAGED; no registration/holder, dev-preview inclusion, demo grant, handover UI, Job,
+release, stock or finance writer. Receiver/conditions/cost/applicability contracts remain explicit
+missing prerequisites; preparation_ready never means overall READY. ADR 0184 and the brief
+record assumptions; [contract](domain/sales-service-handover-preparation.md) and
+[journey](journeys/prepare-service-handover.md) are the handoff. #74 still has its older register
+authorisation gate and refused a claim; the owner's direct task authorises these local commits.
+#69 and slice 4 were not changed.
+
+Checks (ERP_AGENT=codex-ca3, private wrapper databases, narrow class filters):
+- Final handover storage/Action/API/race run: 22 passed, 181 assertions, including real
+  two-session controls, concurrent preparation, both lifecycle orders, suspension/revocation
+  before decision/replay, and operational contact loss after preview.
+- Readiness plus acceptance regression: 20 passed, 110 assertions.
+- HTTP/route architecture: 13 passed, 305 assertions.
+- Required tenant/fence/duty/rollback-lock/route plus Action/race gates: 44 passed, 661
+  assertions; one existing rollout-document test skipped by its suite. No exemption added.
+- Migration fresh → rollback → re-apply passed, including the tightened JSON checks; populated
+  rollback refusal and final-evidence failure rollback passed.
+- Pint: 41 changed PHP files passed. Whole-project PHPStan passed; all three frontend
+  typechecks and Vite build passed. No hand-edited generated files; post-M4 codegen --check passed.
+- No browser tests apply to this backend-only task; no full backend suite, push or main change.
+Other agents' Inventory/security and acceptance-UI work remained separately owned and committed.

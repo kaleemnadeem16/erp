@@ -2,7 +2,7 @@
 
 # Customer acceptance and handover — design brief
 
-**2026-11-10 · DESIGN BRIEF. Plans the last Phase 4 feature; authorises no grant or activation.** Slice 1 was built on 2026-11-11 under the recommended defaults of section 12 (owner has not yet answered them): see [Sales customer decisions](../domain/sales-customer-decisions.md#delivered-record-what-the-customer-sent-acceptance-slice-1-2026-11-11). Backend slice 2 is implemented locally, inactive, without screens or acceptance demo grants; see [the backend contract](../domain/sales-full-acceptance.md). Slices 3-4 are not started.
+**2026-11-10 · DESIGN BRIEF. Plans the last Phase 4 feature; authorises no grant or activation.** Slice 1 was built on 2026-11-11 under the recommended defaults of section 12 (owner has not yet answered them): see [Sales customer decisions](../domain/sales-customer-decisions.md#delivered-record-what-the-customer-sent-acceptance-slice-1-2026-11-11). Backend slice 2 is implemented locally, inactive, without screens or acceptance demo grants; see [the backend contract](../domain/sales-full-acceptance.md). Slice 3 preparation backend is implemented locally and inactive ([contract](../domain/sales-service-handover-preparation.md)); slice 4 is not started.
 It does not re-decide anything accepted. The business rules are already settled in
 [ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md),
 [0125–0127](../decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md),
@@ -240,6 +240,14 @@ holds, claim release, evidence file upload (needs the shared file foundation).
 8. Missing claim heads are created lazily with zero consumption and `BASELINE_CAPTURED`, never backdated consent.
 9. Future release uses a single sensitive duty by default; no release or approval policy is implemented here.
 10. Intake and acceptance stay STAGED pending combined owner rollout; the new accept duty is excluded from dev preview and receives no demo grants.
+
+Slice 3 continues defaults 1–10 unchanged. In particular, **6** means SERVICE_ITEM → SERVICE_JOB
+preparation only, goods remain pending with no Order target; **9** means a future single sensitive
+release duty, without universal shared Approvals. No release, Job, grants or preview activation
+are added. Plan reads reuse acceptance-view rules as the owner requested; only
+`sales.handover.prepare` moves to STAGED. Remote/on-site operational context does not invent
+commercial conditions, service cost or verified Inventory/Purchasing non-applicability; absent
+source/receiver contracts remain explicit pending facts. These assumptions remain overridable.
 
 ## Related
 

@@ -178,7 +178,20 @@ case component, from frozen issued terms, with DecisionActor, opaque review, exi
 receipts and atomic root/choice claims. `ReadCustomerAcceptance` and `AssessAcceptanceReadiness`
 provide safe detail and pending readiness. `QuotationAcceptanceState` now reads real immutable
 acceptances, so withdraw/replace refuse after consent. Four guarded routes and the generated
-client are delivered; no screen, duty registration/holder, dev-preview activation, demo grant
-or handover. [Backend contract](../../../../docs/domain/sales-full-acceptance.md),
+client are delivered; no duty registration/holder, dev-preview activation or demo grant.
+Acceptance screens are separately delivered; handover release remains absent. [Backend contract](../../../../docs/domain/sales-full-acceptance.md),
 [journey](../../../../docs/journeys/record-full-customer-acceptance.md) and
 [provisional defaults](../../../../docs/phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).
+
+## Service handover preparation (slice 3, inactive backend)
+
+`PreviewHandover`, `PrepareHandoverPlan`, `ReadHandoverPlan` and the real
+`AssessAcceptanceReadiness` use genuine full acceptance, source/contact/site facts, DecisionActor
+and existing decision receipts. Plans have one whole allocation, initial stage, immutable
+accepted-line baseline and explicit pending readiness; no target id or Job writer.
+`sales.handover.prepare` is STAGED and receives no registration, holder, dev-preview activation
+or demo grant; reading reuses independent acceptance/quotation view. Three guarded routes and
+the generated client are delivered. Overall readiness stays NOT_READY until canonical conditions,
+cost certainty, applicability ports and the Jobs receiver are delivered; preparation_ready never
+means release clearance. [Contract](../../../../docs/domain/sales-service-handover-preparation.md)
+and [journey](../../../../docs/journeys/prepare-service-handover.md).

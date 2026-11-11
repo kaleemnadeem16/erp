@@ -115,7 +115,8 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [documents.md](documents.md) | Accepted0137 shared template/page/artefact/file/recovery contracts and module adapter ownership; specified, not implemented |
 | [quotation-documents.md](quotation-documents.md) | Accepted R8 customer projection, templates, formal artefacts and storage/recovery; specified, not delivered |
 | [quotation-delivery-evidence.md](quotation-delivery-evidence.md) | Accepted R8 channel/recipient/retry evidence and R6 consent-method boundary; specified, not delivered |
-| [sales-operational-handover.md](sales-operational-handover.md) | Accepted R7 operational allocations, targets, baselines and bounded corrections; specified, not delivered |
+| [sales-service-handover-preparation.md](sales-service-handover-preparation.md) | Inactive backend service preparation, operational readiness, immutable plans and API; no release |
+| [sales-operational-handover.md](sales-operational-handover.md) | Accepted R7 operational allocations, targets, baselines and bounded corrections; service preparation delivered inactive, release undelivered |
 | [sales-full-acceptance.md](sales-full-acceptance.md) | Delivered inactive backend full-scope acceptance, policy, claim conservation, readiness and API |
 | [sales-customer-decisions.md](sales-customer-decisions.md) | Accepted R6 consent, immutable commitments, evidence, capacities and customer-decision Action contracts |
 | [crm-corrections.md](crm-corrections.md) | Accepted intake, enquiry corrections and historical responsibility evidence (specified, not implemented) |
