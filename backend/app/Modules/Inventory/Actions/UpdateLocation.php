@@ -12,6 +12,7 @@ use App\Modules\Inventory\Models\Location;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class UpdateLocation
@@ -28,7 +29,12 @@ final class UpdateLocation
         }
         $actorId = $actor->id;
 
-        return DB::transaction(function () use ($location, $attributes, $actorId): Location {
+        return DB::transaction(function () use ($location, $attributes, $actorId, $actor): Location {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.location.manage', 'edit a location');
+            if (array_key_exists('counts_as_usable', $attributes)) {
+                DecisionActor::require($actor, 'inventory.location-policy.manage', 'mark a location as usable or unusable');
+            }
             $structuredFields = ['parent_id', 'type', 'barcode', 'sort_order', 'allows_stock', 'counts_as_usable'];
             if (array_intersect(array_keys($attributes), $structuredFields) !== []) {
                 $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());

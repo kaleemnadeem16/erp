@@ -14,6 +14,7 @@ use App\Modules\Inventory\Models\WarehouseLocationAssignment;
 use App\Modules\Inventory\Support\InventoryLocationMode;
 use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class UpdateInventorySettings
@@ -63,7 +64,14 @@ final class UpdateInventorySettings
         }
         $actorId = $actor->id;
 
-        return DB::transaction(function () use ($attributes, $actorId, $reason): Company {
+        return DB::transaction(function () use ($attributes, $actorId, $reason, $actor): Company {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $fresh = DecisionActor::fresh($actor, 'change inventory settings');
+            foreach (self::GROUP_PERMISSIONS as $group => $permission) {
+                if (array_intersect(array_keys($attributes), self::POLICY_FIELD_GROUPS[$group]) !== [] && ! $fresh->hasPermissionTo($permission)) {
+                    throw new DomainInvariantException('The actor is not permitted to change the '.strtolower(str_replace('_', ' ', $group)).' policy.');
+                }
+            }
             $company = Company::query()->lockForUpdate()->findOrFail($this->companyContext->id());
 
             if ($company->inventory_location_mode === InventoryLocationMode::Structured

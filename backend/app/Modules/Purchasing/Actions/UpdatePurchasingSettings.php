@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Modules\Purchasing\Models\PurchasingPolicyChange;
 use App\Modules\Purchasing\Models\PurchasingSetting;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class UpdatePurchasingSettings
@@ -28,7 +29,13 @@ final class UpdatePurchasingSettings
         }
         $actorId = $actor->id;
 
-        return DB::transaction(function () use ($attributes, $actorId, $reason): PurchasingSetting {
+        return DB::transaction(function () use ($attributes, $actorId, $reason, $actor): PurchasingSetting {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            if (array_intersect(array_keys($attributes), self::POLICY_FIELDS) !== []) {
+                DecisionActor::require($actor, 'purchasing.over-receipt-policy.manage', 'change the over-receipt policy');
+            } else {
+                DecisionActor::fresh($actor, 'change purchasing settings');
+            }
             $settings = PurchasingSetting::query()->lockForUpdate()->firstOrCreate([]);
             // A row created just now carries only the columns the insert
             // named, so its database defaults have to be read back before

@@ -15,9 +15,9 @@
 | **BY DESIGN** | Behaves as the decision records say; a product decision, not a defect. | ADR |
 | **NOT TESTABLE** | Nothing to change mid-flight today. | Reason |
 
-Summary: rows 1 to 7, 10, 11, 15 and 17 are RESOLVED; row 9 is RESOLVED for the stock-moving and commitment Actions (9a) and for the process-opening, evidence-capture and draft Actions (9b), and OUTSTANDING only for settings, Purchasing FX reconciliation and master data (9c, tracked in #91); rows 12 to 14 and 16 are SAFE; row 18 is BY DESIGN with an open product question.
+Summary: rows 1 to 7, 9 (9a, 9b and 9c), 10, 11, 15 and 17 are RESOLVED; rows 12 to 14 and 16 are SAFE; row 18 is BY DESIGN with an open product question.
 
-## RESOLVED: rows 1 to 7, 9a and 9b (Purchasing and Inventory)
+## RESOLVED: rows 1 to 7, 9a, 9b and 9c (Purchasing and Inventory)
 
 Fix commits: `572bd1f2` (rows 1 to 7), `be9f8ea6` (row 9, stock and commitment batch).
 
@@ -27,7 +27,7 @@ Fix commits: `572bd1f2` (rows 1 to 7), `be9f8ea6` (row 9, stock and commitment b
 
 **Row 9b (process-opening, evidence capture and drafts).** The same pattern now covers groups 1 to 3 of the former list: `RequestStockRecalculation`, `RequestNegativeStockOverride`, `RequestInventoryCutoverNegativeOpening`, `ValidateInventoryCutover`, `CreateInventoryCutover`, `AttachInventoryCutoverBatch`; `RecordPackageCheckpoint`, `RecordPhysicalCountLine`, `RecordPhysicalCountComposition`, `AddPhysicalCountLine`, `RefreshPhysicalCountLine`, `RecordReceiptComposition`; `CreateSupplierReturn`, `UpdateSupplierReturn`, `CreateStockScrap`, `UpdateStockScrap`, `CancelStockScrap`, `CancelPhysicalCount`, `CreatePhysicalCount`, `CreateGoodsReceipt`, `UpdateGoodsReceipt`, `CreatePurchaseOrder` and `UpdatePurchaseOrder`. `RecordReceiptPackageEvidence` and `PackageCountCapture` have no transaction of their own and inherit the decision of the posting or count Action that calls them. Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityDraftRaceTest.php` (one Action per family: physical-count create and cancel with controls, cutover create, purchase-order edit; revoked duty and suspended actor). An edit now queues at the company access barrier like every other write, so `ApprovalDecisionAuthorityRaceTest` proves the pending-edit refusal before the staged decision instead of inside it. The other Actions share the same two-line change and the barrier staging, so the suite proves the mechanism rather than repeating it per Action.
 
-**OUTSTANDING: row 9c, Actions that still check only before their transaction** (tracking issue #91; no money, stock or process effect): `UpdatePurchasingSettings`, `UpdateInventorySettings`, `ReconcilePurchaseOrderFx` (Purchasing FX is owned by ADR 0165), and the master-data Create/Update/Archive Actions for items, categories, warehouses, locations, assignments, quantity units, item suppliers and supplier offers.
+**Row 9c (settings, FX reconciliation and master data).** The last Actions that only checked before their transaction now decide from the stored actor inside it, behind the company access barrier and before any row lock: `UpdatePurchasingSettings`, `UpdateInventorySettings` (each policy group's duty is re-checked on the fresh person), `ReconcilePurchaseOrderFx` (the fixed-rate override duty; ADR 0165 behaviour is unchanged), and the master-data Actions for items, categories, warehouses, locations, warehouse location roles, quantity units, item suppliers and supplier offers (create, update and archive; a ledger-mapping change keeps its own field duty). Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityMasterDataRaceTest.php` (warehouse edit, item-supplier archive, Purchasing policy, Inventory policy and fixed-rate override, each with a control; revoked duty and suspended actor). Master-data writes now queue at the access barrier like every other write.
 
 Behaviour note: every Action above now waits at the company access barrier like the first three, with the same one-second lock-wait bound. Concurrent use in the Purchasing and Inventory suites showed no new lock-wait timeout.
 
@@ -66,7 +66,7 @@ Statuses are defined in the legend at the top. The Evidence column names the com
 | 8 | `IssuePurchaseOrder`, `PostGoodsReceipt` | H2 record scope | NOT TESTABLE | Neither Action applies a record scope today. If one is added, check it inside the transaction | none | none |
 | 9a | Stock-moving and commitment Actions (shared `ActionAuthorization::require` callers) | H1 | **RESOLVED** | `be9f8ea6`; `DecisionTimeAuthorityStockRaceTest` (reversal, disposition, supplier return, scrap, order cancellation, each with control) | Same pattern as row 1 for every listed Action (see above) | Roll-out per module; no new lock-wait timeouts seen in the Purchasing and Inventory suites |
 | 9b | Process-opening, evidence-capture and draft Actions (Inventory and Purchasing) | H1 | **RESOLVED** | `DecisionTimeAuthorityDraftRaceTest` (physical-count create and cancel with controls, cutover create, purchase-order edit; revoked and suspended); the Inventory and Purchasing module suites pass | Same pattern as row 1; the early check stays as a fast refusal | Each Action now waits at the company access barrier, with the same one-second lock-wait bound |
-| 9c | Settings, FX reconciliation and master-data Actions | H1 | **OUTSTANDING** | Pre-check only; no money, stock or process effect. Tracking issue #91 | Apply `DecisionActor`; keep the cheap pre-check for early refusal | Wide: many callers |
+| 9c | Settings, FX reconciliation and master-data Actions | H1 | **RESOLVED** | `DecisionTimeAuthorityMasterDataRaceTest` (warehouse edit, item-supplier archive, Purchasing and Inventory policy, fixed-rate override; controls; revoked and suspended); the Inventory, Purchasing and Security suites pass | Same pattern as row 1; the early check stays as a fast refusal | Each Action now waits at the company access barrier, with the same one-second lock-wait bound |
 | 10 | `DecideApproval` | H4 approver permission removed | **RESOLVED** | `7390b9e2`; `ApprovalDecisionAuthorityRaceTest::test_approver_permission_revoked_while_waiting_records_no_decision` | See approval resolution above | One extra user read |
 | 11 | `DecideApproval` | H4 approver suspended | **RESOLVED** | `7390b9e2`; `test_approver_suspended_while_waiting_records_no_decision` | Same | Same |
 | 12 | `DecideApproval` | H4 approval authority (limit) revoked | **SAFE** | Authority is read from the database inside the transaction. Guard: `test_authority_revoked` | none | none |
@@ -111,7 +111,6 @@ the fresh read and the commit. Item 2 closes that last gap.
 
 ## Not covered
 
-* OUTSTANDING (#91): the Actions listed under "OUTSTANDING: row 9c" that still check only before their transaction. They share the same fix.
 * HTTP behaviour (middleware, tokens). Suspension deletes tokens and sessions, so a new request is
   refused; an already-running request is not interrupted.
 * Behaviour under a long lock wait on a busy production database; the tests stage the wait with a

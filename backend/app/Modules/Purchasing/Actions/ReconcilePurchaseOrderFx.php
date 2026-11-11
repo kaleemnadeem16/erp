@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Support\CompanyContext;
 use App\Support\RateType;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Brick\Math\Exception\MathException;
 use Brick\Math\RoundingMode;
@@ -61,7 +62,8 @@ final class ReconcilePurchaseOrderFx
         $reason = trim((string) ($header['fx_override_reason'] ?? ''));
         $departure = $governed === null ? 'No governed exchange rate is available to check it against' : "It differs from the governed rate {$governed->toScale(9)} by more than ".config('purchasing.fx.tolerance_percent').'%';
 
-        if ($policy !== PurchaseOrderFxPolicy::Fixed || ! $actor->can(self::OVERRIDE_PERMISSION)) {
+        // Only a fixed rate needs the override duty; it is decided from the stored actor (the calling Action runs inside its transaction, behind the access barrier).
+        if ($policy !== PurchaseOrderFxPolicy::Fixed || ! DecisionActor::fresh($actor, 'fix an exchange rate', 'fx_rate')->hasPermissionTo(self::OVERRIDE_PERMISSION)) {
             throw new DomainInvariantException("This exchange rate is not accepted. {$departure}. Use the governed rate; a contractually fixed rate must be entered by a person permitted to fix rates.", 'fx_rate', $governed === null ? 'FX_RATE_UNGOVERNED' : 'FX_RATE_OUTSIDE_TOLERANCE');
         }
         if (mb_strlen($reason) < (int) config('purchasing.fx.min_override_reason_length', 10)) {

@@ -12,6 +12,7 @@ use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\SupplierOffer;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use App\Rules\Support\CompanyScoped;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -35,7 +36,12 @@ final class MaintainSupplierOffer
             throw new DomainInvariantException('Offer maintenance requires supplier management and commercial access.');
         }
 
-        return DB::transaction(function () use ($input, $offer): SupplierOffer {
+        return DB::transaction(function () use ($input, $offer, $actor): SupplierOffer {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::requireAll($actor, ['purchasing.item-supplier.manage'], 'maintain supplier offers');
+            if (! PurchasingCommercialAccess::canView($actor)) {
+                throw new DomainInvariantException('The actor is not permitted to maintain supplier offers.');
+            }
             if ($offer) {
                 $offer = SupplierOffer::query()->lockForUpdate()->findOrFail($offer->id);
             }
