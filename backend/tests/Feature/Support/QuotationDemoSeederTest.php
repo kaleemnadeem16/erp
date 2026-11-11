@@ -31,5 +31,7 @@ class QuotationDemoSeederTest extends TestCase
         $admin = User::query()->where('email', config('demo.user.email'))->firstOrFail();
         $this->assertTrue($admin->hasPermissionTo(Sales::QUOTATION_ISSUE));
         $this->assertFalse(app(SalesDutyManifest::class)->isActive(Sales::QUOTATION_ISSUE), 'the staged duties are switched on only while seeding');
+        $this->assertTrue($admin->hasPermissionTo(Sales::CUSTOMER_DECISION_VIEW) && $admin->hasPermissionTo(Sales::CUSTOMER_DECISION_EVIDENCE_RECORD), 'the demo administrator can read and record customer messages');
+        $this->assertFalse(app(SalesDutyManifest::class)->isActive(Sales::CUSTOMER_DECISION_VIEW) || app(SalesDutyManifest::class)->isActive(Sales::CUSTOMER_DECISION_EVIDENCE_RECORD), 'and neither duty is live outside the seed');
     }
 }

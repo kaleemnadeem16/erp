@@ -4,24 +4,27 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Actions;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Models\CustomerDecisionCase;
 use App\Modules\Sales\Models\CustomerDecisionComponent;
-use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Models\QuotationLogicalScope;
+use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionAccess;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionOperation;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionOutcome;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionRefusal;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\SalesAccess;
 
 /**
  * Opens the shared intake case for what one customer Party sent (CA1): the verified intake identity (never a PO text alone) and, optionally, the components the customer's message
  * is about — each tied to an ORIGINAL logical quotation scope of a quotation family. It proves nothing about what was officially offered and records no consent. An intake identity
  * that already exists is never merged or reused: it is refused (`INTAKE_IDENTITY_EXISTS`) and stays pending for a person to resolve; the same request key replays the case it opened.
- * Guarded by `sales.customer-decision.evidence.record` (STAGED) and a currently active member, judged again inside the operation before any replay.
+ * Guarded by `sales.customer-decision.evidence.record` (STAGED) and a currently active member, judged again inside the operation (DecisionActor, under the company access fence) before any replay.
+ * Each component's family must be one the recorder may also see (`sales.quotation.view`).
  */
 final class OpenCustomerDecisionCase
 {
@@ -48,7 +51,7 @@ final class OpenCustomerDecisionCase
         $outcome = $this->operations->run(
             $actor, 'customer_decision.open_case', $requestKey, ['party_id' => $partyId, 'intake_identity' => $intakeIdentity, 'components' => array_values($normalised)],
             function () use ($actor): null {
-                $this->authorise($actor);
+                $this->decide($actor);
 
                 return null;
             },
@@ -60,7 +63,7 @@ final class OpenCustomerDecisionCase
                     throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::INTAKE_IDENTITY_EXISTS, 'That intake identity already exists; it is not merged automatically.', 'intake_identity');
                 }
                 foreach ($normalised as $component) {
-                    $this->assertOriginalScope($component['family_id'], $component['original_scope_anchor_id']);
+                    $this->assertOriginalScope($actor, $component['family_id'], $component['original_scope_anchor_id']);
                 }
                 $case = CustomerDecisionCase::create(['party_id' => $partyId, 'intake_identity' => $intakeIdentity, 'generation' => 0, 'recorded_by' => $actor->id, 'recorded_at' => now()]);
                 foreach ($normalised as $component) {
@@ -74,9 +77,15 @@ final class OpenCustomerDecisionCase
         return CustomerDecisionOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
     }
 
-    private function assertOriginalScope(int $familyId, int $scopeId): void
+    /** A component names a quotation family the recorder may independently see (`sales.quotation.view`); a hidden, foreign or unknown family is the same refusal. */
+    private function assertOriginalScope(User $actor, int $familyId, int $scopeId): void
     {
-        $scope = QuotationFamily::query()->whereKey($familyId)->exists()
+        try {
+            $visible = app(QuotationAccess::class)->queryFor($actor, [PermissionVocabulary::QUOTATION_VIEW])->where('quotation_families.id', $familyId)->exists();
+        } catch (DomainInvariantException) {
+            $visible = false;
+        }
+        $scope = $visible
             ? QuotationLogicalScope::query()->where('family_id', $familyId)->whereKey($scopeId)->first() : null;
         if ($scope === null || $scope->overlap_anchor_id !== null) {
             throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::INVALID_INPUT, 'A component is tied to an original scope of a quotation family.', 'components');
@@ -87,5 +96,11 @@ final class OpenCustomerDecisionCase
     {
         ActiveActor::require($actor, 'record customer decision evidence');
         SalesAccess::require($actor, PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, 'record customer decision evidence');
+    }
+
+    /** Inside the transaction, before any lock or receipt look-up: the access fence, then the person as stored now. */
+    private function decide(User $actor): void
+    {
+        CustomerDecisionAccess::decide($actor, PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, 'record customer decision evidence');
     }
 }

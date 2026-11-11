@@ -2,7 +2,7 @@
 
 # Sales customer decisions
 
-**2026-10-14 · ACCEPTED architecture, SPECIFIED contracts; NOT IMPLEMENTED or VERIFIED.**
+**2026-10-14 · ACCEPTED architecture, SPECIFIED contracts. Intake (CA1: the case, its components and the observation chain) is implemented with API and screens, gated and STAGED (2026-11-11); acceptance, claims, readiness and handover are NOT IMPLEMENTED or VERIFIED.**
 Governing ADRs: [0125](../decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md)
 (C1/C2/C3/C6/C8), [0126](../decisions/0126-conserve-acceptance-entitlements-and-allocation-evidence.md)
 (C4), [0127](../decisions/0127-record-customer-decision-evidence-and-atomic-business-claims.md)
@@ -188,6 +188,24 @@ authority and claims. Company/path method may require exact document/delivery; n
 portal or PDF receipt prerequisite displaces legitimate verified manual/PO consent. Binary upload/
 access and affected method integration still need actual secure R8 adapters and R9 grants/scope.
 Late/conflicting recognition retains CA5/R7 delivered-impact gates. Architecture is not verification.
+
+## Delivered: record what the customer sent (acceptance slice 1, 2026-11-11)
+
+Implemented, gated and STAGED: no one holds either duty, and the screens are hidden outside local development (same gate as the quotation screens). It records observations only: no
+consent, claim, acceptance, handover, readiness or quotation effect, and no file upload. The [design brief](../phases/phase-4-customer-acceptance-and-handover-design-brief.md) governs the order of slices.
+
+| Route (`auth:sanctum`) | Duty | Notes |
+|---|---|---|
+| `GET /customer-decision-cases` | `sales.customer-decision.view` | Paginated, newest first; `filter[search]` on the reference, `filter[party_id]`; Party name only where readable |
+| `GET /customer-decision-cases/{case}` | `sales.customer-decision.view` | Case, components (only families the viewer may also see; the rest counted), the whole observation chain, `consent_recorded: false` |
+| `POST /customer-decision-cases` | `sales.customer-decision.evidence.record` | `Idempotency-Key`; components need `sales.quotation.view` on their family; `INTAKE_IDENTITY_EXISTS` is 409, never merged |
+| `POST /customer-decision-cases/{case}/evidence` | `sales.customer-decision.evidence.record` | `Idempotency-Key` and `expected_generation`; a moved case is 409 `DECISION_CASE_STALE`; a time with no offset is read in the company (or stated) zone and stored as that instant |
+
+Both Actions decide the actor inside the transaction with `DecisionActor` (company access fence first, then the person reread as ACTIVE with fresh duties, then the Sales manifest and the duty's
+record scope: a limited scope fails closed), before any lock of the case or receipt look-up, so a suspended or stripped person is refused even when replaying. The read Actions do the same. A refusal
+before the case is looked up is the same 403 whether or not the case exists; another company's case is a plain 404. Reading and recording are independent duties; the UI offers recording only to a
+person who holds both. Screens: **Customer Messages** (list, search, open a case) and the case page (header, linked quotations, observation chain oldest first, add an observation in a sheet).
+Journey: [Record what the customer sent](../journeys/customer-messages.md).
 
 ## Related
 

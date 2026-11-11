@@ -40,7 +40,7 @@ class CustomerDecisionIntakeActionsTest extends TestCase
         $this->setUpIssuing();
         Permission::findOrCreate(PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, 'web');
         $this->recorder = User::factory()->create();
-        $this->recorder->givePermissionTo(PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD);
+        $this->recorder->givePermissionTo([PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, PermissionVocabulary::QUOTATION_VIEW]);
         $this->app->instance(SalesDutyManifest::class, new SalesDutyManifest(array_map(fn (SalesDuty $d): SalesDuty => in_array($d->name, [PermissionVocabulary::QUOTATION_PREPARE, PermissionVocabulary::QUOTATION_VIEW, PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD], true)
             ? new SalesDuty($d->name, $d->class, DutyStatus::Active, $d->operation, $d->projection, $d->deliveryGate) : $d, SalesDutyManifest::shipped()->all())));
     }
@@ -114,6 +114,17 @@ class CustomerDecisionIntakeActionsTest extends TestCase
         $this->assertSame('DECISION_CASE_STALE', $this->refusal(fn () => app(AppendCustomerDecisionEvidence::class)($this->recorder, 'e2', $case->caseId, 0, $this->observation())));
         $this->assertSame('REQUEST_KEY_REUSED', $this->refusal(fn () => app(AppendCustomerDecisionEvidence::class)($this->recorder, 'e1', $case->caseId, 0, $this->observation(['factual_description' => 'Different']))));
         $this->assertSame('DECISION_CASE_NOT_FOUND', $this->refusal(fn () => app(AppendCustomerDecisionEvidence::class)($this->recorder, 'e3', 999999, 0, $this->observation())));
+    }
+
+    public function test_a_time_with_an_offset_is_stored_as_the_same_instant_not_as_wall_clock_time_in_utc(): void
+    {
+        $case = app(OpenCustomerDecisionCase::class)($this->recorder, 'k1', $this->customer->id, 'PO-TZ');
+        app(AppendCustomerDecisionEvidence::class)($this->recorder, 'e1', $case->caseId, 0, $this->observation([
+            'occurrence_precision' => 'INTERVAL', 'occurred_at' => '2026-11-10 10:00:00+05', 'occurred_until' => '2026-11-10T12:30:00+05:00', 'source_timezone' => 'Asia/Karachi',
+        ]));
+
+        $evidence = CustomerDecisionEvidence::query()->sole();
+        $this->assertSame(['2026-11-10 05:00:00', '2026-11-10 07:30:00'], [$evidence->occurred_at->utc()->format('Y-m-d H:i:s'), $evidence->occurred_until->utc()->format('Y-m-d H:i:s')]);
     }
 
     public function test_a_later_version_names_one_earlier_observation_and_a_chain_never_forks(): void

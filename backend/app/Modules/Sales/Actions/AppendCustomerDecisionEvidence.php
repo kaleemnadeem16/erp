@@ -7,12 +7,14 @@ namespace App\Modules\Sales\Actions;
 use App\Models\User;
 use App\Modules\Sales\Models\CustomerDecisionCase;
 use App\Modules\Sales\Models\CustomerDecisionEvidence;
+use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionAccess;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionOperation;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionOutcome;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionRefusal;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\QueryException;
 
 /**
@@ -41,7 +43,7 @@ final class AppendCustomerDecisionEvidence
         $outcome = $this->operations->run(
             $actor, 'customer_decision.append_evidence', $requestKey, ['case_id' => $caseId, 'expected_generation' => $expectedGeneration, 'predecessor_id' => $predecessorId, 'evidence' => $fields],
             function () use ($actor, $caseId): CustomerDecisionCase {
-                $this->authorise($actor);
+                $this->decide($actor);
 
                 return CustomerDecisionCase::query()->whereKey($caseId)->lockForUpdate()->first()
                     ?? throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::CASE_NOT_FOUND, 'The decision case was not found.', 'case_id');
@@ -55,7 +57,7 @@ final class AppendCustomerDecisionEvidence
                     throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::EVIDENCE_PREDECESSOR_INVALID, 'A predecessor is an earlier observation of this case that has no successor yet.', 'predecessor_id');
                 }
                 try {
-                    $evidence = CustomerDecisionEvidence::create($fields + ['case_id' => $case->id, 'predecessor_id' => $predecessorId, 'observation_state' => 'OBSERVED', 'recorded_by' => $actor->id, 'recorded_at' => now()]);
+                    $evidence = CustomerDecisionEvidence::create($this->instants($fields) + ['case_id' => $case->id, 'predecessor_id' => $predecessorId, 'observation_state' => 'OBSERVED', 'recorded_by' => $actor->id, 'recorded_at' => now()]);
                     $case->forceFill(['generation' => $case->generation + 1])->save();
                 } catch (QueryException $e) {
                     if (($e->errorInfo[0] ?? '') === '23514' || ($e->errorInfo[0] ?? '') === '22007' || ($e->errorInfo[0] ?? '') === '22P02') {
@@ -71,9 +73,37 @@ final class AppendCustomerDecisionEvidence
         return CustomerDecisionOutcome::fromReceipt($outcome['result'], $outcome['replayed']);
     }
 
+    /**
+     * The model writes a time without its offset, and the database reads that as UTC: an instant sent as "10:00+05:00" would be stored as 10:00 UTC, five hours late. So a time is
+     * converted to the same instant in UTC here, exactly once, before it is written; a value that is not a time is refused like any other invalid observation.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return array<string, mixed>
+     */
+    private function instants(array $fields): array
+    {
+        foreach (['occurred_at', 'occurred_until'] as $name) {
+            if (isset($fields[$name]) && $fields[$name] !== '') {
+                try {
+                    $fields[$name] = CarbonImmutable::parse((string) $fields[$name])->utc()->format('Y-m-d H:i:s.u');
+                } catch (\Throwable) {
+                    throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::INVALID_INPUT, 'The observation is not valid: check its source, authority basis, occurrence precision and dates.', 'evidence');
+                }
+            }
+        }
+
+        return $fields;
+    }
+
     private function authorise(User $actor): void
     {
         ActiveActor::require($actor, 'record customer decision evidence');
         SalesAccess::require($actor, PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, 'record customer decision evidence');
+    }
+
+    /** Inside the transaction, before any lock or receipt look-up: the access fence, then the person as stored now. */
+    private function decide(User $actor): void
+    {
+        CustomerDecisionAccess::decide($actor, PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, 'record customer decision evidence');
     }
 }

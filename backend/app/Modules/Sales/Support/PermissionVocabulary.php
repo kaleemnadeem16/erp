@@ -92,6 +92,13 @@ final class PermissionVocabulary
     public const CUSTOMER_DECISION_EVIDENCE_RECORD = 'sales.customer-decision.evidence.record';
 
     /**
+     * Reading what was recorded for a customer (CA1 slice 1): the case list, the case with its components and the observation chain. STAGED exactly like the record duty: the read
+     * Actions and routes exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates it. It is an independent right: recording does not imply
+     * reading, and reading never implies recording. Not in `all()`.
+     */
+    public const CUSTOMER_DECISION_VIEW = 'sales.customer-decision.view';
+
+    /**
      * Quotation document generation (DOC0 skeleton). STAGED: `BindQuotationDocument` and the quotation document adapter's access callback ask for it, but
      * `SalesAccess` refuses every caller until the manifest activates it. Not in `all()`.
      */

@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Sales\Actions\ReadDiscountAuthorityConfiguration;
+use App\Modules\Sales\Http\Controllers\Api\V1\CustomerDecisionCaseController;
 use App\Modules\Sales\Http\Controllers\Api\V1\DiscountAuthorityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
@@ -80,6 +81,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotation-families/{family}/change-access-unit', [QuotationFamilyAccessController::class, 'unit'])->whereNumber('family')->name('quotation-families.change-access-unit');
     Route::post('quotation-families/{family}/grant-access', [QuotationFamilyAccessController::class, 'grant'])->whereNumber('family')->name('quotation-families.grant-access');
     Route::post('quotation-families/{family}/revoke-access', [QuotationFamilyAccessController::class, 'revoke'])->whereNumber('family')->name('quotation-families.revoke-access');
+
+    Route::get('customer-decision-cases', [CustomerDecisionCaseController::class, 'index'])->name('customer-decision-cases.index');
+    Route::post('customer-decision-cases', [CustomerDecisionCaseController::class, 'store'])->name('customer-decision-cases.store');
+    Route::get('customer-decision-cases/{case}', [CustomerDecisionCaseController::class, 'show'])->whereNumber('case')->name('customer-decision-cases.show');
+    Route::post('customer-decision-cases/{case}/evidence', [CustomerDecisionCaseController::class, 'appendEvidence'])->whereNumber('case')->name('customer-decision-cases.evidence.store');
 
     Route::get('sales-owners', [SalesOwnerController::class, 'index'])->name('sales-owners.index');
     Route::get('sales-stages', [SalesStageController::class, 'index'])->name('sales-stages.index');

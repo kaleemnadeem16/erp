@@ -2,7 +2,7 @@
 
 # Customer acceptance and handover — design brief
 
-**2026-11-10 · DESIGN BRIEF. Plans the last Phase 4 feature; authorises no code, grant or activation.**
+**2026-11-10 · DESIGN BRIEF. Plans the last Phase 4 feature; authorises no grant or activation.** Slice 1 was built on 2026-11-11 under the recommended defaults of section 12 (owner has not yet answered them): see [Sales customer decisions](../domain/sales-customer-decisions.md#delivered-record-what-the-customer-sent-acceptance-slice-1-2026-11-11). Slices 2-4 are not started.
 It does not re-decide anything accepted. The business rules are already settled in
 [ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md),
 [0125–0127](../decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md),

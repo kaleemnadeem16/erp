@@ -30,7 +30,7 @@ final class QuotationDemoSeeder extends Seeder
 {
     use EnsuresDemoEnvironment;
 
-    private const DUTIES = [Sales::QUOTATION_VIEW, Sales::QUOTATION_PREPARE, Sales::QUOTATION_ISSUE, Sales::QUOTATION_WITHDRAW, Sales::FINANCIAL_CONFIGURE, Sales::CUSTOMER_DECISION_EVIDENCE_RECORD];
+    private const DUTIES = [Sales::QUOTATION_VIEW, Sales::QUOTATION_PREPARE, Sales::QUOTATION_ISSUE, Sales::QUOTATION_WITHDRAW, Sales::FINANCIAL_CONFIGURE, Sales::CUSTOMER_DECISION_EVIDENCE_RECORD, Sales::CUSTOMER_DECISION_VIEW];
 
     public function run(): void
     {
@@ -69,7 +69,7 @@ final class QuotationDemoSeeder extends Seeder
         $this->intake($admin);
     }
 
-    /** A customer's purchase order received for a demo quotation, with one observation and its later correction. Observations only: nothing here is an acceptance. */
+    /** A customer's purchase order received for a demo quotation, with one observation and its later correction, so the Customer Messages screens have something to show (the demo administrator holds the read and record duties; both stay STAGED outside the seed). Observations only: nothing here is an acceptance. */
     private function intake(User $admin): void
     {
         $party = Party::query()->where('code', 'cus-alpha')->first();

@@ -53,7 +53,7 @@ final class SalesDutyCatalogue
             new SalesDuty(PermissionVocabulary::FINANCIAL_CONFIGURE, DutyClass::Sensitive, DutyStatus::Staged, 'Sales financial, reference and discount-authority configuration', 'Config', 'FR1/4 + AU3 internal foundation'),
             new SalesDuty(PermissionVocabulary::AUTHORITY_EVIDENCE_VIEW, DutyClass::Sensitive, DutyStatus::Staged, 'Read protected discount authority evidence', 'Governed references, evaluated exposure and authority limits; independent quotation access required', 'AU3 evidence; no grants'),
             new SalesDuty(PermissionVocabulary::PRICE_REFERENCE_APPROVE, DutyClass::Sensitive, DutyStatus::Staged, 'Independently approve governed price references', 'Protected reference terms', 'AU3 governed reference; no grants'),
-            new SalesDuty('sales.customer-decision.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Decision/case safe detail/history', 'Decision-min', 'CA1'),
+            new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_VIEW, DutyClass::NewOrdinary, DutyStatus::Staged, 'Decision/case safe detail/history', 'Decision-min', 'CA1'),
             new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, DutyClass::NewOrdinary, DutyStatus::Staged, 'Shared intake/append observations', 'Evidence-write', 'CA1; file requires secure DF'),
             new SalesDuty('sales.customer-decision.accept', DutyClass::Sensitive, DutyStatus::Specified, 'Authoritative ordinary consent/claims', 'Exact consent', 'CA2/3'),
             new SalesDuty('sales.customer-decision.reconcile', DutyClass::Sensitive, DutyStatus::Specified, 'Late recognition', 'Historical consent/impact', 'CA5 + affected HA'),

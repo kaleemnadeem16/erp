@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Models;
 
 use App\Models\Model;
 use App\Support\Concerns\BelongsToCompany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
 /**
@@ -27,6 +28,18 @@ class CustomerDecisionCase extends Model
     protected $table = 'customer_decision_cases';
 
     protected $guarded = ['id'];
+
+    /** @return HasMany<CustomerDecisionComponent, $this> */
+    public function components(): HasMany
+    {
+        return $this->hasMany(CustomerDecisionComponent::class, 'case_id');
+    }
+
+    /** @return HasMany<CustomerDecisionEvidence, $this> */
+    public function evidence(): HasMany
+    {
+        return $this->hasMany(CustomerDecisionEvidence::class, 'case_id');
+    }
 
     /** @return array<string, string> */
     protected function casts(): array

@@ -329,6 +329,9 @@ class CustomerDecisionIntakeFoundationTest extends TestCase
             $columns = DB::table('information_schema.columns')->where('table_name', $table)->pluck('column_name')->all();
             $this->assertSame([], array_values(array_filter($columns, fn (string $c): bool => preg_match('/amount|price|cost|quantity|currency|digest|object|attachment|accepted|target|job_id|revision_id/', $c) === 1)), "{$table} carries no money, quantity, attachment, issued-source or target column");
         }
-        $this->assertSame([], array_values(array_filter(app('router')->getRoutes()->getRoutes(), fn ($route): bool => str_contains($route->uri(), 'customer-decision') || str_contains($route->uri(), 'customer_decision'))), 'no route');
+        // The intake routes (slice 1) are the only customer-decision routes: there is no acceptance, claim or handover route.
+        $routes = array_map(fn ($route): string => implode('|', $route->methods()).' '.$route->uri(), array_values(array_filter(app('router')->getRoutes()->getRoutes(), fn ($route): bool => str_contains($route->uri(), 'customer-decision') || str_contains($route->uri(), 'customer_decision'))));
+        sort($routes);
+        $this->assertSame(['GET|HEAD api/v1/customer-decision-cases', 'GET|HEAD api/v1/customer-decision-cases/{case}', 'POST api/v1/customer-decision-cases', 'POST api/v1/customer-decision-cases/{case}/evidence'], $routes, 'only the intake routes');
     }
 }
