@@ -7,6 +7,7 @@ namespace App\Modules\Purchasing\Actions;
 use App\Models\User;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -20,7 +21,12 @@ final class CreatePurchaseOrder
         ActionAuthorization::require($actor, 'purchasing.purchase-order.create', 'create a purchase order');
 
         // The typed rate decides base amounts, the approval band and receipt valuation, so it is checked against the governed rate first (issue #90).
-        return $this->forWorkflow(array_merge($attributes, ($this->reconcileFx)($attributes, $actor)));
+        return DB::transaction(function () use ($attributes, $actor): PurchaseOrder {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.purchase-order.create', 'create a purchase order');
+
+            return $this->forWorkflow(array_merge($attributes, ($this->reconcileFx)($attributes, $actor)));
+        });
     }
 
     /**

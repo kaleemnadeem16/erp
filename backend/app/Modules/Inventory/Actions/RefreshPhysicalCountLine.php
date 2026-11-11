@@ -13,6 +13,7 @@ use App\Modules\Inventory\Models\PhysicalCountLineComposition;
 use App\Modules\Inventory\Models\StockLayer;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,6 +30,9 @@ final class RefreshPhysicalCountLine
         WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) PhysicalCount::query()->whereKey($line->physical_count_id)->value('warehouse_id'), 'refresh a count line');
 
         return DB::transaction(function () use ($line, $actor): PhysicalCountLine {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.physical_count.create', 'refresh a count line', 'created_by');
+            WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) PhysicalCount::query()->whereKey($line->physical_count_id)->value('warehouse_id'), 'refresh a count line');
             $line = PhysicalCountLine::query()->whereKey($line->id)->lockForUpdate()->firstOrFail();
             $count = PhysicalCount::query()->whereKey($line->physical_count_id)->lockForUpdate()->firstOrFail();
             if ($count->status !== PhysicalCountStatus::Draft || ! $line->grouped) {

@@ -15,9 +15,9 @@
 | **BY DESIGN** | Behaves as the decision records say; a product decision, not a defect. | ADR |
 | **NOT TESTABLE** | Nothing to change mid-flight today. | Reason |
 
-Summary: rows 1 to 7, 10, 11, 15 and 17 are RESOLVED; row 9 is RESOLVED for the stock-moving and commitment Actions and OUTSTANDING for the Actions listed under "Outstanding" below (tracked in #91); rows 12 to 14 and 16 are SAFE; row 18 is BY DESIGN with an open product question.
+Summary: rows 1 to 7, 10, 11, 15 and 17 are RESOLVED; row 9 is RESOLVED for the stock-moving and commitment Actions (9a) and for the process-opening, evidence-capture and draft Actions (9b), and OUTSTANDING only for settings, Purchasing FX reconciliation and master data (9c, tracked in #91); rows 12 to 14 and 16 are SAFE; row 18 is BY DESIGN with an open product question.
 
-## RESOLVED: rows 1 to 7 and 9 (Purchasing and Inventory)
+## RESOLVED: rows 1 to 7, 9a and 9b (Purchasing and Inventory)
 
 Fix commits: `572bd1f2` (rows 1 to 7), `be9f8ea6` (row 9, stock and commitment batch).
 
@@ -25,12 +25,9 @@ Fix commits: `572bd1f2` (rows 1 to 7), `be9f8ea6` (row 9, stock and commitment b
 
 **Row 9, second batch (stock and commitment).** The same pattern now covers every Purchasing and Inventory Action that moves stock or settles a commitment: `ReverseGoodsReceipt`, `PostQualityDisposition`, `PostSupplierReturn`, `CancelSupplierReturn`, `PostStockScrap`, `PostRejectedStockExit`, `IssuePackagedStock`, `TransferPackagedStock` (and through them the grouped issue and transfer entry points), `PostPackageOpening`, `ActivateGroupedPackageTracking`, `CommitInventoryCutoverOpeningState`, `CommitInventoryCutoverOpenPurchaseOrders`, `ApproveInventoryCutover`, `ApproveInventoryCutoverNegativeOpening`, `FinaliseInventoryCutover`, `ExecuteRecalculation`, `CancelPurchaseOrder`, `ShortClosePurchaseOrderLine` and `SubmitPurchaseOrder`. `DecideNegativeStockOverride`, `ReviewNegativeStockOverride`, `DecideRecalculationApproval` and `ResumeRecalculationRegeneration` already decided inside their transaction but on the held person; they now take the barrier and reload first. `DecisionActor::requireAll` covers the Actions that need two duties together. Actions called inside another's transaction (`ReverseGroupedReceiptLine`, `RecordQaDispositionEvidence`, `PostRejectedExitLines`) inherit the decision made by the outer Action. Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityStockRaceTest.php` (reversal, disposition, supplier return, scrap, order cancellation; each with a control).
 
-**OUTSTANDING: row 9, Actions that still check only before their transaction** (tracking issue #91; ranked by consequence, none moves stock or money directly):
+**Row 9b (process-opening, evidence capture and drafts).** The same pattern now covers groups 1 to 3 of the former list: `RequestStockRecalculation`, `RequestNegativeStockOverride`, `RequestInventoryCutoverNegativeOpening`, `ValidateInventoryCutover`, `CreateInventoryCutover`, `AttachInventoryCutoverBatch`; `RecordPackageCheckpoint`, `RecordPhysicalCountLine`, `RecordPhysicalCountComposition`, `AddPhysicalCountLine`, `RefreshPhysicalCountLine`, `RecordReceiptComposition`; `CreateSupplierReturn`, `UpdateSupplierReturn`, `CreateStockScrap`, `UpdateStockScrap`, `CancelStockScrap`, `CancelPhysicalCount`, `CreatePhysicalCount`, `CreateGoodsReceipt`, `UpdateGoodsReceipt`, `CreatePurchaseOrder` and `UpdatePurchaseOrder`. `RecordReceiptPackageEvidence` and `PackageCountCapture` have no transaction of their own and inherit the decision of the posting or count Action that calls them. Guard: `backend/tests/Feature/Security/DecisionTimeAuthorityDraftRaceTest.php` (one Action per family: physical-count create and cancel with controls, cutover create, purchase-order edit; revoked duty and suspended actor). The other Actions share the same two-line change and the barrier staging, so the suite proves the mechanism rather than repeating it per Action.
 
-1. `RequestStockRecalculation`, `RequestNegativeStockOverride`, `RequestInventoryCutoverNegativeOpening`, `ValidateInventoryCutover`, `CreateInventoryCutover`, `AttachInventoryCutoverBatch`: they open or advance a controlled process that a later, already fenced step decides.
-2. `RecordPackageCheckpoint`, `RecordPhysicalCountLine`, `RecordPhysicalCountComposition`, `AddPhysicalCountLine`, `RefreshPhysicalCountLine`, `PackageCountCapture`, `RecordReceiptPackageEvidence`, `RecordReceiptComposition`: evidence capture on drafts; posting is fenced.
-3. `CreateSupplierReturn`, `UpdateSupplierReturn`, `CreateStockScrap`, `UpdateStockScrap`, `CancelStockScrap`, `CancelPhysicalCount`, `CreatePhysicalCount`, `CreateGoodsReceipt`, `UpdateGoodsReceipt`, `CreatePurchaseOrder`, `UpdatePurchaseOrder`: drafts that move nothing.
-4. `UpdatePurchasingSettings`, `UpdateInventorySettings`, `ReconcilePurchaseOrderFx` (Purchasing FX is owned by ADR 0165), and the master-data Create/Update/Archive Actions for items, categories, warehouses, locations, assignments, quantity units, item suppliers and supplier offers.
+**OUTSTANDING: row 9c, Actions that still check only before their transaction** (tracking issue #91; no money, stock or process effect): `UpdatePurchasingSettings`, `UpdateInventorySettings`, `ReconcilePurchaseOrderFx` (Purchasing FX is owned by ADR 0165), and the master-data Create/Update/Archive Actions for items, categories, warehouses, locations, assignments, quantity units, item suppliers and supplier offers.
 
 Behaviour note: every Action above now waits at the company access barrier like the first three, with the same one-second lock-wait bound. Concurrent use in the Purchasing and Inventory suites showed no new lock-wait timeout.
 
@@ -68,7 +65,8 @@ Statuses are defined in the legend at the top. The Evidence column names the com
 | 7 | `PostPhysicalCount` | H2 warehouse scope narrowed mid-flight | **RESOLVED** | `572bd1f2`; `DecisionTimeAuthorityRaceTest` (warehouse-reach case) | Warehouse reach checked inside the transaction | One extra scoped read |
 | 8 | `IssuePurchaseOrder`, `PostGoodsReceipt` | H2 record scope | NOT TESTABLE | Neither Action applies a record scope today. If one is added, check it inside the transaction | none | none |
 | 9a | Stock-moving and commitment Actions (shared `ActionAuthorization::require` callers) | H1 | **RESOLVED** | `be9f8ea6`; `DecisionTimeAuthorityStockRaceTest` (reversal, disposition, supplier return, scrap, order cancellation, each with control) | Same pattern as row 1 for every listed Action (see above) | Roll-out per module; no new lock-wait timeouts seen in the Purchasing and Inventory suites |
-| 9b | Remaining Actions listed under "OUTSTANDING: row 9" | H1 | **OUTSTANDING** | Pre-check only; none moves stock or money directly. Tracking issue #91 | Apply `DecisionActor` in ranked order; keep the cheap pre-check for early refusal | Wide: many callers |
+| 9b | Process-opening, evidence-capture and draft Actions (Inventory and Purchasing) | H1 | **RESOLVED** | `DecisionTimeAuthorityDraftRaceTest` (physical-count create and cancel with controls, cutover create, purchase-order edit; revoked and suspended) | Same pattern as row 1; the early check stays as a fast refusal | Each Action now waits at the company access barrier, with the same one-second lock-wait bound |
+| 9c | Settings, FX reconciliation and master-data Actions | H1 | **OUTSTANDING** | Pre-check only; no money, stock or process effect. Tracking issue #91 | Apply `DecisionActor`; keep the cheap pre-check for early refusal | Wide: many callers |
 | 10 | `DecideApproval` | H4 approver permission removed | **RESOLVED** | `7390b9e2`; `ApprovalDecisionAuthorityRaceTest::test_approver_permission_revoked_while_waiting_records_no_decision` | See approval resolution above | One extra user read |
 | 11 | `DecideApproval` | H4 approver suspended | **RESOLVED** | `7390b9e2`; `test_approver_suspended_while_waiting_records_no_decision` | Same | Same |
 | 12 | `DecideApproval` | H4 approval authority (limit) revoked | **SAFE** | Authority is read from the database inside the transaction. Guard: `test_authority_revoked` | none | none |
@@ -113,7 +111,7 @@ the fresh read and the commit. Item 2 closes that last gap.
 
 ## Not covered
 
-* OUTSTANDING (#91): every Action listed under "OUTSTANDING: row 9" that still checks only before its transaction. They share the same fix.
+* OUTSTANDING (#91): the Actions listed under "OUTSTANDING: row 9c" that still check only before their transaction. They share the same fix.
 * HTTP behaviour (middleware, tokens). Suspension deletes tokens and sessions, so a new request is
   refused; an already-running request is not interrupted.
 * Behaviour under a long lock wait on a busy production database; the tests stage the wait with a

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Modules\Purchasing\Models\SupplierReturn;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /** Edits or cancels a Supplier Return draft (ADR 0097). Only a draft can change; a draft still moves nothing. */
@@ -23,6 +24,9 @@ final class UpdateSupplierReturn
         WarehouseScope::requireWarehouse($actor, ['purchasing.supplier-return.create', 'purchasing.supplier-return.post'], (int) $document->warehouse_id, 'edit a Supplier Return');
 
         return DB::transaction(function () use ($document, $input, $actor): SupplierReturn {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.supplier-return.create', 'edit a Supplier Return');
+            WarehouseScope::requireWarehouse($actor, ['purchasing.supplier-return.create', 'purchasing.supplier-return.post'], (int) $document->warehouse_id, 'edit a Supplier Return');
             $locked = SupplierReturn::query()->lockForUpdate()->findOrFail($document->id);
             if (! $locked->isDraft()) {
                 throw new DomainInvariantException('Only a draft can be edited; this document is '.strtolower($locked->status).'.', 'status', 'DOCUMENT_NOT_DRAFT');

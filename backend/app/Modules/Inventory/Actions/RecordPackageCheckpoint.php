@@ -21,6 +21,7 @@ use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -88,6 +89,8 @@ final class RecordPackageCheckpoint
         ], JSON_THROW_ON_ERROR));
 
         return DB::transaction(function () use ($input, $actor, $company, $key, $reason, $expected, $vector, $composition, $hash): PackageOperation {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.physical_count.create', 'record package evidence');
             // Serialises even an absent request row, including reuse at another location.
             DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', ["package-checkpoint:{$company}:{$key}"]);
             $existing = PackageOperation::query()->where('request_key', $key)->first();

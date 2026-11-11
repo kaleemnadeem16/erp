@@ -18,6 +18,7 @@ use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -47,6 +48,9 @@ final class RequestInventoryCutoverNegativeOpening
         WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.negative_opening.request', 'request a cutover negative-opening exception');
 
         return DB::transaction(function () use ($cutover, $input, $actor): InventoryCutoverNegativeOpening {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.cutover.negative_opening.request', 'request a cutover negative-opening exception', 'requested_by');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.negative_opening.request', 'request a cutover negative-opening exception');
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
             if (in_array($cutover->status, [InventoryCutoverStatus::Failed, InventoryCutoverStatus::Finalised], true)) {
                 throw new DomainInvariantException('A negative-opening exception cannot be requested for a failed or finalised cutover.', 'status');

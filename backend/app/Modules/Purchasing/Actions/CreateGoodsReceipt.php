@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Purchasing\Models\GoodsReceipt;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -35,7 +36,9 @@ final class CreateGoodsReceipt
             }
         }
 
-        return DB::transaction(function () use ($attributes, $idempotencyKey): GoodsReceipt {
+        return DB::transaction(function () use ($attributes, $idempotencyKey, $actor): GoodsReceipt {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.goods-receipt.create', 'create a goods receipt');
             if ($idempotencyKey !== null) {
                 $existing = GoodsReceipt::query()->where('idempotency_key', $idempotencyKey)->first();
                 if ($existing !== null) {

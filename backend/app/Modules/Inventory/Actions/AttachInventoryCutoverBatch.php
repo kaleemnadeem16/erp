@@ -20,6 +20,7 @@ use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\InventoryCutoverMode;
 use App\Modules\Inventory\Support\InventoryCutoverStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -32,7 +33,10 @@ final class AttachInventoryCutoverBatch
         }
         WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.stage', 'stage inventory cutover data');
 
-        return DB::transaction(function () use ($cutover, $importBatch): InventoryCutoverBatch {
+        return DB::transaction(function () use ($cutover, $importBatch, $actor): InventoryCutoverBatch {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.cutover.stage', 'stage inventory cutover data', 'created_by');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.stage', 'stage inventory cutover data');
             $cutover = InventoryCutover::query()->whereKey($cutover->id)->lockForUpdate()->firstOrFail();
             $importBatch = ImportBatch::query()->whereKey($importBatch->id)->lockForUpdate()->firstOrFail();
             $existing = InventoryCutoverBatch::query()->where('import_batch_id', $importBatch->id)->first();

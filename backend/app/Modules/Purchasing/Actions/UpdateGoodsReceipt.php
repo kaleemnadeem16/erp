@@ -11,6 +11,7 @@ use App\Modules\Purchasing\Models\GoodsReceiptPackageObservation;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +25,8 @@ final class UpdateGoodsReceipt
         ActionAuthorization::require($actor, 'purchasing.goods-receipt.create', 'edit a draft goods receipt');
 
         return DB::transaction(function () use ($receipt, $attributes, $actor): GoodsReceipt {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.goods-receipt.create', 'edit a draft goods receipt');
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($receipt->id);
             if ($receipt->status !== GoodsReceiptStatus::Draft) {
                 throw new DomainInvariantException('Only draft goods receipts can be edited.', 'status');

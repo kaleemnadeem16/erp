@@ -15,6 +15,7 @@ use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use App\Modules\Purchasing\Models\GoodsReceiptPackageObservation;
 use App\Modules\Purchasing\Support\GoodsReceiptStatus;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -34,6 +35,8 @@ final class RecordReceiptComposition
             throw new DomainInvariantException('Observed composition and a reason are required.');
         }
         DB::transaction(function () use ($line, $composition, $reason, $actor): void {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.goods-receipt.create', 'record receipt package composition');
             $line = GoodsReceiptLine::query()->findOrFail($line->id);
             $receipt = GoodsReceipt::query()->lockForUpdate()->findOrFail($line->goods_receipt_id);
             $line = GoodsReceiptLine::query()->lockForUpdate()->findOrFail($line->id);

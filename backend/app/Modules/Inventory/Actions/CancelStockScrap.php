@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\StockScrap;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /** Edits or cancels a Scrap document draft (ADR 0097). Only a draft can change; a draft still moves nothing. */
@@ -21,6 +22,9 @@ final class CancelStockScrap
         WarehouseScope::requireWarehouse($actor, ['inventory.scrap.create', 'inventory.scrap.post'], (int) $document->warehouse_id, 'cancel a Scrap document');
 
         return DB::transaction(function () use ($document, $actor): StockScrap {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.scrap.create', 'cancel a Scrap document');
+            WarehouseScope::requireWarehouse($actor, ['inventory.scrap.create', 'inventory.scrap.post'], (int) $document->warehouse_id, 'cancel a Scrap document');
             $locked = StockScrap::query()->lockForUpdate()->findOrFail($document->id);
             if ($locked->status === StockScrap::CANCELLED) {
                 return $locked->load('lines');

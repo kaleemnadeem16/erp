@@ -13,6 +13,7 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\ActionAuthorization;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
 use Illuminate\Support\Arr;
@@ -32,6 +33,8 @@ final class UpdatePurchaseOrder
         ActionAuthorization::require($actor, 'purchasing.purchase-order.create', 'edit a purchase order');
 
         return DB::transaction(function () use ($order, $attributes, $actor): PurchaseOrder {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.purchase-order.create', 'edit a purchase order');
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
             if ($order->status !== PurchaseOrderStatus::Draft) {
                 throw new DomainInvariantException('Only a draft purchase order can be edited.', 'status');

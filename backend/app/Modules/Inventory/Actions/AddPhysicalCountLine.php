@@ -16,6 +16,7 @@ use App\Modules\Inventory\Support\ItemTracking;
 use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -40,6 +41,9 @@ final class AddPhysicalCountLine
         WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) $count->warehouse_id, 'add a physical count line');
 
         return DB::transaction(function () use ($count, $input, $actor): PhysicalCountLine {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.physical_count.create', 'add a physical count line', 'created_by');
+            WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.create', (int) $count->warehouse_id, 'add a physical count line');
             $count = PhysicalCount::query()->whereKey($count->id)->lockForUpdate()->firstOrFail();
             if ($count->status !== PhysicalCountStatus::Draft) {
                 throw new DomainInvariantException('Lines can only be added to a draft physical count.', 'status');

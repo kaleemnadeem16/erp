@@ -11,6 +11,7 @@ use App\Modules\Inventory\Models\PhysicalCountLine;
 use App\Modules\Inventory\Support\PhysicalCountStatus;
 use App\Modules\Inventory\Support\StockQuantity;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,6 +31,9 @@ final class RecordPhysicalCountLine
         WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.count', (int) PhysicalCount::query()->whereKey($line->physical_count_id)->value('warehouse_id'), 'record a count');
 
         return DB::transaction(function () use ($line, $countedQty, $actor): PhysicalCountLine {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.physical_count.count', 'record a physical count', 'counted_by');
+            WarehouseScope::requireWarehouse($actor, 'inventory.physical_count.count', (int) PhysicalCount::query()->whereKey($line->physical_count_id)->value('warehouse_id'), 'record a count');
             $line = PhysicalCountLine::query()->whereKey($line->id)->lockForUpdate()->firstOrFail();
             $count = PhysicalCount::query()->whereKey($line->physical_count_id)->lockForUpdate()->firstOrFail();
             if ($count->status !== PhysicalCountStatus::Draft) {

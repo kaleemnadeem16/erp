@@ -21,6 +21,7 @@ use App\Modules\Inventory\Support\PackageWriteScope;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 
@@ -30,6 +31,8 @@ final class RequestNegativeStockOverride
     public function __invoke(array $input, User $actor): NegativeStockOverrideRequest
     {
         return DB::transaction(function () use ($input, $actor): NegativeStockOverrideRequest {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::fresh($actor, 'request a negative-stock override', 'requested_by');
             $company = Company::query()->lockForUpdate()->findOrFail(app(CompanyContext::class)->id());
             if ($company->negative_stock_mode !== NegativeStockMode::AuthorisedOverride) {
                 throw new DomainInvariantException('Negative-stock overrides are disabled.', 'negative_stock_mode');

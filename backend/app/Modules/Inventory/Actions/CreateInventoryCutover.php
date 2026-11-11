@@ -11,6 +11,7 @@ use App\Modules\Inventory\Support\AvcoPoolScope;
 use App\Modules\Inventory\Support\InventoryCutoverMode;
 use App\Modules\Inventory\Support\ValuationMethod;
 use App\Modules\Inventory\Support\WarehouseScope;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 final class CreateInventoryCutover
@@ -28,6 +29,10 @@ final class CreateInventoryCutover
         $input['target_valuation_policy'] = $this->normalisePolicy($input['target_valuation_policy']);
 
         return DB::transaction(function () use ($input, $actor): InventoryCutover {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'inventory.cutover.create', 'create an inventory cutover', 'created_by');
+            WarehouseScope::requireUnrestricted($actor, 'inventory.cutover.create', 'create an inventory cutover');
+
             return InventoryCutover::query()->create([
                 ...$input,
                 'mode' => InventoryCutoverMode::from($input['mode']),

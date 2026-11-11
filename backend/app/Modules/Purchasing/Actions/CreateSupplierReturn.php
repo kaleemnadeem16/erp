@@ -10,6 +10,7 @@ use App\Modules\Inventory\Support\RejectedExitLines;
 use App\Modules\Purchasing\Models\SupplierReturn;
 use App\Support\ActionAuthorization;
 use App\Support\CompanyContext;
+use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -27,6 +28,8 @@ final class CreateSupplierReturn
         }
 
         return DB::transaction(function () use ($input, $actor): SupplierReturn {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            $actor = DecisionActor::require($actor, 'purchasing.supplier-return.create', 'draft a Supplier Return');
             $document = new SupplierReturn;
             $this->fill($document, $input, $actor);
             $document->created_by = $actor->id;
