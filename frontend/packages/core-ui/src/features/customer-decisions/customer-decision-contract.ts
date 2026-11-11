@@ -147,9 +147,33 @@ export interface CaseListParams {
   perPage: number;
 }
 
+/** One quotation scope a case is about. The anchor is an ORIGINAL scope of the quotation family (the server refuses a later one). */
+export interface CaseComponentInput {
+  intent_identity: string;
+  family_id: number;
+  original_scope_anchor_id: number;
+}
+
 export interface OpenCaseInput {
   party_id: number;
   intake_identity: string;
+  /** Optional: the issued quotation scopes this message is about. Recording a message holds nothing on them. */
+  components?: CaseComponentInput[];
+}
+
+/** An issued quotation of one customer that a message can be linked to. */
+export interface LinkableQuotation {
+  revision_id: number;
+  family_id: number;
+  official_number: string | null;
+  availability: string;
+}
+/** The scopes of one issued quotation, as the issued read lists them (null when the caller may not see them). */
+export interface LinkableScopes {
+  revision_id: number;
+  family_id: number;
+  official_number: string;
+  scopes: { issued_line_id: number; logical_scope_id: number }[] | null;
 }
 
 export interface ObservationInput {
@@ -172,6 +196,10 @@ export interface CustomerDecisionGateway {
     body: OpenCaseInput;
     requestKey: string;
   }) => Promise<WriteOutcome>;
+  /** The customer's issued quotations (needs the quotation view duty; refused otherwise). */
+  quotationsFor: (partyId: number) => Promise<LinkableQuotation[]>;
+  /** The scopes of one issued quotation. */
+  quotationScopes: (revisionId: number) => Promise<LinkableScopes>;
   addObservation: (input: {
     caseId: number;
     expectedGeneration: number;
@@ -190,7 +218,8 @@ export const REFUSAL_MESSAGES: Record<string, string> = {
     "A case with that reference already exists. Open it instead; cases are never merged automatically.",
   EVIDENCE_PREDECESSOR_INVALID:
     "That observation can no longer be corrected, because a later one already corrects it. Reload the case.",
-  INVALID_INPUT: "Check the details and try again.",
+  INVALID_INPUT:
+    "Check the details and try again. A linked quotation scope must be an original scope of that quotation.",
 };
 
 export function refusalMessage(error: unknown): string {

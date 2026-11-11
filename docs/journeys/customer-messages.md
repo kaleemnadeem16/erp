@@ -11,7 +11,7 @@
 ## Purpose
 
 Customers answer quotations in many ways. This records what arrived, truthfully and append-only, so a later acceptance can point at it. **Recording a message is not accepting an offer:** it does not
-hold the offer, reserve stock or stop the offer expiring or being withdrawn, and the screens say so. Accepting is a [separate backend operation](record-full-customer-acceptance.md) with its own inactive duty; its screen is not delivered.
+hold the offer, reserve stock or stop the offer expiring or being withdrawn, and the screens say so. Accepting is a [separate backend operation](record-full-customer-acceptance.md) with its own inactive duty; its screen is on the issued-quotation page and is gated the same way.
 
 ## Before you start
 
@@ -21,7 +21,7 @@ Until a holder recipe is reviewed the duties are staged and the menu entry does 
 ## Steps
 
 1. Open **Customer Messages** (Sales menu). Search by the customer's reference if the list is long.
-2. **Record a customer message:** choose the customer and enter the reference they used (for example their purchase order number). A reference that already exists is never merged: open that case.
+2. **Record a customer message:** choose the customer and enter the reference they used (for example their purchase order number). A reference that already exists is never merged: open that case. Optionally link the issued quotation scopes the message is about (the quotation picker; it needs permission to view quotations). A message can only support an acceptance of a scope it is linked to, and links are fixed when the case is opened.
 3. On the case page choose **Add an observation:** what arrived, how the sender's authority was checked, when it happened (a day, a time, a period, or *not known*: unknown stays unknown) and a plain
    description of what was sent. To fix a mistake, add a new observation that corrects the earlier one; the earlier one stays visible, marked as corrected.
 4. If someone else added to the case meanwhile, the page says it changed, reloads, and you add your observation again. A lost connection is safe to retry: the same request is never recorded twice.

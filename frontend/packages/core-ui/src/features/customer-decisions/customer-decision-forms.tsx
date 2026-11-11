@@ -11,6 +11,7 @@ import {
 } from "../../components/ui/select";
 import { Textarea } from "../../components/ui/textarea";
 import { PartyCombobox } from "../../components/lookups/entity-comboboxes";
+import { QuotationLinkPicker } from "./customer-decision-quotation-picker";
 import {
   AUTHORITY_BASES,
   AUTHORITY_LABELS,
@@ -20,6 +21,8 @@ import {
   SOURCE_LABELS,
   refusalMessage,
   type AuthorityBasis,
+  type CaseComponentInput,
+  type CustomerDecisionGateway,
   type ObservationInput,
   type OpenCaseInput,
   type Observation,
@@ -62,13 +65,20 @@ export function OpenCaseForm({
   onCancel,
   pending,
   error,
+  gateway,
+  mayLinkQuotations = false,
 }: {
   onSubmit: (input: OpenCaseInput) => void;
   onCancel: () => void;
   pending: boolean;
   error?: unknown;
+  /** Needed for the quotation picker; without it the picker is not offered. */
+  gateway?: CustomerDecisionGateway;
+  /** Holds sales.quotation.view (a case with components needs it on each family). */
+  mayLinkQuotations?: boolean;
 }) {
   const [party, setParty] = useState("");
+  const [components, setComponents] = useState<CaseComponentInput[]>([]);
   const [identity, setIdentity] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
   function submit(event: FormEvent) {
@@ -78,7 +88,11 @@ export function OpenCaseForm({
       return;
     }
     setProblem(null);
-    onSubmit({ party_id: Number(party), intake_identity: identity.trim() });
+    onSubmit({
+      party_id: Number(party),
+      intake_identity: identity.trim(),
+      ...(components.length > 0 ? { components } : {}),
+    });
   }
   return (
     <form className="grid gap-4 sm:grid-cols-2" onSubmit={submit} noValidate>
@@ -91,7 +105,11 @@ export function OpenCaseForm({
           id="decision-party"
           label="Customer"
           value={party}
-          onValueChange={(value) => setParty(value)}
+          onValueChange={(value) => {
+            setParty(value);
+            // Scopes belong to the customer's own quotations: a new customer starts with none linked.
+            setComponents([]);
+          }}
         />
       </div>
       <div className="space-y-2 sm:col-span-2">
@@ -113,6 +131,17 @@ export function OpenCaseForm({
           exists is never merged: open that case instead.
         </p>
       </div>
+      {gateway && (
+        <div className="sm:col-span-2">
+          <QuotationLinkPicker
+            gateway={gateway}
+            partyId={party ? Number(party) : null}
+            value={components}
+            onChange={setComponents}
+            mayLink={mayLinkQuotations}
+          />
+        </div>
+      )}
       <FormError problem={problem} error={error} />
       <div className="flex flex-wrap gap-2 sm:col-span-2">
         <Button className="min-h-11" type="submit" disabled={pending}>

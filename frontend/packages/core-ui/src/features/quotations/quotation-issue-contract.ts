@@ -62,6 +62,20 @@ export const issuedTermsSchema = z.object({
   expires_at: z.string(),
   /** Derived by the server, never stored: AVAILABLE, EXPIRED, WITHDRAWN or REPLACED. Says nothing about acceptance. */
   availability: z.string(),
+  /**
+   * Per issued line: ACCEPTED, AVAILABLE, CLAIMED (covered by an acceptance recorded elsewhere) or UNAVAILABLE. Null (or absent) unless the caller may
+   * see customer messages. Never names a competing acceptance, customer or quantity.
+   */
+  scope_acceptance: z
+    .array(
+      z.object({
+        issued_line_id: id,
+        logical_scope_id: id,
+        status: z.string(),
+      }),
+    )
+    .nullable()
+    .optional(),
   totals: z
     .object({
       net_total: decimal,

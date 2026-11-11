@@ -2,13 +2,15 @@
 
 # Record full customer acceptance
 
-- **Status:** backend implemented, all duties STAGED; no acceptance screen or operational activation.
+- **Status:** backend and screens implemented; all duties STAGED and the screens hidden outside local development; no operational activation.
 - **Audience:** separately reviewed sales acceptance approver; future UI implementer.
 - **Starting point:** available issued quotation, matching customer decision component and current verified written observation.
 - **End state:** immutable full-scope consent and conserved claims; operational readiness stays pending.
 - **Verified:** 2026-11-11, focused backend/API and two-session tests; no production use.
 
-## Sequence
+## Sequence (in the screens)
+
+Open the issued quotation (**Issue quotation** screen) and use the **Accept** panel: choose the scope, search for and choose the customer message, press **Review acceptance**, check the exact terms and tick that the customer accepts them unchanged, then **Record acceptance**. The acceptance page then shows the terms, the evidence, what is claimed and a readiness panel that honestly says **Not ready** (handover is not delivered). A message must have been recorded with this quotation's scope linked (see the intake journey). The steps below are the same sequence by contract.
 
 1. Record the message through the [intake journey](customer-messages.md). Recording it does not protect the offer.
 2. Select one full independent issued scope and its matching component/evidence. Send their identities and current case/claim generations to acceptance-preview.

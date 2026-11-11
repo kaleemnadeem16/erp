@@ -23,6 +23,7 @@ import {
 import { shouldRetryQuery } from "../../lib/api-errors";
 import { useAuthStore } from "../../stores/auth-store";
 import { IntentKey } from "../quotations/request-key";
+import { QUOTATION_VIEW } from "../quotations/quotation-access";
 import { customerDecisionAccess } from "./customer-decision-access";
 import {
   type CaseListPage,
@@ -179,15 +180,23 @@ export function CustomerDecisionListScreen({
   );
   const access = customerDecisionAccess(permissions);
   if (!access.view) return <AccessDenied />;
-  return <GatedList gateway={gateway} mayRecord={access.record} />;
+  return (
+    <GatedList
+      gateway={gateway}
+      mayRecord={access.record}
+      mayLinkQuotations={permissions.has(QUOTATION_VIEW)}
+    />
+  );
 }
 
 function GatedList({
   gateway,
   mayRecord,
+  mayLinkQuotations,
 }: {
   gateway: CustomerDecisionGateway;
   mayRecord: boolean;
+  mayLinkQuotations: boolean;
 }) {
   const navigate = useNavigate();
   const client = useQueryClient();
@@ -262,6 +271,8 @@ function GatedList({
           onClose={() => setRecording(false)}
         >
           <OpenCaseForm
+            gateway={gateway}
+            mayLinkQuotations={mayLinkQuotations}
             onSubmit={(body) => open.mutate(body)}
             onCancel={() => setRecording(false)}
             pending={open.isPending}

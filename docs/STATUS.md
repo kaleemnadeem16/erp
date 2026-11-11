@@ -37,7 +37,7 @@ FR2a Tax configuration foundation is implemented on its feature branch for revie
 
 Phase 4 handover preparation backend slice 3 is in progress, inactive, under [the design brief](phases/phase-4-customer-acceptance-and-handover-design-brief.md).
 
-Phase 4 full acceptance backend slice 2 is implemented locally and verified, [inactive with provisional defaults](domain/sales-full-acceptance.md). No acceptance screen, holder/grant, dev-preview activation or handover adapter.
+Phase 4 full acceptance backend slice 2 is implemented locally and verified, [inactive with provisional defaults](domain/sales-full-acceptance.md). Its screens (Accept panel, acceptance detail with honest readiness) exist behind the quotation UI gate; no holder/grant, dev-preview activation or handover adapter.
 
 Phase 4 cost-contract implementation (C1a–c, C2a–b) is complete and on `develop`; the internal FR0/PR0 financial and pricing kernel (batch B1, [Sales README](../backend/app/Modules/Sales/README.md)) is implemented locally with no public surface; the quotation foundation (QL0) and the draft preparation Actions (QL1a) are implemented, internal, with no public surface (no route, screen or live permission); C1d has not started. Nothing of the package workstreams is in flight (the rejected-stock exit, ADR 0097, is complete). Other agents share the checkout: run `git status` and `git log` before assuming the tree is idle.
 

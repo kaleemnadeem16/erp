@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { DetailField } from "../../components/detail/detail-field";
@@ -43,6 +43,13 @@ import {
 } from "./quotation-issue-contract";
 import { quotationApprovalAccess } from "./quotation-approval-access";
 import { quotationMilestoneAccess } from "./quotation-milestone-access";
+import {
+  acceptDisabledReason,
+  customerAcceptanceAccess,
+} from "../customer-acceptances/customer-acceptance-access";
+import { AcceptancePanel } from "../customer-acceptances/customer-acceptance-panel";
+import type { CustomerAcceptanceGateway } from "../customer-acceptances/customer-acceptance-contract";
+import type { CustomerDecisionGateway } from "../customer-decisions/customer-decision-contract";
 
 /** The reason shown for a refused issue; never echoes server text beyond the stable code's own wording. */
 export function issueRefusalMessage(error: unknown): string {
@@ -212,10 +219,13 @@ function money(value: string | null, currency: number) {
 export function QuotationIssuedView({
   terms,
   documentsTo,
+  acceptance,
 }: {
   terms: IssuedTerms;
   /** Where the official PDF lives; given only to people who may see documents. */
   documentsTo?: string;
+  /** The Accept panel; given only to people who may read customer acceptances (and the production gate allows it). */
+  acceptance?: ReactNode;
 }) {
   const same = terms.prepared_by === terms.issued_by;
   const availability = availabilityView(terms.availability);
@@ -295,6 +305,7 @@ export function QuotationIssuedView({
           </>
         )}
       </DetailSection>
+      {acceptance}
     </DetailPageLayout>
   );
 }
@@ -307,19 +318,23 @@ export function QuotationIssueScreen({
   revisionId,
   gateway = liveIssueGateway,
   authorityGateway,
+  acceptanceGateway,
+  decisionGateway,
 }: {
   revisionId: number;
   gateway?: QuotationIssueGateway;
   authorityGateway?: QuotationAuthorityGateway;
+  /** Tests and previews inject scripted gateways for the Accept panel. */
+  acceptanceGateway?: CustomerAcceptanceGateway;
+  decisionGateway?: CustomerDecisionGateway;
 }) {
   const user = useAuthStore((s) => s.user);
-  const access = quotationMilestoneAccess(
-    new Set(
-      (user?.permissions ?? []).filter(
-        (p): p is string => typeof p === "string",
-      ),
-    ),
+  const permissions = new Set(
+    (user?.permissions ?? []).filter((p): p is string => typeof p === "string"),
   );
+  const access = quotationMilestoneAccess(permissions);
+  // Accepting a customer's consent has its own staged duties and the same production gate; the issue screen only hosts the panel.
+  const acceptance = customerAcceptanceAccess(permissions);
   // Reading readiness needs prepare; issuing needs issue. Either alone may see its part.
   const approvalAccess = quotationApprovalAccess(
     new Set(
@@ -328,7 +343,20 @@ export function QuotationIssueScreen({
       ),
     ),
   );
-  if (!access.readiness && !access.issue) return <AccessDenied />;
+  if (!access.readiness && !access.issue && !acceptance.read)
+    return <AccessDenied />;
+  const renderAcceptance = acceptance.read
+    ? (terms: IssuedTerms) => (
+        <AcceptancePanel
+          terms={terms}
+          mayAccept={acceptance.accept}
+          disabledReason={acceptDisabledReason(permissions)}
+          gateway={acceptanceGateway}
+          decisions={decisionGateway}
+          mayOpenMessages
+        />
+      )
+    : undefined;
   return (
     <QuotationScreenShell
       title="Issue quotation"
@@ -341,6 +369,7 @@ export function QuotationIssueScreen({
         authorityGateway={authorityGateway}
         mayIssue={access.issue}
         mayReadiness={access.readiness}
+        renderAcceptance={renderAcceptance}
         documentsTo={
           access.documents ? `/quotations/${revisionId}/document` : undefined
         }
@@ -358,6 +387,7 @@ function GatedIssue({
   authorityGateway,
   mayIssue,
   mayReadiness,
+  renderAcceptance,
   documentsTo,
   approvalTo,
 }: {
@@ -366,9 +396,12 @@ function GatedIssue({
   authorityGateway?: QuotationAuthorityGateway;
   mayIssue: boolean;
   mayReadiness: boolean;
+  renderAcceptance?: (terms: IssuedTerms) => ReactNode;
   documentsTo?: string;
   approvalTo?: string;
 }) {
+  // Someone who may read acceptances but not prepare quotations has no readiness to look at: they see the issued record directly.
+  const direct = !mayReadiness && renderAcceptance !== undefined;
   const [confirming, setConfirming] = useState(false);
   const [outcome, setOutcome] = useState<IssueOutcome | null>(null);
   // One key per issue intent (revision + reviewed generation): an uncertain failure keeps it so a retry replays,
@@ -400,13 +433,25 @@ function GatedIssue({
   const record = useQuery({
     queryKey: ["quotation-issued", revisionId],
     queryFn: () => gateway.issued(revisionId),
-    enabled: outcome !== null || notDraft,
+    enabled: outcome !== null || notDraft || direct,
     retry: shouldRetryQuery,
   });
-  if (outcome !== null || notDraft) {
+  const is404 = isApiError(record.error) && record.error.status === 404;
+  if (direct && record.isError && !is404)
+    return (
+      <QuotationFailure
+        error={record.error}
+        retry={() => void record.refetch()}
+      />
+    );
+  if (outcome !== null || notDraft || (direct && !record.isError)) {
     if (record.data)
       return (
-        <QuotationIssuedView terms={record.data} documentsTo={documentsTo} />
+        <QuotationIssuedView
+          terms={record.data}
+          documentsTo={documentsTo}
+          acceptance={renderAcceptance?.(record.data)}
+        />
       );
     if (outcome !== null)
       return (

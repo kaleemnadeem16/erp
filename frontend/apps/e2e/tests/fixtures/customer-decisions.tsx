@@ -144,6 +144,10 @@ const gateway: CustomerDecisionGateway = {
     };
   },
   detail: async () => detail,
+  quotationsFor: async () => [],
+  quotationScopes: async () => {
+    throw new Error("not used here");
+  },
   open: async ({ body, requestKey }) => {
     window.__cdWrites.push(
       `open:${body.party_id}:${body.intake_identity}:${requestKey}`,

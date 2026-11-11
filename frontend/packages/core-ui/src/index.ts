@@ -303,6 +303,7 @@ export { DiscountAuthoritySettingsScreen } from "./features/discount-authority/d
 export { DiscountAuthorityReferencesScreen } from "./features/discount-authority/discount-authority-references-screen";
 export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
 export { CustomerDecisionListRoute, CustomerDecisionCaseRoute } from "./features/customer-decisions/customer-decision-routes";
+export { CustomerAcceptanceRoute } from "./features/customer-acceptances/customer-acceptance-routes";
 
 export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";
 export { QuotationEditScreen } from "./features/quotations/quotation-edit-screen";

@@ -6,6 +6,7 @@ import { quotationMilestoneAccess } from "../features/quotations/quotation-miles
 import { quotationApprovalAccess } from "../features/quotations/quotation-approval-access";
 import { discountAuthorityAccess } from "../features/discount-authority/discount-authority-access";
 import { customerDecisionAccess } from "../features/customer-decisions/customer-decision-access";
+import { customerAcceptanceAccess } from "../features/customer-acceptances/customer-acceptance-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -110,6 +111,7 @@ const rules: readonly Rule[] = [
     anyOf: ["sales.quotation.view", "sales.quotation.prepare"],
   },
   { path: "/customer-decisions", anyOf: ["sales.customer-decision.view"] },
+  { path: "/customer-acceptances", anyOf: ["sales.customer-decision.view"] },
   { path: "/leads", anyOf: salesRead },
   { path: "/sales-stages", anyOf: [...salesRead, "sales.stage.manage"] },
   // Customers and trading partners (docs/domain/parties.md): reading is a shared reference lookup, but the screens are for those who maintain
@@ -265,6 +267,10 @@ export function canAccessScreen(
   if (pathname === "/customer-decisions" || /^\/customer-decisions\/[1-9]\d*$/.test(pathname))
     return customerDecisionAccess(permissions).view;
   if (pathname.startsWith("/customer-decisions/")) return false;
+  // A recorded acceptance: same production gate; it needs the independent decision and quotation reads.
+  if (/^\/customer-acceptances\/[1-9]\d*$/.test(pathname))
+    return customerAcceptanceAccess(permissions).read;
+  if (pathname.startsWith("/customer-acceptances")) return false;
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
     if (pathname === "/quotations") return access.detail || access.review;

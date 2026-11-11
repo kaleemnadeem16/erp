@@ -3,8 +3,12 @@ import {
   customerDecisionCasesIndex,
   customerDecisionCasesShow,
   customerDecisionCasesStore,
+  quotationsIndex,
+  quotationsIssued,
   type CustomerDecisionCasesIndexParams,
 } from "@erp/core-api";
+import { readListPage as readQuotationPage } from "../quotations/quotation-list-contract";
+import { readIssuedTerms } from "../quotations/quotation-issue-contract";
 import {
   readCaseDetail,
   readListPage,
@@ -29,6 +33,35 @@ export const liveCustomerDecisionGateway: CustomerDecisionGateway = {
   },
   detail: async (caseId) =>
     readCaseDetail(body(await customerDecisionCasesShow(caseId))),
+  quotationsFor: async (partyId) => {
+    const response = await quotationsIndex({
+      page: 1,
+      per_page: 100,
+      "filter[state]": "ISSUED",
+      sort: "-id",
+    });
+    return readQuotationPage(response.data)
+      .data.filter((row) => row.recipient_party_id === partyId)
+      .map((row) => ({
+        revision_id: row.revision_id,
+        family_id: row.family_id,
+        official_number: row.official_number,
+        availability: row.availability,
+      }));
+  },
+  quotationScopes: async (revisionId) => {
+    const issued = readIssuedTerms(body(await quotationsIssued(revisionId)));
+    return {
+      revision_id: issued.revision_id,
+      family_id: issued.family_id,
+      official_number: issued.official_number,
+      scopes:
+        issued.scope_acceptance?.map((s) => ({
+          issued_line_id: s.issued_line_id,
+          logical_scope_id: s.logical_scope_id,
+        })) ?? null,
+    };
+  },
   open: async ({ body: input, requestKey }) =>
     readOutcome(
       body(

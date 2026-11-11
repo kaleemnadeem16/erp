@@ -2,7 +2,7 @@
 
 # Full customer acceptance — backend slice 2
 
-**Implemented locally, inactive (2026-11-11).** No acceptance screen, live duty registration,
+**Implemented locally, inactive (2026-11-11).** The screens are delivered (below) behind the quotation UI gate, which is off in production. No live duty registration,
 permission holder, development-preview activation or new demo grant. The owner authorised the
 backend under the [brief's provisional defaults](../phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).
 The earlier built/missing inventory in that brief is historical. Slices 3–4 are not implemented.
@@ -93,6 +93,17 @@ scope; overlap is permitted but never forced. Issuer may accept. No role-name in
 mandate expansion or demo grant. No acceptance demo can run through the real Actions while nobody
 holds the inactive duty; the existing slice-1 observation demo is unchanged.
 
+## Screens
+
+All behind the existing quotation UI gate (off in production) and the exact staged duties; nothing is registered, granted or seeded. Wording never says "Won".
+
+- **Accept panel** on the issued-quotation screen (`/quotations/{revision}/issue`): per-scope badges (Accepted, Available, Claimed elsewhere, Not available) from `scope_acceptance`; one scope is chosen by radio; the customer message is chosen by search; the latest observation (the only one that counts) is shown and the server's consent rule is mirrored only to explain a disabled button. A person without the accept duty still sees the states and the reason. Needs `sales.customer-decision.view` and `sales.quotation.view` to see the panel, plus `sales.customer-decision.accept` to act.
+- **Review sheet**: GET acceptance-preview, exact terms, unchanged-terms statement, warnings, a confirm box, then POST with one Idempotency-Key per (intent, review token): an uncertain failure keeps it, a changed review mints a new one, a stale review needs "Review again".
+- **Acceptance detail** (`/customer-acceptances/{id}`): immutable terms, recorder/time, evidence and case link, claims, and the readiness panel showing NOT_READY honestly for SERVICE_JOB and GOODS_ORDER.
+- **Customer Messages**: "Record a customer message" gains the quotation-side picker (the customer's issued quotations, their scopes, linked as components); it needs `sales.quotation.view`, and says so without it.
+
+API limits the screens work around (no backend change): the issued read gives scope identities and state only, so line descriptions appear in the review, not in the panel; it does not say whether a scope belongs to a choice set, so the review asks as an ordinary scope first and as an alternative on PREVIEW_TOKEN_STALE (a preview writes nothing); the scope generation is 0 for a scope nobody holds.
+
 ## Completion and verification
 
 - Semantics/research: accepted R6 research reused; technical choices in ADR 0183; all ten owner defaults remain provisional.
@@ -100,7 +111,7 @@ holds the inactive duty; the existing slice-1 observation demo is unchanged.
 - Integrity: transaction/receipt, root and choice caps, append-only/truncate guards, deferred completeness, stale refusal; lifecycle and competing-consent/choice races tested in real sessions.
 - API: typed Resources, stable codes, additive issued facts and generated client; no schema hand edits.
 - Rollout: additive migration apply → rollback → re-apply passed; no activation or historical consent backfill.
-- UI/lookup/browser/phone/accessibility: not applicable to this backend-only task; screens remain separately owned.
+- UI/lookup/browser/phone/accessibility: delivered (see Screens); browser and unit specs cover gate, states, 320/390 px, light/dark and keyboard.
 - Demo: no new grant or acceptance seed, as required by inactive rollout.
 - Deferred: partial quantity, late reconciliation, corrections, claim release, evidence upload, handover and automatic WON.
 
