@@ -83,6 +83,20 @@ class CustomerAcceptanceFoundationTest extends TestCase
         $this->assertSame(0, $f['head']->refresh()->consumed);
     }
 
+    public function test_populated_migration_refuses_rollback_before_removing_guards(): void
+    {
+        $this->fixture();
+        $migration = require database_path('migrations/2026_12_11_100000_create_customer_acceptance_foundation.php');
+        try {
+            DB::transaction(fn () => $migration->down());
+            $this->fail('Rollback cannot discard a recorded policy or baseline.');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('separately approved backout', $e->getMessage());
+        }
+        $this->assertDatabaseCount('customer_scope_claim_heads', 1);
+        $this->refuses(fn () => DB::statement('TRUNCATE customer_scope_claim_heads CASCADE'));
+    }
+
     public function test_baselines_cannot_invent_consumption_and_policies_cannot_enable_verbal(): void
     {
         $f = $this->fixture();

@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 194 schemas that export a runtime value use `export *`.
+ * only the 195 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -585,6 +585,25 @@ export type * from "./customFieldDefinitionsIndex403";
 export * from "./customFieldDefinitionsIndexEntityType";
 export type * from "./customFieldDefinitionsIndexParams";
 export type * from "./customFieldDefinitionsStore201";
+export type * from "./customerAcceptanceOutcomeResource";
+export type * from "./customerAcceptancePreviewResource";
+export type * from "./customerAcceptancePreviewResourceIntent";
+export type * from "./customerAcceptancePreviewResourceIntentExpectedChoiceGeneration";
+export type * from "./customerAcceptancePreviewResourceTerms";
+export type * from "./customerAcceptancePreviewResourceTermsGross";
+export type * from "./customerAcceptancePreviewResourceTermsTax";
+export type * from "./customerAcceptancePreviewResourceTermsUomId";
+export type * from "./customerAcceptanceReadinessResource";
+export type * from "./customerAcceptanceResource";
+export type * from "./customerAcceptanceResourceScope";
+export type * from "./customerAcceptanceResourceScopeChoiceGroupId";
+export type * from "./customerAcceptanceResourceScopeGross";
+export type * from "./customerAcceptanceResourceScopeTax";
+export type * from "./customerAcceptanceResourceScopeUomId";
+export type * from "./customerAcceptancesReadiness200";
+export type * from "./customerAcceptancesReadinessParams";
+export * from "./customerAcceptancesReadinessPath";
+export type * from "./customerAcceptancesShow200";
 export type * from "./customerAccountResource";
 export type * from "./customerAccountResourceCreatedAt";
 export type * from "./customerAccountResourceCreditLimit";
@@ -1935,6 +1954,8 @@ export type * from "./quotationIssueReadinessResource";
 export type * from "./quotationIssueReadinessResourceBlockersItem";
 export type * from "./quotationIssueReadinessResourceBlockersItemLineId";
 export type * from "./quotationIssuedResource";
+export type * from "./quotationIssuedResourceScopeAcceptance";
+export type * from "./quotationIssuedResourceScopeAcceptanceAnyOfItem";
 export type * from "./quotationIssuedResourceTotals";
 export type * from "./quotationIssuedResourceTotalsAnyOf";
 export type * from "./quotationIssuedResourceTotalsAnyOfGrossTotal";
@@ -1953,6 +1974,13 @@ export type * from "./quotationSummaryResourceResponsibleOwnerId";
 export type * from "./quotationSummaryResourceValidThroughLocalDate";
 export type * from "./quotationTaxDeclarationResource";
 export type * from "./quotationTaxDeclarationResourceLineId";
+export type * from "./quotationsAcceptancePreview200";
+export type * from "./quotationsAcceptancePreviewParams";
+export type * from "./quotationsAcceptancesStore200";
+export type * from "./quotationsAcceptancesStore201";
+export type * from "./quotationsAcceptancesStore409";
+export type * from "./quotationsAcceptancesStore409Errors";
+export type * from "./quotationsAcceptancesStoreHeaders";
 export type * from "./quotationsApprovalDecide200";
 export type * from "./quotationsApprovalDecide201";
 export type * from "./quotationsApprovalDecide404";
@@ -2137,6 +2165,8 @@ export type * from "./recalculationRequestsShowParams";
 export type * from "./recalculationRequestsStore201";
 export type * from "./recalculationRequestsStore201Data";
 export type * from "./recalculationRequestsStore201DataAllOf";
+export type * from "./recordCustomerAcceptanceRequest";
+export type * from "./recordCustomerAcceptanceRequestExpectedChoiceGeneration";
 export type * from "./recordGoodsReceiptLineCompositionRequest";
 export type * from "./recordGoodsReceiptLineCompositionRequestCompositionItem";
 export type * from "./recordGoodsReceiptLineCompositionRequestCompositionItemCount";

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Sales\Models\QuotationDocumentDelivery;
 use App\Modules\Sales\Support\CustomerDecision\AcceptanceEligibility;
 use App\Modules\Sales\Support\CustomerDecision\AcceptanceIntent;
 use App\Modules\Sales\Support\CustomerDecision\AcceptanceReviewToken;
@@ -29,6 +30,8 @@ final class PreviewCustomerAcceptance
                 'uom_id' => $s->line->offered_uom_id, 'unit_price' => $s->line->unit_price, 'currency_id' => $s->line->price_currency_id,
                 'net' => $s->line->net, 'tax' => $s->line->tax, 'gross' => $s->line->gross],
                 'unchanged_terms_statement' => 'The customer agrees to this full scope on the exact issued terms, unchanged.',
+                'warnings' => QuotationDocumentDelivery::query()->where('revision_id', $s->revision->id)->where('is_withdrawal', false)
+                    ->whereNotIn('id', QuotationDocumentDelivery::query()->select('corrects_id')->whereNotNull('corrects_id'))->exists() ? [] : ['DELIVERY_NOT_RECORDED'],
                 'preview_token' => $this->tokens->issue($actor, AcceptanceIntent::digest($intent)), 'expires_in_seconds' => AcceptanceReviewToken::TTL_SECONDS];
         });
     }

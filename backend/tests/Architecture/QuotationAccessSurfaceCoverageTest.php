@@ -14,6 +14,8 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
 {
     /** route => [Action, policy path, duty, projection, behaviour suite] */
     private const SURFACES = [
+        'GET api/v1/quotations/{revision}/acceptance-preview' => ['PreviewCustomerAcceptance', 'lock', 'accept + decision.view + quotation.view', 'exact issued terms, opaque review', 'CustomerAcceptanceApiTest'],
+        'POST api/v1/quotations/{revision}/acceptances' => ['RecordCustomerAcceptance', 'lock', 'accept + decision.view + quotation.view', 'acceptance identity receipt', 'CustomerAcceptanceApiTest'],
         'GET api/v1/quotations' => ['ListQuotations', 'queryFor', 'view', 'safe identities', 'QuotationListApiTest'],
         'POST api/v1/quotations' => ['CreateQuotationDraft', 'queryFor', 'prepare', 'receipt identity', 'QuotationDraftWriteApiTest'],
         'GET api/v1/quotations/{revision}' => ['ReadQuotationDraft', 'requireRevision', 'view', 'safe header', 'QuotationDraftReviewApiTest'],

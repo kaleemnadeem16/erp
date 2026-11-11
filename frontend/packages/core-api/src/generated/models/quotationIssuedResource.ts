@@ -4,6 +4,7 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { QuotationIssuedResourceScopeAcceptance } from "./quotationIssuedResourceScopeAcceptance";
 import type { QuotationIssuedResourceTotals } from "./quotationIssuedResourceTotals";
 
 export interface QuotationIssuedResource {
@@ -18,5 +19,6 @@ export interface QuotationIssuedResource {
   valid_through_local_date: string;
   expires_at: string;
   availability: string;
+  scope_acceptance: QuotationIssuedResourceScopeAcceptance;
   totals: QuotationIssuedResourceTotals;
 }

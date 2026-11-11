@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Sales\Actions\ReadDiscountAuthorityConfiguration;
+use App\Modules\Sales\Http\Controllers\Api\V1\CustomerAcceptanceController;
 use App\Modules\Sales\Http\Controllers\Api\V1\CustomerDecisionCaseController;
 use App\Modules\Sales\Http\Controllers\Api\V1\DiscountAuthorityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
@@ -81,6 +82,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotation-families/{family}/change-access-unit', [QuotationFamilyAccessController::class, 'unit'])->whereNumber('family')->name('quotation-families.change-access-unit');
     Route::post('quotation-families/{family}/grant-access', [QuotationFamilyAccessController::class, 'grant'])->whereNumber('family')->name('quotation-families.grant-access');
     Route::post('quotation-families/{family}/revoke-access', [QuotationFamilyAccessController::class, 'revoke'])->whereNumber('family')->name('quotation-families.revoke-access');
+
+    Route::get('quotations/{revision}/acceptance-preview', [CustomerAcceptanceController::class, 'preview'])->whereNumber('revision')->name('quotations.acceptance-preview');
+    Route::post('quotations/{revision}/acceptances', [CustomerAcceptanceController::class, 'store'])->whereNumber('revision')->name('quotations.acceptances.store');
+    Route::get('customer-acceptances/{acceptance}', [CustomerAcceptanceController::class, 'show'])->whereNumber('acceptance')->name('customer-acceptances.show');
+    Route::get('customer-acceptances/{acceptance}/readiness', [CustomerAcceptanceController::class, 'readiness'])->whereNumber('acceptance')->name('customer-acceptances.readiness');
 
     Route::get('customer-decision-cases', [CustomerDecisionCaseController::class, 'index'])->name('customer-decision-cases.index');
     Route::post('customer-decision-cases', [CustomerDecisionCaseController::class, 'store'])->name('customer-decision-cases.store');

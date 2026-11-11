@@ -75,7 +75,7 @@ final class AcceptanceEligibility
         if (($choice->consumed ?? 0) !== 0) {
             throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::CHOICE_ALREADY_SELECTED, 'A choice in this group is already selected.');
         }
-        if (($s->line->choice_group_id === null && $intent['expected_choice_generation'] !== -1)
+        if (($s->line->choice_group_id === null && $intent['expected_choice_generation'] !== null)
             || ($s->line->choice_group_id !== null && $intent['expected_choice_generation'] !== ($choice->generation ?? 0))) {
             throw CustomerDecisionRefusal::make(CustomerDecisionRefusal::PREVIEW_TOKEN_STALE, 'The choice group changed; review it again.');
         }

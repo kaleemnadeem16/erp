@@ -17,6 +17,8 @@ use App\Modules\Sales\Models\CustomerDecisionEvidence;
 use App\Modules\Sales\Models\QuotationIssuedLine;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
+use App\Modules\Sales\Support\CustomerDecision\AcceptanceIntent;
+use App\Modules\Sales\Support\CustomerDecision\AcceptanceReviewToken;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
 use App\Modules\Sales\Support\Quotation\QuotationAcceptanceState;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -138,6 +140,39 @@ class CustomerAcceptanceActionsTest extends TestCase
         $this->expectException(DomainInvariantException::class);
         $this->expectExceptionMessage('That request key was already used for a different request.');
         $this->record('record', $token);
+    }
+
+    public function test_case_changes_after_preview_refuse_and_leave_no_claim_or_receipt(): void
+    {
+        $token = $this->preview()['preview_token'];
+        CustomerDecisionCase::query()->increment('generation');
+        try {
+            $this->record('stale', $token);
+            $this->fail('Moved consent must be reviewed again.');
+        } catch (DomainInvariantException $e) {
+            $this->assertSame('DECISION_CASE_STALE', $e->reasonCode);
+        }
+        $this->assertDatabaseCount('customer_acceptances', 0);
+        $this->assertDatabaseCount('customer_scope_claim_heads', 0);
+        $this->assertDatabaseCount('sales_customer_decision_receipts', 0);
+    }
+
+    public function test_expiry_uses_the_company_day_at_decision_and_not_the_preview_time(): void
+    {
+        $token = $this->preview()['preview_token'];
+        $revision = QuotationRevision::findOrFail($this->args[0]);
+        $this->travelTo($revision->expires_at);
+        try {
+            // Fresh review-token failure is separate from the final eligibility check.
+            $intent = AcceptanceIntent::of(...[...$this->args, null]);
+            $token = app(AcceptanceReviewToken::class)->issue($this->checker, AcceptanceIntent::digest($intent));
+            $this->record('expired-offer', $token);
+            $this->fail('An expired offer cannot be accepted.');
+        } catch (DomainInvariantException $e) {
+            $this->assertSame('QUOTATION_NOT_AVAILABLE', $e->reasonCode);
+        }
+        $this->assertDatabaseCount('customer_acceptances', 0);
+        $this->assertDatabaseCount('sales_customer_decision_receipts', 0);
     }
 
     public function test_an_expired_review_refuses_without_evidence(): void

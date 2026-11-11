@@ -35,7 +35,7 @@ class CustomerAcceptanceRaceTest extends TestCase
     use RefreshDatabase;
     use TwoSessionRace;
 
-    private function fixture(): array
+    private function fixture(bool $choices = false): array
     {
         $pdo = $this->raceSession();
         $prefix = 'ca'.bin2hex(random_bytes(3));
@@ -50,12 +50,15 @@ class CustomerAcceptanceRaceTest extends TestCase
         $this->app->instance(SalesDutyManifest::class, SalesDutyManifest::shipped()->withActivated($names));
         $this->app->instance(QuotationTaxProvider::class, new FakeQuotationTaxProvider);
         $this->app->instance(QuotationControlsProvider::class, new FakeQuotationControlsProvider);
-        $data = $this->raceCommitted(function () use ($actor, $r): array {
+        $data = $this->raceCommitted(function () use ($actor, $r, $choices): array {
             $user = User::findOrFail($actor);
             $party = (int) DB::table('parties')->where('company_id', $r['company'])->value('id');
             $today = now('Asia/Karachi')->toDateString();
             $draft = app(CreateQuotationDraft::class)($user, 'draft', ['recipient_party_id' => $party, 'pricing_date' => $today, 'tax_estimate_date' => $today, 'valid_through_local_date' => now('Asia/Karachi')->addMonth()->toDateString()]);
-            app(UpdateQuotationDraft::class)($user, $draft->revisionId, $draft->inputGeneration, 'lines', ['add_lines' => [['source_kind' => 'MANUAL', 'description' => 'Synthetic full scope', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '100.0000']]]);
+            app(UpdateQuotationDraft::class)($user, $draft->revisionId, $draft->inputGeneration, 'lines', ['add_lines' => $choices ? [
+                ['source_kind' => 'MANUAL', 'description' => 'Synthetic option A', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '100.0000', 'membership' => 'CHOOSE_ONE', 'choice_group_ref' => 'choice', 'is_baseline' => true],
+                ['source_kind' => 'MANUAL', 'description' => 'Synthetic option B', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '110.0000', 'membership' => 'CHOOSE_ONE', 'choice_group_ref' => 'choice'],
+            ] : [['source_kind' => 'MANUAL', 'description' => 'Synthetic full scope', 'manual_measure' => 'job', 'offered_quantity' => '1', 'unit_price' => '100.0000']]]);
             $revision = QuotationRevision::findOrFail($draft->revisionId);
             app(IssueQuotation::class)($user, $revision->id, $revision->input_generation, 'issue');
             $line = QuotationIssuedLine::where('revision_id', $revision->id)->firstOrFail();
@@ -63,12 +66,12 @@ class CustomerAcceptanceRaceTest extends TestCase
             $component = CustomerDecisionComponent::create(['case_id' => $case->id, 'intent_identity' => 'scope', 'family_id' => $line->family_id, 'original_scope_anchor_id' => $line->logical_scope_id, 'recorded_by' => $actor]);
             $e = CustomerDecisionEvidence::create(['case_id' => $case->id, 'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE', 'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => 'The customer agrees to the full issued scope unchanged.', 'observation_state' => 'OBSERVED', 'recorded_by' => $actor]);
             $args = [$revision->id, $component->id, $e->id, $line->id, 0, 0];
-            $token = app(PreviewCustomerAcceptance::class)($user, ...$args)['preview_token'];
+            $token = app(PreviewCustomerAcceptance::class)($user, ...[...$args, $choices ? 0 : null])['preview_token'];
             $next = app(CreateQuotationRevision::class)($user, $revision->id, 'next');
             $draftLine = QuotationDraftLine::where('revision_id', $next->revisionId)->firstOrFail();
             $updated = app(UpdateQuotationDraft::class)($user, $next->revisionId, $next->inputGeneration, 'reprice', ['pricing_date' => $today, 'tax_estimate_date' => $today, 'valid_through_local_date' => now('Asia/Karachi')->addMonth()->toDateString(), 'update_lines' => [['id' => $draftLine->id, 'unit_price' => '110.0000']]]);
 
-            return ['args' => $args, 'token' => $token, 'revision' => $revision->id, 'next' => $updated->revisionId, 'generation' => $updated->inputGeneration];
+            return ['choice' => $choices ? 0 : null, 'args' => $args, 'token' => $token, 'revision' => $revision->id, 'next' => $updated->revisionId, 'generation' => $updated->inputGeneration];
         });
 
         return $data + compact('pdo', 'r', 'actor');
@@ -76,7 +79,7 @@ class CustomerAcceptanceRaceTest extends TestCase
 
     private function accept(array $f, string $key = 'accept'): \Closure
     {
-        return fn () => app(RecordCustomerAcceptance::class)(User::findOrFail($f['actor']), $key, ...[...$f['args'], null, $f['token'], true]);
+        return fn () => app(RecordCustomerAcceptance::class)(User::findOrFail($f['actor']), $key, ...[...$f['args'], $f['choice'], $f['token'], true]);
     }
 
     private function lifecycle(array $f, bool $replace): \Closure
@@ -149,6 +152,38 @@ class CustomerAcceptanceRaceTest extends TestCase
             $this->assertSame('1', (string) $f['pdo']->query("select sum(consumed) from customer_scope_claim_heads where company_id={$f['r']['company']}")->fetchColumn());
         } finally {
             $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    private function anotherConsent(array $f, bool $alternative = false): array
+    {
+        return $this->raceCommitted(function () use ($f, $alternative): array {
+            $l = QuotationIssuedLine::where('revision_id', $f['revision'])->orderBy('id', $alternative ? 'desc' : 'asc')->firstOrFail();
+            $original = CustomerDecisionComponent::findOrFail($f['args'][1]);
+            $case = CustomerDecisionCase::create(['party_id' => CustomerDecisionCase::findOrFail($original->case_id)->party_id, 'intake_identity' => 'Second synthetic consent', 'recorded_by' => $f['actor']]);
+            $component = CustomerDecisionComponent::create(['case_id' => $case->id, 'intent_identity' => 'second', 'family_id' => $l->family_id, 'original_scope_anchor_id' => $l->logical_scope_id, 'recorded_by' => $f['actor']]);
+            $e = CustomerDecisionEvidence::create(['case_id' => $case->id, 'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE', 'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => 'A second agreement to this scope.', 'observation_state' => 'OBSERVED', 'recorded_by' => $f['actor']]);
+            $args = [$f['revision'], $component->id, $e->id, $l->id, 0, 0];
+            $token = app(PreviewCustomerAcceptance::class)(User::findOrFail($f['actor']), ...[...$args, $f['choice']])['preview_token'];
+
+            return array_replace($f, ['args' => $args, 'token' => $token]);
+        });
+    }
+
+    public function test_competing_consents_and_competing_choice_options_have_exactly_one_winner(): void
+    {
+        foreach ([false, true] as $choice) {
+            $f = $this->fixture($choice);
+            try {
+                $second = $this->anotherConsent($f, $choice);
+                $o = $this->raceAction($f['pdo'], $this->authorityGate($f), $this->accept($second, 'second'), fn (PDO $h) => $this->onHolder($h, $this->accept($f, 'first')));
+                $this->assertFalse($o['success']);
+                $this->assertStringContainsString($choice ? 'choice in this group' : 'scope is already claimed', (string) $o['message']);
+                $this->assertSame('1', (string) $f['pdo']->query("select count(*) from customer_acceptances where company_id={$f['r']['company']}")->fetchColumn());
+                $this->assertSame($choice ? '2' : '1', (string) $f['pdo']->query("select count(*) from customer_claim_events where company_id={$f['r']['company']}")->fetchColumn());
+            } finally {
+                $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+            }
         }
     }
 
