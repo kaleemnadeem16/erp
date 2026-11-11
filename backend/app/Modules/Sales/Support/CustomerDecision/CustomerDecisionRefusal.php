@@ -37,6 +37,10 @@ final class CustomerDecisionRefusal
 
     public const QUOTATION_NOT_AVAILABLE = 'QUOTATION_NOT_AVAILABLE';
 
+    public const HANDOVER_PATH_UNSUPPORTED = 'HANDOVER_PATH_UNSUPPORTED';
+
+    public const HANDOVER_NOT_READY = 'HANDOVER_NOT_READY';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

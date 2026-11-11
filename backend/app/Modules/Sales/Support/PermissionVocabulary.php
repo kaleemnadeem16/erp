@@ -96,6 +96,8 @@ final class PermissionVocabulary
      * Actions and routes exist and are guarded, but `SalesAccess` refuses every caller until the manifest activates it. It is an independent right: recording does not imply
      * reading, and reading never implies recording. Not in `all()`.
      */
+    public const HANDOVER_PREPARE = 'sales.handover.prepare';
+
     public const CUSTOMER_DECISION_ACCEPT = 'sales.customer-decision.accept';
 
     public const CUSTOMER_DECISION_VIEW = 'sales.customer-decision.view';

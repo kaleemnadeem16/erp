@@ -60,7 +60,7 @@ final class SalesDutyCatalogue
             new SalesDuty('sales.customer-decision.correct', DutyClass::Sensitive, DutyStatus::Specified, 'Governed accepted reduction', 'Exact consent/impact', 'HA6/CA5'),
             new SalesDuty('sales.customer-decision.evidence.view', DutyClass::Sensitive, DutyStatus::Specified, 'Confidential evidence/files', 'Evidence-read', 'CA1 + file adapter'),
             new SalesDuty('sales.handover.view', DutyClass::NewOrdinary, DutyStatus::Specified, 'Safe plan/readiness/target links', 'Operational', 'HA1'),
-            new SalesDuty('sales.handover.prepare', DutyClass::NewOrdinary, DutyStatus::Specified, 'Prepare plan, no target/stock', 'Operational', 'HA1'),
+            new SalesDuty(PermissionVocabulary::HANDOVER_PREPARE, DutyClass::NewOrdinary, DutyStatus::Staged, 'Prepare plan, no target/stock', 'Operational', 'HA1'),
             new SalesDuty('sales.handover.release', DutyClass::Sensitive, DutyStatus::Specified, 'Release exact supported component', 'Operational + baseline', 'HA2 + real target'),
             new SalesDuty('sales.handover.hold', DutyClass::Sensitive, DutyStatus::Specified, 'Authorised operational hold', 'Operational', 'HA5'),
             new SalesDuty('sales.handover.amend', DutyClass::Sensitive, DutyStatus::Specified, 'Schedule/unused cancellation/reassignment', 'Operational/impact', 'HA4/5'),

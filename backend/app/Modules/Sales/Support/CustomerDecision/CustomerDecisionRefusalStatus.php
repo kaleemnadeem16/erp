@@ -19,6 +19,8 @@ final class CustomerDecisionRefusalStatus
 
     /** @var array<string, int> */
     public const MAP = [
+        CustomerDecisionRefusal::HANDOVER_PATH_UNSUPPORTED => self::UNPROCESSABLE,
+        CustomerDecisionRefusal::HANDOVER_NOT_READY => self::UNPROCESSABLE,
         CustomerDecisionRefusal::ACCEPTANCE_NOT_FOUND => self::NOT_FOUND,
         CustomerDecisionRefusal::ACCEPTANCE_NOT_ELIGIBLE => self::UNPROCESSABLE,
         CustomerDecisionRefusal::SCOPE_ALREADY_CLAIMED => self::CONFLICT,
