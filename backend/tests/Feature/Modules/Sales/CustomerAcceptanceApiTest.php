@@ -67,8 +67,8 @@ class CustomerAcceptanceApiTest extends TestCase
         $a = $this->postJson($this->recordUrl(), $body, ['Idempotency-Key' => 'accept'])->assertCreated()->assertJsonPath('data.replayed', false)->json('data.acceptance_id');
         $this->postJson($this->recordUrl(), $body, ['Idempotency-Key' => 'accept'])->assertOk()->assertHeader('Idempotency-Replayed', 'true')->assertJsonPath('data.acceptance_id', $a);
         $this->getJson("/api/v1/customer-acceptances/{$a}")->assertOk()->assertJsonPath('data.scope.net', '200.0000')->assertJsonPath('data.unchanged_terms', true)->assertJsonMissingPath('data.intent_digest');
-        $this->getJson("/api/v1/customer-acceptances/{$a}/readiness")->assertOk()->assertJsonPath('data.status', 'NOT_READY')->assertJsonPath('data.missing.0', 'SERVICE_JOB_ADAPTER_NOT_DELIVERED');
-        $this->getJson("/api/v1/customer-acceptances/{$a}/readiness?path=GOODS_ORDER")->assertOk()->assertJsonPath('data.missing.0', 'HANDOVER_PATH_UNSUPPORTED');
+        $this->getJson("/api/v1/customer-acceptances/{$a}/readiness")->assertUnprocessable()->assertJsonPath('reason_code', 'HANDOVER_PATH_UNSUPPORTED');
+        $this->getJson("/api/v1/customer-acceptances/{$a}/readiness?path=GOODS_ORDER")->assertUnprocessable()->assertJsonPath('reason_code', 'HANDOVER_PATH_UNSUPPORTED');
         $this->getJson("/api/v1/quotations/{$this->revision}/issued")->assertOk()->assertJsonPath('data.scope_acceptance.0.status', 'ACCEPTED')->assertJsonPath('data.scope_acceptance.1.status', 'AVAILABLE');
         $this->getJson('/api/v1/customer-decision-cases/'.CustomerDecisionCase::firstOrFail()->id)->assertOk()->assertJsonPath('data.case.consent_recorded', true);
         $this->postJson($this->recordUrl(), array_replace($body, ['expected_case_generation' => 1]), ['Idempotency-Key' => 'accept'])->assertConflict()->assertJsonPath('reason_code', 'REQUEST_KEY_REUSED');

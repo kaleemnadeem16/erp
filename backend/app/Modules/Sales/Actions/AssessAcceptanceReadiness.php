@@ -5,19 +5,29 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Sales\Support\Handover\HandoverAccess;
+use App\Modules\Sales\Support\Handover\HandoverInput;
+use App\Modules\Sales\Support\Handover\ServiceHandoverAssessment;
+use Illuminate\Support\Facades\DB;
 
-/** Acceptance is valid while operational readiness is pending. No receiver is delivered in slice 2; never implies release, credit or finance clearance. */
+/** Current source-specific prerequisites with owning next actions, distinct from valid commercial consent and from release. */
 final class AssessAcceptanceReadiness
 {
-    public function __construct(private readonly ReadCustomerAcceptance $read) {}
+    public function __construct(private readonly HandoverAccess $access, private readonly ServiceHandoverAssessment $assessment) {}
 
-    /** @return array{acceptance_id: int, assessment_version: string, path: string, status: string, missing: list<string>} */
-    public function __invoke(User $actor, int $acceptanceId, string $path = 'SERVICE_JOB'): array
+    /**
+     * @param  array<string,mixed>  $context
+     * @return array<string,mixed>
+     */
+    public function __invoke(User $actor, int $acceptanceId, string $path = 'SERVICE_JOB', array $context = []): array
     {
-        // The read Action performs both guards and safe company/quotation lookup inside its transaction.
-        $this->read->__invoke($actor, $acceptanceId);
+        HandoverAccess::early($actor, false);
+        $inputs = HandoverInput::normalise(array_replace($context, ['path' => $path]));
 
-        return ['acceptance_id' => $acceptanceId, 'assessment_version' => 'ACCEPTANCE_READINESS.1', 'path' => $path, 'status' => 'NOT_READY',
-            'missing' => [$path === 'SERVICE_JOB' ? 'SERVICE_JOB_ADAPTER_NOT_DELIVERED' : 'HANDOVER_PATH_UNSUPPORTED']];
+        return DB::transaction(function () use ($actor, $acceptanceId, $inputs): array {
+            $s = $this->access->lock($actor, $acceptanceId, false);
+
+            return $this->assessment->assess($s, $inputs)['assessment'];
+        });
     }
 }

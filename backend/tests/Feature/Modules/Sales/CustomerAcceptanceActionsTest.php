@@ -90,9 +90,12 @@ class CustomerAcceptanceActionsTest extends TestCase
         $this->assertTrue(app(QuotationAcceptanceState::class)->stands(QuotationRevision::findOrFail($this->args[0])));
         $read = app(ReadCustomerAcceptance::class)($this->checker, $a['acceptance_id']);
         $this->assertSame('200.0000', $read['scope']['net']);
-        $ready = app(AssessAcceptanceReadiness::class)($this->checker, $a['acceptance_id']);
-        $this->assertSame('NOT_READY', $ready['status']);
-        $this->assertSame(['SERVICE_JOB_ADAPTER_NOT_DELIVERED'], $ready['missing']);
+        try {
+            app(AssessAcceptanceReadiness::class)($this->checker, $a['acceptance_id']);
+            $this->fail('Manual scope has no service adapter.');
+        } catch (DomainInvariantException $e) {
+            $this->assertSame('HANDOVER_PATH_UNSUPPORTED', $e->reasonCode);
+        }
         Permission::findOrCreate(P::QUOTATION_WITHDRAW, 'web');
         $this->checker->givePermissionTo(P::QUOTATION_WITHDRAW);
         $this->app->instance(SalesDutyManifest::class, app(SalesDutyManifest::class)->withActivated([P::QUOTATION_WITHDRAW]));
