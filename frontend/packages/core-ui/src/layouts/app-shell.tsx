@@ -48,6 +48,7 @@ import {
   BookText,
   Coins,
   Contact,
+  MessageSquareText,
   Warehouse,
   Wrench,
 } from "lucide-react";
@@ -132,6 +133,8 @@ const navGroups: NavGroup[] = [
       { to: "/opportunities", label: "Opportunities", icon: Handshake },
       // The shared screen gate hides this everywhere unless localhost dev opt-in and the exact duty allow it.
       { to: "/quotations", label: "Quotations", icon: FileText },
+      // Same shared gate: hidden everywhere unless the localhost dev opt-in and the exact read duty allow it.
+      { to: "/customer-decisions", label: "Customer Messages", icon: MessageSquareText },
       { to: "/customers", label: "Customers", icon: Contact },
       { to: "/parties", label: "Trading Partners", icon: UsersRound },
       { to: "/leads", label: "Enquiries", icon: Inbox },

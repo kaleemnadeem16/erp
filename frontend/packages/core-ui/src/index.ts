@@ -302,6 +302,7 @@ export { QuotationListRoute, QuotationIssueRoute, QuotationDocumentRoute, Quotat
 export { DiscountAuthoritySettingsScreen } from "./features/discount-authority/discount-authority-settings-screen";
 export { DiscountAuthorityReferencesScreen } from "./features/discount-authority/discount-authority-references-screen";
 export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
+export { CustomerDecisionListRoute, CustomerDecisionCaseRoute } from "./features/customer-decisions/customer-decision-routes";
 
 export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";
 export { QuotationEditScreen } from "./features/quotations/quotation-edit-screen";

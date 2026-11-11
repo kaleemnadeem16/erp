@@ -6,6 +6,8 @@ import {
   QuotationApprovalRoute,
   QuotationIssueRoute,
   QuotationDocumentRoute,
+  CustomerDecisionListRoute,
+  CustomerDecisionCaseRoute,
   QuotationAuthorityHistoryRoute,
   QuotationCreateScreen,
   QuotationEditScreen,
@@ -210,6 +212,9 @@ export function AppRouter() {
         <Route path="/quotations/:revision/issue" element={<ProtectedRoute><AppShell><QuotationIssueRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/discount-authority-history" element={<ProtectedRoute><AppShell><QuotationAuthorityHistoryRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/document" element={<ProtectedRoute><AppShell><QuotationDocumentRoute /></AppShell></ProtectedRoute>} />
+        {/* What the customer sent: gated like the quotation screens above (denies before any request in production); the exact read duty is also required. */}
+        <Route path="/customer-decisions" element={<ProtectedRoute><AppShell><CustomerDecisionListRoute /></AppShell></ProtectedRoute>} />
+        <Route path="/customer-decisions/:case" element={<ProtectedRoute><AppShell><CustomerDecisionCaseRoute /></AppShell></ProtectedRoute>} />
         <Route
           path="/quotations/:revision"
           element={<ProtectedRoute><AppShell><QuotationDetailScreen /></AppShell></ProtectedRoute>}
