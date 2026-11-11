@@ -160,6 +160,19 @@ reservation, production, work and actuals; Finance owns invoicing/payment/credit
 Required R5/R6 partial-family operations remain blocked until actual supported integrated adapters
 are delivered and verified under separate code authority; architecture acceptance alone is insufficient.
 
+## Slice 3 implementation in progress (2026-11-11)
+
+Five append-only tables now define inactive preparation: handover_plans (one per acceptance,
+private review token and exact inputs), handover_allocations (one full accepted line),
+handover_stages (one initial PREPARED stage, no target id), handover_baselines (frozen issued-line
+reference and permitted operational snapshot), handover_readiness_evidence (pending assessment).
+Composite company FKs and checked parent/Party links preserve the acceptance chain; deferred
+completeness requires the aggregate to commit atomically. BEFORE UPDATE/DELETE/TRUNCATE guards
+protect every table. Rollback locks first and refuses populated storage. All constraints validate
+on new tables; no historical violation needs registry entry. Receipts reuse the existing decision
+operation. [ADR 0184](../decisions/0184-prepare-pending-service-handovers-without-release.md)
+records scope and explicit unresolved release dependencies. No grants or activation.
+
 ## Related
 
 - [0136](../decisions/0136-govern-source-appropriate-operational-handover.md)

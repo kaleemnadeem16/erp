@@ -1274,3 +1274,9 @@ Verification (ERP_AGENT=codex-ca2, wrapper/private databases, focused class filt
 - Post-M4 `ERP_AGENT=codex-ca2 docker/backend/codegen.sh --check` passed: client matches the commit.
 - Browser checks not applicable: backend-only task, no UI changed. Full backend suite not run,
   per implementer instructions. No push or main-branch change.
+
+### 2026-11-11 — Service handover preparation slice 3 started
+
+Inactive append-only plan/allocation/stage/baseline/readiness storage with tenant/parent guards
+and deferred aggregate completeness. ADR 0184 records pending-plan semantics and source-owned
+release dependencies. No Job, release, grant, preview activation or demo grant.
