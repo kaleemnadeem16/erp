@@ -170,3 +170,15 @@ authority evaluation; quotation writes append SHADOW/ENFORCE evaluations. Config
 HTTP APIs and the final create-only Company 1 demo are implemented; no duties, holders or company
 modes are activated. API/rollout contract: [discount authority](../../../../docs/domain/quotation-discount-authority-api.md). Generated-client verification remains owner-run.
 See the [specification and current gate](../../../../docs/domain/quotation-discount-authority.md#stage-2-internal-configuration-and-evaluation).
+
+## Full customer acceptance (slice 2, inactive backend)
+
+`PreviewCustomerAcceptance` and `RecordCustomerAcceptance` record one full independent scope per
+case component, from frozen issued terms, with DecisionActor, opaque review, existing decision
+receipts and atomic root/choice claims. `ReadCustomerAcceptance` and `AssessAcceptanceReadiness`
+provide safe detail and pending readiness. `QuotationAcceptanceState` now reads real immutable
+acceptances, so withdraw/replace refuse after consent. Four guarded routes and the generated
+client are delivered; no screen, duty registration/holder, dev-preview activation, demo grant
+or handover. [Backend contract](../../../../docs/domain/sales-full-acceptance.md),
+[journey](../../../../docs/journeys/record-full-customer-acceptance.md) and
+[provisional defaults](../../../../docs/phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).

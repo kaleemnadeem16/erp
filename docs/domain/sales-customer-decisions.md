@@ -2,7 +2,7 @@
 
 # Sales customer decisions
 
-**2026-10-14 · ACCEPTED architecture, SPECIFIED contracts. Intake (CA1: the case, its components and the observation chain) is implemented with API and screens, gated and STAGED (2026-11-11); acceptance, claims, readiness and handover are NOT IMPLEMENTED or VERIFIED.**
+**2026-10-14 · ACCEPTED architecture, SPECIFIED contracts. Intake (CA1: the case, its components and the observation chain) is implemented with API and screens, gated and STAGED (2026-11-11); full acceptance, claims and basic pending-readiness are implemented backend-only and inactive (slice 2, 2026-11-11); handover remains unimplemented.**
 Governing ADRs: [0125](../decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md)
 (C1/C2/C3/C6/C8), [0126](../decisions/0126-conserve-acceptance-entitlements-and-allocation-evidence.md)
 (C4), [0127](../decisions/0127-record-customer-decision-evidence-and-atomic-business-claims.md)
@@ -207,10 +207,10 @@ before the case is looked up is the same 403 whether or not the case exists; ano
 person who holds both. Screens: **Customer Messages** (list, search, open a case) and the case page (header, linked quotations, observation chain oldest first, add an observation in a sheet).
 Journey: [Record what the customer sent](../journeys/customer-messages.md).
 
-## Slice 2 storage (in progress, 2026-11-11)
+## Delivered: backend full acceptance (slice 2, inactive, 2026-11-11)
 
 [ADR 0183](../decisions/0183-record-full-acceptance-under-the-sales-authority-fence.md) defines
-five inactive tables: immutable `customer_evidence_policy_versions`, `customer_acceptances`,
+[backend contract and verification](sales-full-acceptance.md) document five inactive tables: immutable `customer_evidence_policy_versions`, `customer_acceptances`,
 `customer_acceptance_lines`, `customer_claim_events`, and event-maintained
 `customer_scope_claim_heads`. Each component accepts one full independently acceptable scope.
 Lines reference the immutable issued-line snapshot, preserving its exact quantities, settled
@@ -222,6 +222,8 @@ labelled BASELINE_CAPTURED. No historical rows are rewritten; new-table constrai
 immediately (ADR 0180 has no historical violations to register).
 
 ## Related
+
+- [Full acceptance backend](sales-full-acceptance.md) — routes, guards, readiness and rollout
 
 - [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0131–0132 and 0136; necessary adapters remain undelivered, so affected partial-family/correction gates remain.
 

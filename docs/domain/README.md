@@ -116,6 +116,7 @@ Lead → Opportunity → Quotation (revisions) → Job → Work Order → Invoic
 | [quotation-documents.md](quotation-documents.md) | Accepted R8 customer projection, templates, formal artefacts and storage/recovery; specified, not delivered |
 | [quotation-delivery-evidence.md](quotation-delivery-evidence.md) | Accepted R8 channel/recipient/retry evidence and R6 consent-method boundary; specified, not delivered |
 | [sales-operational-handover.md](sales-operational-handover.md) | Accepted R7 operational allocations, targets, baselines and bounded corrections; specified, not delivered |
+| [sales-full-acceptance.md](sales-full-acceptance.md) | Delivered inactive backend full-scope acceptance, policy, claim conservation, readiness and API |
 | [sales-customer-decisions.md](sales-customer-decisions.md) | Accepted R6 consent, immutable commitments, evidence, capacities and customer-decision Action contracts |
 | [crm-corrections.md](crm-corrections.md) | Accepted intake, enquiry corrections and historical responsibility evidence (specified, not implemented) |
 | [job-labour-recognition.md](job-labour-recognition.md) | Accepted0146 flexible labour evidence, recognition, three completeness axes and corrections; specified, not implemented |

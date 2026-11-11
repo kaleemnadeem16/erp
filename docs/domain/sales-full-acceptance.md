@@ -1,0 +1,112 @@
+[← Domain index](README.md)
+
+# Full customer acceptance — backend slice 2
+
+**Implemented locally, inactive (2026-11-11).** No acceptance screen, live duty registration,
+permission holder, development-preview activation or new demo grant. The owner authorised the
+backend under the [brief's provisional defaults](../phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).
+The earlier built/missing inventory in that brief is historical. Slices 3–4 are not implemented.
+
+## Semantics and storage
+
+One case component accepts one full independently acceptable issued scope, selecting exactly one
+option when it belongs to a choose-one group. Separate independent scopes use separate components.
+There is no quantity or price editor. Consent never creates an Order, Job, reservation, invoice,
+revenue, financial account or Opportunity outcome. CustomerAccount is not an acceptance prerequisite.
+
+| Table | Authoritative facts |
+|---|---|
+| `customer_evidence_policy_versions` | Immutable fixed initial policy, version 1: written source, named representative, DOCUMENT_ON_FILE or CONFIRMED_BY_SELLER verification; verbal disabled. No policy editor/activation API. |
+| `customer_acceptances` | One immutable fact per company/component; same case/customer/family as its issued revision and current written consent; actor, database recording instant, exact intent digest, pinned policy. |
+| `customer_acceptance_lines` | One immutable link to the issued line per acceptance; the issued line retains exact quantity, UoM, settled money, currency, tax and FX evidence. No recomputation or duplicated monetary ledger. |
+| `customer_scope_claim_heads` | One original-scope or choice-group anchor; capacity 1 means one whole entitlement, independently of the offered UoM/quantity. Zero-consumed baselines are created lazily and labelled BASELINE_CAPTURED. |
+| `customer_claim_events` | Immutable full consumption events; sequence 1, delta 1. Inserts maintain the heads; no release or decrement path. |
+
+All links are company-composite FKs. Database identity/lineage guards and deferred completeness
+require acceptance, its line and every root/choice claim to commit together. Direct head mutation,
+over-consumption, duplicate components/lines and UPDATE/DELETE/TRUNCATE of history are refused.
+`down()` takes exclusive locks before checking and refuses while any evidence or baseline exists.
+All constraints are on new empty tables, immediately validated; no historical-row violation needs
+an ADR 0180 integrity-registry entry. Entitlement-consumption ledgers for partial pricing remain deferred.
+
+## Decision and replay protocol
+
+Both Preview and Record call `DecisionActor::require` via `CustomerDecisionAccess::decide` inside
+the transaction, before authority/record locks or receipts. The fresh ACTIVE member needs
+`sales.customer-decision.accept`, independent `sales.customer-decision.view`, and independent
+quotation-family view without named delegation. Decision duties with limited scope fail closed;
+foreign/hidden source identities are not-found. Party read follows the existing active-member,
+company-scoped Parties rule, without adding a new Party duty.
+
+Lock order: company access fence → existing Sales authority head → case → existing claim heads
+in ascending id → revision → inserts. The authority head serialises lazy head creation and
+existing withdraw/replace Actions, which already use that coordinator (ADR 0183/0164).
+Preview creates no acceptance, baseline, policy or operation receipt. It returns exact issued
+terms, an unchanged-terms statement and a ten-minute encrypted actor/company/intent-bound token.
+It warns `DELIVERY_NOT_RECORDED` where there is no standing recorded PDF delivery, without making
+delivery a consent prerequisite or disclosing delivery contacts.
+
+Record uses the unchanged `CustomerDecisionOperation`: one per-actor request-key receipt, atomic
+with all business facts. Exact receipt replay and matching component replay (even a fresh key or
+another authorised person) precede mutable eligibility/token checks; changed intent conflicts.
+Every replay first repeats current authority and source access, so suspension/revocation refuses.
+A new decision requires current observation/case/claim generations, valid review, available offer,
+and verified written consent. Expiry is checked under the locks using the company calendar day
+and the issued expiry instant. No UTC-date or database-current-date substitution.
+
+## API contract
+
+All routes use `auth:sanctum`, Form Requests, Action guards and typed Resources. Duties remain
+STAGED and the acceptance duty is absent from every preview/automatic grant. A hand-created
+permission row cannot bypass the manifest. An unauthenticated caller gets 401; inactive/limited
+duties get 403; foreign/hidden identities get 404.
+
+| Route (under `/api/v1`) | Inputs/result |
+|---|---|
+| `GET /quotations/{revision}/acceptance-preview` | `component_id`, `evidence_id`, `issued_line_id`, `expected_case_generation`, `expected_scope_generation`, optional nullable `expected_choice_generation`. Exact terms and opaque review. |
+| `POST /quotations/{revision}/acceptances` | Same intent, `preview_token`, `unchanged_terms: true`, `Idempotency-Key` header. Returns `acceptance_id`, `case_id`, `replayed`; 201 for new request, 200 plus Idempotency-Replayed for receipt replay. |
+| `GET /customer-acceptances/{acceptance}` | Safe immutable agreed scope, recording identity/time, case/evidence links and FULL_ONLY policy; no cost, margin, intent digest or internal tax/FX fingerprints. |
+| `GET /customer-acceptances/{acceptance}/readiness` | Optional `path=SERVICE_JOB|GOODS_ORDER`; current assessment, separate from acceptance truth. |
+
+`GET /quotations/{revision}/issued` additively returns nullable `scope_acceptance`, a list of
+issued-line/scope identities with ACCEPTED, CLAIMED, AVAILABLE or UNAVAILABLE. It is null without
+decision view and never identifies a competing acceptance. The case consent flag derives only
+from accepted components whose family the caller may independently see. Generated client changes
+are limited to these routes and the additive issued Resource.
+
+409 codes: REQUEST_KEY_REUSED, DECISION_CASE_STALE, SCOPE_ALREADY_CLAIMED,
+CHOICE_ALREADY_SELECTED, PREVIEW_TOKEN_STALE, DECISION_INTENT_CONFLICT. Business refusals
+ACCEPTANCE_NOT_ELIGIBLE and QUOTATION_NOT_AVAILABLE are 422. Existing key/input codes are reused.
+No hidden competing identity or quantity appears in a refusal.
+
+## Readiness and rollout
+
+Readiness is deliberately NOT_READY: SERVICE_JOB_ADAPTER_NOT_DELIVERED for SERVICE_JOB;
+HANDOVER_PATH_UNSUPPORTED for GOODS_ORDER. No receiver or source-support registry is delivered
+here. Site/contact/warehouse/cost and financial clearance are **not certified** by this assessment;
+path-specific checks arrive with the handover adapter in separately authorised slices. Accepted
+business remains valid and visible while readiness is outstanding.
+
+Holder recipe (not executed): separately review administrative evidence recorders and named sales
+acceptance approvers, their independent decision/Party/quotation reads and unrestricted decision
+scope; overlap is permitted but never forced. Issuer may accept. No role-name inference, automatic
+mandate expansion or demo grant. No acceptance demo can run through the real Actions while nobody
+holds the inactive duty; the existing slice-1 observation demo is unchanged.
+
+## Completion and verification
+
+- Semantics/research: accepted R6 research reused; technical choices in ADR 0183; all ten owner defaults remain provisional.
+- Authority/tenancy: Request + fresh Action checks, independent source read, limited denial, tenant FKs, no grants; race controls include suspension/revocation before decision and replay.
+- Integrity: transaction/receipt, root and choice caps, append-only/truncate guards, deferred completeness, stale refusal; lifecycle and competing-consent/choice races tested in real sessions.
+- API: typed Resources, stable codes, additive issued facts and generated client; no schema hand edits.
+- Rollout: additive migration apply → rollback → re-apply passed; no activation or historical consent backfill.
+- UI/lookup/browser/phone/accessibility: not applicable to this backend-only task; screens remain separately owned.
+- Demo: no new grant or acceptance seed, as required by inactive rollout.
+- Deferred: partial quantity, late reconciliation, corrections, claim release, evidence upload, handover and automatic WON.
+
+## Related
+
+- [Customer decisions](sales-customer-decisions.md) · [Duty matrix](sales-duty-matrix.md)
+- [ADR 0183](../decisions/0183-record-full-acceptance-under-the-sales-authority-fence.md)
+- [Backend acceptance journey](../journeys/record-full-customer-acceptance.md)
+- [Brief and defaults](../phases/phase-4-customer-acceptance-and-handover-design-brief.md)

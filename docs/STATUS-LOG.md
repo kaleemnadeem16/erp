@@ -1245,3 +1245,32 @@ truncate and deferred completeness guards. ADR 0183 records serialization and fr
 references; the design brief records all ten provisional defaults. No new duty registration,
 holders, preview activation, demo grant, route or handover. Further milestone evidence belongs
 in the customer-decisions domain document.
+
+### 2026-11-11 — Acceptance slice 2 backend delivered inactive
+
+Five tables and models, Preview/Record acceptance with fresh DecisionActor and existing per-Action
+receipts, immutable full issued-scope links, event-maintained root/choice claims, real
+QuotationAcceptanceState binding, safe reads, pending readiness, four guarded API routes and
+acceptance-only generated client changes. Case/issued projections reflect authoritative facts.
+No activation, registration, holders, dev-preview inclusion, new demo grants or acceptance seed;
+no screen, partial/reconciliation/correction, handover, target adapter or automatic WON.
+All ten owner defaults are recorded provisionally in the brief; ADR 0183 records local choices.
+Contract/journey: [full acceptance](domain/sales-full-acceptance.md).
+
+Verification (ERP_AGENT=codex-ca2, wrapper/private databases, focused class filters only):
+- Storage: 3 initial tests/24 assertions; final regression includes populated rollback refusal.
+- Final Action/API/race run: 22 tests/144 assertions, including both lifecycle winner orders,
+  distinct-consent and choice-option competition, matching-business replay, and controls for
+  authority revocation/suspension before decision/replay.
+- Related issuing/intake/storage/route regression: 25 tests/386 assertions passed.
+- Required tenant/unique, company-access fence, duty manifest, rollback-lock, route/permission/
+  controller architecture and Documents truncate gates: 84 passed/727 assertions; one existing
+  rollout-document test intentionally skipped by its suite. No exemption was added.
+- Quotation lifecycle and intake API regression: 28 passed/236 assertions.
+- Migration fresh → rollback → re-apply passed on the private migration database.
+- Pint on changed PHP and whole-project PHPStan passed; all three frontend typechecks and
+  production Vite build passed. Acceptance rule codegen enum duplication was fixed in the
+  Request (Action still requires true), then regenerated; no generated file was hand-edited.
+- Post-M4 `ERP_AGENT=codex-ca2 docker/backend/codegen.sh --check` passed: client matches the commit.
+- Browser checks not applicable: backend-only task, no UI changed. Full backend suite not run,
+  per implementer instructions. No push or main-branch change.

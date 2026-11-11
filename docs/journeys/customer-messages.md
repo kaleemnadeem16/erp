@@ -11,7 +11,7 @@
 ## Purpose
 
 Customers answer quotations in many ways. This records what arrived, truthfully and append-only, so a later acceptance can point at it. **Recording a message is not accepting an offer:** it does not
-hold the offer, reserve stock or stop the offer expiring or being withdrawn, and the screens say so. Accepting is a separate, later feature with its own duty.
+hold the offer, reserve stock or stop the offer expiring or being withdrawn, and the screens say so. Accepting is a [separate backend operation](record-full-customer-acceptance.md) with its own inactive duty; its screen is not delivered.
 
 ## Before you start
 
