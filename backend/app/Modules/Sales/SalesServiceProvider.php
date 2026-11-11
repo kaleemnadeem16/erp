@@ -31,9 +31,9 @@ use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxFacts;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
 use App\Modules\Sales\Support\Quotation\Issue\SalesQuotationTaxContextAuthorizer;
-use App\Modules\Sales\Support\Quotation\NoAcceptanceYet;
 use App\Modules\Sales\Support\Quotation\QuotationAcceptanceState;
 use App\Modules\Sales\Support\Quotation\QuotationFamilyScopeAdapter;
+use App\Modules\Sales\Support\Quotation\RecordedQuotationAcceptance;
 use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Tax\Support\Quotation\QuotationTaxContextAuthorizer;
 use App\Support\CompanyLocks\ExistsProbe;
@@ -58,8 +58,8 @@ class SalesServiceProvider extends ServiceProvider
         // seller's declared, versioned fact on the draft. With nothing declared or configured every line stays blocked: nothing is defaulted.
         $this->app->bind(QuotationTaxFacts::class, DraftQuotationTaxFacts::class);
         $this->app->bind(QuotationControlsProvider::class, ConfiguredQuotationControlsProvider::class);
-        // B5 rebinds this to the reader of the real acceptance records.
-        $this->app->bind(QuotationAcceptanceState::class, NoAcceptanceYet::class);
+        // Slice 2: lifecycle writers see immutable acceptance facts under their existing authority coordinator.
+        $this->app->bind(QuotationAcceptanceState::class, RecordedQuotationAcceptance::class);
         $this->app->bind(AssemblyCostEvidenceProvider::class, EstimatingAssemblyCostEvidence::class);
         // Estimating opens cost evidence only for the authority the owning workflow registers: this is Sales' (active member + preparer duty, judged now).
         $this->app->afterResolving(CostEvidenceAuthorities::class, static function (CostEvidenceAuthorities $authorities): void {

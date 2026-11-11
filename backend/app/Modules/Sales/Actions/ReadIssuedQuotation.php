@@ -7,6 +7,7 @@ namespace App\Modules\Sales\Actions;
 use App\Models\User;
 use App\Modules\Sales\Models\QuotationIssue;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\CustomerDecision\QuotationAcceptanceProjection;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\QuotationAvailability;
@@ -25,7 +26,7 @@ use Throwable;
  */
 final class ReadIssuedQuotation
 {
-    /** @return array{revision_id: int, family_id: int, official_number: string, issued_at: string, prepared_by: int, issued_by: int, currency_id: int, pricing_date: string, valid_through_local_date: string, expires_at: string, availability: string, totals: array{net_total: string, optional_net_total: string|null, tax_total: string|null, gross_total: string|null}|null} */
+    /** @return array{revision_id: int, family_id: int, official_number: string, issued_at: string, prepared_by: int, issued_by: int, currency_id: int, pricing_date: string, valid_through_local_date: string, expires_at: string, availability: string, scope_acceptance: list<array{issued_line_id: int, logical_scope_id: int, status: string}>|null, totals: array{net_total: string, optional_net_total: string|null, tax_total: string|null, gross_total: string|null}|null} */
     public function __invoke(User $actor, int $revisionId): array
     {
         return DB::transaction(function () use ($actor, $revisionId): array {
@@ -49,6 +50,7 @@ final class ReadIssuedQuotation
                 'expires_at' => $issue->expires_at->toIso8601String(),
                 // Derived, never stored: AVAILABLE, EXPIRED (database clock), WITHDRAWN or REPLACED. Says nothing about acceptance.
                 'availability' => QuotationAvailability::of($revision),
+                'scope_acceptance' => app(QuotationAcceptanceProjection::class)->for($actor, $revision),
                 'totals' => $figures ? [
                     'net_total' => (string) $issue->net_total,
                     'optional_net_total' => $issue->optional_net_total === null ? null : (string) $issue->optional_net_total,

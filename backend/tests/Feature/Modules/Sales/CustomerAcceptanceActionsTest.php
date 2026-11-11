@@ -5,15 +5,20 @@ namespace Tests\Feature\Modules\Sales;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
+use App\Modules\Sales\Actions\AssessAcceptanceReadiness;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Actions\PreviewCustomerAcceptance;
+use App\Modules\Sales\Actions\ReadCustomerAcceptance;
 use App\Modules\Sales\Actions\RecordCustomerAcceptance;
+use App\Modules\Sales\Actions\WithdrawQuotationOffer;
 use App\Modules\Sales\Models\CustomerDecisionCase;
 use App\Modules\Sales\Models\CustomerDecisionComponent;
 use App\Modules\Sales\Models\CustomerDecisionEvidence;
 use App\Modules\Sales\Models\QuotationIssuedLine;
+use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
+use App\Modules\Sales\Support\Quotation\QuotationAcceptanceState;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -75,6 +80,23 @@ class CustomerAcceptanceActionsTest extends TestCase
         $this->assertDatabaseCount('customer_claim_events', 1);
         $this->assertDatabaseCount('sales_customer_decision_receipts', 2);
         $this->assertDatabaseHas('customer_decision_cases', ['generation' => 1]);
+    }
+
+    public function test_acceptance_rebind_blocks_withdrawal_and_readiness_stays_pending(): void
+    {
+        $a = $this->record('record', $this->preview()['preview_token']);
+        $this->assertTrue(app(QuotationAcceptanceState::class)->stands(QuotationRevision::findOrFail($this->args[0])));
+        $read = app(ReadCustomerAcceptance::class)($this->checker, $a['acceptance_id']);
+        $this->assertSame('200.0000', $read['scope']['net']);
+        $ready = app(AssessAcceptanceReadiness::class)($this->checker, $a['acceptance_id']);
+        $this->assertSame('NOT_READY', $ready['status']);
+        $this->assertSame(['SERVICE_JOB_ADAPTER_NOT_DELIVERED'], $ready['missing']);
+        Permission::findOrCreate(P::QUOTATION_WITHDRAW, 'web');
+        $this->checker->givePermissionTo(P::QUOTATION_WITHDRAW);
+        $this->app->instance(SalesDutyManifest::class, app(SalesDutyManifest::class)->withActivated([P::QUOTATION_WITHDRAW]));
+        $this->expectException(DomainInvariantException::class);
+        $this->expectExceptionMessage('A customer decision already stands');
+        app(WithdrawQuotationOffer::class)($this->checker, $this->args[0], 'withdraw', 'Synthetic withdrawal');
     }
 
     public function test_staged_duty_refuses_even_a_hand_granted_actor(): void

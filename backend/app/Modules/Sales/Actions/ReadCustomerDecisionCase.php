@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Sales\Models\CustomerAcceptance;
 use App\Modules\Sales\Models\CustomerDecisionCase;
 use App\Modules\Sales\Models\CustomerDecisionEvidence;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionAccess;
@@ -19,7 +20,7 @@ use Illuminate\Support\Facades\DB;
  * One intake case with its components and the whole observation chain (oldest first; each observation says which earlier one it corrects, and whether it is the current head of
  * its chain). Needs `sales.customer-decision.view` (STAGED), decided under the company access fence before the case is looked up, so a caller without it gets the same 403 whether
  * or not the case exists. A component is shown only where the actor may also see its quotation family (`sales.quotation.view`); the rest are counted, never described. The
- * observations are textual statements by the people who recorded them: nothing here is consent, and every case carries `consent_recorded: false` in this release.
+ * observations remain textual statements. The consent flag derives only from authoritative acceptances of components the caller may independently see.
  *
  * @phpstan-type Detail array{case: array<string, mixed>, components: list<array<string, mixed>>, hidden_component_count: int, observations: list<array<string, mixed>>}
  */
@@ -52,7 +53,7 @@ final class ReadCustomerDecisionCase
                 'case' => [
                     'id' => (int) $case->id, 'party_id' => (int) $case->party_id, 'party_name' => $names[(int) $case->party_id] ?? null, 'intake_identity' => $case->intake_identity,
                     'generation' => (int) $case->generation, 'recorded_by' => (int) $case->recorded_by, 'recorded_by_name' => $people[$case->recorded_by] ?? null,
-                    'recorded_at' => $case->recorded_at->toIso8601String(), 'consent_recorded' => false,
+                    'recorded_at' => $case->recorded_at->toIso8601String(), 'consent_recorded' => CustomerAcceptance::query()->where('case_id', $case->id)->whereIn('decision_component_id', $case->components->whereIn('family_id', $visible)->modelKeys())->exists(),
                 ],
                 'components' => $components->map(fn ($c): array => [
                     'id' => (int) $c->id, 'intent_identity' => $c->intent_identity, 'family_id' => (int) $c->family_id, 'original_scope_anchor_id' => (int) $c->original_scope_anchor_id,

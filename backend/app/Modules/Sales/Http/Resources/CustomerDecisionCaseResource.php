@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * One intake case as recorded: what the customer sent, never that they agreed. `consent_recorded` is always false in this release (no acceptance exists). Components appear only
+ * One intake case as recorded: what the customer sent. `consent_recorded` derives from authoritative acceptance of visible components, never from observations. Components appear only
  * where the caller may also see the quotation family; `hidden_component_count` counts the rest without describing them. `generation` is the value to send back as
  * `expected_generation` when adding an observation. An observation with `is_current` false has been corrected by a later one.
  */
