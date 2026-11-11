@@ -207,6 +207,20 @@ before the case is looked up is the same 403 whether or not the case exists; ano
 person who holds both. Screens: **Customer Messages** (list, search, open a case) and the case page (header, linked quotations, observation chain oldest first, add an observation in a sheet).
 Journey: [Record what the customer sent](../journeys/customer-messages.md).
 
+## Slice 2 storage (in progress, 2026-11-11)
+
+[ADR 0183](../decisions/0183-record-full-acceptance-under-the-sales-authority-fence.md) defines
+five inactive tables: immutable `customer_evidence_policy_versions`, `customer_acceptances`,
+`customer_acceptance_lines`, `customer_claim_events`, and event-maintained
+`customer_scope_claim_heads`. Each component accepts one full independently acceptable scope.
+Lines reference the immutable issued-line snapshot, preserving its exact quantities, settled
+money, currency and pinned tax/FX evidence without recomputation. Heads carry one whole-scope
+entitlement (capacity 1), separate from offered quantity; both root and choice-group consumption
+commit with acceptance. Composite tenant FKs, identity/lineage guards, deferred completeness,
+row append-only and BEFORE TRUNCATE guards enforce storage integrity. Empty baselines are
+labelled BASELINE_CAPTURED. No historical rows are rewritten; new-table constraints validate
+immediately (ADR 0180 has no historical violations to register).
+
 ## Related
 
 - [R7 accepted contract and actual-delivery gates](../phases/phase-4-r7-implementation-slices.md) — R7 authority is accepted0131–0132 and 0136; necessary adapters remain undelivered, so affected partial-family/correction gates remain.

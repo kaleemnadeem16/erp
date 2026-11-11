@@ -55,7 +55,7 @@ final class SalesDutyCatalogue
             new SalesDuty(PermissionVocabulary::PRICE_REFERENCE_APPROVE, DutyClass::Sensitive, DutyStatus::Staged, 'Independently approve governed price references', 'Protected reference terms', 'AU3 governed reference; no grants'),
             new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_VIEW, DutyClass::NewOrdinary, DutyStatus::Staged, 'Decision/case safe detail/history', 'Decision-min', 'CA1'),
             new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, DutyClass::NewOrdinary, DutyStatus::Staged, 'Shared intake/append observations', 'Evidence-write', 'CA1; file requires secure DF'),
-            new SalesDuty('sales.customer-decision.accept', DutyClass::Sensitive, DutyStatus::Specified, 'Authoritative ordinary consent/claims', 'Exact consent', 'CA2/3'),
+            new SalesDuty(PermissionVocabulary::CUSTOMER_DECISION_ACCEPT, DutyClass::Sensitive, DutyStatus::Staged, 'Authoritative ordinary consent/claims', 'Exact consent', 'CA2/3'),
             new SalesDuty('sales.customer-decision.reconcile', DutyClass::Sensitive, DutyStatus::Specified, 'Late recognition', 'Historical consent/impact', 'CA5 + affected HA'),
             new SalesDuty('sales.customer-decision.correct', DutyClass::Sensitive, DutyStatus::Specified, 'Governed accepted reduction', 'Exact consent/impact', 'HA6/CA5'),
             new SalesDuty('sales.customer-decision.evidence.view', DutyClass::Sensitive, DutyStatus::Specified, 'Confidential evidence/files', 'Evidence-read', 'CA1 + file adapter'),

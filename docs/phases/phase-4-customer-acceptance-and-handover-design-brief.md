@@ -2,7 +2,7 @@
 
 # Customer acceptance and handover — design brief
 
-**2026-11-10 · DESIGN BRIEF. Plans the last Phase 4 feature; authorises no grant or activation.** Slice 1 was built on 2026-11-11 under the recommended defaults of section 12 (owner has not yet answered them): see [Sales customer decisions](../domain/sales-customer-decisions.md#delivered-record-what-the-customer-sent-acceptance-slice-1-2026-11-11). Slices 2-4 are not started.
+**2026-11-10 · DESIGN BRIEF. Plans the last Phase 4 feature; authorises no grant or activation.** Slice 1 was built on 2026-11-11 under the recommended defaults of section 12 (owner has not yet answered them): see [Sales customer decisions](../domain/sales-customer-decisions.md#delivered-record-what-the-customer-sent-acceptance-slice-1-2026-11-11). Backend slice 2 is in progress; slices 3-4 are not started.
 It does not re-decide anything accepted. The business rules are already settled in
 [ADR 0104](../decisions/0104-separate-customer-acceptance-and-readiness.md),
 [0125–0127](../decisions/0125-govern-customer-acceptance-and-explicit-partial-consent.md),
@@ -227,6 +227,19 @@ holds, claim release, evidence file upload (needs the shared file foundation).
 | 8 | Backfill of already issued quotations | Create zero-consumed heads lazily on first acceptance, labelled "baseline captured", never retroactive consent |
 | 9 | Release approval: shared Approvals engine or single duty? | Single sensitive duty by default; add approval policy only if the owner asks (configured, not universal) |
 | 10 | Slice 1 before slice 2 on the same release? | Ship slice 1 hidden behind the STAGED duty and enable it only together with slice 2, so no one records evidence the system cannot act on |
+
+## Assumed defaults (slice 2, owner review pending)
+
+1. Evidence recorders and acceptance approvers are separately reviewed holders; no holders or grants are added.
+2. The issuer may also record acceptance; their identity remains in the immutable audit evidence.
+3. Verbal is disabled by the initial evidence policy; enabling it later needs authority verification and a second observation reference.
+4. Sending a PDF is not required for acceptance; absence of recorded delivery is a warning.
+5. Acceptance does not automatically mark an Opportunity Won.
+6. Service Job is the intended first target; goods remain accepted-not-ready; this slice delivers no target adapter.
+7. Expired offers are refused; late reconciliation remains deferred.
+8. Missing claim heads are created lazily with zero consumption and `BASELINE_CAPTURED`, never backdated consent.
+9. Future release uses a single sensitive duty by default; no release or approval policy is implemented here.
+10. Intake and acceptance stay STAGED pending combined owner rollout; the new accept duty is excluded from dev preview and receives no demo grants.
 
 ## Related
 

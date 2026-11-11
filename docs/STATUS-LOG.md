@@ -1237,3 +1237,11 @@ database use. Task-register claim was refused because #86 remains open/in-review
 explicit #96 instruction authorised the local work. ADR review and prior owner codegen gates remain.
 
 **Customer acceptance slice 1 — record what the customer sent (2026-11-11, local, not pushed).** The four customer-decision routes (list, case with its observation chain, open a case, add an observation), Requests, Resources, OpenAPI and generated client, the **Customer Messages** list and case screens (sheets, phone width, light/dark), the STAGED duty `sales.customer-decision.view`, and `DecisionActor` retrofitted into `OpenCustomerDecisionCase` and `AppendCustomerDecisionEvidence` (access fence first, fresh ACTIVE actor, then manifest/scope, before any lock or receipt). Observations only: no consent, claim or acceptance; nobody holds either duty; the UI follows the quotation gate. Fixed along the way: an observation time with an offset was stored as its wall-clock digits in UTC. Tests: `CustomerDecisionApiTest`, `CustomerDecisionAuthorityRaceTest` (two real sessions: duty revoked, actor suspended, lost case lock), the intake/manifest/demo/ratchet suites and the browser spec `customer-decisions.unit.spec.ts`. The owner's open questions (brief section 12) were not answered; the recommended defaults were assumed. Slice 2 (full acceptance) is not started.
+
+### 2026-11-11 — Acceptance slice 2 storage started (inactive)
+
+Backend slice 2 begins with tenant-safe acceptance/policy/claim storage and append-only,
+truncate and deferred completeness guards. ADR 0183 records serialization and frozen-line
+references; the design brief records all ten provisional defaults. No new duty registration,
+holders, preview activation, demo grant, route or handover. Further milestone evidence belongs
+in the customer-decisions domain document.

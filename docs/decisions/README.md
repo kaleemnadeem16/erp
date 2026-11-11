@@ -192,7 +192,9 @@ in the same commit.
 | [0181](0181-retire-the-reasonless-delivery-correction-and-judge-delivery-dates-by-the-company-calendar.md) | Retire the reasonless delivery correction; judge delivery dates by the company calendar | accepted | 2026-11-10 |
 | [0182](0182-reapprove-unissued-purchase-orders-by-materiality-when-a-stricter-policy-takes-effect.md) | Reapprove unissued purchase orders by materiality when a stricter policy takes effect | proposed (owner questions open) | 2026-11-10 |
 
-**Next number: 0183** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
+| [0183](0183-record-full-acceptance-under-the-sales-authority-fence.md) | Record full acceptance under the Sales authority fence | accepted (implementation; provisional owner defaults) | 2026-11-11 |
+
+**Next number: 0184** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
