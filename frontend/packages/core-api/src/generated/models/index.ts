@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 195 schemas that export a runtime value use `export *`.
+ * only the 196 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -867,6 +867,9 @@ export type * from "./inventoryCutoverResource";
 export type * from "./inventoryCutoverResourceApprovedAt";
 export type * from "./inventoryCutoverResourceApprovedBy";
 export type * from "./inventoryCutoverResourceExceptionSummary";
+export type * from "./inventoryCutoverResourceExceptionSummaryAnyOf";
+export type * from "./inventoryCutoverResourceExceptionSummaryAnyOfCategoriesItem";
+export * from "./inventoryCutoverResourceExceptionSummaryAnyOfCategoriesItemCode";
 export type * from "./inventoryCutoverResourceFinalisedAt";
 export type * from "./inventoryCutoverResourceFinalisedBy";
 export type * from "./inventoryCutoverResourceValidatedAt";

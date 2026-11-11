@@ -26,6 +26,9 @@ export interface InventoryCutoverResource {
   control_quantity: string;
   control_value: string;
   base_control_value: string;
+  /** What the cutover leaves out or carries as an exception, counted from its batches and negative openings. Null unless both
+`batches` and `negativeOpenings` are included, because the counts need them. The stored `exception_summary` column is not
+written by any Action and is not read here, so this never depends on it. */
   exception_summary: InventoryCutoverResourceExceptionSummary;
   created_by: number;
   creator?: UserResource;

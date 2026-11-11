@@ -15,6 +15,7 @@ import {
   useLocationsIndex,
   type InventoryCutoverBatchResource,
   type InventoryCutoverNegativeOpeningResource,
+  type InventoryCutoverResource,
   type RequestInventoryCutoverNegativeOpeningRequest,
 } from '@erp/core-api';
 
@@ -81,6 +82,22 @@ function batchRows(batches: InventoryCutoverBatchResource[]): SummaryRow[] {
     { label: 'Records (accepted / in batch)', value: `${total('accepted_record_count')} / ${total('source_record_count')}` },
     { label: 'Quantity', value: batches.reduce((sum, batch) => sum + Number(batch.source_quantity), 0).toLocaleString('en-US', { maximumFractionDigits: 4 }) },
     { label: 'Value', value: batches.reduce((sum, batch) => sum + Number(batch.source_value), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
+  ];
+}
+
+const EXCEPTION_LABEL: Record<string, string> = {
+  REJECTED_RECORDS: 'Rejected source records (left out of the cutover)',
+  NEGATIVE_OPENING_REQUESTED: 'Negative openings awaiting approval',
+  NEGATIVE_OPENING_APPROVED: 'Negative openings approved (carried as shortages)',
+};
+
+/** Plain-language exception rows for the Finalise confirmation; says outright when there are none, or when the API did not send the summary. */
+function exceptionRows(summary: InventoryCutoverResource['exception_summary'] | undefined): SummaryRow[] {
+  if (!summary) return [{ label: 'Exceptions', value: 'Not available — reload the cutover before finalising' }];
+  if (summary.total === 0) return [{ label: 'Exceptions', value: 'None — nothing was rejected and there are no negative openings' }];
+  return [
+    ...summary.categories.map((category) => ({ label: EXCEPTION_LABEL[category.code] ?? category.code, value: `${category.count}${category.unresolved ? ' (unresolved)' : ''}` })),
+    { label: 'Still unresolved', value: summary.unresolved === 0 ? 'None' : String(summary.unresolved) },
   ];
 }
 
@@ -188,12 +205,13 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
 
   function askFinalise() {
     const committed = batches.filter((batch) => batch.status === 'COMMITTED').length;
+    const unresolved = cutover?.exception_summary?.unresolved ?? 0;
     setConfirming({
       title: 'Finalise this cutover?',
       description: (
         <ConfirmSummary
           label="Cutover being finalised"
-          consequence="Finalising closes the cutover for good. The cutover and all its batches become read-only, no more batches can be attached or committed, and nobody can reopen it. If a balance is wrong afterwards it can only be corrected with a stock adjustment."
+          consequence={`Finalising closes the cutover for good. The cutover and all its batches become read-only, no more batches can be attached or committed, and nobody can reopen it. If a balance is wrong afterwards it can only be corrected with a stock adjustment.${unresolved > 0 ? ` ${unresolved} exception${unresolved === 1 ? '' : 's'} listed below will be left unresolved by finalising.` : ''}`}
           rows={[
             { label: 'Cutover', value: `#${cutover?.id ?? cutoverId} (${cutover?.mode ?? '—'})` },
             { label: 'Source system', value: cutover?.source_system ?? '—' },
@@ -201,6 +219,7 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
             { label: 'Batches committed', value: `${committed} of ${batches.length}` },
             ...batchRows(batches).slice(1),
             { label: 'Control quantity / value', value: `${cutover?.control_quantity ?? '—'} / ${cutover?.control_value ?? '—'}` },
+            ...exceptionRows(cutover?.exception_summary),
           ]}
         />
       ),

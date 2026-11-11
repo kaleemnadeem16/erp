@@ -172,6 +172,49 @@ class InventoryCutoverApiTest extends TestCase
             ->assertJsonPath('data.negative_openings.0.location.code', 'stock');
     }
 
+    public function test_exception_summary_has_a_stable_derived_shape(): void
+    {
+        $batch = $this->validatedImportBatch([$this->negativeRow()]);
+        $creator = $this->permittedUser('inventory.cutover.create');
+        $stager = $this->permittedUser('inventory.cutover.stage');
+        $requester = $this->permittedUser('inventory.cutover.negative_opening.request');
+        $exceptionApprover = $this->permittedUser('inventory.cutover.negative_opening.approve');
+        $validator = $this->permittedUser('inventory.cutover.validate');
+
+        $cutoverId = $this->actingAs($creator)->postJson('/api/v1/inventory-cutovers', $this->cutoverInput('SKU-NEG', '-5.0000', '-50.0000'))->json('data.id');
+        $includes = '?include=batches,negativeOpenings';
+
+        // Nothing excepted yet: an explicit empty summary, not null and not a guess.
+        $this->actingAs($creator)->getJson("/api/v1/inventory-cutovers/{$cutoverId}{$includes}")->assertOk()
+            ->assertJsonPath('data.exception_summary', ['total' => 0, 'unresolved' => 0, 'categories' => []]);
+        // The counts need the relations, so without them the field is null.
+        $this->getJson("/api/v1/inventory-cutovers/{$cutoverId}")->assertOk()->assertJsonPath('data.exception_summary', null);
+
+        $this->actingAs($stager)->postJson("/api/v1/inventory-cutovers/{$cutoverId}/batches", ['import_batch_id' => $batch->id])->assertCreated();
+        $this->actingAs($validator)->postJson("/api/v1/inventory-cutovers/{$cutoverId}/validate")->assertOk();
+        $item = Item::query()->where('code', 'sku-neg')->firstOrFail();
+        $exceptionId = $this->actingAs($requester)->postJson("/api/v1/inventory-cutovers/{$cutoverId}/negative-openings", [
+            'item_id' => $item->id, 'location_id' => $this->locationId, 'batch_no' => null,
+            'provisional_unit_cost' => '9.0000',
+            'reason' => 'Predecessor system closed this location negative per its final approved stock report.',
+            'supporting_evidence' => ['document' => 'legacy-closing-report.pdf'],
+            'responsible_owner_id' => User::factory()->create()->id,
+            'resolution_plan' => 'Receive the delayed inbound shipment already confirmed in transit.',
+        ])->assertCreated()->json('data.id');
+
+        $this->actingAs($creator)->getJson("/api/v1/inventory-cutovers/{$cutoverId}{$includes}")->assertOk()
+            ->assertJsonPath('data.exception_summary', ['total' => 1, 'unresolved' => 1, 'categories' => [
+                ['code' => 'NEGATIVE_OPENING_REQUESTED', 'count' => 1, 'unresolved' => true],
+            ]]);
+
+        $this->actingAs($exceptionApprover)->postJson("/api/v1/inventory-cutover-negative-openings/{$exceptionId}/approve")->assertOk();
+
+        $this->actingAs($creator)->getJson("/api/v1/inventory-cutovers/{$cutoverId}{$includes}")->assertOk()
+            ->assertJsonPath('data.exception_summary', ['total' => 1, 'unresolved' => 0, 'categories' => [
+                ['code' => 'NEGATIVE_OPENING_APPROVED', 'count' => 1, 'unresolved' => false],
+            ]]);
+    }
+
     public function test_store_validates_shape_and_rejects_an_unpermitted_actor(): void
     {
         $creator = $this->permittedUser('inventory.cutover.create');

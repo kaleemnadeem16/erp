@@ -161,6 +161,36 @@ test.describe("high-impact actions ask first", () => {
     await expect(dialog.getByTestId("cutover-confirm-summary")).toContainText("2,000.00");
   });
 
+  test("finalise lists the exceptions in plain language and what stays unresolved", async ({ page }) => {
+    const exception_summary = {
+      total: 4, unresolved: 3,
+      categories: [
+        { code: "REJECTED_RECORDS", count: 2, unresolved: true },
+        { code: "NEGATIVE_OPENING_REQUESTED", count: 1, unresolved: true },
+        { code: "NEGATIVE_OPENING_APPROVED", count: 1, unresolved: false },
+      ],
+    };
+    await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: { ...richCutover, exception_summary } } } });
+    await page.getByRole("button", { name: "Finalise" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("3 exceptions listed below will be left unresolved");
+    const summary = dialog.getByTestId("cutover-confirm-summary");
+    await expect(summary).toContainText("Rejected source records (left out of the cutover)");
+    await expect(summary).toContainText("2 (unresolved)");
+    await expect(summary).toContainText("Negative openings awaiting approval");
+    await expect(summary).toContainText("Negative openings approved (carried as shortages)");
+    await expect(summary).toContainText("Still unresolved3");
+  });
+
+  test("finalise says plainly when there are no exceptions", async ({ page }) => {
+    const exception_summary = { total: 0, unresolved: 0, categories: [] };
+    await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: { ...richCutover, exception_summary } } } });
+    await page.getByRole("button", { name: "Finalise" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog.getByTestId("cutover-confirm-summary")).toContainText("None — nothing was rejected");
+    await expect(dialog).not.toContainText("left unresolved");
+  });
+
   test("committing open purchase orders shows only the order batches", async ({ page }) => {
     await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } } });
     await page.getByRole("button", { name: "Commit open purchase orders" }).click();

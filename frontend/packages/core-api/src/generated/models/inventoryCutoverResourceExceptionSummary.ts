@@ -4,5 +4,12 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { InventoryCutoverResourceExceptionSummaryAnyOf } from "./inventoryCutoverResourceExceptionSummaryAnyOf";
 
-export type InventoryCutoverResourceExceptionSummary = unknown[] | null;
+/**
+ * What the cutover leaves out or carries as an exception, counted from its batches and negative openings. Null unless both
+`batches` and `negativeOpenings` are included, because the counts need them. The stored `exception_summary` column is not
+written by any Action and is not read here, so this never depends on it.
+ */
+export type InventoryCutoverResourceExceptionSummary =
+  InventoryCutoverResourceExceptionSummaryAnyOf | null;
