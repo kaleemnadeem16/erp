@@ -19,6 +19,13 @@ final class CustomerDecisionRefusalStatus
 
     /** @var array<string, int> */
     public const MAP = [
+        CustomerDecisionRefusal::ACCEPTANCE_NOT_FOUND => self::NOT_FOUND,
+        CustomerDecisionRefusal::ACCEPTANCE_NOT_ELIGIBLE => self::UNPROCESSABLE,
+        CustomerDecisionRefusal::SCOPE_ALREADY_CLAIMED => self::CONFLICT,
+        CustomerDecisionRefusal::CHOICE_ALREADY_SELECTED => self::CONFLICT,
+        CustomerDecisionRefusal::PREVIEW_TOKEN_STALE => self::CONFLICT,
+        CustomerDecisionRefusal::DECISION_INTENT_CONFLICT => self::CONFLICT,
+        CustomerDecisionRefusal::QUOTATION_NOT_AVAILABLE => self::UNPROCESSABLE,
         CustomerDecisionRefusal::CASE_NOT_FOUND => self::NOT_FOUND,
         CustomerDecisionRefusal::REQUEST_KEY_REUSED => self::CONFLICT,
         CustomerDecisionRefusal::CASE_STALE => self::CONFLICT,
