@@ -208,20 +208,20 @@ class ApprovalDecisionAuthorityRaceTest extends TestCase
         $f = $this->fixture();
         try {
             $this->raceGrant($f['pdo'], $f['r']['company'], $f['submitter'], 'purchasing.purchase-order.create');
-            $edit = null;
-            $o = $this->raceAction($f['pdo'], $this->gate($f), $this->decide($f, $f['approver']), function () use ($f, &$edit): void {
-                $edit = $this->raceCommitted(function () use ($f): string {
-                    try {
-                        app(UpdatePurchaseOrder::class)(PurchaseOrder::query()->findOrFail($f['po']), ['notes' => 'edited'], User::query()->findOrFail($f['submitter']));
+            // An edit now takes the company access barrier like every other write, so it can no longer run inside the decision's staged wait (it would queue behind the
+            // holder). The pending freeze is therefore proved first, on the committed connection, and the decision must still go through afterwards.
+            $edit = $this->raceCommitted(function () use ($f): string {
+                try {
+                    app(UpdatePurchaseOrder::class)(PurchaseOrder::query()->findOrFail($f['po']), ['notes' => 'edited'], User::query()->findOrFail($f['submitter']));
 
-                        return 'edited';
-                    } catch (\Throwable $e) {
-                        return 'refused: '.$e->getMessage();
-                    }
-                });
+                    return 'edited';
+                } catch (\Throwable $e) {
+                    return 'refused: '.$e->getMessage();
+                }
             });
-            $this->assertStringStartsWith('refused', $edit);
-            $this->assertTrue($o['success']);
+            $this->assertStringContainsString('waiting for approval', $edit);
+            $o = $this->raceAction($f['pdo'], $this->gate($f), $this->decide($f, $f['approver']), fn () => null);
+            $this->assertTrue($o['success'], (string) $o['message']);
         } finally {
             $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
         }
