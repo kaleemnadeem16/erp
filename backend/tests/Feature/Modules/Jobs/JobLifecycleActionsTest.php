@@ -529,7 +529,11 @@ class JobLifecycleActionsTest extends TestCase
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
         $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
-        $this->assertSame([], array_values(array_filter(app(PermissionRegistry::class)->all(), fn ($p) => str_starts_with($p, 'job.'))));
+        // This class's fixtures may activate duties on the container's manifest; what ships registers nothing (and strictly excludes nothing).
+        $shipped = new PermissionRegistry(app(\Spatie\Permission\PermissionRegistrar::class));
+        JobDutyManifest::shipped()->registerWith($shipped);
+        $this->assertSame([], array_values(array_filter($shipped->all(), fn ($p) => str_starts_with($p, 'job.'))));
+        $this->assertSame([], $shipped->strictlyExcluded());
         $this->assertSame(0, Permission::query()->where('name', 'like', 'job.%')->whereNotIn('name', self::DUTIES)->count());
         $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
         $this->assertDirectoryDoesNotExist(base_path('app/Modules/Jobs/Http'));
