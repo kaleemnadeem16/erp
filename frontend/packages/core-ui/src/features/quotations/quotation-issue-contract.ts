@@ -251,8 +251,7 @@ const KNOWN: Record<string, { group: BlockerGroup; label: string }> = {
   },
   APPROVAL_PENDING: {
     group: "approval",
-    label:
-      "A discount or price override is waiting for someone to approve it.",
+    label: "A discount or price override is waiting for someone to approve it.",
   },
   APPROVAL_REJECTED: {
     group: "approval",
@@ -435,4 +434,34 @@ export function mockIssuedTerms(
     },
     ...overrides,
   };
+}
+
+/** Historical isolated preview contract; live API consumers retain readinessSchema above. */
+// Agent A's internal AssessQuotationIssueReadiness Action at 0c9a774a, not an HTTP contract.
+// Reject inconsistent readiness and discard all non-public fields, including any evidence.
+const previewId = z.number().int().positive().safe();
+const previewBlocker = z.object({
+  code: z.string().min(1).max(100),
+  scope: z.enum(["HEADER", "LINE", "TAX", "CONTROLS", "AUTHORITY"]),
+  line_id: previewId.nullable(),
+});
+const previewReadinessSchema = z
+  .object({
+    revision_id: previewId,
+    input_generation: z.number().int().nonnegative().safe(),
+    issue_ready: z.boolean(),
+    blockers: z.array(previewBlocker),
+  })
+  .superRefine((value, ctx) => {
+    if (value.issue_ready !== (value.blockers.length === 0))
+      ctx.addIssue({ code: "custom", message: "Inconsistent readiness" });
+    if (
+      value.blockers.some(
+        (item) => item.scope === "LINE" && item.line_id === null,
+      )
+    )
+      ctx.addIssue({ code: "custom", message: "Missing line reference" });
+  });
+export function readIssueReadiness(value: unknown): IssueReadiness {
+  return previewReadinessSchema.parse(value);
 }
