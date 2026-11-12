@@ -63,8 +63,14 @@ Replays check current access before returning the original receipt; they do not 
 evidence or rewrite old policy/reference versions. Bounded waits and whole-operation deadlock/
 serialisation retries retain QuotationOperation's existing semantics. Existing two-session tests cover Sales decisions versus suspension, permission revocation,
 employee-authority revocation and source edits. Two-session tests for approval-policy activation
-versus a Sales decision, a Sales issue and a PO decision (both orderings) are being added in the
-Phase 4 closure batch and are not yet claimed as existing.
+versus a Sales decision, a Sales issue and a PO decision, each in both orders, exist since 0913779e:
+`ApprovalPolicyActivationRaceTest` (Sales decision and Sales issue) and
+`ApprovalPolicyActivationPurchaseOrderRaceTest` (PO decision). Limits: where activation runs second,
+"waits then commits" is shown by a lock-timeout probe (the activation statements are refused with a
+lock timeout while the Action holds its locks) followed by a serial activation, not by a blocked
+activation later released. Estimating decisions are not covered by these race tests; the Estimating
+material-variance approval suites were run green. The PO path takes no authority head today, so these
+tests show no deadlock or mixed state under the current order, not the head-first target order.
 
 ## Consequences
 
@@ -103,8 +109,11 @@ optional subject-transaction hook and generic decision path. Acceptance addition
 two-session policy-activation tests above to pass on one commit.
 
 Status of the reviews: independent concurrency review (Reviewer C, 2026-11-12, develop 528e40b1):
-no lock inversion found; the policy-activation two-session tests are outstanding. Shared Approvals
-review: outstanding (Purchasing/Estimating approval suites not yet run for this purpose).
+no lock inversion found. The policy-activation two-session tests now exist and pass on commit
+0913779e (see the files named above). The ADR remains PROPOSED: acceptance still needs the owner's
+second condition, an independent shared-Approvals review (Purchasing/Estimating approval suites and
+the generic decision path); that review is outstanding. Estimating material-variance approval suites
+were run green but this is not that review.
 
 ## Related
 
