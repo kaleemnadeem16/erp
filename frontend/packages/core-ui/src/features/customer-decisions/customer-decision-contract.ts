@@ -55,7 +55,7 @@ export const summarySchema = z.object({
   party_name: z.string().nullable(),
   intake_identity: z.string(),
   generation: z.number().int().nonnegative(),
-  component_count: z.number().int().nonnegative(),
+  component_count: z.number().int().nonnegative().nullable(),
   observation_count: z.number().int().nonnegative(),
   recorded_by: id,
   recorded_at: z.string().nullable(),
@@ -121,7 +121,6 @@ export const caseDetailSchema = z.object({
     consent_recorded: z.boolean(),
   }),
   components: z.array(componentSchema),
-  hidden_component_count: z.number().int().nonnegative(),
   observations: z.array(observationSchema),
 });
 export type Observation = z.infer<typeof observationSchema>;

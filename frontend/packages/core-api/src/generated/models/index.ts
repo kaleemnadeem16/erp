@@ -655,6 +655,7 @@ export type * from "./customerDecisionCaseResourceObservationsItemRecordedByName
 export type * from "./customerDecisionCaseResourceObservationsItemSourceTimezone";
 export type * from "./customerDecisionCaseResourceObservationsItemSourceVersion";
 export type * from "./customerDecisionCaseSummaryResource";
+export type * from "./customerDecisionCaseSummaryResourceComponentCount";
 export type * from "./customerDecisionCaseSummaryResourcePartyName";
 export type * from "./customerDecisionCaseSummaryResourceRecordedAt";
 export type * from "./customerDecisionCasesEvidenceStore200";

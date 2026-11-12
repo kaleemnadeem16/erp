@@ -127,7 +127,7 @@ class CustomerDecisionApiTest extends TestCase
 
         $detail = $this->getJson("/api/v1/customer-decision-cases/{$caseId}")->assertOk()
             ->assertJsonPath('data.case.intake_identity', 'PO-7001')->assertJsonPath('data.case.party_name', 'Customer Ltd')->assertJsonPath('data.case.generation', 2)
-            ->assertJsonPath('data.case.consent_recorded', false)->assertJsonPath('data.hidden_component_count', 0)->assertJsonCount(1, 'data.components')->assertJsonCount(2, 'data.observations');
+            ->assertJsonPath('data.case.consent_recorded', false)->assertJsonMissingPath('data.hidden_component_count')->assertJsonCount(1, 'data.components')->assertJsonCount(2, 'data.observations');
         $this->assertSame([false, true], array_column($detail->json('data.observations'), 'is_current'));
         $this->getJson('/api/v1/customer-decision-cases')->assertOk()->assertJsonPath('data.0.id', $caseId)->assertJsonPath('data.0.observation_count', 2)->assertJsonPath('data.0.component_count', 1)
             ->assertJsonPath('meta.total', 1);
@@ -196,15 +196,65 @@ class CustomerDecisionApiTest extends TestCase
         }
     }
 
-    public function test_a_viewer_without_quotation_view_sees_the_case_but_only_counts_its_components(): void
+    public function test_a_viewer_without_quotation_view_sees_the_case_but_no_component_information(): void
     {
         $this->activate();
         Sanctum::actingAs($this->clerk);
         $caseId = $this->postJson('/api/v1/customer-decision-cases', $this->openBody(), $this->key('o'))->assertCreated()->json('data.case_id');
 
         Sanctum::actingAs($this->viewer);
-        $this->getJson("/api/v1/customer-decision-cases/{$caseId}")->assertOk()->assertJsonCount(0, 'data.components')->assertJsonPath('data.hidden_component_count', 1);
-        $this->getJson('/api/v1/customer-decision-cases')->assertOk()->assertJsonPath('data.0.component_count', 1);
+        $detail = $this->getJson("/api/v1/customer-decision-cases/{$caseId}")->assertOk()->assertJsonCount(0, 'data.components')->assertJsonMissingPath('data.hidden_component_count');
+        $this->assertStringNotContainsString('hidden', (string) $detail->getContent());
+        $list = $this->getJson('/api/v1/customer-decision-cases')->assertOk()->assertJsonPath('data.0.component_count', null)->assertJsonPath('meta.total', 1);
+        $this->assertArrayHasKey('component_count', $list->json('data.0'));
+        $this->getJson('/api/v1/customer-decision-cases?sort=component_count')->assertStatus(422);
+    }
+
+    public function test_the_component_count_covers_only_quotation_families_the_viewer_may_see(): void
+    {
+        $this->activate();
+        $mine = $this->scope;
+        $realMaker = $this->maker;
+        $this->maker = User::factory()->create();
+        $this->maker->givePermissionTo([P::QUOTATION_PREPARE, P::QUOTATION_VIEW]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $line = QuotationDraftLine::query()->where('revision_id', $this->preparedDraft()->id)->orderBy('id')->firstOrFail();
+        $theirs = ['family' => $line->family_id, 'scope' => $line->logical_scope_id];
+        $this->maker = $realMaker;
+        $this->assertNotSame($mine['family'], $theirs['family']);
+
+        Sanctum::actingAs($this->clerk);
+        $body = $this->openBody('PO-MIXED');
+        $body['components'][] = ['intent_identity' => 'other-quote', 'family_id' => $theirs['family'], 'original_scope_anchor_id' => $theirs['scope']];
+        $caseId = $this->postJson('/api/v1/customer-decision-cases', $body, $this->key('mixed'))->assertCreated()->json('data.case_id');
+        $this->assertSame(2, DB::table('customer_decision_components')->where('case_id', $caseId)->count());
+
+        // The preparer owns only the first family and holds quotation view limited to own records.
+        $this->maker->givePermissionTo([P::CUSTOMER_DECISION_VIEW]);
+        AccessScopeLimit::create(['user_id' => $this->maker->id, 'permission' => P::QUOTATION_VIEW, 'scope' => 'OWN']);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        Sanctum::actingAs($this->maker);
+        $list = $this->getJson('/api/v1/customer-decision-cases')->assertOk()->assertJsonPath('data.0.component_count', 1)->assertJsonPath('meta.total', 1);
+        $this->assertStringNotContainsString('"component_count":2', (string) $list->getContent());
+        $detail = $this->getJson("/api/v1/customer-decision-cases/{$caseId}")->assertOk()->assertJsonCount(1, 'data.components')->assertJsonMissingPath('data.hidden_component_count');
+        $this->assertSame($mine['family'], $detail->json('data.components.0.family_id'));
+        $this->assertStringNotContainsString((string) $theirs['scope'].',"recorded', (string) $detail->getContent());
+
+        // The clerk sees everything and so counts both.
+        Sanctum::actingAs($this->clerk);
+        $this->getJson('/api/v1/customer-decision-cases')->assertOk()->assertJsonPath('data.0.component_count', 2);
+    }
+
+    public function test_a_quotation_only_user_is_refused_the_customer_messages_list_and_case(): void
+    {
+        $this->activate();
+        Sanctum::actingAs($this->clerk);
+        $caseId = $this->postJson('/api/v1/customer-decision-cases', $this->openBody(), $this->key('o'))->assertCreated()->json('data.case_id');
+
+        Sanctum::actingAs($this->maker);
+        $this->getJson('/api/v1/customer-decision-cases')->assertForbidden();
+        $this->getJson("/api/v1/customer-decision-cases/{$caseId}")->assertForbidden();
+        $this->getJson('/api/v1/customer-decision-cases/999999')->assertForbidden();
     }
 
     public function test_a_limited_scope_of_either_duty_fails_closed_and_a_suspended_member_is_refused(): void

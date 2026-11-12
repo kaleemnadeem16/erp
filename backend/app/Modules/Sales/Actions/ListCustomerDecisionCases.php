@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 /**
- * The shared intake cases of the company, newest first (filterable by customer, text, the company calendar days they were opened between, and one linked quotation the actor may see): identity, the customer Party (name only where the actor may read it), how many components and observations the case holds,
+ * The shared intake cases of the company, newest first (filterable by customer, text, the company calendar days they were opened between, and one linked quotation the actor may see): identity, the customer Party (name only where the actor may read it), how many components (of quotations the actor may see; null without quotation view) and observations the case holds,
  * and its generation. Needs `sales.customer-decision.view` (STAGED); a limited scope of that duty is refused, never filtered. Reading counts nothing and records nothing; a case
  * says what the customer sent, never that they agreed.
  */
@@ -27,7 +27,7 @@ final class ListCustomerDecisionCases
 {
     /**
      * @param  array<string, mixed>  $input
-     * @return LengthAwarePaginator<int, array{id:int,party_id:int,party_name:string|null,intake_identity:string,generation:int,component_count:int,observation_count:int,recorded_by:int,recorded_at:string|null}>
+     * @return LengthAwarePaginator<int, array{id:int,party_id:int,party_name:string|null,intake_identity:string,generation:int,component_count:int|null,observation_count:int,recorded_by:int,recorded_at:string|null}>
      */
     public function __invoke(User $actor, array $input): LengthAwarePaginator
     {
@@ -47,7 +47,16 @@ final class ListCustomerDecisionCases
         // @phpstan-ignore argument.type, return.type
         return DB::transaction(function () use ($actor, $input): LengthAwarePaginator {
             $fresh = CustomerDecisionAccess::decide($actor, PermissionVocabulary::CUSTOMER_DECISION_VIEW, 'see customer decisions');
-            $query = CustomerDecisionCase::query()->withCount(['components', 'evidence']);
+            // Components are counted only where the actor may also see the quotation family; no quotation view at all means no count (null), never a revealing 0 or total.
+            $visibleFamilies = null;
+            try {
+                $visibleFamilies = app(QuotationAccess::class)->queryFor($fresh, [PermissionVocabulary::QUOTATION_VIEW])->select('quotation_families.id');
+            } catch (AuthorizationException) {
+            }
+            $query = CustomerDecisionCase::query()->withCount(['evidence']);
+            if ($visibleFamilies !== null) {
+                $query->withCount(['components' => static fn ($q) => $q->whereIn('family_id', $visibleFamilies)]);
+            }
             $filter = $input['filter'] ?? [];
             if (isset($filter['party_id'])) {
                 $query->where('party_id', (int) $filter['party_id']);
@@ -79,13 +88,13 @@ final class ListCustomerDecisionCases
             $page = $query->paginate((int) ($input['per_page'] ?? 25), ['*'], 'page', (int) ($input['page'] ?? 1));
 
             $names = app(RecipientNames::class)->for($fresh, $page->getCollection()->pluck('party_id')->unique()->values()->all());
-            $rows = $page->getCollection()->map(static fn (CustomerDecisionCase $case): array => [
+            $rows = $page->getCollection()->map(fn (CustomerDecisionCase $case): array => [
                 'id' => (int) $case->id,
                 'party_id' => (int) $case->party_id,
                 'party_name' => $names[(int) $case->party_id] ?? null,
                 'intake_identity' => $case->intake_identity,
                 'generation' => (int) $case->generation,
-                'component_count' => (int) $case->getAttribute('components_count'),
+                'component_count' => $visibleFamilies === null ? null : (int) $case->getAttribute('components_count'),
                 'observation_count' => (int) $case->getAttribute('evidence_count'),
                 'recorded_by' => (int) $case->recorded_by,
                 'recorded_at' => $case->recorded_at->toIso8601String(),

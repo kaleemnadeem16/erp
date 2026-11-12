@@ -117,11 +117,34 @@ test("responses are parsed to the safe shape: nothing about consent, claims or a
       net_amount: "100.0000",
     },
     components: [],
-    hidden_component_count: 0,
     observations: [],
   });
   expect(JSON.stringify(detail)).not.toMatch(/accepted|net_amount/);
   expect(detail.case.consent_recorded).toBe(false);
+  expect(JSON.stringify(detail)).not.toMatch(/hidden/);
+  const row = {
+    id: 1,
+    party_id: 2,
+    party_name: null,
+    intake_identity: "PO-1",
+    generation: 0,
+    component_count: null,
+    observation_count: 0,
+    recorded_by: 3,
+    recorded_at: "2026-11-10T00:00:00Z",
+  };
+  const links = { first: null, last: null, prev: null, next: null };
+  const meta = {
+    current_page: 1,
+    last_page: 1,
+    per_page: 25,
+    total: 1,
+    from: 1,
+    to: 1,
+  };
+  expect(
+    readListPage({ data: [row], links, meta }).data[0].component_count,
+  ).toBeNull();
   expect(() => readCaseDetail({ case: {} })).toThrow();
   expect(
     readOutcome({ case_id: 4, generation: 1, evidence_id: 9, replayed: true })
@@ -191,9 +214,10 @@ for (const dark of [false, true])
       await expect(
         page.getByText("Corrected by a later observation"),
       ).toBeVisible();
+      await expect(page.getByText(/cannot see/)).toHaveCount(0);
       await expect(
-        page.getByText("1 more quotation is linked that you cannot see."),
-      ).toBeVisible();
+        page.getByText(/more quotations? (is|are) linked/),
+      ).toHaveCount(0);
       await expectPhoneSafe(page);
     }
   });

@@ -11,6 +11,5 @@ import type { CustomerDecisionCaseResourceObservationsItem } from "./customerDec
 export interface CustomerDecisionCaseResource {
   case: CustomerDecisionCaseResourceCase;
   components: CustomerDecisionCaseResourceComponentsItem[];
-  hidden_component_count: number;
   observations: CustomerDecisionCaseResourceObservationsItem[];
 }

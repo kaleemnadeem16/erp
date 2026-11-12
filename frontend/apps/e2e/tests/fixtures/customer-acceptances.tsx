@@ -121,7 +121,6 @@ const detail = (): CaseDetail => ({
           recorded_at: "2026-11-10T08:00:00+05:00",
         },
       ],
-  hidden_component_count: 0,
   observations: [
     {
       id: 5,
@@ -270,7 +269,10 @@ const gateway: CustomerAcceptanceGateway = {
     window.__caCalls.push(
       `record:${intent.issued_line_id}:${previewToken}:${requestKey}`,
     );
-    if (!recordFailed && (fixture.flaky || fixture.claimed || fixture.staleReview)) {
+    if (
+      !recordFailed &&
+      (fixture.flaky || fixture.claimed || fixture.staleReview)
+    ) {
       recordFailed = true;
       if (fixture.flaky)
         throw Object.assign(new Error("network"), { status: 503, body: {} });
@@ -360,9 +362,7 @@ const element = createElement(
         null,
         createElement(Route, {
           path: "/start",
-          element: createElement(
-            fixture.screen === "picker" ? Picker : Issued,
-          ),
+          element: createElement(fixture.screen === "picker" ? Picker : Issued),
         }),
         createElement(Route, {
           path: "/customer-acceptances/:acceptance",

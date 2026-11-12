@@ -91,8 +91,9 @@ export function AcceptancePanel({
   );
   // The component for this scope: the one tied to it, else the only one this quotation has in the case, else the person's choice.
   const auto =
-    linked.find((c) => c.original_scope_anchor_id === chosen?.logical_scope_id) ??
-    (linked.length === 1 ? linked[0] : undefined);
+    linked.find(
+      (c) => c.original_scope_anchor_id === chosen?.logical_scope_id,
+    ) ?? (linked.length === 1 ? linked[0] : undefined);
   const component =
     linked.find((c) => String(c.id) === componentId) ?? auto ?? undefined;
   const observations = detail.data?.observations ?? [];
@@ -103,7 +104,12 @@ export function AcceptancePanel({
       : consentProblem(latest)
     : null;
   const ready =
-    canUse && chosen !== undefined && component !== undefined && !!detail.data && problem === null && latest !== undefined;
+    canUse &&
+    chosen !== undefined &&
+    component !== undefined &&
+    !!detail.data &&
+    problem === null &&
+    latest !== undefined;
 
   return (
     <DetailSection
@@ -112,10 +118,10 @@ export function AcceptancePanel({
       fullWidth
     >
       <p className="col-span-full text-sm" role="note">
-        Accepting records the customer’s consent and nothing else: no order, job,
-        stock reservation or invoice is created, and prices are never worked out
-        again. The terms cannot be changed here; a different quantity or price
-        needs a new offer.
+        Accepting records the customer’s consent and nothing else: no order,
+        job, stock reservation or invoice is created, and prices are never
+        worked out again. The terms cannot be changed here; a different quantity
+        or price needs a new offer.
       </p>
       {scopes === null ? (
         <p className="col-span-full text-sm" role="note">
@@ -165,14 +171,18 @@ export function AcceptancePanel({
             })}
           </ul>
           <p className="text-xs text-muted-foreground">
-            The exact description, quantity and price of the scope you choose are
-            shown in the review. If scopes are alternatives, accepting one closes
-            the others.
+            The exact description, quantity and price of the scope you choose
+            are shown in the review. If scopes are alternatives, accepting one
+            closes the others.
           </p>
         </fieldset>
       )}
       {!canUse && (
-        <p className="col-span-full text-sm" role="note" data-testid="accept-disabled">
+        <p
+          className="col-span-full text-sm"
+          role="note"
+          data-testid="accept-disabled"
+        >
           {!mayAccept
             ? (disabledReason ??
               "Recording an acceptance needs a permission your access does not include.")
@@ -218,8 +228,8 @@ export function AcceptancePanel({
               </div>
             )}
             {cases.data &&
-              (cases.data.data.filter((c) => c.component_count > 0).length ===
-              0 ? (
+              (cases.data.data.filter((c) => (c.component_count ?? 0) > 0)
+                .length === 0 ? (
                 <p className="text-sm text-muted-foreground" role="status">
                   No customer message linked to a quotation was found.{" "}
                   {mayOpenMessages && (
@@ -248,7 +258,7 @@ export function AcceptancePanel({
                   </SelectTrigger>
                   <SelectContent>
                     {cases.data.data
-                      .filter((c) => c.component_count > 0)
+                      .filter((c) => (c.component_count ?? 0) > 0)
                       .map((c) => (
                         <SelectItem key={c.id} value={String(c.id)}>
                           {`${c.intake_identity} · ${c.party_name ?? `Customer reference ${c.party_id}`}`}
@@ -316,7 +326,9 @@ export function AcceptancePanel({
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">Sent by</dt>
-                <dd>{latest.customer_representative_snapshot ?? "Not named"}</dd>
+                <dd>
+                  {latest.customer_representative_snapshot ?? "Not named"}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-muted-foreground">
@@ -335,7 +347,11 @@ export function AcceptancePanel({
             </dl>
           )}
           {problem && (
-            <p role="alert" className="text-sm text-destructive" id="accept-problem">
+            <p
+              role="alert"
+              className="text-sm text-destructive"
+              id="accept-problem"
+            >
               {problem}
             </p>
           )}
@@ -364,7 +380,10 @@ export function AcceptancePanel({
         </Button>
       </div>
       {canUse && !ready && (
-        <p id="accept-ready-hint" className="col-span-full text-xs text-muted-foreground">
+        <p
+          id="accept-ready-hint"
+          className="col-span-full text-xs text-muted-foreground"
+        >
           Choose an available scope and a customer message that is linked to it
           to continue.
         </p>

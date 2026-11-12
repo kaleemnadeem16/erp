@@ -65,7 +65,8 @@ export const customerDecisionColumns: DataColumn<CaseSummary>[] = [
   {
     key: "components",
     header: "Quotations linked",
-    value: (row) => String(row.component_count),
+    value: (row) =>
+      row.component_count === null ? "-" : String(row.component_count),
   },
   {
     key: "recorded_at",

@@ -19,10 +19,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * One intake case with its components and the whole observation chain (oldest first; each observation says which earlier one it corrects, and whether it is the current head of
  * its chain). Needs `sales.customer-decision.view` (STAGED), decided under the company access fence before the case is looked up, so a caller without it gets the same 403 whether
- * or not the case exists. A component is shown only where the actor may also see its quotation family (`sales.quotation.view`); the rest are counted, never described. The
+ * or not the case exists. A component is shown only where the actor may also see its quotation family (`sales.quotation.view`); the rest are neither described nor counted. The
  * observations remain textual statements. The consent flag derives only from authoritative acceptances of components the caller may independently see.
  *
- * @phpstan-type Detail array{case: array<string, mixed>, components: list<array<string, mixed>>, hidden_component_count: int, observations: list<array<string, mixed>>}
+ * @phpstan-type Detail array{case: array<string, mixed>, components: list<array<string, mixed>>, observations: list<array<string, mixed>>}
  */
 final class ReadCustomerDecisionCase
 {
@@ -59,7 +59,6 @@ final class ReadCustomerDecisionCase
                     'id' => (int) $c->id, 'intent_identity' => $c->intent_identity, 'family_id' => (int) $c->family_id, 'original_scope_anchor_id' => (int) $c->original_scope_anchor_id,
                     'recorded_at' => $c->recorded_at->toIso8601String(),
                 ])->all(),
-                'hidden_component_count' => $case->components->count() - $components->count(),
                 'observations' => $case->evidence->sortBy('id')->values()->map(fn (CustomerDecisionEvidence $e): array => [
                     'id' => (int) $e->id, 'predecessor_id' => $e->predecessor_id === null ? null : (int) $e->predecessor_id, 'is_current' => ! isset($successors[$e->id]),
                     'source_kind' => $e->source_kind, 'external_reference' => $e->external_reference, 'source_version' => $e->source_version,

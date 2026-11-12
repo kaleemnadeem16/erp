@@ -5,6 +5,7 @@
  * OpenAPI spec version: 0.0.1
  */
 import type { CustomerDecisionCaseSummaryResourcePartyName } from "./customerDecisionCaseSummaryResourcePartyName";
+import type { CustomerDecisionCaseSummaryResourceComponentCount } from "./customerDecisionCaseSummaryResourceComponentCount";
 import type { CustomerDecisionCaseSummaryResourceRecordedAt } from "./customerDecisionCaseSummaryResourceRecordedAt";
 
 export interface CustomerDecisionCaseSummaryResource {
@@ -13,7 +14,7 @@ export interface CustomerDecisionCaseSummaryResource {
   party_name: CustomerDecisionCaseSummaryResourcePartyName;
   intake_identity: string;
   generation: number;
-  component_count: number;
+  component_count: CustomerDecisionCaseSummaryResourceComponentCount;
   observation_count: number;
   recorded_by: number;
   recorded_at: CustomerDecisionCaseSummaryResourceRecordedAt;

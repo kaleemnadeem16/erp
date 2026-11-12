@@ -101,7 +101,6 @@ let detail: CaseDetail = {
       recorded_at: "2026-11-10T08:00:00+05:00",
     },
   ],
-  hidden_component_count: 1,
   observations: [
     obs(1, { is_current: false }),
     obs(2, {

@@ -99,7 +99,7 @@ export function CustomerDecisionCaseView({
           title="Quotations this is about"
           description="Linked when the case was opened. Linking holds nothing."
         >
-          {components.length === 0 && detail.hidden_component_count === 0 && (
+          {components.length === 0 && (
             <p className="col-span-full text-sm text-muted-foreground">
               No quotation is linked to this case.
             </p>
@@ -109,13 +109,6 @@ export function CustomerDecisionCaseView({
               Quotation family {c.family_id}, scope {c.original_scope_anchor_id}
             </DetailField>
           ))}
-          {detail.hidden_component_count > 0 && (
-            <p className="col-span-full text-sm text-muted-foreground">
-              {detail.hidden_component_count === 1
-                ? "1 more quotation is linked that you cannot see."
-                : `${detail.hidden_component_count} more quotations are linked that you cannot see.`}
-            </p>
-          )}
         </DetailSection>
         <DetailSection
           title="What was sent"
