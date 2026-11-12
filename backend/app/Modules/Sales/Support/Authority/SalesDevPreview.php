@@ -63,6 +63,29 @@ final class SalesDevPreview
      */
     public const AUTHORITY_CONFIG_DUTIES = [PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::PRICE_REFERENCE_APPROVE];
 
+    /**
+     * The Customer decisions and Customer acceptance screens, and the protected discount-authority evidence panel on a quotation, local preview only. Server-side there
+     * is no maker/checker between recording evidence and accepting (acceptance only demands current written, verified evidence and the independent view duties), so
+     * the 'full' demo preset holds all three customer-decision duties on one login. Nothing here is in `all()`.
+     *
+     * @var list<string>
+     */
+    public const CUSTOMER_DECISION_DUTIES = [PermissionVocabulary::CUSTOMER_DECISION_VIEW, PermissionVocabulary::CUSTOMER_DECISION_EVIDENCE_RECORD, PermissionVocabulary::CUSTOMER_DECISION_ACCEPT];
+
+    /** @var list<string> */
+    public const AUTHORITY_EVIDENCE_DUTIES = [PermissionVocabulary::AUTHORITY_EVIDENCE_VIEW];
+
+    /**
+     * STAGED Sales duties the preview intentionally leaves OFF, with the reason. A drift test requires every STAGED Sales duty to be activated or listed here.
+     *
+     * @var array<string, string>
+     */
+    public const EXCLUDED = [
+        PermissionVocabulary::DOCUMENT_REPAIR => 'sensitive operator duty; never granted by any preview or preset',
+        PermissionVocabulary::QUOTATION_WITHDRAW => 'no HTTP route or screen exposes offer withdrawal yet (only the replacement Action uses it)',
+        PermissionVocabulary::HANDOVER_PREPARE => 'handover routes exist but the frontend has no handover screen; read-only readiness needs only the customer-decision view duty',
+    ];
+
     /** @return list<string> every duty the local preview turns on and `sales:dev-grant-quotation` hands out */
     public static function all(): array
     {
@@ -72,7 +95,7 @@ final class SalesDevPreview
     /** @return list<string> every duty the local preview makes ACTIVE in the manifest (a superset of `all()`; activation grants nobody anything) */
     public static function activated(): array
     {
-        return [...self::all(), ...self::ACCESS_DUTIES, ...self::CONCESSION_DUTIES, ...self::APPROVE_DUTIES, ...self::AUTHORITY_CONFIG_DUTIES];
+        return [...self::all(), ...self::ACCESS_DUTIES, ...self::CONCESSION_DUTIES, ...self::APPROVE_DUTIES, ...self::AUTHORITY_CONFIG_DUTIES, ...self::CUSTOMER_DECISION_DUTIES, ...self::AUTHORITY_EVIDENCE_DUTIES];
     }
 
     public static function requested(): bool

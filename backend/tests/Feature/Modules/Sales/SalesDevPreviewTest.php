@@ -5,10 +5,12 @@ namespace Tests\Feature\Modules\Sales;
 use App\Models\Company;
 use App\Models\Currency;
 use App\Models\User;
+use App\Modules\Administration\Support\QuotationDemoPresets;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\DutyStatus;
 use App\Modules\Sales\Support\Authority\SalesDevPreview;
+use App\Modules\Sales\Support\Authority\SalesDutyCatalogue;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\SalesAccess;
@@ -43,6 +45,9 @@ class SalesDevPreviewTest extends TestCase
 
     public function test_the_flag_is_off_by_default_and_the_shipped_catalogue_stays_staged(): void
     {
+        // Independent of the container env: with the flag off the preview is not enabled and the shipped catalogue is what the container hands out.
+        config(['sales.dev_preview.quotation_duties' => false]);
+        $this->app->forgetInstance(SalesDutyManifest::class);
         $this->assertFalse((bool) config('sales.dev_preview.quotation_duties'));
         $this->assertFalse(SalesDevPreview::enabled());
         $shipped = SalesDutyManifest::shipped();
@@ -80,11 +85,11 @@ class SalesDevPreviewTest extends TestCase
         $this->assertTrue($manifest->isActive(self::VIEW));
         $this->assertTrue($manifest->isActive(self::PREPARE));
         $this->assertTrue($manifest->isActive('sales.quotation.issue'), 'issue is part of the local preview (owner decision, #76 review)');
-        foreach ([PermissionVocabulary::DOCUMENT_REPAIR, PermissionVocabulary::QUOTATION_WITHDRAW, 'sales.delivery.send'] as $other) {
+        foreach ([...array_keys(SalesDevPreview::EXCLUDED), 'sales.delivery.send'] as $other) {
             $this->assertFalse($manifest->isActive($other), "{$other} stays off");
         }
         // Owner decisions: access management, concessions and the approver duty are ACTIVE in the local preview, but are not part of what the grant command hands out.
-        foreach ([...SalesDevPreview::ACCESS_DUTIES, ...SalesDevPreview::CONCESSION_DUTIES, ...SalesDevPreview::APPROVE_DUTIES, ...SalesDevPreview::AUTHORITY_CONFIG_DUTIES] as $duty) {
+        foreach ([...SalesDevPreview::ACCESS_DUTIES, ...SalesDevPreview::CONCESSION_DUTIES, ...SalesDevPreview::APPROVE_DUTIES, ...SalesDevPreview::AUTHORITY_CONFIG_DUTIES, ...SalesDevPreview::CUSTOMER_DECISION_DUTIES, ...SalesDevPreview::AUTHORITY_EVIDENCE_DUTIES] as $duty) {
             $this->assertTrue($manifest->isActive($duty), "{$duty} is active in the local preview");
             $this->assertNotContains($duty, SalesDevPreview::all(), "{$duty} is never handed out by sales:dev-grant-quotation");
             $this->assertFalse(SalesDutyManifest::shipped()->isActive($duty), "{$duty} stays STAGED in the shipped manifest");
@@ -197,6 +202,27 @@ class SalesDevPreviewTest extends TestCase
         $this->getJson("/api/v1/quotations/{$revision}")->assertOk()->assertJsonPath('data.state', 'DRAFT');
         $this->getJson("/api/v1/quotations/{$revision}/preview")->assertOk();
         $this->assertSame(1, QuotationRevision::query()->count());
+    }
+
+    /** Drift guard: a new STAGED Sales duty must be activated by the preview or explicitly excluded with a reason, never silently missed. */
+    public function test_every_staged_sales_duty_is_activated_by_the_preview_or_explicitly_excluded(): void
+    {
+        $staged = array_values(array_map(
+            fn ($duty): string => $duty->name,
+            array_filter(SalesDutyCatalogue::all(), fn ($duty): bool => $duty->status === DutyStatus::Staged),
+        ));
+        $this->assertNotSame([], $staged);
+        foreach ($staged as $name) {
+            $activated = in_array($name, SalesDevPreview::activated(), true);
+            $excluded = array_key_exists($name, SalesDevPreview::EXCLUDED);
+            $this->assertTrue($activated xor $excluded, "{$name} must be either activated by SalesDevPreview or listed in SalesDevPreview::EXCLUDED (exactly one)");
+        }
+        foreach (array_keys(SalesDevPreview::EXCLUDED) as $name) {
+            $this->assertContains($name, $staged, "{$name} is excluded but no longer STAGED: remove it from EXCLUDED");
+        }
+        // The full demo preset never grants an excluded duty, and its add-ons are all activated by the preview.
+        $this->assertSame([], array_intersect(QuotationDemoPresets::ADDONS, array_keys(SalesDevPreview::EXCLUDED)));
+        $this->assertSame([], array_diff(QuotationDemoPresets::ADDONS, SalesDevPreview::activated()));
     }
 
     public function test_the_local_preview_includes_issue_and_only_the_local_switch_can_activate_it(): void

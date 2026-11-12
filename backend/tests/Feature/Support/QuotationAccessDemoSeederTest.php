@@ -13,6 +13,7 @@ use App\Modules\Administration\Support\QuotationDemoPresets;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Sales\Models\QuotationFamily;
 use App\Modules\Sales\Models\QuotationRevision;
+use App\Modules\Sales\Support\Authority\SalesDevPreview;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Duty;
 use App\Support\Demo\QuotationDemoBoundary as Demo;
@@ -207,7 +208,20 @@ final class QuotationAccessDemoSeederTest extends TestCase
         foreach (QuotationDemoPresets::all() as $name => $definition) {
             $this->assertSame($name === 'full', array_intersect($authority, $definition['addons']) !== [], "{$name}: discount authority duties");
         }
+        // The Customer decisions screen opens under 'full' (it was 403 while these duties were in no preset).
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Sanctum::actingAs($main->fresh());
+        $this->getJson('/api/v1/customer-decision-cases')->assertOk();
+        $decision = [...SalesDevPreview::CUSTOMER_DECISION_DUTIES, ...SalesDevPreview::AUTHORITY_EVIDENCE_DUTIES];
+        $this->assertEqualsCanonicalizing($decision, array_values(array_intersect($this->held($main), $decision)));
+        foreach (QuotationDemoPresets::all() as $name => $definition) {
+            $this->assertSame($name === 'full', array_intersect($decision, $definition['addons']) !== [], "{$name}: customer decision duties");
+        }
         $apply('governor');
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        Sanctum::actingAs($main->fresh());
+        $this->getJson('/api/v1/customer-decision-cases')->assertForbidden();
+        $this->assertSame([], array_values(array_intersect($this->held($main), $decision)));
         $this->assertSame([], array_values(array_intersect($this->held($main), $authority)), 'switching away takes them back');
     }
 

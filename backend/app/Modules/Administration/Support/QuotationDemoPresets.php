@@ -15,7 +15,7 @@ use App\Modules\Sales\Support\PermissionVocabulary as Duty;
  * Two layers, both quotation-only:
  *  - ACCESS roles (view, prepare, assign, delegate, revoke) with a scope per assignment. Applied through the guarded `SyncMemberAccess::patchQuotationDemo` by the synthetic operator, which
  *    preserves every unrelated right of the login and audits before/after.
- *  - WORKFLOW add-ons (issue, discount, price override, commercial view, approve, and for 'full' only the discount authority configure/reference-approve duties): direct grants applied only under the local preview switch, exactly like the existing
+ *  - WORKFLOW add-ons (issue, discount, price override, commercial view, approve, and for 'full' only the discount authority configure/reference-approve/evidence-view and customer-decision duties): direct grants applied only under the local preview switch, exactly like the existing
  *    `sales:dev-grant-quotation`. They are capabilities layered on the access role's records; they are never granted by the patch and never include repair.
  */
 final class QuotationDemoPresets
@@ -23,7 +23,7 @@ final class QuotationDemoPresets
     public const ROLE_PREFIX = 'Quotation demo: ';
 
     /** The workflow duties a preset may add, and the full set the apply Action keeps in step (a preset without one takes it away). */
-    public const ADDONS = [Duty::QUOTATION_ISSUE, Duty::QUOTATION_DISCOUNT, Duty::QUOTATION_PRICE_OVERRIDE, Duty::QUOTATION_COMMERCIAL_VIEW, Duty::QUOTATION_APPROVE, Duty::FINANCIAL_CONFIGURE, Duty::PRICE_REFERENCE_APPROVE];
+    public const ADDONS = [Duty::QUOTATION_ISSUE, Duty::QUOTATION_DISCOUNT, Duty::QUOTATION_PRICE_OVERRIDE, Duty::QUOTATION_COMMERCIAL_VIEW, Duty::QUOTATION_APPROVE, Duty::FINANCIAL_CONFIGURE, Duty::PRICE_REFERENCE_APPROVE, Duty::AUTHORITY_EVIDENCE_VIEW, Duty::CUSTOMER_DECISION_VIEW, Duty::CUSTOMER_DECISION_EVIDENCE_RECORD, Duty::CUSTOMER_DECISION_ACCEPT];
 
     /**
      * role => the quotation-only duties the role carries.
@@ -64,7 +64,7 @@ final class QuotationDemoPresets
             'approver' => ['about' => 'Sees every quotation and may approve or reject a recorded discount/override need; cannot prepare, and never approves what they prepared.', 'role' => $viewer, 'scope' => 'ALL', 'addons' => [Duty::QUOTATION_APPROVE]],
             'governor' => ['about' => 'Manager (MY_UNITS) who can also reassign owners, change the access unit, share and revoke named access within those units.', 'role' => self::ROLE_PREFIX.'governor', 'scope' => AccessScopeLimit::MY_UNITS, 'addons' => []],
             'access-manager' => ['about' => 'Company-wide: view, reassign, share and revoke (recovery management). Cannot prepare or issue.', 'role' => self::ROLE_PREFIX.'access manager', 'scope' => 'ALL', 'addons' => []],
-            'full' => ['about' => 'Everything the demo offers, company-wide: view, prepare, assign, share, revoke, issue, discount, price override, commercial figures, approve, and the Discount authority settings (configure, approve price references). Never repair.', 'role' => self::ROLE_PREFIX.'governor', 'scope' => 'ALL', 'addons' => self::ADDONS],
+            'full' => ['about' => 'Everything the demo offers, company-wide: view, prepare, assign, share, revoke, issue, discount, price override, commercial figures, approve, the Discount authority settings (configure, approve price references, read protected evidence) and the Customer decisions screens (view, record evidence, accept). Never repair, withdraw or handover.', 'role' => self::ROLE_PREFIX.'governor', 'scope' => 'ALL', 'addons' => self::ADDONS],
         ];
     }
 
