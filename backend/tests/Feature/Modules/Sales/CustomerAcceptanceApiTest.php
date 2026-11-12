@@ -74,7 +74,7 @@ class CustomerAcceptanceApiTest extends TestCase
         $this->postJson($this->recordUrl(), array_replace($body, ['expected_case_generation' => 1]), ['Idempotency-Key' => 'accept'])->assertConflict()->assertJsonPath('reason_code', 'REQUEST_KEY_REUSED');
     }
 
-    public function test_staged_duties_have_no_http_access_even_with_permission_rows_and_are_absent_from_dev_preview(): void
+    public function test_staged_duties_have_no_http_access_even_with_permission_rows_and_are_not_in_standard_preview_grants(): void
     {
         $this->getJson($this->previewUrl())->assertUnauthorized();
         Sanctum::actingAs($this->checker);
@@ -83,7 +83,9 @@ class CustomerAcceptanceApiTest extends TestCase
         $this->postJson($this->recordUrl(), $this->intent)->assertForbidden();
         $this->getJson('/api/v1/customer-acceptances/1')->assertForbidden();
         $this->getJson('/api/v1/customer-acceptances/1/readiness')->assertForbidden();
-        $this->assertNotContains(P::CUSTOMER_DECISION_ACCEPT, SalesDevPreview::activated());
+        // Local preview activation is supported, but the standard preview grant command never grants acceptance.
+        $this->assertContains(P::CUSTOMER_DECISION_ACCEPT, SalesDevPreview::activated());
+        $this->assertNotContains(P::CUSTOMER_DECISION_ACCEPT, SalesDevPreview::all());
         $this->assertNotContains(P::CUSTOMER_DECISION_ACCEPT, P::all());
     }
 
