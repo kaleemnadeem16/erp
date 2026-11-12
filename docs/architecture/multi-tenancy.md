@@ -8,6 +8,8 @@ multi-tenant so that enabling it later is days of work, not months
 
 **Read before writing any migration or model.**
 
+The system is single-company operational with multi-company-oriented foundations, not operationally multi-company. Enabling a second company is gated by [multi-company-readiness.md](multi-company-readiness.md); the "days of work" estimate below covers only the mechanical resolver change, not that gate.
+
 ---
 
 ## The five rules
@@ -182,5 +184,6 @@ every query, and re-partitioning cache and file storage.
 ## Related
 
 - [invariants.md](invariants.md) — rules 2 and 7
+- [multi-company-readiness.md](multi-company-readiness.md)
 - [database.md](database.md)
 - [ADR 0004](../decisions/0004-multi-tenancy-ready-schema.md)

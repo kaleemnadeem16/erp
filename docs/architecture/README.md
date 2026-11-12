@@ -25,6 +25,7 @@ these choices were made, see [decisions/](../decisions/).
 | [code-structure.md](code-structure.md) | Module layout, Actions, events | Writing any backend code |
 | [database.md](database.md) | Postgres conventions, migration standards and what to use | Writing a migration or query |
 | [multi-tenancy.md](multi-tenancy.md) | `company_id`, scoping, the escape hatch | Writing a migration or model |
+| [multi-company-readiness.md](multi-company-readiness.md) | Current single-company state and the hard readiness gate before any multi-company operation | Proposing or enabling a second company |
 | [extensibility.md](extensibility.md) | Variation ladder, plugins, custom fields | Handling a per-customer difference |
 | [authorization.md](authorization.md) | Roles, permissions, namespacing, Teams | Adding a permission or gating an action |
 | [authorization-retrofit.md](authorization-retrofit.md) | Tracked backlog: which already-built features still need permissions, field protection and UI gating | Picking up the next retrofit slice |
