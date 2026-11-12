@@ -54,6 +54,15 @@ final class SalesDevPreview
     /** @var list<string> */
     public const APPROVE_DUTIES = [PermissionVocabulary::QUOTATION_APPROVE];
 
+    /**
+     * The discount authority configuration screens (Settings > Discount authority and its price references), local preview only. Propose (configure) and approve are
+     * distinct duties; the server refuses a person approving a reference they proposed, so holding both on the demo login never lets one person do both steps.
+     * Nothing here is in `all()`; only the 'full' demo preset grants them.
+     *
+     * @var list<string>
+     */
+    public const AUTHORITY_CONFIG_DUTIES = [PermissionVocabulary::FINANCIAL_CONFIGURE, PermissionVocabulary::PRICE_REFERENCE_APPROVE];
+
     /** @return list<string> every duty the local preview turns on and `sales:dev-grant-quotation` hands out */
     public static function all(): array
     {
@@ -63,7 +72,7 @@ final class SalesDevPreview
     /** @return list<string> every duty the local preview makes ACTIVE in the manifest (a superset of `all()`; activation grants nobody anything) */
     public static function activated(): array
     {
-        return [...self::all(), ...self::ACCESS_DUTIES, ...self::CONCESSION_DUTIES, ...self::APPROVE_DUTIES];
+        return [...self::all(), ...self::ACCESS_DUTIES, ...self::CONCESSION_DUTIES, ...self::APPROVE_DUTIES, ...self::AUTHORITY_CONFIG_DUTIES];
     }
 
     public static function requested(): bool

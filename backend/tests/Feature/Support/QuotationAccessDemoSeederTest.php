@@ -195,6 +195,20 @@ final class QuotationAccessDemoSeederTest extends TestCase
 
         $apply('full');
         $this->assertSame($all, $list()->assertOk()->json('meta.total'));
+
+        // Only 'full' opens the Discount authority settings; the duties are otherwise held by no preset.
+        $authority = [Duty::FINANCIAL_CONFIGURE, Duty::PRICE_REFERENCE_APPROVE];
+        $this->assertEqualsCanonicalizing($authority, array_values(array_intersect($this->held($main), $authority)));
+        foreach (['policies', 'references'] as $collection) {
+            app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+            Sanctum::actingAs($main->fresh());
+            $this->getJson("/api/v1/sales-discount-authority/{$collection}")->assertOk();
+        }
+        foreach (QuotationDemoPresets::all() as $name => $definition) {
+            $this->assertSame($name === 'full', array_intersect($authority, $definition['addons']) !== [], "{$name}: discount authority duties");
+        }
+        $apply('governor');
+        $this->assertSame([], array_values(array_intersect($this->held($main), $authority)), 'switching away takes them back');
     }
 
     public function test_the_main_login_cannot_apply_a_preset_to_itself_and_a_non_demo_actor_is_refused(): void

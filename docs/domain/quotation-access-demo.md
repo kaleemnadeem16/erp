@@ -42,7 +42,7 @@ access only, unrelated rights kept, audited, rerun adds nothing) plus audited wo
 | approver | view (ALL) | approve |
 | governor | view + prepare + assign + share + revoke (MY_UNITS) | none |
 | access-manager | view + assign + share + revoke (ALL) | none |
-| full | governor rights (ALL) | issue, discount, price override, commercial view, approve |
+| full | governor rights (ALL) | issue, discount, price override, commercial view, approve, plus the Discount authority settings duties (`sales.financial.configure`, `sales.pricing.reference.approve`; local preview only; the server still refuses approving a reference you proposed) |
 
 Add-ons are direct ALL-scoped grants like the existing `sales:dev-grant-quotation`; the patch itself
 still never manages issue, repair or workflow duties. `sales:dev-grant-quotation` is unchanged
