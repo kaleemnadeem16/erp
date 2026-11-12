@@ -15,7 +15,7 @@
 | **BY DESIGN** | Behaves as the decision records say; a product decision, not a defect. | ADR |
 | **NOT TESTABLE** | Nothing to change mid-flight today. | Reason |
 
-Summary: rows 1 to 7, 9a, 9b, 9c, 10, 11, 15 and 17 are RESOLVED; rows 12 to 14 and 16 are SAFE; row 8 is NOT TESTABLE; row 18 is BY DESIGN with an open product question (#106, #92). No row is currently OUTSTANDING.
+Summary: rows 1 to 7, 9a, 9b, 9c, 9d, 10, 11, 15 and 17 are RESOLVED; rows 12 to 14 and 16 are SAFE; row 8 is NOT TESTABLE; row 18 is BY DESIGN with an open product question (#106, #92). No Inventory or Purchasing row is currently OUTSTANDING. Row 9c was found incomplete on 2026-11-12 (two Inventory Actions had been missed) and is closed by row 9d. Actions in other modules that check authority only before their transaction have not been inventoried; they are tracked in #112 and are not cleared by this matrix. Status for row 9d is local-test evidence; exact-head CI is required before it is relied on.
 
 ## The matrix
 
@@ -34,6 +34,7 @@ Fixes follow one pattern: the Action decides inside its transaction from the sto
 | 9a | Stock-moving and commitment Actions | Same finding as rows 1 and 2 | **RESOLVED** | `be9f8ea6` | `DecisionTimeAuthorityStockRaceTest` |
 | 9b | Process-opening, evidence-capture and draft Actions | Same finding as rows 1 and 2 | **RESOLVED** | `2225e3c3` | `DecisionTimeAuthorityDraftRaceTest` |
 | 9c | Settings, FX reconciliation and master-data Actions | Same finding as rows 1 and 2 | **RESOLVED** | `7b156c54` | `DecisionTimeAuthorityMasterDataRaceTest` |
+| 9d | `MaintainItemPackaging`, `DeleteWarehouseLocationAssignment` | Same finding as rows 1 and 2 (found after row 9c) | **RESOLVED** | `f72d1fd2` | `DecisionTimeAuthorityInventoryD2RaceTest`, `D2AuthorityPathsTest` |
 | 10 | `DecideApproval` | A removed approver duty was not re-checked at decision | **RESOLVED** | `7390b9e2` | `ApprovalDecisionAuthorityRaceTest` |
 | 11 | `DecideApproval` | A suspended approver was not re-checked at decision | **RESOLVED** | `7390b9e2` | `ApprovalDecisionAuthorityRaceTest` |
 | 12 | `DecideApproval` | Approval authority limit is read inside the transaction | **SAFE** | Held before this work | `ApprovalDecisionAuthorityRaceTest` |
