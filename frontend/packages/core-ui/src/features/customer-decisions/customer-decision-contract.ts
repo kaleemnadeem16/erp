@@ -144,6 +144,11 @@ export interface CaseListParams {
   search?: string;
   /** Only this customer's cases (the endpoint's `filter[party_id]`). */
   partyId?: number;
+  /** Opened on or after / on or before this day of the company calendar (`yyyy-mm-dd`, the endpoint's `filter[recorded_from]` / `filter[recorded_to]`). */
+  recordedFrom?: string;
+  recordedTo?: string;
+  /** Only cases linked to this quotation family (`filter[quotation_family_id]`); the server answers an unseen quotation like an unknown one. */
+  quotationFamilyId?: number;
   sort: "id" | "-id";
   page: number;
   perPage: number;
@@ -198,8 +203,8 @@ export interface CustomerDecisionGateway {
     body: OpenCaseInput;
     requestKey: string;
   }) => Promise<WriteOutcome>;
-  /** The customer's issued quotations (needs the quotation view duty; refused otherwise). */
-  quotationsFor: (partyId: number) => Promise<LinkableQuotation[]>;
+  /** Issued quotations (needs the quotation view duty; refused otherwise): one customer's, or, without a customer, the most recent ones. */
+  quotationsFor: (partyId?: number) => Promise<LinkableQuotation[]>;
   /** The scopes of one issued quotation. */
   quotationScopes: (revisionId: number) => Promise<LinkableScopes>;
   addObservation: (input: {

@@ -59,6 +59,8 @@ async function expectPhoneSafe(page: Page) {
     [...document.querySelectorAll("button, a[href]")]
       .filter((el) => (el as HTMLElement).offsetParent !== null)
       .filter((el) => el.getAttribute("role") !== "combobox")
+      // The shared date field keeps its small calendar icon inside a 44px-tall field; typing the day is the main path.
+      .filter((el) => el.getAttribute("aria-label") !== "Choose date")
       // The shared data table's own sort headers and page buttons keep their shared sizing; this spec is about the screen's controls.
       .filter(
         (el) =>
@@ -281,12 +283,101 @@ test("the list filters by customer, shows it as a removable chip, and has no bul
     page.getByRole("button", { name: /Remove filter: Customer: Beta Stores/ }),
   ).toBeVisible();
   const lists = await page.evaluate(() => window.__cdLists);
-  expect(lists[lists.length - 1]).toBe("search=&party=4");
+  expect(lists[lists.length - 1]).toBe("search=&party=4&from=&to=&quotation=");
   await page.getByRole("combobox", { name: "Customer" }).first().click();
   await page.getByRole("option", { name: /Alpha Traders/ }).click();
   await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
   await page.getByRole("button", { name: "Clear all" }).click();
   await expect(page.getByText("Customer: Alpha Traders")).toHaveCount(0);
+});
+
+test("the list filters by the day it was opened and by linked quotation, with chips, clear all and keyboard access", async ({
+  page,
+}) => {
+  await mockParties(page);
+  await mount(
+    page,
+    { screen: "list", permissions: [...BOTH, "sales.quotation.view"] },
+    false,
+    1280,
+  );
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+  // Dates are typed into the segmented fields (keyboard), month, day, year.
+  const from = page.getByRole("group", { name: "Opened from" }).first();
+  await from.getByLabel("Month").fill("11");
+  await from.getByLabel("Day").fill("11");
+  await from.getByLabel("Year").fill("2026");
+  await expect(
+    page.getByText("No customer messages match these filters."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: /Remove filter: Opened: 2026-11-11 – …/,
+    }),
+  ).toBeVisible();
+  let lists = await page.evaluate(() => window.__cdLists);
+  expect(lists[lists.length - 1]).toContain("from=2026-11-11&to=&");
+  // An end day before the start day is explained and not sent.
+  const to = page.getByRole("group", { name: "Opened to" }).first();
+  await to.getByLabel("Month").fill("11");
+  await to.getByLabel("Day").fill("10");
+  await to.getByLabel("Year").fill("2026");
+  await expect(page.getByRole("alert")).toContainText("end day is before");
+  lists = await page.evaluate(() => window.__cdLists);
+  expect(lists[lists.length - 1]).toContain("from=&to=&");
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+  // The linked quotation: chosen from the issued quotations, shown by its number, removable.
+  await page
+    .getByRole("combobox", { name: "Linked quotation" })
+    .first()
+    .click();
+  await page.getByRole("option", { name: "QN-2026-0013" }).click();
+  await expect(
+    page.getByText("No customer messages match these filters."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", {
+      name: /Remove filter: Quotation: QN-2026-0013/,
+    }),
+  ).toBeVisible();
+  lists = await page.evaluate(() => window.__cdLists);
+  expect(lists[lists.length - 1]).toContain("quotation=13");
+  await page
+    .getByRole("combobox", { name: "Linked quotation" })
+    .first()
+    .click();
+  await page.keyboard.press("ArrowUp");
+  await page.getByRole("option", { name: "QN-2026-0012" }).click();
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+  await page
+    .getByRole("button", { name: /Remove filter: Quotation: QN-2026-0012/ })
+    .click();
+  await expect(page.getByText(/Quotation: QN/)).toHaveCount(0);
+});
+
+test("without the quotation view duty the quotation filter is not offered, and the filters fit a 390px phone", async ({
+  page,
+}) => {
+  await mockParties(page);
+  await mount(page, { screen: "list", permissions: BOTH }, false, 1280);
+  await expect(
+    page.getByRole("combobox", { name: "Linked quotation" }),
+  ).toHaveCount(0);
+  await mount(
+    page,
+    { screen: "list", permissions: [...BOTH, "sales.quotation.view"] },
+    false,
+    390,
+  );
+  await expect(page.getByText("PO-ALPHA-0417").first()).toBeVisible();
+  await page.getByRole("button", { name: /Open filters/ }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByText("Opened between")).toBeVisible();
+  await expect(
+    sheet.getByRole("combobox", { name: "Linked quotation" }),
+  ).toBeVisible();
+  await expectPhoneSafe(page);
 });
 
 test("clicking a row opens the case in the side sheet over the list, and closing returns to the list", async ({

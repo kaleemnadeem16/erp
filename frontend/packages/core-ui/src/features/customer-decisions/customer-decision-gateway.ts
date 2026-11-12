@@ -29,6 +29,11 @@ export const liveCustomerDecisionGateway: CustomerDecisionGateway = {
     };
     if (params.search) query["filter[search]"] = params.search;
     if (params.partyId) query["filter[party_id]"] = params.partyId;
+    if (params.recordedFrom)
+      query["filter[recorded_from]"] = params.recordedFrom;
+    if (params.recordedTo) query["filter[recorded_to]"] = params.recordedTo;
+    if (params.quotationFamilyId)
+      query["filter[quotation_family_id]"] = params.quotationFamilyId;
     const response = await customerDecisionCasesIndex(query);
     return readListPage(response.data);
   },
@@ -39,10 +44,11 @@ export const liveCustomerDecisionGateway: CustomerDecisionGateway = {
       page: 1,
       per_page: 100,
       "filter[state]": "ISSUED",
+      ...(partyId ? { "filter[recipient_party_id]": partyId } : {}),
       sort: "-id",
     });
     return readQuotationPage(response.data)
-      .data.filter((row) => row.recipient_party_id === partyId)
+      .data.filter((row) => !partyId || row.recipient_party_id === partyId)
       .map((row) => ({
         revision_id: row.revision_id,
         family_id: row.family_id,

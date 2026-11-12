@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Numbering\Services\CompanyClock;
 use App\Modules\Sales\Models\CustomerDecisionCase;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionAccess;
 use App\Modules\Sales\Support\PermissionVocabulary;
+use App\Modules\Sales\Support\Quotation\QuotationAccess;
 use App\Modules\Sales\Support\Quotation\RecipientNames;
+use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 /**
- * The shared intake cases of the company, newest first: identity, the customer Party (name only where the actor may read it), how many components and observations the case holds,
+ * The shared intake cases of the company, newest first (filterable by customer, text, the company calendar days they were opened between, and one linked quotation the actor may see): identity, the customer Party (name only where the actor may read it), how many components and observations the case holds,
  * and its generation. Needs `sales.customer-decision.view` (STAGED); a limited scope of that duty is refused, never filtered. Reading counts nothing and records nothing; a case
  * says what the customer sent, never that they agreed.
  */
@@ -29,9 +33,12 @@ final class ListCustomerDecisionCases
     {
         $this->early($actor);
         $input = Validator::make($input, [
-            'filter' => ['sometimes', 'array:party_id,search'],
+            'filter' => ['sometimes', 'array:party_id,search,recorded_from,recorded_to,quotation_family_id'],
             'filter.party_id' => ['sometimes', 'integer', 'min:1'],
             'filter.search' => ['sometimes', 'string', 'max:120'],
+            'filter.recorded_from' => ['sometimes', 'date_format:Y-m-d'],
+            'filter.recorded_to' => ['sometimes', 'date_format:Y-m-d', 'after_or_equal:filter.recorded_from'],
+            'filter.quotation_family_id' => ['sometimes', 'integer', 'min:1'],
             'sort' => ['sometimes', Rule::in(['id', '-id'])],
             'per_page' => ['sometimes', 'integer', 'between:1,100'],
             'page' => ['sometimes', 'integer', 'min:1'],
@@ -48,6 +55,25 @@ final class ListCustomerDecisionCases
             if (isset($filter['search']) && trim((string) $filter['search']) !== '') {
                 $needle = str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], trim((string) $filter['search']));
                 $query->where('intake_identity', 'ilike', "%{$needle}%");
+            }
+            $zone = app(CompanyClock::class)->timezone();
+            if (isset($filter['recorded_from'])) {
+                $query->where('recorded_at', '>=', CarbonImmutable::createFromFormat('!Y-m-d', (string) $filter['recorded_from'], $zone)->startOfDay()->utc());
+            }
+            if (isset($filter['recorded_to'])) {
+                $query->where('recorded_at', '<=', CarbonImmutable::createFromFormat('!Y-m-d', (string) $filter['recorded_to'], $zone)->endOfDay()->utc());
+            }
+            if (isset($filter['quotation_family_id'])) {
+                // Only a quotation the actor may see can narrow the list: otherwise the filter would reveal which cases are linked to it. An unseen family answers exactly like an unknown one.
+                $familyId = (int) $filter['quotation_family_id'];
+                try {
+                    $visible = app(QuotationAccess::class)->queryFor($fresh, [PermissionVocabulary::QUOTATION_VIEW])->where('quotation_families.id', $familyId)->exists();
+                } catch (AuthorizationException) {
+                    $visible = false;
+                }
+                $visible
+                    ? $query->whereHas('components', static fn ($q) => $q->where('family_id', $familyId))
+                    : $query->whereRaw('1 = 0');
             }
             $query->orderBy('id', ($input['sort'] ?? '-id') === 'id' ? 'asc' : 'desc');
             $page = $query->paginate((int) ($input['per_page'] ?? 25), ['*'], 'page', (int) ($input['page'] ?? 1));

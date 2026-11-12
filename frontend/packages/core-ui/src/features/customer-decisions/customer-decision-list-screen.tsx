@@ -21,6 +21,8 @@ import {
 } from "../../components/data-table";
 import { PartyCombobox } from "../../components/lookups/entity-comboboxes";
 import { Button } from "../../components/ui/button";
+import { Combobox, type ComboboxOption } from "../../components/ui/combobox";
+import { DateField } from "../../components/ui/date-field";
 import { formatDate } from "../../lib/format-date";
 import {
   apiSortToTableSorting,
@@ -86,6 +88,18 @@ export interface CustomerDecisionListViewProps {
   /** The filtered customer's name for its chip; the id stands in until it loads. */
   partyName?: string;
   onPartyChange: (partyId: string | undefined) => void;
+  /** Opened on or after / before this company-calendar day (`yyyy-mm-dd`), as the URL carries them; empty for no bound. */
+  recordedFrom: string;
+  recordedTo: string;
+  onRecordedChange: (next: { from?: string; to?: string }) => void;
+  /** The quotation family filtered to; empty for any. */
+  quotationFamilyId: string;
+  /** The issued quotations a person may pick; null hides the control (the person may not view quotations). */
+  quotationOptions: ComboboxOption[] | null;
+  quotationsLoading?: boolean;
+  quotationsError?: unknown;
+  onQuotationsRetry?: () => void;
+  onQuotationChange: (familyId: string | undefined) => void;
   onClearAll: () => void;
   isLoading: boolean;
   error: unknown;
@@ -116,6 +130,89 @@ export function CustomerDecisionListView(props: CustomerDecisionListViewProps) {
       }
     />
   );
+  const rangeBackwards =
+    props.recordedFrom !== "" &&
+    props.recordedTo !== "" &&
+    props.recordedTo < props.recordedFrom;
+  const quotationFilter = (id: string, className: string) =>
+    props.quotationOptions === null ? null : (
+      <Combobox
+        id={id}
+        aria-label="Linked quotation"
+        className={className}
+        value={props.quotationFamilyId || "all"}
+        onValueChange={(value) =>
+          props.onQuotationChange(value === "all" ? undefined : value)
+        }
+        options={[
+          { value: "all", label: "Any quotation" },
+          ...props.quotationOptions,
+        ]}
+        placeholder="Any quotation"
+        searchPlaceholder="Search quotations…"
+        emptyText="No issued quotations."
+        loading={props.quotationsLoading}
+        loadError={
+          props.quotationsError
+            ? {
+                error: props.quotationsError,
+                onRetry: () => props.onQuotationsRetry?.(),
+                noun: "quotations",
+              }
+            : undefined
+        }
+        selectedLabel={
+          props.quotationFamilyId &&
+          !props.quotationOptions.some(
+            (o) => o.value === props.quotationFamilyId,
+          )
+            ? `Quotation #${props.quotationFamilyId}`
+            : undefined
+        }
+      />
+    );
+  const dateRange = (id: string, fieldClass: string, full: boolean) => (
+    <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
+        <DateField
+          id={`${id}-from`}
+          aria-label="Opened from"
+          value={props.recordedFrom}
+          onChange={(value) =>
+            props.onRecordedChange({ from: value || undefined })
+          }
+          className={fieldClass}
+          pickerPosition={full ? "end" : "start"}
+          aria-invalid={rangeBackwards}
+          aria-describedby={rangeBackwards ? `${id}-range-note` : undefined}
+        />
+        <span className="text-xs text-muted-foreground" aria-hidden="true">
+          –
+        </span>
+        <DateField
+          id={`${id}-to`}
+          aria-label="Opened to"
+          value={props.recordedTo}
+          onChange={(value) =>
+            props.onRecordedChange({ to: value || undefined })
+          }
+          className={fieldClass}
+          pickerPosition={full ? "end" : "start"}
+          aria-invalid={rangeBackwards}
+          aria-describedby={rangeBackwards ? `${id}-range-note` : undefined}
+        />
+      </div>
+      {rangeBackwards && (
+        <p
+          id={`${id}-range-note`}
+          role="alert"
+          className="text-xs text-destructive"
+        >
+          The end day is before the start day, so the dates are not applied.
+        </p>
+      )}
+    </div>
+  );
   const chips: FilterChip[] = [];
   if (props.search)
     chips.push({
@@ -129,6 +226,26 @@ export function CustomerDecisionListView(props: CustomerDecisionListViewProps) {
       label: `Customer: ${props.partyName ?? `#${props.partyId}`}`,
       onRemove: () => props.onPartyChange(undefined),
     });
+  if (props.recordedFrom || props.recordedTo)
+    chips.push({
+      id: "opened",
+      label: `Opened: ${props.recordedFrom || "…"} – ${props.recordedTo || "…"}`,
+      onRemove: () =>
+        props.onRecordedChange({ from: undefined, to: undefined }),
+    });
+  if (props.quotationFamilyId)
+    chips.push({
+      id: "quotation",
+      label: `Quotation: ${
+        props.quotationOptions?.find((o) => o.value === props.quotationFamilyId)
+          ?.label ?? `#${props.quotationFamilyId}`
+      }`,
+      onRemove: () => props.onQuotationChange(undefined),
+    });
+  const activeCount =
+    (props.partyId ? 1 : 0) +
+    (props.recordedFrom || props.recordedTo ? 1 : 0) +
+    (props.quotationFamilyId ? 1 : 0);
   return (
     <ScreenTemplate kind="list" className="space-y-4 p-4 md:p-6">
       <PageHeader
@@ -152,13 +269,26 @@ export function CustomerDecisionListView(props: CustomerDecisionListViewProps) {
         />
         <div className="hidden items-center gap-2 md:flex">
           {partyFilter("decision-party-filter", "h-10 w-64")}
+          {quotationFilter("decision-quotation-filter", "h-10 w-56")}
+          {dateRange("decision-opened", "h-10 w-40", true)}
         </div>
-        <ListFiltersSheet
-          activeCount={props.partyId ? 1 : 0}
-          onClear={props.onClearAll}
-        >
+        <ListFiltersSheet activeCount={activeCount} onClear={props.onClearAll}>
           <FilterField label="Customer" htmlFor="decision-party-filter-sheet">
             {partyFilter("decision-party-filter-sheet", "h-11 w-full")}
+          </FilterField>
+          {props.quotationOptions !== null && (
+            <FilterField
+              label="Linked quotation"
+              htmlFor="decision-quotation-filter-sheet"
+            >
+              {quotationFilter(
+                "decision-quotation-filter-sheet",
+                "h-11 w-full",
+              )}
+            </FilterField>
+          )}
+          <FilterField label="Opened between">
+            {dateRange("decision-opened-sheet", "h-11 w-full", false)}
           </FilterField>
         </ListFiltersSheet>
       </div>
@@ -232,7 +362,13 @@ function GatedList({
   const navigate = useNavigate();
   const client = useQueryClient();
   const { search: listSearch } = useLocation();
-  const query = useListQueryState<{ search: string; party_id: string }>({
+  const query = useListQueryState<{
+    search: string;
+    party_id: string;
+    recorded_from: string;
+    recorded_to: string;
+    quotation_family_id: string;
+  }>({
     defaultSort: "-id",
     defaultPerPage: 25,
   });
@@ -241,6 +377,41 @@ function GatedList({
   const partyId = /^[1-9]\d*$/.test(query.filters.party_id ?? "")
     ? (query.filters.party_id as string)
     : "";
+  const isDay = (value: string | undefined) =>
+    /^\d{4}-\d{2}-\d{2}$/.test(value ?? "") ? (value as string) : "";
+  const recordedFrom = isDay(query.filters.recorded_from);
+  const recordedTo = isDay(query.filters.recorded_to);
+  const quotationFamilyId = /^[1-9]\d*$/.test(
+    query.filters.quotation_family_id ?? "",
+  )
+    ? (query.filters.quotation_family_id as string)
+    : "";
+  // A backwards range is not sent (the server would refuse it); the filter bar says so.
+  const rangeBackwards =
+    recordedFrom !== "" && recordedTo !== "" && recordedTo < recordedFrom;
+  // The quotation picker lists the issued quotations (of the chosen customer, if any) and needs the quotation view duty.
+  const quotations = useQuery({
+    queryKey: [
+      "customer-decision-filter-quotations",
+      partyId ? Number(partyId) : null,
+    ],
+    queryFn: () => gateway.quotationsFor(partyId ? Number(partyId) : undefined),
+    enabled: mayLinkQuotations,
+    retry: shouldRetryQuery,
+  });
+  const quotationOptions: ComboboxOption[] | null = mayLinkQuotations
+    ? [
+        ...new Map(
+          (quotations.data ?? []).map((q) => [
+            String(q.family_id),
+            {
+              value: String(q.family_id),
+              label: q.official_number ?? `Quotation #${q.family_id}`,
+            },
+          ]),
+        ).values(),
+      ]
+    : null;
   // The chip names the customer by its own id, not by whatever first page the picker loaded.
   const partyQuery = usePartiesShow(Number(partyId), undefined, {
     query: { enabled: partyId !== "" },
@@ -255,6 +426,11 @@ function GatedList({
   const params = {
     search: search || undefined,
     partyId: partyId ? Number(partyId) : undefined,
+    recordedFrom: rangeBackwards ? undefined : recordedFrom || undefined,
+    recordedTo: rangeBackwards ? undefined : recordedTo || undefined,
+    quotationFamilyId: quotationFamilyId
+      ? Number(quotationFamilyId)
+      : undefined,
     sort,
     page: query.page,
     perPage,
@@ -302,8 +478,30 @@ function GatedList({
         partyId={partyId}
         partyName={partyName}
         onPartyChange={(value) => query.setFilter("party_id", value)}
+        recordedFrom={recordedFrom}
+        recordedTo={recordedTo}
+        onRecordedChange={(next) =>
+          query.setFilters({
+            ...("from" in next ? { recorded_from: next.from } : {}),
+            ...("to" in next ? { recorded_to: next.to } : {}),
+          })
+        }
+        quotationFamilyId={quotationFamilyId}
+        quotationOptions={quotationOptions}
+        quotationsLoading={quotations.isPending && mayLinkQuotations}
+        quotationsError={quotations.isError ? quotations.error : undefined}
+        onQuotationsRetry={() => void quotations.refetch()}
+        onQuotationChange={(value) =>
+          query.setFilter("quotation_family_id", value)
+        }
         onClearAll={() =>
-          query.setFilters({ search: undefined, party_id: undefined })
+          query.setFilters({
+            search: undefined,
+            party_id: undefined,
+            recorded_from: undefined,
+            recorded_to: undefined,
+            quotation_family_id: undefined,
+          })
         }
         isLoading={result.isPending}
         error={result.isError ? result.error : null}

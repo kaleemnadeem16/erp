@@ -15,6 +15,12 @@ export type CustomerDecisionCasesIndexParams = {
    * @maxLength 120
    */
   "filter[search]"?: string;
+  "filter[recorded_from]"?: string;
+  "filter[recorded_to]"?: string;
+  /**
+   * @minimum 1
+   */
+  "filter[quotation_family_id]"?: number;
   sort?: CustomerDecisionCasesIndexSort;
   include?: string;
   /**

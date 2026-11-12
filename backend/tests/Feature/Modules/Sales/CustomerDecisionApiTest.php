@@ -263,6 +263,114 @@ class CustomerDecisionApiTest extends TestCase
         $this->assertSame(0, DB::table('customer_decision_evidence')->count(), 'no evidence was written by a probe');
     }
 
+    /** A case opened at a stated instant, optionally linked to the prepared quotation. */
+    private function caseAt(string $identity, string $utc, bool $linked): int
+    {
+        // The database stamps recorded_at with its own clock; for this fixture only, let the stated instant stand (rolled back with the test transaction).
+        DB::statement('ALTER TABLE customer_decision_cases DISABLE TRIGGER customer_decision_cases_stamp');
+        $id = CustomerDecisionCase::query()->create(['party_id' => $this->customer->id, 'intake_identity' => $identity, 'generation' => 0, 'recorded_by' => $this->clerk->id, 'recorded_at' => $utc])->id;
+        if ($linked) {
+            DB::table('customer_decision_components')->insert(['company_id' => 1, 'case_id' => $id, 'intent_identity' => 'whole-quote', 'family_id' => $this->scope['family'], 'original_scope_anchor_id' => $this->scope['scope'], 'recorded_by' => $this->clerk->id, 'recorded_at' => $utc]);
+        }
+
+        return $id;
+    }
+
+    /** @return list<string> */
+    private function listed(string $query): array
+    {
+        return array_column($this->getJson('/api/v1/customer-decision-cases?'.$query)->assertOk()->json('data'), 'intake_identity');
+    }
+
+    public function test_the_opened_between_filter_is_inclusive_on_the_company_calendar_day(): void
+    {
+        $this->activate();
+        DB::table('companies')->where('id', 1)->update(['timezone' => 'Asia/Karachi']); // UTC+5
+        Sanctum::actingAs($this->clerk);
+        // Karachi days: 10 Nov 00:00 = 09 Nov 19:00 UTC; 10 Nov 23:59:59 = 10 Nov 18:59:59 UTC.
+        $this->caseAt('BEFORE', '2026-11-09 18:59:59', false);
+        $this->caseAt('FIRST', '2026-11-09 19:00:00', false);
+        $this->caseAt('LAST', '2026-11-10 18:59:59', false);
+        $this->caseAt('AFTER', '2026-11-10 19:00:00', false);
+
+        $this->assertEqualsCanonicalizing(['FIRST', 'LAST'], $this->listed('filter[recorded_from]=2026-11-10&filter[recorded_to]=2026-11-10'));
+        $this->assertEqualsCanonicalizing(['FIRST', 'LAST', 'AFTER'], $this->listed('filter[recorded_from]=2026-11-10'));
+        $this->assertEqualsCanonicalizing(['BEFORE', 'FIRST', 'LAST'], $this->listed('filter[recorded_to]=2026-11-10'));
+        $this->assertSame([], $this->listed('filter[recorded_from]=2026-12-01'));
+    }
+
+    public function test_the_filter_dates_are_validated(): void
+    {
+        $this->activate();
+        Sanctum::actingAs($this->clerk);
+        foreach (['filter[recorded_from]=10-11-2026', 'filter[recorded_from]=2026-02-30', 'filter[recorded_to]=tomorrow', 'filter[recorded_from]=2026-11-10&filter[recorded_to]=2026-11-09',
+            'filter[quotation_family_id]=abc', 'filter[quotation_family_id]=0', 'filter[recorded_from][]=2026-11-10'] as $bad) {
+            $this->getJson('/api/v1/customer-decision-cases?'.$bad)->assertStatus(422);
+        }
+    }
+
+    public function test_the_linked_quotation_filter_matches_only_cases_with_a_component_on_that_family(): void
+    {
+        $this->activate();
+        Sanctum::actingAs($this->clerk);
+        $this->caseAt('LINKED', '2026-11-10 08:00:00', true);
+        $this->caseAt('PLAIN', '2026-11-10 09:00:00', false);
+
+        $this->assertSame(['LINKED'], $this->listed('filter[quotation_family_id]='.$this->scope['family']));
+        $this->assertSame([], $this->listed('filter[quotation_family_id]=999999'));
+        $this->assertSame(['LINKED'], $this->listed('filter[quotation_family_id]='.$this->scope['family'].'&filter[recorded_from]=2026-11-10&filter[recorded_to]=2026-11-10'));
+        $this->assertSame([], $this->listed('filter[quotation_family_id]='.$this->scope['family'].'&filter[recorded_from]=2026-11-11'));
+    }
+
+    public function test_the_linked_quotation_filter_never_reveals_cases_of_a_quotation_the_actor_cannot_see(): void
+    {
+        $this->activate();
+        $this->caseAt('LINKED', '2026-11-10 08:00:00', true);
+        $family = $this->scope['family'];
+
+        // No quotation duty at all, and a quotation duty limited to own records (the maker prepared this one, this user did not): both look like an unknown quotation, while the unfiltered list is unchanged.
+        $own = User::factory()->create();
+        $own->givePermissionTo([P::CUSTOMER_DECISION_VIEW, P::QUOTATION_VIEW]);
+        AccessScopeLimit::create(['user_id' => $own->id, 'permission' => P::QUOTATION_VIEW, 'scope' => 'OWN']);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        foreach ([$this->viewer, $own] as $person) {
+            Sanctum::actingAs($person);
+            $this->assertSame(['LINKED'], $this->listed(''), 'the unfiltered list is unchanged');
+            $this->assertSame([], $this->listed('filter[quotation_family_id]='.$family));
+            $this->assertSame($this->getJson('/api/v1/customer-decision-cases?filter[quotation_family_id]=999999')->json('data'), $this->getJson('/api/v1/customer-decision-cases?filter[quotation_family_id]='.$family)->json('data'));
+        }
+
+        // The preparer owns it and sees it.
+        $this->maker->givePermissionTo([P::CUSTOMER_DECISION_VIEW]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        Sanctum::actingAs($this->maker);
+        $this->assertSame(['LINKED'], $this->listed('filter[quotation_family_id]='.$family));
+    }
+
+    public function test_the_filters_never_cross_companies(): void
+    {
+        $this->activate();
+        $this->caseAt('OURS', '2026-11-10 08:00:00', true);
+        $other = DB::table('companies')->insertGetId(['name' => 'Other Co', 'base_currency_id' => Company::findOrFail(1)->base_currency_id, 'created_at' => now(), 'updated_at' => now()]);
+        $outsiderId = DB::table('users')->insertGetId(['company_id' => $other, 'name' => 'Outsider', 'email' => 'outsider2@other.test', 'password' => 'x', 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+        $outsider = User::withoutGlobalScopes()->findOrFail($outsiderId);
+        app(PermissionRegistrar::class)->setPermissionsTeamId($other);
+        $outsider->givePermissionTo([P::CUSTOMER_DECISION_VIEW, P::QUOTATION_VIEW]);
+        app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        // The other company's member (who may or may not hold the duties there) never receives one of our cases through either filter.
+        Sanctum::actingAs($outsider);
+        foreach (['filter[quotation_family_id]='.$this->scope['family'], 'filter[recorded_from]=2026-11-10&filter[recorded_to]=2026-11-10'] as $query) {
+            $answer = $this->getJson('/api/v1/customer-decision-cases?'.$query);
+            $this->assertStringNotContainsString('OURS', (string) $answer->getContent());
+            $this->assertContains($answer->status(), [200, 403]);
+            if ($answer->status() === 200) {
+                $answer->assertJsonCount(0, 'data');
+            }
+        }
+    }
+
     /** @return array{0: int, 1: array<string, mixed>} */
     private function probe(int $case): array
     {

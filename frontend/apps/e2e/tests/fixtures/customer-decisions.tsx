@@ -132,13 +132,17 @@ let failedOnce = false;
 const gateway: CustomerDecisionGateway = {
   list: async (params) => {
     window.__cdLists.push(
-      `search=${params.search ?? ""}&party=${params.partyId ?? ""}`,
+      `search=${params.search ?? ""}&party=${params.partyId ?? ""}&from=${params.recordedFrom ?? ""}&to=${params.recordedTo ?? ""}&quotation=${params.quotationFamilyId ?? ""}`,
     );
     const rows = fixture.empty
       ? []
       : [summary()].filter(
           (r) =>
             (!params.partyId || r.party_id === params.partyId) &&
+            // Case 7 is opened on 2026-11-10 (company day) and linked to quotation family 12.
+            (!params.recordedFrom || "2026-11-10" >= params.recordedFrom) &&
+            (!params.recordedTo || "2026-11-10" <= params.recordedTo) &&
+            (!params.quotationFamilyId || params.quotationFamilyId === 12) &&
             (!params.search ||
               r.intake_identity
                 .toLowerCase()
@@ -158,7 +162,20 @@ const gateway: CustomerDecisionGateway = {
     };
   },
   detail: async () => detail,
-  quotationsFor: async () => [],
+  quotationsFor: async () => [
+    {
+      revision_id: 40,
+      family_id: 12,
+      official_number: "QN-2026-0012",
+      availability: "AVAILABLE",
+    },
+    {
+      revision_id: 41,
+      family_id: 13,
+      official_number: "QN-2026-0013",
+      availability: "AVAILABLE",
+    },
+  ],
   quotationScopes: async () => {
     throw new Error("not used here");
   },
