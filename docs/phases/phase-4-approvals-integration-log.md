@@ -75,6 +75,8 @@ is proposed for coordinator review. Four ordered implementation commits/stages f
 the preceding stage is green. UI is a contract handoff; one new demo seeder is permitted, existing
 Sales seeders are reserved. This entry records specification only, not delivered authority.
 
+> Historical note (2026-11-12): the fixed 14-day cap described here was removed in 5856547e; the effective expiry is the company-approved 1-365 value bounded by quotation validity.
+
 ## Discount-authority stage 1 — internal reference foundation
 
 Implemented governed reference versions, independent approval, exact-intent configuration receipts,
@@ -107,6 +109,8 @@ activation or holder grant. ADR 0164 contains the concrete lock/barrier proposal
 Six real two-session tests passed, including both decision/configuration orderings and live
 suspension, permission, assignment and source changes. The guarded configuration/current-evidence/paged-audit APIs and create-only demo are implemented;
 owner codegen/check and proposed lock-order review remain integration gates; see the canonical [checkpoint](../domain/quotation-discount-authority.md#routing-and-lifecycle-integration-checkpoint-2026-11-09).
+
+> Historical note (2026-11-12): the fixed 14-day cap described here was removed in 5856547e; the effective expiry is the company-approved 1-365 value bounded by quotation validity.
 
 ## Related
 
