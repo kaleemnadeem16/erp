@@ -75,11 +75,43 @@ function ConfirmSummary({ consequence, rows, label }: { consequence: ReactNode; 
   );
 }
 
+/** Server refusals that use developer wording, restated for the owner. The server's own message and codes are untouched; anything not listed is shown as sent. */
+const PLAIN_REFUSALS: [RegExp, (match: RegExpMatchArray) => string][] = [
+  [/^Only an approved cutover can materialise open purchase orders\.?$/i, () => 'Only an approved cutover can create its open purchase orders.'],
+  [/^Every open-purchase-order batch must be validated before commit\.?$/i, () => 'Every open-purchase-order batch must be checked (validated) before the orders can be created.'],
+  [/^Source purchase order (.+) must be staged in one immutable import batch\.?$/i, (m) => `Purchase order ${m[1]} from the old system is split across more than one import batch; it must be in exactly one.`],
+  [/^Source purchase order (.+) has inconsistent header facts\.?$/i, (m) => `Purchase order ${m[1]} from the old system has conflicting header details (for example different suppliers or dates) across its lines.`],
+  [/^Source purchase order (.+) contains duplicate line identity\.?$/i, (m) => `Purchase order ${m[1]} from the old system has the same line number or line identifier twice.`],
+  [/^Every cutover batch must be committed by its owning domain Action before finalisation\.?$/i, () => 'Finalising is not possible yet: every batch must be committed first. Commit the remaining batches, then try again.'],
+  [/^The actor who requested this exception cannot also approve it\.?$/i, () => 'The person who requested this negative opening cannot also approve it.'],
+];
+
+export function plainCutoverRefusal(message: string | null): string | null {
+  if (!message) return message;
+  for (const [pattern, plain] of PLAIN_REFUSALS) {
+    const match = message.match(pattern);
+    if (match) return plain(match);
+  }
+  return message;
+}
+
+/** Runs a confirmed action; a refusal is rethrown with plain wording so the dialog's alert shows it. */
+async function withPlainRefusal(run: () => Promise<unknown>): Promise<unknown> {
+  try {
+    return await run();
+  } catch (failure) {
+    const message = getApiErrorMessage(failure);
+    const plain = plainCutoverRefusal(message);
+    if (plain && plain !== message) throw new Error(plain);
+    throw failure;
+  }
+}
+
 function batchRows(batches: InventoryCutoverBatchResource[]): SummaryRow[] {
   const total = (key: 'accepted_record_count' | 'source_record_count') => batches.reduce((sum, batch) => sum + batch[key], 0);
   return [
     { label: 'Batches', value: String(batches.length) },
-    { label: 'Records (accepted / in batch)', value: `${total('accepted_record_count')} / ${total('source_record_count')}` },
+    { label: 'Source records accepted / in the batch', value: `${total('accepted_record_count')} / ${total('source_record_count')}` },
     { label: 'Quantity', value: batches.reduce((sum, batch) => sum + Number(batch.source_quantity), 0).toLocaleString('en-US', { maximumFractionDigits: 4 }) },
     { label: 'Value', value: batches.reduce((sum, batch) => sum + Number(batch.source_value), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) },
   ];
@@ -173,13 +205,13 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
     setActionError(null);
     attachBatch.mutate(
       { inventoryCutover: cutoverId, data: { import_batch_id: Number(importBatchId) } },
-      { onSuccess: () => { setImportBatchId(''); refetch(); }, onError: (error) => setActionError(getApiErrorMessage(error)) }
+      { onSuccess: () => { setImportBatchId(''); refetch(); }, onError: (error) => setActionError(plainCutoverRefusal(getApiErrorMessage(error))) }
     );
   }
 
   function handleValidate() {
     setActionError(null);
-    validateCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(getApiErrorMessage(error)) });
+    validateCutover.mutate({ inventoryCutover: cutoverId }, { onSuccess: refetch, onError: (error) => setActionError(plainCutoverRefusal(getApiErrorMessage(error))) });
   }
 
   function askApprove() {
@@ -211,43 +243,47 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
       description: (
         <ConfirmSummary
           label="Cutover being finalised"
-          consequence={`Finalising closes the cutover for good. The cutover and all its batches become read-only, no more batches can be attached or committed, and nobody can reopen it. If a balance is wrong afterwards it can only be corrected with a stock adjustment.${unresolved > 0 ? ` ${unresolved} exception${unresolved === 1 ? '' : 's'} listed below will be left unresolved by finalising.` : ''}`}
+          consequence={`Finalising closes the cutover for good. The cutover and all its batches become read-only, no more batches can be attached or committed, and nobody can reopen it. If a balance is wrong afterwards it can only be corrected with a stock adjustment.${unresolved > 0 ? ` ${unresolved} exception${unresolved === 1 ? '' : 's'} listed in the table below will be left unresolved by finalising.` : ''}`}
           rows={[
-            { label: 'Cutover', value: `#${cutover?.id ?? cutoverId} (${cutover?.mode ?? '—'})` },
+            { label: 'Cutover', value: `#${cutover?.id ?? cutoverId}` },
             { label: 'Source system', value: cutover?.source_system ?? '—' },
             { label: 'Cutover date', value: formatDate(cutover?.cutover_at) ?? '—' },
             { label: 'Batches committed', value: `${committed} of ${batches.length}` },
             ...batchRows(batches).slice(1),
-            { label: 'Control quantity / value', value: `${cutover?.control_quantity ?? '—'} / ${cutover?.control_value ?? '—'}` },
+            { label: 'Expected totals (quantity / value)', value: `${cutover?.control_quantity ?? '—'} / ${cutover?.control_value ?? '—'}` },
             ...exceptionRows(cutover?.exception_summary),
           ]}
         />
       ),
       confirmLabel: 'Finalise',
       pendingLabel: 'Finalising…',
-      run: () => finaliseCutover.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
+      run: () => withPlainRefusal(() => finaliseCutover.mutateAsync({ inventoryCutover: cutoverId }).then(refetch)),
     });
   }
 
   function askCommitOpenPurchaseOrders() {
     const orderBatches = batches.filter((batch) => batch.entity_type === 'OPEN_PURCHASE_ORDER');
+    const toCreate = orderBatches.filter((batch) => batch.status !== 'COMMITTED');
+    const batchCount = `${toCreate.length} open-order import batch${toCreate.length === 1 ? '' : 'es'}`;
     setConfirming({
       title: 'Commit the open purchase orders?',
       description: (
         <ConfirmSummary
           label="Open purchase orders being committed"
-          consequence="This creates real purchase orders in live purchasing from the open-order batches below. Goods can then be received against them. The step cannot be undone from this screen; a wrong order has to be cancelled or corrected in purchasing."
+          consequence={`This creates real purchase orders in live purchasing from the open orders in the ${batchCount} listed in the table below, for cutover #${cutover?.id ?? cutoverId}. Your team can start receiving goods against these orders straight away. This cannot be undone here: a wrong order can only be cancelled or corrected afterwards in Purchasing.`}
           rows={[
+            { label: 'Cutover', value: `#${cutover?.id ?? cutoverId}` },
             { label: 'Cutover date', value: formatDate(cutover?.cutover_at) ?? '—' },
             { label: 'Source system', value: cutover?.source_system ?? '—' },
-            ...batchRows(orderBatches),
-            { label: 'Import batches', value: orderBatches.map((batch) => `#${batch.import_batch_id}`).join(', ') || 'None attached' },
+            ...batchRows(orderBatches).map((row) => (row.label === 'Batches' ? { ...row, label: 'Import batches attached' } : row.label === 'Value' ? { ...row, label: 'Value (as imported)' } : row)),
+            { label: 'Imported order files (batch numbers)', value: orderBatches.map((batch) => `#${batch.import_batch_id}${batch.status === 'COMMITTED' ? ' (already committed)' : ''}`).join(', ') || 'None attached' },
+            { label: 'Purchase orders and suppliers', value: 'Counted and named when created; this screen does not hold them' },
           ]}
         />
       ),
       confirmLabel: 'Commit open purchase orders',
       pendingLabel: 'Committing…',
-      run: () => commitOpenPurchaseOrders.mutateAsync({ inventoryCutover: cutoverId }).then(refetch),
+      run: () => withPlainRefusal(() => commitOpenPurchaseOrders.mutateAsync({ inventoryCutover: cutoverId }).then(refetch)),
     });
   }
 
@@ -270,10 +306,10 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
           ]}
         />
       ),
-      confirmLabel: 'Approve',
+      confirmLabel: 'Approve negative opening',
       pendingLabel: 'Approving…',
       destructive: false,
-      run: () => approveNegativeOpening.mutateAsync({ inventoryCutoverNegativeOpening: exception.id }).then(refetch),
+      run: () => withPlainRefusal(() => approveNegativeOpening.mutateAsync({ inventoryCutoverNegativeOpening: exception.id }).then(refetch)),
     });
   }
 
@@ -305,7 +341,7 @@ export function InventoryCutoverDetailScreen({ presentation = 'sheet' }: { prese
           setShowNegativeOpeningForm(false);
           refetch();
         },
-        onError: (error) => setActionError(getApiErrorMessage(error)),
+        onError: (error) => setActionError(plainCutoverRefusal(getApiErrorMessage(error))),
       }
     );
   }

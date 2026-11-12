@@ -173,7 +173,7 @@ test.describe("high-impact actions ask first", () => {
     await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: { ...richCutover, exception_summary } } } });
     await page.getByRole("button", { name: "Finalise" }).click();
     const dialog = page.getByRole("dialog");
-    await expect(dialog).toContainText("3 exceptions listed below will be left unresolved");
+    await expect(dialog).toContainText("3 exceptions listed in the table below will be left unresolved");
     const summary = dialog.getByTestId("cutover-confirm-summary");
     await expect(summary).toContainText("Rejected source records (left out of the cutover)");
     await expect(summary).toContainText("2 (unresolved)");
@@ -191,13 +191,38 @@ test.describe("high-impact actions ask first", () => {
     await expect(dialog).not.toContainText("left unresolved");
   });
 
-  test("committing open purchase orders shows only the order batches", async ({ page }) => {
-    await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } } });
-    await page.getByRole("button", { name: "Commit open purchase orders" }).click();
-    const summary = page.getByRole("dialog").getByTestId("cutover-confirm-summary");
+  test("committing open purchase orders says what is created, hides jargon and keeps focus and keyboard safe", async ({ page }) => {
+    const writes = await mount(page, "/inventory-cutovers/7", {
+      "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } },
+      "POST /api/v1/inventory-cutovers/7/commit-open-purchase-orders": { status: 422, body: { message: "Source purchase order PO-9 must be staged in one immutable import batch." } },
+    });
+    const trigger = page.getByRole("button", { name: "Commit open purchase orders" });
+    await trigger.focus();
+    await page.keyboard.press("Enter");
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toContainText("1 open-order import batch listed in the table below, for cutover #7");
+    await expect(dialog).toContainText("cannot be undone here");
+    const summary = dialog.getByTestId("cutover-confirm-summary");
     await expect(summary).toContainText("1,200.00");
     await expect(summary).toContainText("#31");
     await expect(summary).not.toContainText("#32");
+    await expect(summary).toContainText("Imported order files (batch numbers)");
+    await expect(summary).toContainText("Source records accepted / in the batch");
+    await expect(summary).not.toContainText("Records (accepted");
+    await expect(summary).not.toContainText("Import batches #");
+    await expect(summary).toContainText("this screen does not hold them");
+    // focus is inside the dialog; Tab stays inside; Escape closes and nothing was written
+    await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))).toBe(true);
+    await page.keyboard.press("Tab");
+    await expect.poll(() => page.evaluate(() => !!document.activeElement?.closest('[role="dialog"]'))).toBe(true);
+    await page.keyboard.press("Escape");
+    await expect(dialog).toBeHidden();
+    expect(writes).toHaveLength(0);
+    // reopen, confirm by keyboard-reachable button, refusal is in plain words
+    await trigger.click();
+    await page.getByRole("dialog").getByRole("button", { name: "Commit open purchase orders" }).click();
+    await expect(page.getByRole("dialog").getByRole("alert")).toHaveText("Purchase order PO-9 from the old system is split across more than one import batch; it must be in exactly one.");
+    expect(writes).toHaveLength(1);
   });
 
   test("approving a negative opening shows the item, warehouse, cost and plan", async ({ page }) => {
@@ -205,6 +230,7 @@ test.describe("high-impact actions ask first", () => {
     await page.getByRole("button", { name: "Approve" }).click();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toContainText("starts below zero stock");
+    await expect(dialog.getByRole("button", { name: "Approve negative opening" })).toBeVisible();
     const summary = dialog.getByTestId("cutover-confirm-summary");
     for (const text of ["I-1 — Widget", "main / stock", "-5", "10.00", "Book the receipt"]) await expect(summary).toContainText(text);
     expect(writes).toHaveLength(0);
