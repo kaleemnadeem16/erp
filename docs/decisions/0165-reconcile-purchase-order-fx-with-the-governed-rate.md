@@ -2,7 +2,7 @@
 
 # 0165 — Reconcile a purchase order's FX rate with the governed exchange rate
 
-- **Status:** proposed (revised 2026-11-12 per owner direction: tolerance and rate age become per-company configuration; the fixed-default behaviour below is what is implemented today)
+- **Status:** accepted (owner decision D8, 2026-11-12, [0187](0187-record-phase-4-closure-decisions-d1-d16.md); revised 2026-11-12; the interim fixed 0.5% tolerance / 7-day rate age behaviour below is what is implemented and documented; per-company configuration is tracked in #113 and is not yet built)
 - **Date:** 2026-11-06
 - **Affects:** Purchasing (`ReconcilePurchaseOrderFx`, create/update Actions, `purchase_orders` evidence columns, `purchasing.purchase-order.fx-override`), `config/purchasing.php`
 - **Builds on:** 0012 (dual amounts), 0031 (manual exchange rates), 0070 (approval engine), 0118 (governed rates for quotations; its resolver is Sales-owned and is not reused)
@@ -24,7 +24,7 @@ order (PKR 2.8M at 280) entered at rate 28 was accepted, routed as PKR 280,000 (
 5. Otherwise it is refused with 422 on `fx_rate` (`FX_RATE_OUTSIDE_TOLERANCE`, `FX_RATE_UNGOVERNED`, `FX_BASE_CURRENCY_MISSING`) or on `fx_override_reason` (`FX_OVERRIDE_REASON_REQUIRED`). We refuse rather than snap to the governed rate, so the buyer sees the difference and a genuine contract rate is not silently replaced.
 6. `purchasing.purchase-order.fx-override` is STAGED: registered, granted to no role.
 
-## Revision 2026-11-12: per-company FX governance (owner direction, proposal only)
+## Revision 2026-11-12: per-company FX governance (owner direction; accepted under D8, build tracked in #113)
 
 Decisions 2 and 3 above describe what is **implemented today** with fixed defaults read from `config/purchasing.php`. The owner's direction is that these are company business values, not
 code constants (see [0185](0185-configure-company-business-values-and-fix-technical-invariants.md)). Proposed:
