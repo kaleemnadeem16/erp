@@ -19,6 +19,8 @@ Summary: rows 1 to 7, 9a, 9b, 9c, 9d, 10, 11, 15 and 17 are RESOLVED; rows 12 to
 
 ## The matrix
 
+Coverage of rows 9a to 9c: each commit changed roughly 22 to 25 Actions, and the named test file exercises only a sample of them (9a: receipt reversal, QA disposition, supplier return, scrap, purchase order cancellation; 9b: count create and cancel, cutover create, draft purchase order edit; 9c: warehouse edit, item-supplier archive, purchasing policy, inventory policy, FX rate). The remaining Actions in each commit follow the same reviewed pattern; there is no per-Action test for them. A static guard (`backend/tests/Architecture/InventoryPurchasingDecisionAuthorityGuardTest.php`) fails when an Inventory or Purchasing Action decides authority only before its transaction, and package-state secondary permissions have their own tests (`PackageStateDecisionAuthorityRaceTest`).
+
 Fixes follow one pattern: the Action decides inside its transaction from the stored, active actor (`App\Support\Scope\DecisionActor`), behind the company access barrier. Decision record for the approval engine: [ADR 0070](../decisions/0070-shared-configurable-approval-engine.md).
 
 | # | Operation | Finding | Status | Reference | Regression test file |
@@ -45,4 +47,4 @@ Fixes follow one pattern: the Action decides inside its transaction from the sto
 | 17 | `DecideApproval` | Reviewed order content was not re-checked at decision | **RESOLVED** | `7390b9e2` | `ApprovalDecisionAuthorityRaceTest` |
 | 18 | `IssuePurchaseOrder` | Whether approved-but-unissued orders should be re-approved when a stricter policy takes effect (open product question, not a defect) | **BY DESIGN** | [ADR 0070](../decisions/0070-shared-configurable-approval-engine.md) section 3; tracked in #106 and #92 | none |
 
-Regression tests live under `backend/tests/Feature/Security/`.
+Regression tests live under `backend/tests/Feature/Security/`, except `D2AuthorityPathsTest` (`backend/tests/Feature/Modules/Inventory/`). The static guard lives under `backend/tests/Architecture/`.
