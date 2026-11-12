@@ -198,8 +198,9 @@ in the same commit.
 | [0185](0185-configure-company-business-values-and-fix-technical-invariants.md) | Configure company business values; keep technical invariants fixed | proposed (owner direction; amended in place for D4; milestone not authorised) | 2026-11-12 |
 | [0186](0186-deliver-one-progressive-jobs-engine-through-a-bounded-service-pilot.md) | Deliver one progressive Jobs engine through a bounded service pilot | proposed (implementation not authorised) | 2026-11-12 |
 | [0187](0187-record-phase-4-closure-decisions-d1-d16.md) | Phase 4 closure decisions D1-D16 | accepted (owner decisions 2026-11-12) | 2026-11-12 |
+| [0188](0188-record-phase-4-closure-owner-decisions-second-response-2026-11-12.md) | Record Phase 4 closure owner decisions, second response (2026-11-12) | accepted (owner decisions 2026-11-12) | 2026-11-12 |
 
-**Next number: 0188** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
+**Next number: 0189** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
