@@ -1368,3 +1368,16 @@ execution (exit65 at its dependency check); this is a verified local environment
 client drift. No backend, migration, dependency or generated-client content changed from the
 pre-consolidation develop tree. Hosted CI on the published exact SHA supplies full backend,
 migration/codegen and integrated e2e verification; results belong on task #110.
+
+
+## 2026-11-12 — Phase 5 Inventory/Purchasing source-safety investigation started (#120)
+
+Owner-authorised independent source workstream inspected develop f3ea6069 and Sales release
+cc4c8940 (rechecked at 70952b17). [Writer matrix](domain/job-source-safety.md) inventories actual
+Inventory/Purchasing/Imports paths, schema, authority and lock protocols. Purchasing has no
+Job-lineage binding; Inventory generic source pairs and rejected-exit document pairs prevent
+FK-only absence certification. Findings and finite-contract/file-reservation dependency posted
+to #69/#111/#120. No production restriction, migration, grant or activation. Documentation links
+and whitespace checked. Runtime probe failed fixture setup, then corrected reruns were refused
+at RAM-disk capacity; no negative/concurrency success is claimed. Implementation remains pending
+Sales/Jobs source-identity contract coordination; other agents' work remains untouched.

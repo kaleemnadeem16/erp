@@ -341,6 +341,8 @@ quantity/scope, scenario attribution and guarded disclosure boundaries.
 
 ## Related
 
+- [Job source safety writer inventory](../../../../docs/domain/job-source-safety.md) — Phase 5 source applicability investigation and integration requirements
+
 - [domain/items.md](../../../../docs/domain/items.md)
 - [domain/stock.md](../../../../docs/domain/stock.md)
 - [decisions/0032-per-item-valuation-method.md](../../../../docs/decisions/0032-per-item-valuation-method.md)

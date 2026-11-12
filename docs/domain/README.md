@@ -141,6 +141,8 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 
 ## Phase 5 accepted bounded contracts
 
+- [Job source safety](job-source-safety.md) — current Inventory/Purchasing writer inventory; applicability and integration dependencies.
+
 - [Job operational documents](job-operational-documents.md) —0152/Q57; specified, not implemented.
 
 - [Closeout/historical reconciliation](job-closeout-reconciliation.md) —0151/Q56; specified, not implemented.
