@@ -225,6 +225,26 @@ test.describe("high-impact actions ask first", () => {
     expect(writes).toHaveLength(1);
   });
 
+  test("commit dialog states both the to-commit and listed batch counts", async ({ page }) => {
+    const withCommitted = { ...richCutover, batches: [...richCutover.batches, { id: 3, import_batch_id: 33, entity_type: "OPEN_PURCHASE_ORDER", status: "COMMITTED", source_record_count: 2, accepted_record_count: 2, rejected_record_count: 0, source_quantity: "5", source_value: "50.00" }] };
+    await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: withCommitted } } });
+    await page.getByRole("button", { name: "Commit open purchase orders" }).click();
+    await expect(page.getByRole("dialog")).toContainText("1 open-order import batch still to commit (2 listed in the table below, including 1 already committed)");
+  });
+
+  test("finalise refusal with no batches uses neutral wording", async ({ page }) => {
+    const writes = await mount(page, "/inventory-cutovers/7", {
+      "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: { ...richCutover, batches: [] } } },
+      "POST /api/v1/inventory-cutovers/7/finalise": { status: 422, body: { message: "Every cutover batch must be committed by its owning domain Action before finalisation." } },
+    });
+    await page.getByRole("button", { name: "Finalise" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Finalise" }).click();
+    const alert = page.getByRole("dialog").getByRole("alert");
+    await expect(alert).toContainText("the cutover must have its batches attached and committed first");
+    await expect(alert).not.toContainText("Commit the remaining batches");
+    expect(writes).toHaveLength(1);
+  });
+
   test("approving a negative opening shows the item, warehouse, cost and plan", async ({ page }) => {
     const writes = await mount(page, "/inventory-cutovers/7", { "GET /api/v1/inventory-cutovers/7": { status: 200, body: { data: richCutover } } });
     await page.getByRole("button", { name: "Approve" }).click();
