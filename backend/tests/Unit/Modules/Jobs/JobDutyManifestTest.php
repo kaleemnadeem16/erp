@@ -106,9 +106,11 @@ class JobDutyManifestTest extends TestCase
         $this->assertFalse($manifest->find('job.view')->automaticallyGrantable());
     }
 
-    public function test_the_manifest_has_no_registration_path(): void
+    public function test_the_shipped_manifest_has_no_active_duty_so_registration_is_a_no_op(): void
     {
-        $this->assertFalse(method_exists(JobDutyManifest::class, 'registerWith'), 'registering Jobs needs the shared strict no-growth contract, which does not exist yet');
+        // The registry behaviour itself is proven in Tests\Feature\Support\JobDutyRegistrationTest.
+        $this->assertSame([], JobDutyManifest::shipped()->activeNames());
+        $this->assertTrue(method_exists(JobDutyManifest::class, 'registerWith'));
         $this->assertSame(23, count(JobDutyCatalogue::all()));
     }
 }

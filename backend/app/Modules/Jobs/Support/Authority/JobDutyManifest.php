@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\Jobs\Support\Authority;
 
+use App\Support\PermissionRegistry;
 use InvalidArgumentException;
 
 /**
  * The Jobs duty manifest: which duties exist and which are live. It is the one place `JobAccess` asks, so a name that is not ACTIVE here — unknown, specified or
- * staged — is refused whatever permission rows, scope grants or mandates exist. J-AU0 ships it with no ACTIVE duty and no registration: there is deliberately no
- * `registerWith`, because activating Jobs needs a shared, strict no-automatic-growth contract that does not exist yet (Task F plan, "Holder recipe and strict
- * automatic-growth gate").
+ * staged — is refused whatever permission rows, scope grants or mandates exist. It ships with no ACTIVE duty, so `registerWith` registers nothing today. Once a duty
+ * is ACTIVE, `registerWith` registers it AND strictly excludes it from every automatic grant, mandates included ({@see PermissionRegistry::excludeStrictly}): a Jobs
+ * duty is only ever held by an explicit, audited assignment (Task F plan, "Holder recipe and strict automatic-growth gate").
  */
 final class JobDutyManifest
 {
@@ -54,6 +55,17 @@ final class JobDutyManifest
     public function activeNames(): array
     {
         return array_values(array_map(fn (JobDuty $duty): string => $duty->name, array_filter($this->duties, fn (JobDuty $duty): bool => $duty->isActive())));
+    }
+
+    /** Register the live vocabulary and strictly exclude it from automatic growth. Safe to call repeatedly; grants nothing, and does nothing while no duty is ACTIVE. */
+    public function registerWith(PermissionRegistry $registry): void
+    {
+        $names = $this->activeNames();
+        if ($names === []) {
+            return;
+        }
+        $registry->registerVocabulary('jobs', $names);
+        $registry->excludeStrictly($names, 'Jobs duty: granted only by an explicit, audited assignment; never by an automatic grant, an administrator sync or a full-access mandate.');
     }
 
     /** @return list<JobDuty> */

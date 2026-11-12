@@ -25,6 +25,9 @@ final class PermissionRegistry
     /** @var array<string, string> permission → why no automatic, all-capabilities grant may include it */
     private array $notAutomaticallyGranted = [];
 
+    /** @var array<string, string> permission => reason: duties no automatic grant may ever give, not even under a verified full-access mandate */
+    private array $strictlyExcluded = [];
+
     public function __construct(private readonly PermissionRegistrar $registrar) {}
 
     /** @param list<string> $permissions */
@@ -85,6 +88,25 @@ final class PermissionRegistry
         }
     }
 
+    /**
+     * A duty that NO automatic grant may give anyone, including a person covered by a verified full-access mandate (Jobs, Task F "strict automatic-growth gate").
+     * Only an explicit, audited direct or role assignment can hold it. Registration itself stays unfiltered.
+     *
+     * @param  list<string>  $permissions
+     */
+    public function excludeStrictly(array $permissions, string $reason): void
+    {
+        foreach ($permissions as $permission) {
+            $this->strictlyExcluded[$permission] = $reason;
+        }
+    }
+
+    /** @return list<string> */
+    public function strictlyExcluded(): array
+    {
+        return array_keys($this->strictlyExcluded);
+    }
+
     /** @return list<string> */
     public function notAutomaticallyGranted(): array
     {
@@ -101,7 +123,9 @@ final class PermissionRegistry
     {
         $covered = $target !== null && app(FullAccessMandates::class)->covers($target);
 
-        return $covered ? $this->all() : array_values(array_diff($this->all(), $this->notAutomaticallyGranted()));
+        $grantable = array_diff($this->all(), $this->strictlyExcluded());
+
+        return array_values($covered ? $grantable : array_diff($grantable, $this->notAutomaticallyGranted()));
     }
 
     /**
@@ -113,7 +137,7 @@ final class PermissionRegistry
     public function syncAutomatic(User $user): array
     {
         $held = $user->getDirectPermissions()->pluck('name')->all();
-        $explicit = array_values(array_intersect($held, $this->notAutomaticallyGranted()));
+        $explicit = array_values(array_intersect($held, [...$this->notAutomaticallyGranted(), ...$this->strictlyExcluded()]));
         $names = array_values(array_unique([...$this->automaticGrants($user), ...$explicit]));
         $user->syncPermissions($names);
 

@@ -7,6 +7,7 @@ namespace App\Modules\Jobs;
 use App\Modules\Jobs\Support\Authority\JobDutyManifest;
 use App\Modules\Jobs\Support\Execution\JobExecutionContextVerifier;
 use App\Modules\Jobs\Support\Execution\UnavailableJobExecutionContextVerifier;
+use App\Support\PermissionRegistry;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -20,5 +21,9 @@ class JobsServiceProvider extends ServiceProvider
         $this->app->singleton(JobDutyManifest::class, fn (): JobDutyManifest => JobDutyManifest::shipped());
         // Fail closed: no reviewed source integration exists, so a NEW lifecycle command is refused until one is bound here by its owner.
         $this->app->bindIf(JobExecutionContextVerifier::class, UnavailableJobExecutionContextVerifier::class);
+        // Registers (and strictly excludes from automatic growth) only duties that are ACTIVE; none is, so this is a no-op today.
+        $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
+            $this->app->make(JobDutyManifest::class)->registerWith($registry);
+        });
     }
 }
