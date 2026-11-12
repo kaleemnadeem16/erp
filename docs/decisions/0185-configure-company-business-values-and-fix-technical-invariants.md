@@ -1,6 +1,6 @@
 # 0185 — Configure company business values; keep technical invariants fixed
 
-- **Status:** proposed (owner direction 2026-11-12; needs owner acceptance; no code authorised)
+- **Status:** proposed (owner direction 2026-11-12; amended in place 2026-11-12 for owner decision D4 and [0188](0188-record-phase-4-closure-owner-decisions-second-response-2026-11-12.md); needs owner acceptance; no code authorised)
 - **Date:** 2026-11-12
 - **Affects:** all modules' settings design; Purchasing FX ([0165](0165-reconcile-purchase-order-fx-with-the-governed-rate.md)), Sales discount authority ([0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)), Approvals ([0158](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md), [0182](0182-reapprove-unissued-purchase-orders-by-materiality-when-a-stricter-policy-takes-effect.md))
 
@@ -14,9 +14,18 @@ one rule for what is configurable, so we neither hard-code business values nor b
 1. **Company-specific business values get governed company-level configuration:** FX tolerance, governed-rate age, discount ceilings, approval thresholds and levels, policy expiry and
    similar. Governed means versioned, effective-dated, with change history, strict validation, the existing settings UI standard and a dedicated permission; transactions keep the
    evidence that applied when they were recorded.
-2. **Technical and security invariants are mandatory and not configurable:** tenant isolation, permission enforcement, separation of duties (maker/checker), immutable audit evidence and
-   lock-order safety. No setting, role or company size can switch them off. We do not add options for every technical rule.
-3. A value is a business value when a reasonable company would choose differently and no one's security depends on the choice; otherwise it is an invariant.
+2. **Technical and security invariants are mandatory and not configurable:** tenant isolation, permission enforcement, immutable audit evidence, lock-order safety and
+   **mandatory maker/checker separation for INTERNAL approvals and authorisations** (quotation concessions, discount authority, Purchasing, Estimating, Approvals engine, negative-stock and similar).
+   No setting, role or company size can switch them off or weaken them; a configurable workflow option (for example a self-review or submitter-may-approve flag) never bypasses a
+   maker/checker rule where independent approval is mandatory.
+3. **External customer acceptance is distinct from internal approval (owner decision D4).** Recording a customer's externally originated written acceptance is not an internal approval.
+   Verified consent and immutable evidence are required in every configuration. By default the same authorised employee may record the customer's written evidence and register the
+   acceptance. A company MAY optionally require independent verification of that acceptance: configurable per company, default OFF, enforced server-side when ON. That optional policy is
+   **design-only and inactive** (see [the design](../phases/phase-4-acceptance-verification-policy-design.md), issue #114) and needs separate owner authorisation. Nothing in it weakens verified
+   consent, immutable evidence or the internal-approval separation rules above.
+4. **Definitions (aligned).** A *business value* is a choice a reasonable company would make differently where the choice does not remove a mandatory protection for internal approvals,
+   tenant isolation, permissions or audit evidence (FX tolerance, discount ceilings, thresholds, expiry, and the optional external-acceptance verification above). An *invariant* is any rule
+   whose removal would let one person defeat an internal control or cross a tenant, permission or evidence boundary. Where a case is arguable, the owner classifies it explicitly (as D4 did) rather than deriving it.
 
 ## Product direction (recorded, not authorised)
 
