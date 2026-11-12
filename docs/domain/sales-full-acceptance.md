@@ -2,8 +2,7 @@
 
 # Full customer acceptance — backend slice 2
 
-**Implemented locally, inactive (2026-11-11).** The screens are delivered (below) behind the quotation UI gate, which is off in production. No live duty registration,
-permission holder, development-preview activation or new demo grant. The owner authorised the
+**Implemented locally, inactive (2026-11-11).** The screens are delivered (below) behind the quotation UI gate, which is off in production. No live duty registration or production permission holder. The **local-only** development preview and the `full` demo preset DO hold `sales.customer-decision.accept` (and view / evidence.record), guarded by `APP_ENV=local` plus `SALES_DEV_QUOTATION_DUTIES=true`, never in production; in the shipped catalogue the duties stay STAGED and ungranted. The owner authorised the
 backend under the [brief's provisional defaults](../phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).
 The earlier built/missing inventory in that brief is historical. Service preparation backend is now [delivered inactive in slice 3](sales-service-handover-preparation.md); slice 4 remains unimplemented.
 
@@ -57,7 +56,7 @@ and the issued expiry instant. No UTC-date or database-current-date substitution
 ## API contract
 
 All routes use `auth:sanctum`, Form Requests, Action guards and typed Resources. Duties remain
-STAGED and the acceptance duty is absent from every preview/automatic grant. A hand-created
+STAGED and ungranted in the shipped catalogue; only the local-only development preview and the `full` demo preset hold the accept duty (see the note at the top). A hand-created
 permission row cannot bypass the manifest. An unauthenticated caller gets 401; inactive/limited
 duties get 403; foreign/hidden identities get 404.
 
@@ -91,8 +90,7 @@ outstanding; no financial clearance is implied.
 Holder recipe (not executed): separately review administrative evidence recorders and named sales
 acceptance approvers, their independent decision/Party/quotation reads and unrestricted decision
 scope; overlap is permitted but never forced. Issuer may accept. No role-name inference, automatic
-mandate expansion or demo grant. No acceptance demo can run through the real Actions while nobody
-holds the inactive duty; the existing slice-1 observation demo is unchanged.
+mandate expansion or production grant. In a local environment (`APP_ENV=local`, `SALES_DEV_QUOTATION_DUTIES=true`) the `full` demo preset and the development preview grant the duties so the real Actions can be demonstrated; elsewhere nobody holds the inactive duty. The slice-1 observation demo is unchanged.
 
 ## Screens
 
@@ -107,7 +105,7 @@ API limits the screens work around (no backend change): the issued read gives sc
 
 ## Completion and verification
 
-- Semantics/research: accepted R6 research reused; technical choices in ADR 0183; all ten owner defaults remain provisional.
+- Semantics/research: accepted R6 research reused; technical choices in ADR 0183; all ten owner defaults remain provisional and are not ratified by [ADR 0187](../decisions/0187-record-phase-4-closure-decisions-d1-d16.md) or [0188](../decisions/0188-record-phase-4-closure-owner-decisions-second-response-2026-11-12.md).
 - Authority/tenancy: Request + fresh Action checks, independent source read, limited denial, tenant FKs, no grants; race controls include suspension/revocation before decision and replay.
 - Integrity: transaction/receipt, root and choice caps, append-only/truncate guards, deferred completeness, stale refusal; lifecycle and competing-consent/choice races tested in real sessions.
 - API: typed Resources, stable codes, additive issued facts and generated client; no schema hand edits.

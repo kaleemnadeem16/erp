@@ -239,7 +239,7 @@ holds, claim release, evidence file upload (needs the shared file foundation).
 7. Expired offers are refused; late reconciliation remains deferred.
 8. Missing claim heads are created lazily with zero consumption and `BASELINE_CAPTURED`, never backdated consent.
 9. Future release uses a single sensitive duty by default; no release or approval policy is implemented here.
-10. Intake and acceptance stay STAGED pending combined owner rollout; the new accept duty is excluded from dev preview and receives no demo grants.
+10. Intake and acceptance stay STAGED pending combined owner rollout; the accept duty is STAGED and ungranted in the shipped catalogue; the LOCAL-ONLY development preview and the `full` demo preset do hold it (with view and evidence.record), guarded by `APP_ENV=local` plus `SALES_DEV_QUOTATION_DUTIES=true`, never in production. The ten defaults are provisional and not ratified by ADR 0187/0188.
 
 Slice 3 continues defaults 1–10 unchanged. In particular, **6** means SERVICE_ITEM → SERVICE_JOB
 preparation only, goods remain pending with no Order target; **9** means a future single sensitive
