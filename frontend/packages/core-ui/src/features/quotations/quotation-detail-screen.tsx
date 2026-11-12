@@ -1,9 +1,11 @@
-import { useParams, Link, useLocation } from "react-router";
+import { useParams, Link, useLocation, useNavigate } from "react-router";
 import { useQuotationsShow, useQuotationsPreview } from "@erp/core-api";
 import { useAuthStore } from "../../stores/auth-store";
 import { AccessDenied } from "../../routes/permission-route";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
+import { RecordSheet } from "../../components/page/record-sheet";
+import type { Presentation } from "../../lib/presentation";
 import { Skeleton } from "../../components/ui/skeleton";
 import { quotationAccess } from "./quotation-access";
 import {
@@ -21,8 +23,10 @@ import {
 
 export function QuotationDetailScreen({
   review = false,
+  presentation = "page",
 }: {
   review?: boolean;
+  presentation?: Presentation;
 }) {
   const user = useAuthStore((state) => state.user);
   const access = quotationAccess(
@@ -39,6 +43,7 @@ export function QuotationDetailScreen({
       review={review}
       mayDetail={access.detail}
       mayReview={access.review}
+      presentation={presentation}
     />
   );
 }
@@ -48,13 +53,16 @@ export function QuotationRecord({
   review,
   mayDetail,
   mayReview,
+  presentation = "page",
 }: {
   review: boolean;
   mayDetail: boolean;
   mayReview: boolean;
+  presentation?: Presentation;
 }) {
   const id = revisionId(useParams<{ revision: string }>().revision);
   const { search } = useLocation();
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   // Issue and PDF screens deny on their own; the links only appear for people who can use them.
   const held = new Set(
@@ -99,74 +107,70 @@ export function QuotationRecord({
   const recordMaySpecial =
     freshScope && familyAccess.data.record_scope !== "DELEGATED";
   const query = review ? preview : detail;
-  return (
-    <ScreenTemplate kind="detail" className="space-y-4 p-4 md:p-6">
-      <PageHeader
-        title={`Quotation${id ? ` #${id}` : ""}${review ? " review" : ""}`}
-        description="Draft quotation workspace"
-        actions={
-          <div className="flex flex-wrap gap-3">
-            {id && mayDetail && review && (
-              <Link
-                className="ui-link-action inline-flex min-h-11 items-center"
-                to={`/quotations/${id}${search}`}
-              >
-                Quotation details
-              </Link>
-            )}
-            {id && recordMayReview && !review && (
-              <Link
-                className="ui-link-action inline-flex min-h-11 items-center"
-                to={`/quotations/${id}/review${search}`}
-              >
-                Review quotation
-              </Link>
-            )}
-            {id && recordMaySpecial && milestone.readiness && (
-              <Link
-                className="ui-link-action inline-flex min-h-11 items-center"
-                to={`/quotations/${id}/issue`}
-              >
-                Issue readiness
-              </Link>
-            )}
-            {id &&
-              recordMaySpecial &&
-              !milestone.readiness &&
-              milestone.issue && (
-                // Issuing needs the readiness check, which needs the prepare duty: say so instead of offering a dead end.
-                <span
-                  className="inline-flex min-h-11 items-center text-sm text-muted-foreground"
-                  role="note"
-                >
-                  Issuing needs the duty to prepare quotations as well.
-                </span>
-              )}
-            {id && recordMaySpecial && approvalAccess.read && (
-              <Link
-                className="ui-link-action inline-flex min-h-11 items-center"
-                to={`/quotations/${id}/approval`}
-              >
-                Discount approval
-              </Link>
-            )}
-            {id && recordMaySpecial && milestone.documents && (
-              <Link
-                className="ui-link-action inline-flex min-h-11 items-center"
-                to={`/quotations/${id}/document`}
-              >
-                Official PDF
-              </Link>
-            )}
-            <Link
-              className="ui-link-action inline-flex min-h-11 items-center"
-              to="/"
-            >
-              Back to work area
-            </Link>
-          </div>
-        }
-      />
+  const title = `Quotation${id ? ` #${id}` : ""}${review ? " review" : ""}`;
+  const actions = (
+    <div className="flex flex-wrap gap-3">
+      {id && mayDetail && review && (
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to={`/quotations/${id}${search}`}
+        >
+          Quotation details
+        </Link>
+      )}
+      {id && recordMayReview && !review && (
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to={`/quotations/${id}/review${search}`}
+        >
+          Review quotation
+        </Link>
+      )}
+      {id && recordMaySpecial && milestone.readiness && (
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to={`/quotations/${id}/issue`}
+        >
+          Issue readiness
+        </Link>
+      )}
+      {id && recordMaySpecial && !milestone.readiness && milestone.issue && (
+        // Issuing needs the readiness check, which needs the prepare duty: say so instead of offering a dead end.
+        <span
+          className="inline-flex min-h-11 items-center text-sm text-muted-foreground"
+          role="note"
+        >
+          Issuing needs the duty to prepare quotations as well.
+        </span>
+      )}
+      {id && recordMaySpecial && approvalAccess.read && (
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to={`/quotations/${id}/approval`}
+        >
+          Discount approval
+        </Link>
+      )}
+      {id && recordMaySpecial && milestone.documents && (
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to={`/quotations/${id}/document`}
+        >
+          Official PDF
+        </Link>
+      )}
+      {presentation === "page" && (
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to="/"
+        >
+          Back to work area
+        </Link>
+      )}
+    </div>
+  );
+  const content = (
+    <>
       {id === null ? (
         <QuotationFailure error={Object.assign(new Error(), { status: 404 })} />
       ) : query.isError ? (
@@ -210,6 +214,36 @@ export function QuotationRecord({
           <QuotationFamilyAccessPanel familyId={family} />
         </div>
       )}
+    </>
+  );
+  if (presentation === "sheet") {
+    return (
+      <RecordSheet
+        title={title}
+        description="Draft quotation workspace"
+        size="xl"
+        actions={actions}
+        onClose={() => navigate(`/quotations${search}`)}
+      >
+        <div
+          role="region"
+          aria-label="Quotation content"
+          tabIndex={0}
+          className="space-y-4 pb-6"
+        >
+          {content}
+        </div>
+      </RecordSheet>
+    );
+  }
+  return (
+    <ScreenTemplate kind="detail" className="space-y-4 p-4 md:p-6">
+      <PageHeader
+        title={title}
+        description="Draft quotation workspace"
+        actions={actions}
+      />
+      {content}
     </ScreenTemplate>
   );
 }
