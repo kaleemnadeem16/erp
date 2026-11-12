@@ -17,6 +17,9 @@ use Illuminate\Support\Carbon;
 /** @internal Sales-only interpretation of evaluated authority for the shared engine. */
 final class QuotationAuthorityApproval
 {
+    /** Initial default (ADR 0163/0185/0188), used only when no value is configured; never a ceiling on a configured one. */
+    public const DEFAULT_EXPIRY_DAYS = 14;
+
     public function enabled(): bool
     {
         return app(DiscountConfiguration::class)->mode() === 'ENFORCE';
@@ -52,7 +55,9 @@ final class QuotationAuthorityApproval
     public function deadline(QuotationRevision $revision): string
     {
         $zone = app(CurrentCompany::class)->timezone();
-        $days = min(14, (int) $this->assessment($revision)['expiry_calendar_days']);
+        // The company-approved value (policy validation accepts 1-365) is applied exactly; only the quotation's validity may shorten it.
+        $configured = $this->assessment($revision)['expiry_calendar_days'];
+        $days = $configured === null ? self::DEFAULT_EXPIRY_DAYS : (int) $configured;
         $deadline = now($zone)->addDays($days);
         if ($revision->valid_through_local_date !== null) {
             $validity = Carbon::parse($revision->valid_through_local_date->format('Y-m-d'), $zone)->addDay()->startOfDay();

@@ -124,8 +124,9 @@ policy. Freeze them on the request/evaluation and re-read under the common fence
 issue. Same-total edits and policy/reference/assignment changes are material. A generic decision
 must run the same transaction hook before locking a request; no HTTP-only integration.
 
-**Expiry replaces the earlier no-expiry default.** Initial configuration is 14 company-local
-calendar days from submission, never beyond the end of the quotation's valid-through day. Store
+**Expiry replaces the earlier no-expiry default.** The company-approved policy value (1-365
+company-local calendar days; 14 is only the initial default when none is configured) applies
+exactly from submission, never beyond the end of the quotation's valid-through day. Store
 the earlier UTC deadline. It applies to pending and approved requests; at/after the deadline the
 request cannot authorise issue. No cron run is needed to enforce expiry and timeout never approves.
 Re-request after expiry uses new evidence; exact retries replay their original authorised receipt.
@@ -268,8 +269,8 @@ The complete backend includes strict Sales-only selection, evaluated concession 
 named-employee eligibility, independent evidence visibility, expiry and all delivered draft/approval/
 readiness/issue paths. Generic decisions take the subject transaction hook before request locking;
 configuration writers use statement barriers. The concrete contention trade-off remains proposed
-for owner review in ADR 0164. An approval lasts at most fourteen company-local calendar days,
-never beyond quotation validity, even if a stored policy configures a longer interval.
+for owner review in ADR 0164. An approval lasts the company-approved number of company-local calendar days
+(1-365; 14 only as the initial default), never beyond quotation validity. There is no hidden cap.
 
 ENFORCE requires captured family/scope reference anchors before clearance. Draft operations append
 SHADOW/ENFORCE evaluations; issue pins its immutable evaluation through the company-composite

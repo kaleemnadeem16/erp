@@ -84,8 +84,8 @@ versions and people are never updated; reruns return without rewriting history. 
 the development or production database as part of this task.
 
 Real limits, people, trusted sources and mode activation remain owner decisions. All illustrative
-values say DEMO ONLY. The default expiry is fourteen company-local calendar days, capped by
-quotation validity. Owner review of proposed ADR 0164 and generated-client verification are
+values say DEMO ONLY. The initial default expiry is fourteen company-local calendar days; a configured value
+(1-365) applies exactly, bounded only by quotation validity. Owner review of proposed ADR 0164 and generated-client verification are
 integration gates. Configuration, reference, binding and evidence/history screens are delivered behind the quotation UI gate; what remains is listed in the
 [screen handoff](quotation-discount-authority.md#screen-handoff).
 

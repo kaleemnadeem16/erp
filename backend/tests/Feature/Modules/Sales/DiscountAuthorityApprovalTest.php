@@ -30,6 +30,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsDiscountAuthority;
 use Tests\TestCase;
@@ -277,14 +278,75 @@ class DiscountAuthorityApprovalTest extends TestCase
         $this->assertFalse($readiness['issue_ready']);
     }
 
-    public function test_policy_configuration_cannot_extend_approval_beyond_fourteen_calendar_days(): void
+    /** @return array<string, array{int, int, string, int}> configured days, quotation validity days from today, bound that wins, days of that bound */
+    public static function expiryCases(): array
     {
-        $this->travelTo(now()->startOfMinute());
+        return [
+            'configured 5' => [5, 90, 'policy', 5],
+            'configured 14 (the initial default value)' => [14, 90, 'policy', 14],
+            'configured 30 is applied, not capped at 14' => [30, 90, 'policy', 30],
+            'configured 365 is applied' => [365, 400, 'policy', 365],
+            'value larger than remaining validity is bounded by validity' => [60, 20, 'validity', 21],
+            'validity shorter than 14' => [14, 3, 'validity', 4],
+        ];
+    }
+
+    /** ADR 0185/0188: the effective expiry is the configured days bounded only by the quotation validity (end of the valid-through company day). */
+    #[DataProvider('expiryCases')]
+    public function test_effective_expiry_is_the_configured_days_bounded_only_by_quotation_validity(int $configured, int $validityDays, string $bound, int $days): void
+    {
+        $zone = Company::findOrFail(1)->timezone;
+        $this->travelTo(now($zone)->startOfDay()->addHours(9));
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $this->authorityPolicy(['expiry_calendar_days' => $configured]);
+        $this->authorityMode('ENFORCE');
+        $revision->setAttribute('valid_through_local_date', now($zone)->addDays($validityDays)->startOfDay());
+        $expected = $bound === 'policy' ? now($zone)->addDays($days) : now($zone)->startOfDay()->addDays($days);
+        $this->assertSame($expected->utc()->toIso8601String(), app(QuotationAuthorityApproval::class)->deadline($revision));
+    }
+
+    public function test_an_unset_validity_still_applies_the_configured_days_and_the_default_policy_value_is_fourteen(): void
+    {
+        $zone = Company::findOrFail(1)->timezone;
+        $this->travelTo(now($zone)->startOfDay()->addHours(9));
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $this->authorityPolicy();
+        $this->authorityMode('ENFORCE');
+        $revision->setAttribute('valid_through_local_date', null);
+        $this->assertSame(now($zone)->addDays(QuotationAuthorityApproval::DEFAULT_EXPIRY_DAYS)->utc()->toIso8601String(), app(QuotationAuthorityApproval::class)->deadline($revision));
+        $this->assertSame(14, QuotationAuthorityApproval::DEFAULT_EXPIRY_DAYS);
+    }
+
+    public function test_a_later_policy_change_does_not_move_an_already_frozen_deadline(): void
+    {
         $revision = $this->discount($this->authorityDraft(), '8');
         $this->authorityPolicy(['expiry_calendar_days' => 30]);
         $this->authorityMode('ENFORCE');
-        $deadline = app(QuotationAuthorityApproval::class)->deadline($revision);
-        $this->assertSame(now(Company::findOrFail(1)->timezone)->addDays(14)->utc()->toIso8601String(), $deadline);
+        $this->routingPolicy();
+        app(UpdateQuotationDraft::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey(), ['valid_through_local_date' => now(Company::findOrFail(1)->timezone)->addDays(100)->format('Y-m-d')]);
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->refresh()->input_generation, $this->issueKey());
+        $request = app(QuotationApprovals::class)->latest($revision->id);
+        $frozen = $request->facts['evidence']['authority_expires_at'];
+        $this->assertSame(now(Company::findOrFail(1)->timezone)->addDays(30)->utc()->toIso8601String(), $frozen);
+        $this->authorityPolicy(['code' => 'later-policy', 'priority' => 10, 'expiry_calendar_days' => 5]);
+        $this->travelTo(now()->addDays(2));
+        $this->assertSame($frozen, $request->refresh()->facts['evidence']['authority_expires_at']);
+        $this->assertSame($frozen, app(QuotationApprovals::class)->latest($revision->id)->facts['evidence']['authority_expires_at']);
+    }
+
+    public function test_a_routing_step_allowing_the_submitter_still_cannot_let_the_submitter_or_a_delegate_decide(): void
+    {
+        $revision = $this->discount($this->authorityDraft(), '8');
+        $policy = $this->authorityPolicy();
+        $this->authorityAssignment($policy, 3, $this->maker, ['purpose' => 'APPROVE']);
+        $this->authorityMode('ENFORCE');
+        $this->routingPolicy()->steps()->update(['allow_submitter' => true]);
+        $this->maker->givePermissionTo([Duty::AUTHORITY_EVIDENCE_VIEW, Duty::QUOTATION_VIEW]);
+        app(RequestQuotationApproval::class)($this->maker, $revision->id, $revision->input_generation, $this->issueKey());
+        $request = app(QuotationApprovals::class)->latest($revision->id);
+        $this->assertSame($this->maker->id, $request->submitted_by);
+        $this->assertFalse(app(QuotationApprovalSubject::class)->mayDecide($this->maker, $request, false));
+        $this->assertFalse(app(QuotationApprovalSubject::class)->mayDecide($this->maker, $request, true));
     }
 
     public function test_shared_request_labels_and_figures_remain_blind_without_the_independent_evidence_duty(): void
