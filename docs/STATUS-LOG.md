@@ -744,6 +744,7 @@ Owner-authorised B1: a Sales-scoped exact monetary layer (`Support/Financial`: d
 
 Owner-approved after a read-only audit and a comparison of ERPNext, Business Central, SAP Business One and Odoo: precision is three layers (fixed invariants, versioned module policies, presentation preferences) with one central Settings navigation over module-owned policies and no generic settings database ([0141](decisions/0141-layer-precision-as-invariants-versioned-policy-and-presentation.md)); the four-place ledger stays, increments and conversions must be exactly representable, factors stay nine-place evidence, and Purchasing refuses unrepresentable new conversions only after a read-only audit, with ADR 0050's increment validation partly superseded ([0142](decisions/0142-represent-stock-quantities-exactly-and-supersede-0050-increment-validation.md)); currency minor units are governed ISO reference data synchronised at deployment ([0143](decisions/0143-maintain-currency-minor-units-as-governed-reference-data.md)); Sales unit-price entry precision is a company-wide versioned policy of two to four places ([0144](decisions/0144-version-sales-unit-price-precision-within-four-place-storage.md)). Domain contract [precision.md](domain/precision.md); slices PX0–PX7 and the unexecuted production audit plan are specified. Documentation only: nothing implemented, no grant, seeder, migration or push.
 
+
 ## Related — R9 closure/handoff
 
 - [Implementation handoff](phases/phase-4-implementation-handoff.md) · [R9 slices](phases/phase-4-r9-implementation-slices.md)
@@ -1309,3 +1310,16 @@ Checks (ERP_AGENT=codex-ca3, private wrapper databases, narrow class filters):
   typechecks and Vite build passed. No hand-edited generated files; post-M4 codegen --check passed.
 - No browser tests apply to this backend-only task; no full backend suite, push or main change.
 Other agents' Inventory/security and acceptance-UI work remained separately owned and committed.
+
+## 2026-11-12 — Phase 5 implementation plan revised for owner review (#108/#69)
+
+Source-reviewed develop f467852c in a private planning worktree. The
+[revised plan](phases/phase-5-revised-implementation-plan.md) replaces the October #69 inventory
+with real full acceptance/pending handover keys and integrated disabled Jobs storage/access/actions.
+Three proposed batches: paired immutable Sales release/Jobs receipt; guarded APIs/screens and basic
+execution through close; independent acceptance/explicit pilot activation. Proposes conditional
+cost readiness, simple authoritative completion basis, enforceable source exclusions, future origin
+seams, finite-scope/holder/reviewer gates and an explicit Phase 4 closure boundary.
+[0186](decisions/0186-deliver-one-progressive-jobs-engine-through-a-bounded-service-pilot.md) is
+proposed; accepted ADRs untouched. Docs/source inspection only, no feature code, runtime test,
+grant, migration or activation. Planning branch requires owner review/integration.

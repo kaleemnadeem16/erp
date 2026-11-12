@@ -2,8 +2,11 @@
 
 # Phase 5 — Job execution planning overview
 
-**2026-10-16 · Research/design in progress. Accepted architecture is not delivered functionality.**
-No Job implementation, grants, migrations, production enablement or runtime verification authorised.
+**Updated 2026-11-12 · Basic service implementation planning under owner review.**
+Disabled Jobs storage/access and internal assign/start/hold Actions are integrated. Real receiver,
+completion/closeout and public workflow remain undelivered. No new feature code or activation is
+authorised by the [revised implementation plan](phase-5-revised-implementation-plan.md) (#108/#69).
+Earlier dated assessments below describe their historical baselines, not current delivery.
 
 ## Accepted architecture and closed questions
 
@@ -24,7 +27,7 @@ SIMPLE direction; no universal timesheet/name/hourly rate/HR, generic service Wo
 Jobs are not mandatory for straightforward trading/delivery. Service pilot remains a candidate,
 not permission to build before dependent handover/readiness and separate implementation authority.
 
-## Current readiness and remaining implementation planning
+## Historical October readiness and implementation planning
 
 Q55 costing0150, Q56 closeout0151 and Q57 Job outputs0152 are accepted/specified. No Job feature is
 implemented/verified by those records. [Fresh-state consolidated readiness assessment](phase-5-implementation-readiness.md)
@@ -42,7 +45,7 @@ upstream source snapshots stay intact; no formal Job PDF is mandatory. No unsupp
 This readiness package is prepared, not proof dependencies delivered. Stop at owner review; no code,
 grants, migrations, push or final physical-schema authority follows from this assessment.
 
-## Dependencies and possible independent foundations
+## Historical October dependency assessment
 
 | Boundary | Required delivery proof / what may proceed independently after separate authority |
 |---|---|
@@ -72,7 +75,7 @@ internal tests cannot establish IMPLEMENTED/VERIFIED/PUBLIC_ENABLED service work
 - Advanced fleet/capacity/dispatch/payroll, manufacturing/subcontract hierarchies/retention certification;
   mobile/integrations later Phase7, Finance financial settlement Phase6.
 
-## Next implementation-ready planning milestone
+## Historical October planning milestone
 
 A reviewed **bounded service-pilot planning package**: accepted0150 costing and0151 closeout contracts with delivery gates; required document
 boundaries reconciled; source/duty/dependency inventory; separately reviewable slices
@@ -113,7 +116,7 @@ Jobs #28/receiver delivery, Inventory/Purchasing source checks/affected correcti
 rollout and lock proof remain GATED; source inapplicability must be evidenced, never assumed.
 J2 labour/costing is separate. This adds no application code, migration, permission, route or activation.
 
-## Current tasks
+## October planning tasks
 
 - [x] Accept/specify0145–0152; resolve Q51–Q57 and preserve research evidence.
 - [x] Refine Q55 resolution/candidate, inspect infrastructure and update planning overview.
@@ -128,6 +131,8 @@ J2 labour/costing is separate. This adds no application code, migration, permiss
 - [ ] Implement/verify only separately authorised batches; no such work begun by these documents.
 
 ## Related
+
+- [Revised dependency-ordered implementation plan](phase-5-revised-implementation-plan.md) — current source inventory, paired receiver/release, usable basic workflow, owner decisions and review gates.
 
 - [Task D lifecycle foundation design](phase-5-task-d-j1-foundation.md) and [J1-F1 batch proposal](phase-5-task-d-j1-f1-proposal.md) — technical candidates for separate review/implementation authority.
 - [Task E source integration design](phase-5-task-e-source-integration.md) — Sales/Inventory/Purchasing readiness, ownership and transaction delivery gates.
