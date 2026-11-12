@@ -11,7 +11,7 @@ one rule for what is configurable, so we neither hard-code business values nor b
 
 ## Decision
 
-1. **Company-specific business values get governed company-level configuration:** FX tolerance, governed-rate age, discount ceilings, approval thresholds and levels, policy expiry and
+1. **Company-specific business values get governed company-level configuration:** FX tolerance, governed-rate age, discount ceilings, approval thresholds and levels, policy expiry (initial default 14 calendar days; the effective value is the company-approved 1-365 value, bounded by quotation validity and never silently replaced) and
    similar. Governed means versioned, effective-dated, with change history, strict validation, the existing settings UI standard and a dedicated permission; transactions keep the
    evidence that applied when they were recorded.
 2. **Technical and security invariants are mandatory and not configurable:** tenant isolation, permission enforcement, immutable audit evidence, lock-order safety and
@@ -51,4 +51,6 @@ Local product and governance decision from the owner; no external research.
 
 ## Related
 
+- [0187 Phase 4 closure decisions D1-D16](0187-record-phase-4-closure-decisions-d1-d16.md)
+- [0188 Phase 4 closure owner decisions, second response](0188-record-phase-4-closure-owner-decisions-second-response-2026-11-12.md)
 - [Decision index](README.md)
