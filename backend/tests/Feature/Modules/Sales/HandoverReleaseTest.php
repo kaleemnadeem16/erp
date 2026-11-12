@@ -196,6 +196,8 @@ class HandoverReleaseTest extends TestCase
         $this->recordBasis();
         $p = $this->preview();
         $this->assertTrue($p['ready'], implode(',', $p['blockers']));
+        // The Jobs module now binds the real receiver; this test proves the fail-closed behaviour when nothing is bound.
+        unset($this->app[ReleasedServiceReceiver::class]);
         $this->assertFalse($this->app->bound(ReleasedServiceReceiver::class));
         try {
             app(ReleaseHandoverComponent::class)($this->checker, 'r', $this->stageId, $p['basis_id'], $p['fingerprint']);
