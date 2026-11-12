@@ -176,7 +176,7 @@ in the same commit.
 
 | [0157](0157-audit-quotation-access-generation-with-an-append-only-ledger.md) | Audit quotation access generation with an append-only ledger | accepted; implementation in progress | 2026-11-05 |
 
-| [0158](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md) | Approve quotation concessions through the shared Approvals engine | proposed (owner acceptance pending) | 2026-11-05 |
+| [0158](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md) | Approve quotation concessions through the shared Approvals engine | proposed (owner acceptance pending; 2026-11-12 direction recorded) | 2026-11-05 |
 
 | [0159](0159-patch-only-approved-quotation-access-for-the-main-demo-user.md) | Patch only approved quotation access for the main demo user | accepted | 2026-11-06 |
 
@@ -184,17 +184,18 @@ in the same commit.
 | [0161](0161-switchable-quotation-demo-presets-and-local-preview-activation.md) | Switchable quotation demo presets and local-preview activation | accepted (owner-approved defaults) | 2026-11-06 |
 | [0162](0162-company-branding-versions-with-a-sanitised-logo-pinned-into-documents.md) | Company branding: immutable versions with a sanitised logo, pinned into documents | accepted (owner-approved answers) | 2026-11-06 |
 | [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) | Govern quotation discount authority with independent reference evidence | accepted (owner decision pack; implementation pending) | 2026-11-06 |
-| [0164](0164-order-discount-authority-locks-before-quotation-and-approval-records.md) | Order discount authority locks before quotation and approval records | proposed (coordinator review) | 2026-11-06 |
-| [0165](0165-reconcile-purchase-order-fx-with-the-governed-rate.md) | Reconcile a purchase order's FX rate with the governed exchange rate | proposed (owner defaults pending) | 2026-11-06 |
+| [0164](0164-order-discount-authority-locks-before-quotation-and-approval-records.md) | Order discount authority locks before quotation and approval records | proposed (coordinator review; independent concurrency and shared Approvals review before acceptance) | 2026-11-06 |
+| [0165](0165-reconcile-purchase-order-fx-with-the-governed-rate.md) | Reconcile a purchase order's FX rate with the governed exchange rate | proposed (revised 2026-11-12: per-company FX settings; fixed defaults implemented) | 2026-11-06 |
 | [0175](0175-restore-a-missing-pinned-brand-logo-from-identical-bytes.md) | Restore a missing pinned brand logo from identical bytes; logo budgets and brand read hardening | accepted | 2026-11-09 |
 | [0170](0170-accept-the-missing-exact-sha-ci-evidence-for-the-demo-operator-bootstrap.md) | Accept the missing exact-SHA CI evidence for the demo operator bootstrap | accepted | 2026-11-10 |
 | [0180](0180-database-refuses-cross-family-and-broken-chain-rows-and-rollbacks-lock-first.md) | The database refuses cross-family and broken-chain rows; rollbacks lock before they look | accepted | 2026-11-09 |
 | [0181](0181-retire-the-reasonless-delivery-correction-and-judge-delivery-dates-by-the-company-calendar.md) | Retire the reasonless delivery correction; judge delivery dates by the company calendar | accepted | 2026-11-10 |
-| [0182](0182-reapprove-unissued-purchase-orders-by-materiality-when-a-stricter-policy-takes-effect.md) | Reapprove unissued purchase orders by materiality when a stricter policy takes effect | proposed (owner questions open) | 2026-11-10 |
+| [0182](0182-reapprove-unissued-purchase-orders-by-materiality-when-a-stricter-policy-takes-effect.md) | Reapprove unissued purchase orders by materiality when a stricter policy takes effect | proposed (owner questions open; 2026-11-12 conditions added) | 2026-11-10 |
 
 | [0183](0183-record-full-acceptance-under-the-sales-authority-fence.md) | Record full acceptance under the Sales authority fence | accepted (implementation; provisional owner defaults) | 2026-11-11 |
 
 | [0184](0184-prepare-pending-service-handovers-without-release.md) | Prepare pending service handovers without release | accepted (implementation; provisional defaults) | 2026-11-11 |
+| [0185](0185-configure-company-business-values-and-fix-technical-invariants.md) | Configure company business values; keep technical invariants fixed | proposed (owner direction; milestone not authorised) | 2026-11-12 |
 
 **Next number: 0185** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 

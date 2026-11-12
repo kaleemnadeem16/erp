@@ -42,6 +42,14 @@ approval is bound to, so the safest default-deny choices were made and are recor
   deadline; delegation is refused; a limit published after a draft was saved is judged live at readiness but the stored flag is only refreshed on the next save.
 - **Requires:** an administrator to set the subject type's mode, an active policy and authorities; the holder recipe for `sales.quotation.approve` is an owner decision.
 
+## Owner direction 2026-11-12 (proposal)
+
+- Retained: approval is bound to the exact draft revision (hash of facts and content fingerprint) and maker/checker protection (the preparer, concession entrant or requester never decides).
+- Later semantics from [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) (governed discount authority) apply to quotation approvals, including
+  **company-configurable approval expiry**: 14 calendar days initially, capped by the quotation's validity.
+- No unrelated behaviour of the shared Approvals engine changes; Purchasing and Estimating keep their existing contracts. Where this note and 0163 differ, 0163 governs; the statement above
+  that approvals do not expire unless a policy step sets a deadline is superseded for quotations once 0163 is implemented.
+
 ## Alternatives considered
 
 **Store approval state on the revision** - a second source of truth that can drift from the engine's append-only decisions. **Route the discount amount** - needs base-currency conversion

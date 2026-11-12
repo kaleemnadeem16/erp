@@ -1,6 +1,6 @@
 # 0164 — Order discount authority locks before quotation and approval records
 
-- **Status:** proposed (coordinator review required before integration)
+- **Status:** proposed (coordinator review required before integration; stays proposed per owner direction 2026-11-12)
 - **Date:** 2026-11-06
 - **Affects:** Sales quotation writers and authority configuration; opt-in Approvals transaction boundary
 
@@ -89,6 +89,11 @@ then the request/steps. The PO review provider locks its header and lines in id 
 any request lock. The final transaction reloads the actor and delegated principal and repeats
 evidence/expiry checks. It commits a recorded invalidation or expiry before returning a refusal.
 Sales retains its existing outer security/head/family/revision transaction hook.
+
+## Acceptance condition (owner direction, 2026-11-12)
+
+This ADR stays **proposed**. It may be accepted only after (a) an independent concurrency review of the lock order and the writer barrier, and (b) a shared Approvals review confirming the
+optional subject-transaction hook and generic decision path. Neither review has happened.
 
 ## Related
 

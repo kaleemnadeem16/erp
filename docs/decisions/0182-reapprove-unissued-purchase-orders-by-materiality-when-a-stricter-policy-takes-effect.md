@@ -195,6 +195,19 @@ on the request** — duplicates data; the pinned version row is already immutabl
 8. **Who may clear a flag without resubmitting?** Default: nobody; resubmission is the only path.
 9. **Other subjects (quotations, supplier invoices):** default out of scope, separate decisions.
 
+## Owner conditions 2026-11-12 (design only)
+
+Any implementation must satisfy all of these before the feature can be reviewed:
+
+1. Company-specific approval policy, thresholds, effective dates and approval levels are configured per company (see [0185](0185-configure-company-business-values-and-fix-technical-invariants.md)).
+2. Tie handling (an amount exactly at a threshold, equal levels) is resolved without weakening the behaviour of existing consumers.
+3. Purchasing and Inventory authority thresholds are defined separately.
+4. The conflicting authority-recheck semantics (open question 2 versus the signer-authority behaviour of existing consumers) are resolved explicitly.
+5. The shared lock order is proved (with [0164](0164-order-discount-authority-locks-before-quotation-and-approval-records.md)), not assumed.
+6. Issued-document history is preserved; there is no mass invalidation.
+7. The reapproval feature stays OFF until reviewed and activated per company.
+8. This is a post-Phase-4 milestone.
+
 ## Research basis
 
 Inspected on local `develop`: `ActivateApprovalPolicy`, `ApprovalPolicy` (versioned rows, same `code`),

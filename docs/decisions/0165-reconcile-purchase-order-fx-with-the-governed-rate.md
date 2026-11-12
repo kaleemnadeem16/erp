@@ -2,7 +2,7 @@
 
 # 0165 — Reconcile a purchase order's FX rate with the governed exchange rate
 
-- **Status:** proposed (defaults below await the owner's confirmation: 0.5% tolerance, 7-day rate age, who may fix a rate)
+- **Status:** proposed (revised 2026-11-12 per owner direction: tolerance and rate age become per-company configuration; the fixed-default behaviour below is what is implemented today)
 - **Date:** 2026-11-06
 - **Affects:** Purchasing (`ReconcilePurchaseOrderFx`, create/update Actions, `purchase_orders` evidence columns, `purchasing.purchase-order.fx-override`), `config/purchasing.php`
 - **Builds on:** 0012 (dual amounts), 0031 (manual exchange rates), 0070 (approval engine), 0118 (governed rates for quotations; its resolver is Sales-owned and is not reused)
@@ -23,6 +23,26 @@ order (PKR 2.8M at 280) entered at rate 28 was accepted, routed as PKR 280,000 (
 4. Outside tolerance, or with no governed rate, the rate is accepted only when the order declares `fx_policy = FIXED`, carries a written `fx_override_reason` (at least 10 characters: the contract or forward reference), and the actor holds `purchasing.purchase-order.fx-override`. The reason and the person (`fx_override_by`) are recorded, and the reason travels in the approval request's evidence.
 5. Otherwise it is refused with 422 on `fx_rate` (`FX_RATE_OUTSIDE_TOLERANCE`, `FX_RATE_UNGOVERNED`, `FX_BASE_CURRENCY_MISSING`) or on `fx_override_reason` (`FX_OVERRIDE_REASON_REQUIRED`). We refuse rather than snap to the governed rate, so the buyer sees the difference and a genuine contract rate is not silently replaced.
 6. `purchasing.purchase-order.fx-override` is STAGED: registered, granted to no role.
+
+## Revision 2026-11-12: per-company FX governance (owner direction, proposal only)
+
+Decisions 2 and 3 above describe what is **implemented today** with fixed defaults read from `config/purchasing.php`. The owner's direction is that these are company business values, not
+code constants (see [0185](0185-configure-company-business-values-and-fix-technical-invariants.md)). Proposed:
+
+1. **Per-company configuration.** The FX tolerance and the maximum governed-rate age are configurable per company. Initial values for every company: 0.5% and 7 days.
+2. **Versioned.** Each setting is versioned with an effective date and a change history (who, when, previous value, reason); a change never rewrites an earlier version.
+3. **Approved sources.** A company declares its approved exchange-rate sources and rate types; only governed rates of an approved source/type are used for reconciliation.
+4. **Settings UI.** Edited through the existing Purchasing/Settings UI standard, with strict server-side validation (bounded numeric ranges, whole days, effective dates not in the past
+   without a stated reason, approved sources must exist). Requires a dedicated settings permission decided separately.
+5. **FIXED-rate exceptions are unchanged in kind:** a written reason plus the STAGED, ungranted `purchasing.purchase-order.fx-override` duty. Finance is the intended future holder; no role is
+   granted by this ADR.
+6. **Evidence is never retroactive.** Each order stores the exact validation evidence applied when it was recorded (tolerance, age limit, setting version, governed rate and date, source). A later
+   setting change never silently changes or re-judges an existing order.
+
+| Part | State |
+|---|---|
+| Reconciliation against governed rate, tolerance and age check, governed rate/date stored, FIXED + reason + STAGED duty, 422 codes | **Implemented** with fixed defaults (0.5%, 7 days) |
+| Per-company tolerance and rate-age settings, versions with effective dates and history, approved sources/types, settings UI and permission, per-order evidence of the setting version applied | **New work, not started; needs separate owner authorisation** |
 
 ## Consequences
 
