@@ -38,20 +38,19 @@ approval is bound to, so the safest default-deny choices were made and are recor
 
 - **Positive:** one definition of "may decide" for every route; a changed draft can never ride on an earlier approval; the issued record proves which approval authorised its reductions;
   the preparer can never self-approve; nothing is activated.
-- **Negative:** thresholds by discount size are not possible yet (needs a base-currency concession measure and an owner decision); approvals do not expire unless a policy step sets a
-  deadline; delegation is refused; a limit published after a draft was saved is judged live at readiness but the stored flag is only refreshed on the next save.
+- **Negative:** thresholds by discount size are not possible yet (needs a base-currency concession measure and an owner decision); without an activated 0163 policy, approvals do not expire unless a policy step sets a
+  deadline (with one, expiry is the policy's configured value bounded by quotation validity, see the owner direction below); delegation is refused; a limit published after a draft was saved is judged live at readiness but the stored flag is only refreshed on the next save.
 - **Requires:** an administrator to set the subject type's mode, an active policy and authorities; the holder recipe for `sales.quotation.approve` is an owner decision.
 
 ## Owner direction 2026-11-12 (proposal)
 
 - Retained: approval is bound to the exact draft revision (hash of facts and content fingerprint) and maker/checker protection (the preparer, concession entrant or requester never decides).
 - Later semantics from [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) (governed discount authority) apply to quotation approvals only for a company that
-  has an approved company-level activation of that policy: the **14-calendar-day default expiry, capped by the quotation's validity**, belongs to that governed policy and is not a property of
+  has an approved company-level activation of that policy: the governed expiry (**default 14 calendar days, company-approved 1-365, bounded by the quotation's validity**) belongs to that governed policy and is not a property of
   this ADR's engine contract. It is not in force by default, and nothing here activates it.
-- **Company-configurable expiry is planned work, not delivered behaviour** (owner clarification D11, 2026-11-12): the 14-day default and the cap are what 0163 specifies; a company-chosen
-  period needs its own governed configuration under [0185](0185-configure-company-business-values-and-fix-technical-invariants.md) once authorised.
+- **Expiry (owner clarification D11, [0187](0187-record-phase-4-closure-decisions-d1-d16.md); [0188](0188-record-phase-4-closure-owner-decisions-second-response-2026-11-12.md)):** where a company has activated the 0163 discount-authority policy, the effective expiry is the company-approved policy value (1-365 calendar days), never beyond the quotation's validity. The initial **default of 14 days is a default for a new policy, not a cap**; no hidden cap may replace a configured value. This is the required behaviour; the code is being corrected to match in the Phase 4 closure batch.
 - Retained: maker/checker protection and exact-draft binding. Purchasing and Estimating approval semantics are not altered; no unrelated behaviour of the shared Approvals engine changes.
-  Where this note and 0163 differ, 0163 governs; the statement above that approvals do not expire unless a policy step sets a deadline remains true until a company's 0163 activation applies.
+  Where this note and 0163 differ, 0163 governs; without a company's 0163 activation, approvals do not expire unless a policy step sets a deadline.
 
 ## Alternatives considered
 
