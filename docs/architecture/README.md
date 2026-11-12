@@ -30,6 +30,7 @@ these choices were made, see [decisions/](../decisions/).
 | [authorization.md](authorization.md) | Roles, permissions, namespacing, Teams | Adding a permission or gating an action |
 | [authorization-retrofit.md](authorization-retrofit.md) | Tracked backlog: which already-built features still need permissions, field protection and UI gating | Picking up the next retrofit slice |
 | [access-security-audit.md](access-security-audit.md) | Cross-module access and sensitive-data audit: confirmed gaps, coverage limits and staged rollout | Auditing a module or changing financial/master-data visibility |
+| [approval-self-review-settings.md](approval-self-review-settings.md) | Inventory of self-approval/self-review settings, conflicts with mandatory independent review, and requirement PR-1 | Changing approval or review independence, `allow_submitter`, negative-stock review |
 | [security-verification-matrix.md](security-verification-matrix.md) | Status, reference and regression-test file per finding on decision-time authority (revocation, suspension, scope and expiry) in Purchasing, Inventory and approval decisions | Fixing or extending an Action's authority checks (issue #91) |
 | [approval-workflows.md](approval-workflows.md) | Maker/checker, multi-stage approval and authority limits | Adding an approval or controlled transition |
 | [approval-migration-audit.md](approval-migration-audit.md) | Audit of the legacy approval workflows against the shared engine | Retiring or migrating a legacy approval |
