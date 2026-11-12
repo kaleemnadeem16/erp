@@ -4,14 +4,26 @@
 
 **Implemented 2026-10-21.** Built on [multi-agent-workspaces.md](multi-agent-workspaces.md) (worktrees, runners, private test databases, locks) and [AGENTS.md](../../AGENTS.md). Nothing here changes an accepted ADR or authorises business work: **the owner authorises each business feature**; the coordinator integrates it.
 
+## Current branch rule — until the owner changes it
+
+**Owner instruction, 2026-11-12: all work is directly on `develop` in the main checkout.**
+Follow [AGENTS.md](../../AGENTS.md#develop-only-workflow--owner-instruction-2026-11-12).
+No feature/task branch or worktree creation/use for ongoing work. This takes precedence over
+older task branch fields, briefs and the historical worktree procedure. Existing work stays
+intact; transferring it needs separate owner approval. No automatic merge, deletion or stash.
+
+Use `--branch develop` when claiming/submitting tasks and record the exact owned commits and
+paths. On a shared checkout inspect the staged diff before committing; if someone else's changes
+are staged, coordinate before committing rather than including or unstaging their work.
+
 ## Roles
 
 | Role | Identity (`.erp-agent` / `ERP_AGENT`) | Workspace | Owns | Must not |
 |---|---|---|---|---|
-| **Coordinator / integrator** | `coordinator` | main checkout (`develop`), kept clean | the task register, assignments and dependencies, review, merges to `develop`, CI/regression checkpoints, routing defects | write other agents' fixes, merge without the owner's approval, push without authorisation |
-| **Phase 4 feature agents A, B (C optional)** | `agent-a`, `agent-b`, `agent-c` | one persistent worktree each, a fresh branch per task | one bounded workstream each (below) | change another agent's module without the issue process, merge into `develop` |
-| **Phase 5 planner** | `phase5` | its own worktree (recommended: main must stay clean for merges) | Phase 5 research, decisions, readiness reviews, handoffs; Phase 5 docs | implement Phase 4, change Phase 4 contracts (it raises an issue instead) |
-| **ERP UI standards agent** | `ui` | its own worktree | UI/UX of existing screens using the shared design system | redesign a screen an active Phase 4 task owns; change a shared component without coordinator review |
+| **Coordinator / integrator** | `coordinator` | main checkout (`develop`), shared with agents | the task register, assignments and dependencies, review of exact `develop` commits, CI/regression checkpoints, routing defects | write other agents' fixes, transfer existing branch work without the owner's approval, push without authorisation |
+| **Phase 4 feature agents A, B (C optional)** | `agent-a`, `agent-b`, `agent-c` | shared main checkout, `develop` only | one bounded workstream each (below) | change another agent's module without the issue process, create/use a feature branch |
+| **Phase 5 planner** | `phase5` | shared main checkout, `develop` only | Phase 5 research, decisions, readiness reviews, handoffs; Phase 5 docs | implement Phase 4, change Phase 4 contracts (it raises an issue instead) |
+| **ERP UI standards agent** | `ui` | shared main checkout, `develop` only | UI/UX of existing screens using the shared design system | redesign a screen an active Phase 4 task owns; change a shared component without coordinator review |
 
 Initial Phase 4 boundaries (candidates, gated until the owner authorises each; see the register): **A** Sales quotation Actions, lifecycle and Sales-owned adapters [#10]; **B** shared Documents foundation [#11]; **C** independent pricing/tax foundation [#12]. Identity is by convention, not security: a name in `.erp-agent` is who you say you are.
 
@@ -39,8 +51,8 @@ Driven by `docker/dev/tasks.sh` (a thin `gh` wrapper that applies the convention
 
 ```
 tasks.sh board                       who works on what, what depends on what, what is blocked, what is ready
-tasks.sh claim N [--branch B]        take a Ready task
-tasks.sh submit N --branch B --tests "…"   evidence + read-only readiness report → In Review
+tasks.sh claim N --branch develop   take a Ready task
+tasks.sh submit N --branch develop --tests "…"   exact commit/check evidence → In Review
 tasks.sh report … | triage | outcome       cross-agent issues
 tasks.sh inbox [--seen]              what changed for you since your last checkpoint
 ```
@@ -58,8 +70,8 @@ Example: Agent B (Documents) finds a possible defect in quotation snapshots owne
 | 1 | B | Records expected (citing the ADR/spec), actual, evidence (commit, test, output) and which of B's tasks it blocks | `tasks.sh report --title … --ws sales-quotes --against "agent-a / snapshots (#10)" --expected … --actual … --evidence … --blocks <B's task>` |
 | 2 | Coordinator | Identifies the accountable owner and dependency; names an investigator (first) if ownership is unclear | `tasks.sh triage N --owner agent-a --investigator agent-a` |
 | 3 | A | Investigates **before changing anything**: genuine defect / missing contract / misunderstanding / duplicate | `tasks.sh outcome N <kind> -m "findings and proposed resolution"` |
-| 4 | A | If confirmed, fixes in its own branch with regression coverage, then submits | `tasks.sh status N in-progress`, `tasks.sh submit N …` |
-| 5 | Coordinator | Reviews and sequences the fix before B's dependent work | readiness report, `approve`, `integrate.sh merge` |
+| 4 | A | If confirmed, fixes owned paths on `develop` with regression coverage, then submits | `tasks.sh status N in-progress`, `tasks.sh submit N …` |
+| 5 | Coordinator | Reviews and sequences the fix before B's dependent work | exact-commit review, dependency acceptance and CI evidence |
 | 6 | B | Verifies against the integrated baseline and resumes | `tasks.sh unblock <task>` |
 | 7 | Coordinator | Closes with a clear outcome | `tasks.sh close N -m "…"` |
 
@@ -85,53 +97,55 @@ The goal: no repeated full-suite runs, no loss of correctness. GitHub CI runs th
 | After integration | coordinator | CI result on the integrated commit; targeted cross-module tests where the change reaches other modules; browser specs from the main checkout (one at a time) when UI or API behaviour changed |
 | **Full local regression** | coordinator (takes the one full-suite lock) | only at: a meaningful feature group or milestone; broad architectural, database or security change; release readiness; an unexplained cross-module failure; CI unavailable. Not to duplicate a successful equivalent CI run |
 
-Never weakened: CI, ratchets, Pint/Larastan, the migration cycle. A failing test is classified and fixed, never skipped to save time. If the feature branch was not pushed (so CI has not seen it) the coordinator's fallback is one full local suite on the merged result before publishing `develop`; whether feature agents may push their own branches so CI does this first is a pending owner decision [#17].
+Never weakened: CI, ratchets, Pint/Larastan, the migration cycle. A failing test is classified and fixed, never skipped to save time. Run checks appropriate to the exact `develop` commits being reviewed. If those commits have not been published, do not claim hosted CI has verified them; coordinator full-regression triggers above still apply. Pushing `develop` needs owner authorisation.
 
-## Integration (coordinator)
+<a id="integration-coordinator"></a>
 
-The owner approves the business feature; the coordinator integrates. A branch is merged only if the owner's approval names **its exact tip commit**.
+## Review and acceptance on `develop` (coordinator)
 
-1. Feature agent finishes in its worktree and runs `tasks.sh submit N --branch B --tests "…"` (evidence + readiness report; status In Review). It does **not** merge.
-2. Coordinator checks readiness: `docker/dev/integrate-check.sh B` (read-only), the diff, ownership boundaries, dependencies (`tasks.sh deps N`). It requests fixes through the owner.
-3. The owner authorises integration (a message, or an explicit standing rule for a bounded batch). Coordinator: `tasks.sh approve N <sha> --ref "<where the owner said so>"`. If the branch moves afterwards the approval no longer matches and merging is refused.
-4. `ERP_AGENT=coordinator docker/dev/integrate.sh merge B N` from the clean main checkout on `develop`: a non-rewriting `git merge --no-ff`; the message carries the task, owner and source commit. Conflicts abort and change nothing (the owner merges `develop` into its branch and resubmits). It does not push.
-5. Publishing `develop` is a separate step that needs the owner's authorisation (`git push`, normal fast-forward).
-6. CI verifies the integrated commit; then `integrate.sh record N` writes the trace on the issue (task → owner → source commit → integration commit → CI run) and marks it Integrated only when CI passed.
-7. Post-integration checks (table above); the coordinator tells affected agents (`tasks.sh` comment); agents merge `develop` and confirm before consuming the new contract.
-8. `tasks.sh close N -m "outcome"`.
+1. Agent verifies the checkout is `develop`, claims a bounded task and coordinates file/hunk ownership.
+2. Agent runs applicable checks and commits only owned authorised paths/hunks. Do not commit someone
+   else's staged work; never stage the whole tree. Record exact commit(s), paths and limitations.
+3. Submit with `tasks.sh submit N --branch develop --tests "…"`. The branch comparison report may
+   show no diff against itself: review the task's actual commit diff(s), not that empty comparison.
+4. Independent/coordinator review checks scope, dependencies, security, migrations, client and test
+   evidence at the exact commit. Review/acceptance is still required even though code is on `develop`.
+5. Publish only with owner authorisation, using a normal fast-forward push. Check the complete outgoing
+   committed range; staged/uncommitted files are not part of the push and must remain untouched.
+6. Record exact-SHA CI and applicable cross-module/browser evidence on the task; accept/close only
+   after the required review/check gates. Do not claim an unrun or different-SHA check passed.
 
-Do not merge unrelated work, push feature branches without authorisation, or rewrite anyone's history.
+The old branch-merge `integrate.sh merge` procedure does not apply to new work already on `develop`.
+It is not a workaround for approval gates or permission to merge previously existing branches.
+Never rewrite shared history or switch the main checkout away from `develop`.
 
-## Persistent workspaces and the next task
+<a id="persistent-workspaces-and-the-next-task"></a>
 
-An implementation agent keeps its worktree (path, `.env`, `node_modules`, private test database, identity) and gets a **fresh branch per task**:
+## Next task
 
-```sh
-docker/dev/worktree.sh next sales-quotes phase4/ql2-review     # from the worktree's parent repo, any checkout
-```
-
-`next` refuses unless: the worktree is clean (nothing modified, staged **or untracked**) and no merge/rebase/cherry-pick is in progress; the new branch does not exist; the previous branch is already integrated into `develop` (or you pass `--retain`, which keeps it exactly as it is: branches are never deleted by this tool); `develop` is not behind or ahead of `origin/develop` (the baseline is the published one; `--allow-unpushed` only if the coordinator says so). It then branches from `develop`, keeps the workspace identity and test database, re-runs the PHP dependency check and tells you whether migrations, the generated client, shared `docker/` scripts or `package-lock.json` changed since your previous base (and what to run). Each transition is appended to the worktree's `.erp-transitions`. Record the new branch on the next task with `tasks.sh claim`.
-
-**Reuse the worktree** when the previous task is integrated, or abandoned with its branch retained and nothing depends on it. **Create a new worktree** when two tasks are active at once (unfinished work plus a dependent task that must start from it), when a task needs different dependencies for a long time (`worktree.sh vendor`/`deps` give it its own), or for a new agent. Cleanup is a report, not an action: `docker/dev/worktree.sh cleanup-report` lists merged branches, orphaned test databases and vendor volumes with the exact commands; a person reviews and deletes.
+Stay in the same main checkout on `develop`. Re-read status, board/inbox, latest commits and dirty/
+staged paths; claim the next authorised task with `--branch develop`. Do not run `worktree.sh add`
+or `worktree.sh next`. Preserve existing feature worktrees and their work until the owner explicitly
+approves what to transfer. Test wrappers/private agent databases and shared stack locks remain required.
 
 ## Reusable agent briefs
 
-Give an agent the block for its role, plus [AGENTS.md](../../AGENTS.md). Replace `<N>`, `<branch>`.
+Give an agent the block for its role, plus [AGENTS.md](../../AGENTS.md). Replace `<N>`; the branch is `develop`.
 
 **Feature agent (A/B/C)**
-> *Start:* work only in your workspace and on the branch the task names (`git status`, `git branch --show-current`). `docker/dev/tasks.sh board` and `inbox`: confirm nobody else has this work, your dependencies are Integrated, and nothing blocks you. Read the task's specs/ADRs and AGENTS.md. `tasks.sh claim <N>`.
+> *Start:* work in the main checkout on `develop` regardless of an older task branch field (`git status`, `git branch --show-current`). `docker/dev/tasks.sh board` and `inbox`: confirm nobody else has this work, your dependencies are Integrated, and nothing blocks you. Read the task's specs/ADRs and AGENTS.md. `tasks.sh claim <N> --branch develop`.
 > *During:* stay inside the task's scope and ownership. Focused tests, touched-file Pint, applicable checks (test matrix). Report blockers at once with `tasks.sh report --blocks` or `block`. Do not edit another agent's module: file an issue. File out-of-scope discoveries with `--follow-up` and carry on.
-> *Finish:* commit by explicit path; run the module regression; `tasks.sh submit <N> --branch <branch> --tests "…"` with counts, failures, skipped, risks, cross-module need. Do not merge into `develop` and do not push without authorisation.
-> *Next task:* wait for the Integrated confirmation (or a coordinator-approved dependent arrangement), `docker/dev/worktree.sh next <topic> <new-branch>`, check the board, claim.
+> *Finish:* commit by explicit path; run the module regression; `tasks.sh submit <N> --branch develop --tests "…"` with counts, failures, skipped, risks, cross-module need. Do not create/use a feature branch or push without authorisation.
+> *Next task:* stay on `develop`, confirm required dependency acceptance, check the board and current file ownership, claim the next authorised task.
 
 **Coordinator**
-> Check `tasks.sh board` and `inbox` at each checkpoint; route new issues (`triage`), assign investigators for unclear ownership, never write another agent's fix. Before integration: `integrate-check.sh`, read the diff and tests, check dependencies and migrations/client. Merge only owner-approved exact commits (`approve`, `integrate.sh merge`), one at a time, never push without authorisation. After: CI, `integrate.sh record`, post-integration checks, tell the affected agents, close. Schedule full regression at the triggers only. Escalate ADR conflicts and business decisions to the owner.
+> Check `tasks.sh board` and `inbox` at each checkpoint; route issues and ownership, never overwrite another agent's work. Review exact task commits on `develop`, dependencies, authorisation and checks; an empty branch-comparison report is insufficient. Publish only with owner authorisation; record exact-SHA CI and post-change checks before accepting/closing tasks. Existing branch transfers require separate approval. Escalate ADR conflicts and business decisions to the owner.
 
 **Phase 5 planner**
-> Work in your own worktree. Own Phase 5 docs, ADRs and handoffs; use the same register (`ws:phase5`) for tasks and the same Git rules. Do not change Phase 4 implementation contracts or code: raise an issue for the coordinator when a shared architectural change is needed. Merge only through the coordinator.
+> Work directly on `develop` in the shared main checkout. Own Phase 5 docs, ADRs and handoffs; use the same register (`ws:phase5`) for tasks and the same Git rules. Do not change Phase 4 implementation contracts or code: raise an issue for the coordinator when a shared architectural change is needed. Submit exact owned commits for coordinator/independent review.
 
 **UI standards agent**
-> Work in your own worktree. Before touching a screen, `tasks.sh board`: if an active Phase 4 task owns it (workstream, hotspots), do not change it. Use the shared design system; a change to a shared component needs a `ws:ui` task, coordinator review, the frontend checks, and the browser specs that use the component (run after integration, from the main checkout).
+> Work directly on `develop` in the shared main checkout. Before touching a screen, `tasks.sh board`: if an active Phase 4 task owns it (workstream, hotspots), do not change it. Use the shared design system; a change to a shared component needs a `ws:ui` task, coordinator review, the frontend checks, and the browser specs that use the component (run from the main checkout with the shared wrapper).
 
 ## Limits
 

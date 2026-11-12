@@ -1,8 +1,31 @@
 [← Architecture index](README.md)
 
-# Multi-agent workspaces: one worktree per agent, one shared stack
+# Multi-agent workspaces and the current develop-only workflow
 
-**Status: implemented 2026-10-19 (Stage 2).** For about three implementation agents working at once. Backend test mechanics (private databases, locks, the throwaway
+## Current workflow — owner instruction, 2026-11-12
+
+**Until the owner explicitly says otherwise, all agents do all work directly on `develop` in
+`/home/kaleem/projects/erp`.** No new task/feature branches or worktrees, and no continuing edits on
+existing feature branches. See [AGENTS.md](../../AGENTS.md#develop-only-workflow--owner-instruction-2026-11-12)
+and [coordination](agent-coordination.md#current-branch-rule--until-the-owner-changes-it).
+
+Check the branch before editing/committing. Use task-register/file ownership and explicit paths or
+hunks to share the checkout; never stash/reset/restore another agent's work or commit their staged
+files. Existing branches/worktrees remain intact for separately owner-approved transfer. This is
+not authorisation to move unfinished work, merge branches or remove worktrees.
+
+Continue using `ERP_AGENT=<you>` with `docker/backend/run-tests-tmpfs.sh`, `docker/backend/run.sh`,
+`docker/backend/codegen.sh` and `docker/frontend/run-e2e.sh` from the main checkout. Private test
+databases, wrapper checks and stack/browser locks remain in force. Do not recreate the shared stack.
+No worktree setup/transition command below is part of the current workflow.
+
+## Historical worktree procedure — suspended by the current owner instruction
+
+The remainder records the earlier arrangement and tooling, including its measured limits and
+commands. It does **not** direct current agents to create/use branches or worktrees. Only an explicit
+new owner instruction can replace the develop-only rule; finishing a task/phase does not restore it.
+
+**Historical status: implemented 2026-10-19 (Stage 2); branch/worktree workflow suspended 2026-11-12.** For about three implementation agents working at once. Backend test mechanics (private databases, locks, the throwaway
 PostgreSQL) are in [environments.md](environments.md#test-database-on-tmpfs); this page is about *whose code runs* and how work is integrated.
 
 ## The arrangement

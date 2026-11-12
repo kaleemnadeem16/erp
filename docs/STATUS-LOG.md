@@ -1309,3 +1309,14 @@ Checks (ERP_AGENT=codex-ca3, private wrapper databases, narrow class filters):
   typechecks and Vite build passed. No hand-edited generated files; post-M4 codegen --check passed.
 - No browser tests apply to this backend-only task; no full backend suite, push or main change.
 Other agents' Inventory/security and acceptance-UI work remained separately owned and committed.
+
+## 2026-11-12 — Owner requires develop-only work until explicitly changed (#109)
+
+Updated [AGENTS.md](../AGENTS.md#develop-only-workflow--owner-instruction-2026-11-12),
+coordination roles/briefs/review steps, workspace guidance, pre-push shared-checkout rules,
+architecture index and PR template. All ongoing edits/commits use the main `develop` checkout;
+older task branch fields and worktree recommendations are overridden until a new explicit owner
+instruction. Existing branch/worktree evidence is preserved; no automatic transfer, deletion or
+history rewrite is authorised. Explicit staging/ownership, review/check gates, private test
+databases and separate push/deploy/permission-activation authority remain. Documentation only;
+other agents' unfinished frontend work was left untouched.

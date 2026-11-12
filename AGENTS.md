@@ -12,6 +12,25 @@ implementation currently stands, before assuming anything about the current stat
 
 ---
 
+## Develop-only workflow — owner instruction, 2026-11-12
+
+**Until the owner explicitly says otherwise, all work must be done directly on `develop` in
+`/home/kaleem/projects/erp`.** This applies to every agent, feature, fix, documentation task and
+commit. Do not create or use separate task/feature branches or worktrees for ongoing work.
+This instruction overrides older branch/worktree recommendations in docs, task issues and briefs;
+it expires only when the owner explicitly changes it, not when a task or phase ends.
+
+Check `git branch --show-current` before editing or committing. If your session is in an existing
+feature worktree, leave its work intact and use the main `develop` checkout for new work. Do not
+force-checkout `develop` in another worktree, switch the shared checkout away from `develop`, or
+stash/reset/move another agent's changes. Existing branch work is preserved for separately
+owner-approved transfer; this rule does not authorise merging or deleting it.
+
+Coordinate through the task register and explicit file/hunk ownership. Commit only your authorised
+changes; never include another agent's staged or unfinished work. Review and required checks still
+apply to exact commits on `develop`. Pushing, deploying, activating permissions and work on `main`
+retain their separate owner-authorisation requirements.
+
 ## Read these first, every session
 
 1. **[docs/STATUS.md](docs/STATUS.md)** — where the project is right now, what's next (history: [STATUS-LOG.md](docs/STATUS-LOG.md); workstream resume points: the handoffs it links)
@@ -124,8 +143,8 @@ only one and that the tree may have changed since you last looked.
 - **Check `git log` and `git status`** for work in progress you might collide with.
 - **Stage explicit paths** (hunks, for a shared file); never stash, reset, restore or reformat another agent's files; commit new files your commit depends on. Details and the generated-file procedure: [pre-push-checks.md](docs/architecture/pre-push-checks.md#shared-checkout-several-agents-one-tree).
 - **Run tests through the wrappers, with `ERP_AGENT=<you>` set** — `docker/backend/run-tests-tmpfs.sh` (private database; whole-suite runs take one shared lock and wait their turn), `docker/frontend/run-e2e.sh` (one browser run at a time). Never restart or recreate the shared stack while others test: use `docker/dev/stack-exclusive.sh`. Details: [environments.md](docs/architecture/environments.md#test-database-on-tmpfs).
-- **Prefer your own worktree** (`docker/dev/worktree.sh add <topic> --agent <you>`; never move an agent that has uncommitted work) — [multi-agent-workspaces.md](docs/architecture/multi-agent-workspaces.md). In it use `docker/backend/run-tests-tmpfs.sh` (tests), `docker/backend/run.sh <cmd>` (Pint, PHPStan, artisan) and `docker/backend/codegen.sh` (API client): they run *your checkout's* code. A bare `docker compose exec app …` acts on the main checkout. Browser specs run only from the main checkout (`docker/frontend/run-e2e.sh`, one at a time). Integrate by merging your branch into `develop` through the main checkout; update yours with `git merge develop`.
-- **Coordinate through the task register**, not through the working tree: `docker/dev/tasks.sh board` and `inbox` at task start and before using another agent's contract; `claim` before you begin (it refuses duplicate ownership and unmet dependencies); report a problem in another owner's area with `tasks.sh report` and investigate before changing anything; `submit` with evidence when done. Feature agents run focused tests and the module regression, **not** the full backend suite (CI and the coordinator cover it). Never merge into `develop` yourself. Rules and role briefs: [agent-coordination.md](docs/architecture/agent-coordination.md).
+- **Work directly on `develop`** under the [develop-only workflow](#develop-only-workflow--owner-instruction-2026-11-12). Use `ERP_AGENT=<you>` with `docker/backend/run-tests-tmpfs.sh`, `docker/backend/run.sh <cmd>` and `docker/backend/codegen.sh`; browser specs use `docker/frontend/run-e2e.sh` from the main checkout. Existing worktree tooling is historical reference, not permission to branch.
+- **Coordinate through the task register**, not through the working tree: `docker/dev/tasks.sh board` and `inbox` at task start and before using another agent's contract; `claim --branch develop` before you begin (it refuses duplicate ownership and unmet dependencies); report a problem in another owner's area with `tasks.sh report` and investigate before changing anything; `submit --branch develop` with exact commit/check evidence when done. Feature agents run focused tests and the module regression, **not** the full backend suite (CI and the coordinator cover it). No branch merge is needed for new work already on `develop`; review, dependency acceptance and publishing gates remain. Rules and role briefs: [agent-coordination.md](docs/architecture/agent-coordination.md).
 
 ### ADR numbering
 

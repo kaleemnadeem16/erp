@@ -1,4 +1,4 @@
-<!-- Evidence for the coordinator. The integrator merges only a branch the owner has approved (docs/architecture/agent-coordination.md). Public repository: no secrets or customer data. -->
+<!-- Evidence for the coordinator. All ongoing work is directly on develop until the owner explicitly changes that instruction (AGENTS.md). Existing branch transfers require separate owner approval; review exact task commits (docs/architecture/agent-coordination.md). Public repository: no secrets or customer data. -->
 **Task:** #
 **Owner / workspace:** 
 **Branch @ tip commit:** 

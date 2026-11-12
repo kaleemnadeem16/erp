@@ -4,6 +4,14 @@ CI ([pipeline.yml](../../.github/workflows/pipeline.yml), [ci-cd.md](ci-cd.md)) 
 re-apply, OpenAPI export, client generation, `git diff --exit-code`), **e2e** (fresh migrate and demo seed, production build, the whole Playwright suite) and, on `main`, the image build. A feature that "works" but breaks one of these has not been
 handed off. This page is the short list of what to run for what you changed; the reasons live in the linked canonical docs.
 
+## Current branch rule
+
+All work is directly on `develop` in the main checkout until the owner explicitly changes that
+instruction ([AGENTS.md](../../AGENTS.md#develop-only-workflow--owner-instruction-2026-11-12)).
+Older branch/worktree examples below describe tooling, not permission to use a separate branch.
+Review exact task commits and the full outgoing committed range before an authorised push; never
+include another agent's staged/uncommitted work in a commit. Required checks are unchanged.
+
 ## The rule
 
 Before you say work is complete, run every check below that **applies to what you changed** (matrix), and for each one either report it **passed**, or report the **verified** cause and owner of a failure that is not yours. Never write "CI failed
@@ -95,7 +103,7 @@ What keeps breaking, and the rule:
 
 ## Shared checkout: several agents, one tree
 
-**Preferred since 2026-10-19: one worktree per agent** ([multi-agent-workspaces.md](multi-agent-workspaces.md)). The rules below remain for anyone still sharing the main tree, and for the main tree itself, which is the integration workspace.
+**Required by owner instruction, 2026-11-12: every agent works on `develop` in the main checkout.** The earlier one-worktree-per-agent recommendation is suspended until the owner explicitly changes it ([current workflow](multi-agent-workspaces.md#current-workflow--owner-instruction-2026-11-12)). The rules below apply to everyone.
 
 - **Before editing or generating anything shared:** `git status` and `git log -5`. Another agent's uncommitted files are theirs.
 - **Never** `stash`, `reset`, `checkout --`, restore or format a file you did not write. Do not run Pint, Prettier or codegen over the whole tree when the tree is not clean.
