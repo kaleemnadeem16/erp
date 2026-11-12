@@ -176,7 +176,7 @@ in the same commit.
 
 | [0157](0157-audit-quotation-access-generation-with-an-append-only-ledger.md) | Audit quotation access generation with an append-only ledger | accepted; implementation in progress | 2026-11-05 |
 
-| [0158](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md) | Approve quotation concessions through the shared Approvals engine | proposed (owner acceptance pending; 2026-11-12 direction recorded) | 2026-11-05 |
+| [0158](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md) | Approve quotation concessions through the shared Approvals engine | proposed (owner acceptance pending; 2026-11-12 direction and D11 expiry clarification recorded) | 2026-11-05 |
 
 | [0159](0159-patch-only-approved-quotation-access-for-the-main-demo-user.md) | Patch only approved quotation access for the main demo user | accepted | 2026-11-06 |
 

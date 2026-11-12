@@ -45,10 +45,13 @@ approval is bound to, so the safest default-deny choices were made and are recor
 ## Owner direction 2026-11-12 (proposal)
 
 - Retained: approval is bound to the exact draft revision (hash of facts and content fingerprint) and maker/checker protection (the preparer, concession entrant or requester never decides).
-- Later semantics from [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) (governed discount authority) apply to quotation approvals, including
-  **company-configurable approval expiry**: 14 calendar days initially, capped by the quotation's validity.
-- No unrelated behaviour of the shared Approvals engine changes; Purchasing and Estimating keep their existing contracts. Where this note and 0163 differ, 0163 governs; the statement above
-  that approvals do not expire unless a policy step sets a deadline is superseded for quotations once 0163 is implemented.
+- Later semantics from [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) (governed discount authority) apply to quotation approvals only for a company that
+  has an approved company-level activation of that policy: the **14-calendar-day default expiry, capped by the quotation's validity**, belongs to that governed policy and is not a property of
+  this ADR's engine contract. It is not in force by default, and nothing here activates it.
+- **Company-configurable expiry is planned work, not delivered behaviour** (owner clarification D11, 2026-11-12): the 14-day default and the cap are what 0163 specifies; a company-chosen
+  period needs its own governed configuration under [0185](0185-configure-company-business-values-and-fix-technical-invariants.md) once authorised.
+- Retained: maker/checker protection and exact-draft binding. Purchasing and Estimating approval semantics are not altered; no unrelated behaviour of the shared Approvals engine changes.
+  Where this note and 0163 differ, 0163 governs; the statement above that approvals do not expire unless a policy step sets a deadline remains true until a company's 0163 activation applies.
 
 ## Alternatives considered
 
