@@ -1,7 +1,21 @@
 # Jobs module
 
 The **disabled** Phase 5 Jobs foundation (SP0b; [design](../../../../docs/phases/phase-5-sp0a-design.md), [delivery contract](../../../../docs/phases/phase-5-sp0a-delivery-contract.md)).
-It is eight tables and their models (four from SP0b, four from J1-F1). **Nothing can create or change a real Job**: no route, duty, permission vocabulary, grant, Action or receiver entry point.
+It is eleven tables and their models (four from SP0b, four from J1-F1, three from the Phase 5 Batch 1 receiver). **Nothing public can create or change a real Job**: no route, ACTIVE duty, registered permission or grant. The single writer of a Sales-origin Job is the internal receiver `Actions\ReceiveReleasedService`, reachable only from the Sales release coordinator inside its transaction and refused while `job.receive` is not an ACTIVE, explicitly granted duty (all are SPECIFIED).
+
+## Phase 5 Batch 1 — the Sales-release receiver (disabled; [domain doc](../../../../docs/domain/job-receiver.md))
+
+- Migration `2026_12_13_200000_create_job_receiver_foundation`: **`job_sales_origins`** (the Sales lineage: `(company, job)` unique, `(company, release_event)` unique, composite FKs to `job_handover_origins` and
+  `handover_release_events`; kept OUT of the source-neutral generic origin, which a future maintenance/warranty origin will mirror with its own table), **`job_baseline_components`** (the accepted deliverable
+  text and exact agreed conditions, bound to baseline, release event, allocation, issued line and completion basis; a guard proves they equal the release event's facts) and **`job_activities`** (exactly one
+  DEFAULT activity per Job). All append-only and truncate-guarded by the Jobs guard; a deferred COMMIT constraint refuses a Sales Job without its RELEASE event, baseline v1, exactly one component and its
+  default activity; `down()` refuses while any row exists.
+- `ReceiveReleasedService` implements the Sales-owned port `ReleasedServiceReceiver`: it proves the verified release is current on this very connection and transaction, independently requires `job.receive`
+  of the releasing actor (re-read as a current active member, the duty ACTIVE and company-wide), numbers the Job (`Numbering\JobNumbering`, series `JOB`), and writes the Job, RELEASE event (head, sequence 1,
+  generation 0→1), baseline v1 (scope = the verified deliverable text), generic origin, Sales lineage, component and default activity — never committing, never starting a transaction of its own. A
+  business replay is resolved by Sales before the receiver is reached; the database refuses a second Job for the same release event.
+- `Support\Release\SalesJobOrigins` implements `JobSalesOrigin`. `JobExecutionContextVerifier` is bound to Sales' `SalesJobExecutionContextVerifier`, which refuses any Job without a Sales lineage row
+  (`SOURCE_CONTEXT_UNAVAILABLE`); `UnavailableJobExecutionContextVerifier` remains the class for explicit fail-closed use. Completion and closeout stay refused by the database allowlist (Batch 2).
 
 ## Owns
 

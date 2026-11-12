@@ -185,7 +185,13 @@ class JobsFoundationTest extends TestCase
             $this->assertDbRefuses(fn () => DB::table($table)->update($change), 'append-only');
             $this->assertDbRefuses(fn () => DB::table($table)->delete(), 'append-only');
             // job_events is now referenced by the lifecycle tables, so PostgreSQL refuses a lone TRUNCATE on it by itself; truncated together with them, only the guard stands in the way.
-            $set = $table === 'job_events' ? 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts' : $table;
+            $set = match ($table) {
+                'job_events' => 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts',
+                // The Batch 1 receiver tables reference origins and baselines the same way.
+                'job_handover_origins' => 'job_handover_origins, job_sales_origins, job_baseline_components',
+                'job_baselines' => 'job_baselines, job_baseline_components',
+                default => $table,
+            };
             $this->assertDbRefuses(fn () => DB::statement("TRUNCATE TABLE {$set}"), 'append-only');
         }
         // Truncating the parent with CASCADE would empty the evidence tables too; their own guards refuse that as well.
@@ -246,10 +252,12 @@ class JobsFoundationTest extends TestCase
 
                 continue;
             }
+            // The provider alone names the internal receiver it binds to the Sales release port (Phase 5 Batch 1); it still guards, routes and registers nothing.
+            $code = basename($file) === 'JobsServiceProvider.php' ? str_replace('ReceiveReleasedService', '', $code) : $code;
             $this->assertDoesNotMatchRegularExpression('/->can\(|authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, basename($file).' must not guard, route or register anything');
         }
-        // The four lifecycle Actions (issue #62) are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
-        $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ResolveJobHold.php', 'StartJob.php'])));
+        // The four lifecycle Actions (issue #62) and the Batch 1 receiver are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
+        $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'])));
         $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
     }
 

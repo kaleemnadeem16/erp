@@ -18,6 +18,7 @@ use App\Modules\Jobs\Support\Execution\JobExecutionContextVerifier;
 use App\Modules\Jobs\Support\Execution\UnavailableJobExecutionContextVerifier;
 use App\Modules\Jobs\Support\Lifecycle\JobLifecycleIntent;
 use App\Modules\Jobs\Support\Lifecycle\JobLifecycleOutcome;
+use App\Modules\Sales\Support\Handover\Release\SalesJobExecutionContextVerifier;
 use App\Support\PermissionRegistry;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -413,9 +414,10 @@ class JobLifecycleActionsTest extends TestCase
         // Current safe record eligibility is required before ANY replay: the original key is not answered without a verifier either.
         $this->assertSame('SOURCE_CONTEXT_UNAVAILABLE', $this->refusal(fn () => app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, 'k-assign', '6f1d2c3e-1111-4222-8333-444455556666')));
         $this->assertEquals($before, $this->snapshot(), 'nothing was written');
-        // The default binding of a fresh application is the fail-closed one.
+        // The default binding of a fresh application is the Sales-origin verifier, which refuses (never succeeds for) a Job that has no Sales lineage.
         $this->app->forgetInstance(JobExecutionContextVerifier::class);
-        $this->assertInstanceOf(UnavailableJobExecutionContextVerifier::class, $this->app->make(JobExecutionContextVerifier::class));
+        $this->assertInstanceOf(SalesJobExecutionContextVerifier::class, $this->app->make(JobExecutionContextVerifier::class));
+        $this->assertSame('SOURCE_CONTEXT_UNAVAILABLE', $this->refusal(fn () => $this->hold($job)), 'a fixture Job has no supported Sales origin');
     }
 
     public function test_an_ineligible_record_gets_no_replay_for_the_own_key_or_another_actor_and_no_receipt_changes(): void
@@ -530,15 +532,17 @@ class JobLifecycleActionsTest extends TestCase
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
         $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         // This class's fixtures may activate duties on the container's manifest; what ships registers nothing (and strictly excludes nothing).
-        $shipped = new PermissionRegistry(app(\Spatie\Permission\PermissionRegistrar::class));
+        $shipped = new PermissionRegistry(app(PermissionRegistrar::class));
         JobDutyManifest::shipped()->registerWith($shipped);
         $this->assertSame([], array_values(array_filter($shipped->all(), fn ($p) => str_starts_with($p, 'job.'))));
         $this->assertSame([], $shipped->strictlyExcluded());
         $this->assertSame(0, Permission::query()->where('name', 'like', 'job.%')->whereNotIn('name', self::DUTIES)->count());
         $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
         $this->assertDirectoryDoesNotExist(base_path('app/Modules/Jobs/Http'));
-        $this->assertSame(['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ResolveJobHold.php', 'StartJob.php'], array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []));
+        // Batch 1: the receiver is the one added Action; it is an internal port implementation (no route, no permission), reachable only from the Sales release coordinator.
+        $this->assertSame(['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'], array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []));
         $jobsMigrations = array_map('basename', glob(base_path('database/migrations/*job*')) ?: []);
-        $this->assertSame(['2026_10_22_090000_create_jobs_foundation.php', '2026_10_26_090000_create_job_lifecycle_foundation.php'], array_values(array_filter($jobsMigrations, fn ($m) => ! str_contains($m, '0001_01_01'))), 'this milestone adds no migration');
+        $this->assertSame(['2026_10_22_090000_create_jobs_foundation.php', '2026_10_26_090000_create_job_lifecycle_foundation.php', '2026_12_13_200000_create_job_receiver_foundation.php'],
+            array_values(array_filter($jobsMigrations, fn ($m) => ! str_contains($m, '0001_01_01'))), 'the only later Jobs migration is the Batch 1 receiver foundation');
     }
 }
