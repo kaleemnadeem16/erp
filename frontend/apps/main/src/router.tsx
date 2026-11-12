@@ -174,6 +174,7 @@ const chartOfAccountCreateAsSheet = presentation.chartOfAccountCreate === "sheet
 const chartOfAccountDetailAsSheet = presentation.chartOfAccountDetail === "sheet";
 const customerCreateAsSheet = presentation.customerCreate === "sheet";
 const customerDetailAsSheet = presentation.customerDetail === "sheet";
+const customerDecisionDetailAsSheet = presentation.customerDecisionDetail === "sheet";
 const customerEditAsSheet = presentation.customerEdit === "sheet";
 const partyCreateAsSheet = presentation.partyCreate === "sheet";
 const partyDetailAsSheet = presentation.partyDetail === "sheet";
@@ -214,8 +215,14 @@ export function AppRouter() {
         <Route path="/quotations/:revision/discount-authority-history" element={<ProtectedRoute><AppShell><QuotationAuthorityHistoryRoute /></AppShell></ProtectedRoute>} />
         <Route path="/quotations/:revision/document" element={<ProtectedRoute><AppShell><QuotationDocumentRoute /></AppShell></ProtectedRoute>} />
         {/* What the customer sent: gated like the quotation screens above (denies before any request in production); the exact read duty is also required. */}
-        <Route path="/customer-decisions" element={<ProtectedRoute><AppShell><CustomerDecisionListRoute /></AppShell></ProtectedRoute>} />
-        <Route path="/customer-decisions/:case" element={<ProtectedRoute><AppShell><CustomerDecisionCaseRoute /></AppShell></ProtectedRoute>} />
+        <Route path="/customer-decisions" element={<ProtectedRoute><AppShell><CustomerDecisionListRoute /><Outlet /></AppShell></ProtectedRoute>}>
+          {customerDecisionDetailAsSheet && (
+            <Route path=":case" element={<CustomerDecisionCaseRoute presentation="sheet" />} />
+          )}
+        </Route>
+        {!customerDecisionDetailAsSheet && (
+          <Route path="/customer-decisions/:case" element={<ProtectedRoute><AppShell><CustomerDecisionCaseRoute presentation="page" /></AppShell></ProtectedRoute>} />
+        )}
         {/* A recorded full acceptance and its readiness: same production gate; the exact read duties are also required. */}
         <Route path="/customer-acceptances/:acceptance" element={<ProtectedRoute><AppShell><CustomerAcceptanceRoute /></AppShell></ProtectedRoute>} />
         <Route

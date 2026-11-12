@@ -1,4 +1,7 @@
+import { RecordPresenter } from "../../components/page/record-presenter";
+import type { Presentation } from "../../lib/presentation";
 import { useParams } from "react-router";
+import type { CustomerDecisionGateway } from "./customer-decision-contract";
 import { CustomerDecisionCaseScreen } from "./customer-decision-case-screen";
 import { CustomerDecisionListScreen } from "./customer-decision-list-screen";
 
@@ -13,14 +16,30 @@ export function CustomerDecisionListRoute() {
   return <CustomerDecisionListScreen />;
 }
 
-export function CustomerDecisionCaseRoute() {
+export function CustomerDecisionCaseRoute({
+  presentation = "sheet",
+  gateway,
+}: {
+  presentation?: Presentation;
+  gateway?: CustomerDecisionGateway;
+}) {
   const id = caseFrom(useParams().case);
   return id === null ? (
-    <div className="p-4 md:p-6" role="status">
-      <h1 className="text-lg font-semibold">Customer message unavailable</h1>
-      <p className="text-sm">This customer message is not available.</p>
-    </div>
+    <RecordPresenter
+      presentation={presentation}
+      title="Customer message unavailable"
+      listPath="/customer-decisions"
+      listLabel="Customer messages"
+    >
+      <p className="text-sm" role="status">
+        This customer message is not available.
+      </p>
+    </RecordPresenter>
   ) : (
-    <CustomerDecisionCaseScreen caseId={id} />
+    <CustomerDecisionCaseScreen
+      caseId={id}
+      presentation={presentation}
+      gateway={gateway}
+    />
   );
 }

@@ -28,6 +28,7 @@ export const liveCustomerDecisionGateway: CustomerDecisionGateway = {
       sort: params.sort,
     };
     if (params.search) query["filter[search]"] = params.search;
+    if (params.partyId) query["filter[party_id]"] = params.partyId;
     const response = await customerDecisionCasesIndex(query);
     return readListPage(response.data);
   },

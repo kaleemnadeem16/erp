@@ -222,10 +222,108 @@ test("the empty list says so, and searching asks the server", async ({
   ).toBeVisible();
   await mount(page, { screen: "list", permissions: VIEW });
   await page.getByLabel("Search by reference").fill("nothing like it");
-  await page.getByRole("button", { name: "Search", exact: true }).click();
   await expect(
-    page.getByText("No customer messages match that reference."),
+    page.getByText("No customer messages match these filters."),
   ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Remove filter: Search/ }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+});
+
+const PARTIES = {
+  data: [
+    { id: 3, code: "ALPHA", name: "Alpha Traders" },
+    { id: 4, code: "BETA", name: "Beta Stores" },
+  ],
+  meta: {
+    current_page: 1,
+    last_page: 1,
+    per_page: 25,
+    total: 2,
+    from: 1,
+    to: 2,
+  },
+  links: { first: null, last: null, prev: null, next: null },
+};
+async function mockParties(page: Page) {
+  await page.route(/\/api\/v1\/parties/, (route) => {
+    const one = /\/parties\/(\d+)/.exec(route.request().url());
+    return route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      // The fixture page has an opaque origin, so the answer must say it may be read.
+      headers: { "access-control-allow-origin": "*" },
+      body: JSON.stringify(
+        one
+          ? { data: PARTIES.data.find((p) => p.id === Number(one[1])) }
+          : PARTIES,
+      ),
+    });
+  });
+}
+
+test("the list filters by customer, shows it as a removable chip, and has no bulk-select column", async ({
+  page,
+}) => {
+  await mockParties(page);
+  await mount(page, { screen: "list", permissions: BOTH }, false, 1280);
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+  // No bulk action exists for recording customer messages, so no selection checkbox is offered.
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await page.getByRole("combobox", { name: "Customer" }).first().click();
+  await page.getByRole("option", { name: /Beta Stores/ }).click();
+  await expect(
+    page.getByText("No customer messages match these filters."),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: /Remove filter: Customer: Beta Stores/ }),
+  ).toBeVisible();
+  const lists = await page.evaluate(() => window.__cdLists);
+  expect(lists[lists.length - 1]).toBe("search=&party=4");
+  await page.getByRole("combobox", { name: "Customer" }).first().click();
+  await page.getByRole("option", { name: /Alpha Traders/ }).click();
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+  await page.getByRole("button", { name: "Clear all" }).click();
+  await expect(page.getByText("Customer: Alpha Traders")).toHaveCount(0);
+});
+
+test("clicking a row opens the case in the side sheet over the list, and closing returns to the list", async ({
+  page,
+}) => {
+  await mockParties(page);
+  await mount(page, { screen: "list", permissions: BOTH }, false, 1280);
+  await page.getByRole("cell", { name: "PO-ALPHA-0417" }).click();
+  const sheet = page.getByRole("dialog", {
+    name: /Customer message PO-ALPHA-0417/,
+  });
+  await expect(sheet).toBeVisible();
+  await expect(
+    sheet.getByRole("button", { name: "Add an observation" }),
+  ).toBeVisible();
+  // The list stays mounted behind the sheet.
+  await expect(
+    page.getByText("Customer messages", { exact: true }).first(),
+  ).toBeAttached();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByText("PO-ALPHA-0417")).toBeVisible();
+});
+
+test("a reader without the record duty sees the case in the sheet without the write action", async ({
+  page,
+}) => {
+  await mockParties(page);
+  await mount(page, { screen: "list", permissions: VIEW }, false, 1280);
+  await page.getByRole("cell", { name: "PO-ALPHA-0417" }).click();
+  const sheet = page.getByRole("dialog", {
+    name: /Customer message PO-ALPHA-0417/,
+  });
+  await expect(sheet).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add an observation" }),
+  ).toHaveCount(0);
 });
 
 test("an observation is validated, says unknown stays unknown, and is sent with the generation the person saw", async ({

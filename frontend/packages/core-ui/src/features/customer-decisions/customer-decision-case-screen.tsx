@@ -6,17 +6,13 @@ import {
   DetailPageLayout,
   DetailSection,
 } from "../../components/detail/detail-page-layout";
-import { PageHeader } from "../../components/page/page-header";
+import { RecordPresenter } from "../../components/page/record-presenter";
 import { RecordSheet } from "../../components/page/record-sheet";
-import { ScreenTemplate } from "../../components/page/screen-template";
+import { RecordUnavailable } from "../../components/page/record-unavailable";
 import { Button } from "../../components/ui/button";
-import { Skeleton } from "../../components/ui/skeleton";
 import { StatusBadge } from "../../components/ui/status-badge";
-import {
-  describeLoadError,
-  isApiError,
-  shouldRetryQuery,
-} from "../../lib/api-errors";
+import { shouldRetryQuery } from "../../lib/api-errors";
+import type { Presentation } from "../../lib/presentation";
 import { formatDate, formatDateTime } from "../../lib/format-date";
 import { useAuthStore } from "../../stores/auth-store";
 import { IntentKey } from "../quotations/request-key";
@@ -57,30 +53,31 @@ export function occurrenceText(o: Observation): string {
 export function CustomerDecisionCaseView({
   detail,
   onAddObservation,
+  presentation = "sheet",
 }: {
   detail: CaseDetail;
+  /** A side sheet over the list (default) or a page; chosen per screen in apps/main/src/presentation.ts. */
+  presentation?: Presentation;
   /** Present only for a person who may record. */
   onAddObservation?: () => void;
 }) {
   const { case: header, components, observations } = detail;
   return (
-    <ScreenTemplate kind="detail" className="space-y-4 p-4 md:p-6">
-      <PageHeader
-        title={`Customer message ${header.intake_identity}`}
-        description={`From ${header.party_name ?? `customer reference ${header.party_id}`}. A record of what was sent, not an agreement.`}
-        backTo="/customer-decisions"
-        actions={
-          onAddObservation ? (
-            <Button
-              className="min-h-11"
-              type="button"
-              onClick={onAddObservation}
-            >
-              Add an observation
-            </Button>
-          ) : undefined
-        }
-      />
+    <RecordPresenter
+      presentation={presentation}
+      title={`Customer message ${header.intake_identity}`}
+      description={`From ${header.party_name ?? `customer reference ${header.party_id}`}. A record of what was sent, not an agreement.`}
+      listPath="/customer-decisions"
+      listLabel="Customer messages"
+      size="xl"
+      actions={
+        onAddObservation ? (
+          <Button className="min-h-11" type="button" onClick={onAddObservation}>
+            Add an observation
+          </Button>
+        ) : undefined
+      }
+    >
       <NoConsentNotice />
       <DetailPageLayout>
         <DetailSection title="Case">
@@ -201,31 +198,42 @@ export function CustomerDecisionCaseView({
           )}
         </DetailSection>
       </DetailPageLayout>
-    </ScreenTemplate>
+    </RecordPresenter>
   );
 }
 
-function CaseFailure({ error, retry }: { error: unknown; retry: () => void }) {
-  const missing = isApiError(error) && error.status === 404;
+function CaseUnavailable({
+  presentation,
+  isLoading,
+  error,
+  retry,
+}: {
+  presentation: Presentation;
+  isLoading: boolean;
+  error: unknown;
+  retry?: () => void;
+}) {
   return (
-    <div
-      role="alert"
-      className="m-4 space-y-3 rounded-lg border border-border bg-card p-4 md:m-6"
+    <RecordPresenter
+      presentation={presentation}
+      title="Customer message"
+      listPath="/customer-decisions"
+      listLabel="Customer messages"
+      size="xl"
     >
-      <h2 className="font-semibold">
-        {missing ? "Customer message unavailable" : "Could not load this case"}
-      </h2>
-      <p className="text-sm">
-        {missing
-          ? "This customer message is not available."
-          : describeLoadError(error)}
-      </p>
-      {!missing && (
-        <Button variant="outline" onClick={retry}>
-          Try again
-        </Button>
-      )}
-    </div>
+      <div role={isLoading ? "status" : undefined} className="space-y-3">
+        <RecordUnavailable
+          isLoading={isLoading}
+          error={error}
+          noun="customer message"
+        />
+        {!isLoading && retry && (
+          <Button variant="outline" className="min-h-11" onClick={retry}>
+            Try again
+          </Button>
+        )}
+      </div>
+    </RecordPresenter>
   );
 }
 
@@ -233,8 +241,10 @@ function CaseFailure({ error, retry }: { error: unknown; retry: () => void }) {
 export function CustomerDecisionCaseScreen({
   caseId,
   gateway = liveCustomerDecisionGateway,
+  presentation = "sheet",
 }: {
   caseId: number;
+  presentation?: Presentation;
   gateway?: CustomerDecisionGateway;
 }) {
   const user = useAuthStore((s) => s.user);
@@ -244,7 +254,12 @@ export function CustomerDecisionCaseScreen({
   const access = customerDecisionAccess(permissions);
   if (!access.view) return <AccessDenied />;
   return (
-    <GatedCase caseId={caseId} gateway={gateway} mayRecord={access.record} />
+    <GatedCase
+      caseId={caseId}
+      gateway={gateway}
+      mayRecord={access.record}
+      presentation={presentation}
+    />
   );
 }
 
@@ -252,10 +267,12 @@ function GatedCase({
   caseId,
   gateway,
   mayRecord,
+  presentation,
 }: {
   caseId: number;
   gateway: CustomerDecisionGateway;
   mayRecord: boolean;
+  presentation: Presentation;
 }) {
   const client = useQueryClient();
   const detail = useQuery({
@@ -294,19 +311,22 @@ function GatedCase({
   });
   if (detail.isError)
     return (
-      <CaseFailure error={detail.error} retry={() => void detail.refetch()} />
+      <CaseUnavailable
+        presentation={presentation}
+        isLoading={false}
+        error={detail.error}
+        retry={() => void detail.refetch()}
+      />
     );
   if (detail.isPending)
     return (
-      <div role="status" className="p-4 md:p-6">
-        <Skeleton className="h-48 w-full" />
-        <span className="sr-only">Loading customer message…</span>
-      </div>
+      <CaseUnavailable presentation={presentation} isLoading error={null} />
     );
   return (
     <>
       <CustomerDecisionCaseView
         detail={detail.data}
+        presentation={presentation}
         onAddObservation={
           mayRecord
             ? () => {

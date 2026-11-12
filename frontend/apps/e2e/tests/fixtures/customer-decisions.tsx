@@ -1,9 +1,13 @@
 // Standalone fixture: never imported by application routes. Scripted in-memory gateway, no network.
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
-import { MemoryRouter, Route, Routes } from "react-router";
+import { MemoryRouter, Outlet, Route, Routes } from "react-router";
+import {
+  configureCoreApi,
+  setAuthToken,
+} from "../../../../packages/core-api/src/index";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { CustomerDecisionCaseScreen } from "../../../../packages/core-ui/src/features/customer-decisions/customer-decision-case-screen";
+import { CustomerDecisionCaseRoute } from "../../../../packages/core-ui/src/features/customer-decisions/customer-decision-routes";
 import { CustomerDecisionListScreen } from "../../../../packages/core-ui/src/features/customer-decisions/customer-decision-list-screen";
 import type {
   CaseDetail,
@@ -27,10 +31,16 @@ declare global {
   interface Window {
     __cd: CdFixture;
     __cdWrites: string[];
+    __cdLists: string[];
   }
 }
 const fixture = window.__cd;
 window.__cdWrites = [];
+window.__cdLists = [];
+// Lookups (the customer filter) go through the generated client; the spec answers them with page.route.
+configureCoreApi({ baseUrl: "http://fixture.test/api" });
+// A bearer token, because this fixture page may not read document.cookie (the cookie session path would throw).
+setAuthToken("fixture");
 configureQuotationDevMode({
   development: true,
   flag: "1",
@@ -121,14 +131,18 @@ const summary = (): CaseSummary => ({
 let failedOnce = false;
 const gateway: CustomerDecisionGateway = {
   list: async (params) => {
+    window.__cdLists.push(
+      `search=${params.search ?? ""}&party=${params.partyId ?? ""}`,
+    );
     const rows = fixture.empty
       ? []
       : [summary()].filter(
           (r) =>
-            !params.search ||
-            r.intake_identity
-              .toLowerCase()
-              .includes(params.search.toLowerCase()),
+            (!params.partyId || r.party_id === params.partyId) &&
+            (!params.search ||
+              r.intake_identity
+                .toLowerCase()
+                .includes(params.search.toLowerCase())),
         );
     return {
       data: rows,
@@ -211,17 +225,24 @@ const element = createElement(
       createElement(
         Routes,
         null,
-        createElement(Route, {
-          path: "/customer-decisions",
-          element: createElement(CustomerDecisionListScreen, { gateway }),
-        }),
-        createElement(Route, {
-          path: "/customer-decisions/:case",
-          element: createElement(CustomerDecisionCaseScreen, {
-            caseId: 7,
-            gateway,
+        createElement(
+          Route,
+          {
+            path: "/customer-decisions",
+            element: createElement(
+              "div",
+              null,
+              createElement(CustomerDecisionListScreen, { gateway }),
+              createElement(Outlet),
+            ),
+          },
+          createElement(Route, {
+            path: ":case",
+            element: createElement(CustomerDecisionCaseRoute, {
+              gateway,
+            }),
           }),
-        }),
+        ),
       ),
     ),
   ),

@@ -1,5 +1,6 @@
-import { useMemo, useRef, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
+import { usePartiesShow } from "@erp/core-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
 import { AccessDenied } from "../../routes/permission-route";
@@ -11,9 +12,15 @@ import {
   toTanStackColumns,
   type DataColumn,
 } from "../../components/data-table";
+import {
+  ActiveFilterChips,
+  FilterField,
+  ListFiltersSheet,
+  ListSearchInput,
+  type FilterChip,
+} from "../../components/data-table";
+import { PartyCombobox } from "../../components/lookups/entity-comboboxes";
 import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
 import { formatDate } from "../../lib/format-date";
 import {
   apiSortToTableSorting,
@@ -21,6 +28,7 @@ import {
   useListQueryState,
 } from "../../lib/list-query-state";
 import { shouldRetryQuery } from "../../lib/api-errors";
+import { useDebouncedSearch } from "../../lib/use-debounced-search";
 import { useAuthStore } from "../../stores/auth-store";
 import { IntentKey } from "../quotations/request-key";
 import { QUOTATION_VIEW } from "../quotations/quotation-access";
@@ -72,7 +80,13 @@ export interface CustomerDecisionListViewProps {
   sorting: SortingState;
   onSortingChange: (next: SortingState) => void;
   search: string;
-  onSearch: (search: string) => void;
+  onSearch: (search: string | undefined) => void;
+  /** The customer (trading partner) id filtered to, as the URL carries it; empty for all customers. */
+  partyId: string;
+  /** The filtered customer's name for its chip; the id stands in until it loads. */
+  partyName?: string;
+  onPartyChange: (partyId: string | undefined) => void;
+  onClearAll: () => void;
   isLoading: boolean;
   error: unknown;
   onRetry?: () => void;
@@ -85,12 +99,36 @@ export interface CustomerDecisionListViewProps {
 /** Presentational list: no data fetching, so it renders the same for tests, the preview and the real screen. */
 export function CustomerDecisionListView(props: CustomerDecisionListViewProps) {
   const columns = useMemo(() => toTanStackColumns(customerDecisionColumns), []);
-  const [text, setText] = useState(props.search);
   const failed = props.error !== undefined && props.error !== null;
-  function submit(event: FormEvent) {
-    event.preventDefault();
-    props.onSearch(text.trim());
-  }
+  const searchBox = useDebouncedSearch(props.search || undefined, (value) =>
+    props.onSearch(value),
+  );
+  const partyFilter = (id: string, className: string) => (
+    <PartyCombobox
+      id={id}
+      label="Customer"
+      allLabel="All customers"
+      placeholder="All customers"
+      className={className}
+      value={props.partyId || "all"}
+      onValueChange={(value) =>
+        props.onPartyChange(value === "all" ? undefined : value)
+      }
+    />
+  );
+  const chips: FilterChip[] = [];
+  if (props.search)
+    chips.push({
+      id: "search",
+      label: `Search: "${props.search}"`,
+      onRemove: () => props.onSearch(undefined),
+    });
+  if (props.partyId)
+    chips.push({
+      id: "party",
+      label: `Customer: ${props.partyName ?? `#${props.partyId}`}`,
+      onRemove: () => props.onPartyChange(undefined),
+    });
   return (
     <ScreenTemplate kind="list" className="space-y-4 p-4 md:p-6">
       <PageHeader
@@ -104,34 +142,27 @@ export function CustomerDecisionListView(props: CustomerDecisionListViewProps) {
           ) : undefined
         }
       />
-      <form className="flex flex-wrap items-end gap-3" onSubmit={submit}>
-        <div className="min-w-0 space-y-1">
-          <Label htmlFor="decision-search">Search by reference</Label>
-          <Input
-            id="decision-search"
-            className="min-h-11 w-64 max-w-full"
-            maxLength={120}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-          />
+      <div className="flex flex-wrap items-center gap-2">
+        <ListSearchInput
+          input={searchBox.input}
+          searchProps={searchBox.searchProps}
+          onClear={() => props.onSearch(undefined)}
+          placeholder="Search by reference…"
+          ariaLabel="Search by reference"
+        />
+        <div className="hidden items-center gap-2 md:flex">
+          {partyFilter("decision-party-filter", "h-10 w-64")}
         </div>
-        <Button className="min-h-11" type="submit" variant="outline">
-          Search
-        </Button>
-        {props.search && (
-          <Button
-            className="min-h-11"
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setText("");
-              props.onSearch("");
-            }}
-          >
-            Clear search
-          </Button>
-        )}
-      </form>
+        <ListFiltersSheet
+          activeCount={props.partyId ? 1 : 0}
+          onClear={props.onClearAll}
+        >
+          <FilterField label="Customer" htmlFor="decision-party-filter-sheet">
+            {partyFilter("decision-party-filter-sheet", "h-11 w-full")}
+          </FilterField>
+        </ListFiltersSheet>
+      </div>
+      <ActiveFilterChips chips={chips} onClearAll={props.onClearAll} />
       <DataTable
         columns={columns}
         data={props.rows}
@@ -156,8 +187,8 @@ export function CustomerDecisionListView(props: CustomerDecisionListViewProps) {
         errorMessage="Couldn’t load customer messages."
         onRetry={props.onRetry}
         emptyMessage={
-          props.search
-            ? "No customer messages match that reference."
+          chips.length > 0
+            ? "No customer messages match these filters."
             : "No customer messages recorded yet."
         }
         recordNoun="customer messages"
@@ -200,17 +231,30 @@ function GatedList({
 }) {
   const navigate = useNavigate();
   const client = useQueryClient();
-  const query = useListQueryState<{ search: string }>({
+  const { search: listSearch } = useLocation();
+  const query = useListQueryState<{ search: string; party_id: string }>({
     defaultSort: "-id",
     defaultPerPage: 25,
   });
   const sort = query.sort === "id" ? "id" : "-id";
   const search = query.filters.search ?? "";
+  const partyId = /^[1-9]\d*$/.test(query.filters.party_id ?? "")
+    ? (query.filters.party_id as string)
+    : "";
+  // The chip names the customer by its own id, not by whatever first page the picker loaded.
+  const partyQuery = usePartiesShow(Number(partyId), undefined, {
+    query: { enabled: partyId !== "" },
+  });
+  const partyName =
+    partyQuery.data?.status === 200
+      ? partyQuery.data.data.data.name
+      : undefined;
   const perPage = [10, 25, 50, 100].includes(query.perPage)
     ? query.perPage
     : 25;
   const params = {
     search: search || undefined,
+    partyId: partyId ? Number(partyId) : undefined,
     sort,
     page: query.page,
     perPage,
@@ -231,7 +275,10 @@ function GatedList({
       openKey.current.settle();
       setRecording(false);
       void client.invalidateQueries({ queryKey: ["customer-decision-cases"] });
-      void navigate(`/customer-decisions/${outcome.case_id}`);
+      void navigate({
+        pathname: `/customer-decisions/${outcome.case_id}`,
+        search: listSearch,
+      });
     },
     onError: (e) => openKey.current.settle(e),
   });
@@ -252,10 +299,21 @@ function GatedList({
         }
         search={search}
         onSearch={(value) => query.setFilter("search", value || undefined)}
+        partyId={partyId}
+        partyName={partyName}
+        onPartyChange={(value) => query.setFilter("party_id", value)}
+        onClearAll={() =>
+          query.setFilters({ search: undefined, party_id: undefined })
+        }
         isLoading={result.isPending}
         error={result.isError ? result.error : null}
         onRetry={() => void result.refetch()}
-        onOpen={(row) => void navigate(`/customer-decisions/${row.id}`)}
+        onOpen={(row) =>
+          void navigate({
+            pathname: `/customer-decisions/${row.id}`,
+            search: listSearch,
+          })
+        }
         mayRecord={mayRecord}
         onRecord={() => {
           open.reset();

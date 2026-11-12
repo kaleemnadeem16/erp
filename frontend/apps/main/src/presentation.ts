@@ -47,6 +47,7 @@ export const presentation: {
   warehouseEdit: Presentation;
   customerCreate: Presentation;
   customerDetail: Presentation;
+  customerDecisionDetail: Presentation;
   customerEdit: Presentation;
   partyCreate: Presentation;
   partyDetail: Presentation;
@@ -116,6 +117,7 @@ export const presentation: {
   warehouseEdit: "sheet",
   customerCreate: "sheet",
   customerDetail: "sheet",
+  customerDecisionDetail: "sheet",
   customerEdit: "sheet",
   partyCreate: "sheet",
   partyDetail: "sheet",

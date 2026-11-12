@@ -142,6 +142,8 @@ export const readOutcome = (value: unknown) => outcomeSchema.parse(value);
 
 export interface CaseListParams {
   search?: string;
+  /** Only this customer's cases (the endpoint's `filter[party_id]`). */
+  partyId?: number;
   sort: "id" | "-id";
   page: number;
   perPage: number;
