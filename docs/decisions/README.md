@@ -196,8 +196,9 @@ in the same commit.
 
 | [0184](0184-prepare-pending-service-handovers-without-release.md) | Prepare pending service handovers without release | accepted (implementation; provisional defaults) | 2026-11-11 |
 | [0185](0185-configure-company-business-values-and-fix-technical-invariants.md) | Configure company business values; keep technical invariants fixed | proposed (owner direction; milestone not authorised) | 2026-11-12 |
+| [0186](0186-deliver-one-progressive-jobs-engine-through-a-bounded-service-pilot.md) | Deliver one progressive Jobs engine through a bounded service pilot | proposed (implementation not authorised) | 2026-11-12 |
 
-**Next number: 0186** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
+**Next number: 0187** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 
