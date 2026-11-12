@@ -172,12 +172,21 @@ carry that request. Candidate source-owned files are the movement facade, packag
 recalculation request/execute, negative-override intake, rejected-exit document identity and their focused tests; a database guard
 would require a reserved additive migration. No reservation or protocol acknowledgement is assumed.
 
-A blacklist of `JOB` strings alone is not exhaustive evidence: arbitrary aliases remain possible.
-An exhaustive source-type registry/allowlist could cover them, but changes existing generic stock
-caller semantics and needs review. Another possible contract is explicit non-attribution for generic
-provenance plus an enforced finite Job-attribution boundary; it must account for existing authoritative
-source semantics rather than silently declaring stored identities meaningless. The source owner does
-not independently choose this cross-module business contract or rewrite Sales' readiness implementation.
+Owner review accepted the investigation and kept implementation blocked only on
+[#122](https://github.com/kaleemnadeem16/erp/issues/122). The recommended boundary sent to the
+Sales/Jobs lead is: **only explicitly supported, validated bindings establish authoritative
+Job material/cost attribution**. Generic Inventory provenance remains valid stock provenance,
+but alone cannot create a Job allocation. Preserve legitimate source types and posting/correction
+behaviour; do not introduce a global allowlist or modify all writers before compatibility and
+the exact boundary are reviewed. A blacklist of `JOB` strings is likewise insufficient.
+
+The lead must acknowledge the interface/consumer and freeze the smallest exact source-owned
+file set. No current supported Job-material binding/consumer was found; inventing an unused
+adapter would not prove exclusion. Agent A must correct the source proof and independently
+establish customer-agreed contractual inapplicability. Once that exact contract is settled,
+resume implementation and intake/execute/replay/correction tests directly; no new general
+planning or business reauthorisation round is required. No acknowledgement is assumed from
+posting a comment. Existing access and physical stock lock orders remain unchanged.
 
 Agent A must correct/qualify FK-only proof and provide genuine immutable no-material/no-supplier scope
 basis. Agent B must retain unavailable/UNKNOWN refusal, source-before-Job entry and no operational
@@ -187,14 +196,34 @@ and any mandatory costing/evidence policy remain with the owner; this investigat
 
 ## Verification at this handoff
 
-Local link resolution and `git diff --check` passed for the owned documentation. A temporary
-negative runtime probe expected a DomainInvariantException for `SERVICE_JOB` source provenance.
-Its initial run failed fixture setup (`items.category_id` missing), so it proves no writer outcome.
-The fixture was corrected, but reruns were refused by the supported wrapper at 97% and 90%
-test-server RAM-disk use (exit70). Only this agent's private database was dropped. The temporary
-probe was removed; there is no shipped failing test or claimed successful negative test.
-No PostgreSQL concurrency test, module regression or production-code check is claimed; no production
-code changed. Runtime protection/testing resumes after the shared capacity and contract dependencies.
+The original documentation links and whitespace checks passed in `3a3cfe98`, now present
+on remote develop through shared-branch publication. This follow-up does not republish it.
+The original source-provenance probe failed fixture setup, then corrected reruns were refused
+at 97%/90% tmpfs use; those runs still establish no source-writer outcome.
+
+Follow-up inspected develop `4f19d7f2` plus simultaneous uncommitted Sales/Jobs work. Test
+capacity was 87%, allowing a separate rejected-exit identity investigation through the wrapper:
+
+`ERP_AGENT=source-safety docker/backend/run-tests-tmpfs.sh tests/Feature/Modules/Inventory/RejectedExitDocumentIdentityProbeTest.php --filter=source_safety_document`
+
+**Two failed tests, ten assertions, exit1**: both expected DomainInvariantException refusals
+were absent when only document id or document type changed under the original request key.
+Unchanged replay returned the original row, preserved move count and retained original document
+identity. Initial posting's deferred constraints were forced. This confirms the idempotency
+defect, not a source-attribution safety pass or a two-session concurrency result.
+
+The defect is separately recorded as
+[#123](https://github.com/kaleemnadeem16/erp/issues/123), with the focused reproducer and output.
+No fix was made outside the owning module's authorised scope. Future correction must preserve
+replay of existing immutable hashes/records; simply changing the hash formula could break old
+retries. Both early and under-lock replay paths need coverage. The investigation-only failing
+test was removed from the shared suite; its source is preserved on #123 for the owning agent.
+
+Only this agent's `erp_testing_source_safety` database was dropped after the investigation.
+No other database was deleted and no shared infrastructure restarted. Coordinator was asked
+to arrange safe sustained headroom through database owners. Environment capacity is not an
+additional dependency on #120; that task remains blocked only on #122. No production code,
+permission, migration, concurrency/module-regression pass or pilot certification is claimed.
 
 ## Related
 
