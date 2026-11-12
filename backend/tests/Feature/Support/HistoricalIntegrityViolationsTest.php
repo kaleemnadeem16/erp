@@ -9,6 +9,7 @@ use App\Modules\Tax\Actions\CorrectQuotationTaxSource;
 use App\Modules\Tax\Actions\DeclareQuotationTaxSource;
 use App\Modules\Tax\Support\EffectivePeriod;
 use App\Modules\Tax\Support\TaxDutyManifest;
+use App\Support\Integrity\HistoricalViolationRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -117,6 +118,42 @@ class HistoricalIntegrityViolationsTest extends TestCase
         $this->assertStringContainsString('company_brand_versions_logo_complete: validated.', $done['output']);
         $this->assertSame(1, DB::table('pg_constraint')->where('conname', 'company_brand_versions_logo_complete')->where('convalidated', true)->count());
         $this->assertNotNull(DB::table('integrity_rule_baselines')->where('rule_key', 'company_brand_versions_logo_complete')->value('validated_at'));
+    }
+
+    public function test_constraint_state_distinguishes_missing_other_table_unvalidated_and_validated(): void
+    {
+        $key = 'company_brand_versions_logo_complete';
+        $this->assertSame('validated', HistoricalViolationRegistry::constraintState($key));
+        $this->assertSame('guard', HistoricalViolationRegistry::constraintState('sales_customer_decision_receipt_case'));
+
+        $definition = DB::selectOne("SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint WHERE conname = ? AND conrelid = 'company_brand_versions'::regclass", [$key])->d;
+        DB::statement("ALTER TABLE company_brand_versions DROP CONSTRAINT {$key}");
+
+        // Missing.
+        $this->assertSame('missing', HistoricalViolationRegistry::constraintState($key));
+        $missing = $this->run_('integrity:validate-constraints', ['rule' => $key]);
+        $this->assertSame(1, $missing['exit']);
+        $this->assertStringContainsString('MISSING', $missing['output']);
+        $this->assertStringNotContainsString('already validated', $missing['output']);
+
+        // Same name, validated, on a different table: still missing for the expected table.
+        DB::statement('CREATE TEMPORARY TABLE other_table_for_107 (id int, a int)');
+        DB::statement("ALTER TABLE other_table_for_107 ADD CONSTRAINT {$key} CHECK (a IS NULL OR a > 0)");
+        $this->assertSame('missing', HistoricalViolationRegistry::constraintState($key));
+        $this->assertSame(1, $this->run_('integrity:validate-constraints', ['rule' => $key])['exit']);
+
+        // Present but NOT VALID on the expected table.
+        DB::statement("ALTER TABLE company_brand_versions ADD CONSTRAINT {$key} ".preg_replace('/ NOT VALID$/', '', $definition).' NOT VALID');
+        $this->assertSame('not_validated', HistoricalViolationRegistry::constraintState($key));
+        $this->assertTrue(HistoricalViolationRegistry::isNotValidated($key));
+
+        // Validated.
+        $done = $this->run_('integrity:validate-constraints', ['rule' => $key]);
+        $this->assertSame(0, $done['exit']);
+        $this->assertSame('validated', HistoricalViolationRegistry::constraintState($key));
+        $again = $this->run_('integrity:validate-constraints', ['rule' => $key]);
+        $this->assertSame(0, $again['exit']);
+        $this->assertStringContainsString('already validated', $again['output']);
     }
 
     public function test_unknown_rule_is_refused_and_guards_have_nothing_to_validate(): void

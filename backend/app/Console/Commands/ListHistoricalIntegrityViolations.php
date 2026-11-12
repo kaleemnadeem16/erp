@@ -29,7 +29,11 @@ final class ListHistoricalIntegrityViolations extends Command
                 $rows[] = [
                     'rule' => $key,
                     'table' => $rule['table'],
-                    'enforcement' => $rule['constraint'] === null ? 'insert guard' : (HistoricalViolationRegistry::isNotValidated($key) ? 'constraint, not validated' : 'constraint, validated'),
+                    'enforcement' => $rule['constraint'] === null ? 'insert guard' : match (HistoricalViolationRegistry::constraintState($key)) {
+                        'missing' => 'constraint MISSING',
+                        'not_validated' => 'constraint, not validated',
+                        default => 'constraint, validated',
+                    },
                     'at_introduction' => $baseline === null ? null : (int) $baseline->violations_at_introduction,
                     'current' => HistoricalViolationRegistry::count($key),
                     'ids' => $this->option('ids') ? HistoricalViolationRegistry::ids($key, (int) $this->option('limit')) : null,

@@ -67,11 +67,24 @@ final class HistoricalViolationRegistry
         return array_map(fn (object $r): int => (int) $r->id, DB::select('SELECT t.id '.self::rule($key)['source'].' ORDER BY t.id LIMIT '.max(1, $limit)));
     }
 
-    /** True when the rule is a constraint that exists and has not been validated yet. */
+    /**
+     * The state of the rule's constraint on its EXPECTED table (matched through pg_constraint.conrelid, so a same-named constraint on another table does not count):
+     * 'guard' (the rule is a trigger, no constraint), 'missing', 'not_validated' (present but NOT VALID) or 'validated'.
+     */
+    public static function constraintState(string $key): string
+    {
+        $rule = self::rule($key);
+        if ($rule['constraint'] === null) {
+            return 'guard';
+        }
+        $row = DB::selectOne('SELECT c.convalidated FROM pg_constraint c WHERE c.conname = ? AND c.conrelid = to_regclass(?)', [$rule['constraint'], $rule['table']]);
+
+        return $row === null ? 'missing' : ($row->convalidated ? 'validated' : 'not_validated');
+    }
+
+    /** True only when the rule's constraint exists on its expected table and has not been validated yet (a missing constraint is not "not validated"). */
     public static function isNotValidated(string $key): bool
     {
-        $name = self::rule($key)['constraint'];
-
-        return $name !== null && DB::table('pg_constraint')->where('conname', $name)->where('convalidated', false)->exists();
+        return self::constraintState($key) === 'not_validated';
     }
 }

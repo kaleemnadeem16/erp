@@ -36,7 +36,7 @@ return new class extends Migration
                 'violations_at_introduction' => $count,
                 'recorded_at' => now(),
                 // A constraint that is already validated has, by definition, no violating row.
-                'validated_at' => $rule['constraint'] !== null && ! HistoricalViolationRegistry::isNotValidated($key) ? now() : null,
+                'validated_at' => HistoricalViolationRegistry::constraintState($key) === 'validated' ? now() : null,
             ]);
             if ($count > 0) {
                 Log::warning("integrity rule {$key}: {$count} existing row(s) in {$rule['table']} violate it; it guards new writes only. Run `php artisan integrity:historical-violations`.");

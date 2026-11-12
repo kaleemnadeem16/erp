@@ -36,7 +36,14 @@ final class ValidateIntegrityConstraints extends Command
 
                 continue;
             }
-            if (! HistoricalViolationRegistry::isNotValidated($key)) {
+            $state = HistoricalViolationRegistry::constraintState($key);
+            if ($state === 'missing') {
+                $this->error("{$key}: constraint {$rule['constraint']} is MISSING on {$rule['table']}; nothing to validate. The schema is not as the migrations left it.");
+                $failed = true;
+
+                continue;
+            }
+            if ($state !== 'not_validated') {
                 $this->line("{$key}: already validated.");
 
                 continue;
