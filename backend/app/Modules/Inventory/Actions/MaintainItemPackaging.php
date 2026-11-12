@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\ItemPackaging;
 use App\Rules\Support\CompanyScoped;
+use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -29,7 +30,9 @@ final class MaintainItemPackaging
             throw new DomainInvariantException('The actor cannot maintain packages.');
         }
 
-        return DB::transaction(function () use ($input, $package): ItemPackaging {
+        return DB::transaction(function () use ($input, $package, $actor): ItemPackaging {
+            // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
+            DecisionActor::require($actor, 'inventory.item.manage', 'maintain packages');
             if ($package) {
                 $package = ItemPackaging::query()->lockForUpdate()->findOrFail($package->id);
             }
