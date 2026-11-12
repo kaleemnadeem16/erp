@@ -115,13 +115,15 @@ authority rows change.
 
 ### 6. Race and lock considerations
 
-Follow the order published in ADR 0164: security fence, company authority head, then PO header, then
-approval request/steps. Specifically:
+**Target order (open item, not current code for PO decisions).** Today the PO decision path takes the
+shared access fence and then the PO header without the authority head (see [0164](0164-order-discount-authority-locks-before-quotation-and-approval-records.md)). The target is:
+security fence, company authority head, PO header, approval request/steps; adopting the head for
+Purchasing needs the 0164 concurrency review and is not authorised by this proposal. Specifically:
 
 - `ActivateApprovalPolicy` already runs under the authority writer barrier; the post-commit job takes
   the fence/head first per batch, then each order row `FOR UPDATE` in ascending id, never the reverse.
 - The gate in `RequireApproval` runs inside `IssuePurchaseOrder`'s transaction after the PO header lock
-  and re-resolves the policy under the head, so activation and issue serialise: either issue sees the new
+  and (target design) re-resolves the policy under the head, so activation and issue serialise: either issue sees the new
   version (and refuses) or activation commits after issue (the order is already ISSUED and out of scope).
 - The job re-reads each order's status inside its lock and skips anything issued meanwhile. Flags are
   unique on (`purchase_order_id`, `new_policy_id`, `old_request_id`), so reruns are idempotent.

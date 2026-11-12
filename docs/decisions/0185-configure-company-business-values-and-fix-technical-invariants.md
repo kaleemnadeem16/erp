@@ -23,7 +23,8 @@ one rule for what is configurable, so we neither hard-code business values nor b
    acceptance. A company MAY optionally require independent verification of that acceptance: configurable per company, default OFF, enforced server-side when ON. That optional policy is
    **design-only and inactive** (see [the design](../phases/phase-4-acceptance-verification-policy-design.md), issue #114) and needs separate owner authorisation. Nothing in it weakens verified
    consent, immutable evidence or the internal-approval separation rules above.
-4. **Definitions (aligned).** A *business value* is a choice a reasonable company would make differently where the choice does not remove a mandatory protection for internal approvals,
+4. **Policy effective time (single definition, matching the code).** An approval policy takes effect when its activation commits, with `effective_from` set to the activation day (the previous active version of the same subject type and code is superseded that day). A Sales discount-authority policy or price-reference version takes effect on its stated `effective_from` calendar date in the company time zone, which may be today but never in the past (backdating is refused), and a successor must start after the version it replaces. There is no reason-based exception for past dates; 0165 and 0182 follow this definition.
+5. **Definitions (aligned).** A *business value* is a choice a reasonable company would make differently where the choice does not remove a mandatory protection for internal approvals,
    tenant isolation, permissions or audit evidence (FX tolerance, discount ceilings, thresholds, expiry, and the optional external-acceptance verification above). An *invariant* is any rule
    whose removal would let one person defeat an internal control or cross a tenant, permission or evidence boundary. Where a case is arguable, the owner classifies it explicitly (as D4 did) rather than deriving it.
 

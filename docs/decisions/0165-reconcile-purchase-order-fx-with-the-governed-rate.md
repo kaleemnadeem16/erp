@@ -33,7 +33,7 @@ code constants (see [0185](0185-configure-company-business-values-and-fix-techni
 2. **Versioned.** Each setting is versioned with an effective date and a change history (who, when, previous value, reason); a change never rewrites an earlier version.
 3. **Approved sources.** A company declares its approved exchange-rate sources and rate types; only governed rates of an approved source/type are used for reconciliation.
 4. **Settings UI.** Edited through the existing Purchasing/Settings UI standard, with strict server-side validation (bounded numeric ranges, whole days, effective dates not in the past
-   without a stated reason, approved sources must exist). Requires a dedicated settings permission decided separately.
+   (no reason-based exception; see the policy effective-time definition in [0185](0185-configure-company-business-values-and-fix-technical-invariants.md)), approved sources must exist). Requires a dedicated settings permission decided separately.
 5. **FIXED-rate exceptions are unchanged in kind:** a written reason plus the STAGED, ungranted `purchasing.purchase-order.fx-override` duty. Finance is the intended future holder; no role is
    granted by this ADR.
 6. **Evidence is never retroactive.** Each order stores the exact validation evidence applied when it was recorded (tolerance, age limit, setting version, governed rate and date, source). A later
