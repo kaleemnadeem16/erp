@@ -170,7 +170,7 @@ in the same commit.
 | [0153](0153-own-shared-file-storage-in-a-dedicated-files-module.md) | Own shared file storage in a dedicated Files module | proposed (owner acceptance pending); supersedes 0137 for shared blob/storage ownership only | 2026-10-27 |
 | [0154](0154-record-draft-concessions-tax-declarations-and-list-values-as-versioned-per-row-facts.md) | Record draft concessions, tax declarations and list values as versioned, per-row facts | proposed (owner acceptance pending) | 2026-11-03 |
 
-| [0155](0155-bootstrap-only-the-synthetic-demo-access-operator.md) | Bootstrap only the synthetic demo access operator | accepted; exact-SHA review and CI required before integration | 2026-11-03 |
+| [0155](0155-bootstrap-only-the-synthetic-demo-access-operator.md) | Bootstrap only the synthetic demo access operator | accepted; implementation reviewed; missing exact-SHA CI for `c34821b6` accepted as an explicit exception in [0170](0170-accept-the-missing-exact-sha-ci-evidence-for-the-demo-operator-bootstrap.md); other conditions stand; production blocked | 2026-11-03 |
 
 | [0156](0156-quotation-demo-access-and-activation-boundaries.md) | Bound quotation demo access and preserve activation gates | accepted; implementation incomplete; partly supersedes 0129 | 2026-11-03 |
 

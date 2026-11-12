@@ -2,7 +2,7 @@
 
 # 0155 — Bootstrap only the synthetic demo access operator
 
-- **Status:** accepted (owner conditions); implementation, exact-SHA review and CI pending
+- **Status:** accepted (owner conditions); implementation delivered and independently reviewed (bootstrap `c34821b6`, corrected in `f9fbd424`); the missing exact-SHA CI run for `c34821b6` is an explicit exception accepted in [0170](0170-accept-the-missing-exact-sha-ci-evidence-for-the-demo-operator-bootstrap.md) (owner decision D10, 2026-11-12); all other conditions stand; production activation remains blocked
 - **Date:** 2026-11-03
 - **Affects:** Sales demo access bootstrap; supplements [0156](0156-quotation-demo-access-and-activation-boundaries.md)
 
