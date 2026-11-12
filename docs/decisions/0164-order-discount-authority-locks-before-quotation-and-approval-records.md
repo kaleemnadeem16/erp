@@ -1,6 +1,6 @@
 # 0164 — Order discount authority locks before quotation and approval records
 
-- **Status:** proposed (coordinator review required before integration; stays proposed per owner direction 2026-11-12)
+- **Status:** proposed (owner direction 2026-11-12: acceptance only after independent concurrency review and shared Approvals review; neither complete)
 - **Date:** 2026-11-06
 - **Affects:** Sales quotation writers and authority configuration; opt-in Approvals transaction boundary
 
@@ -15,7 +15,8 @@ too late: those helpers can be reached with a revision or request already locked
 
 Preserve the existing security fence as the outermost lock. For discount-authority operations the
 order is security fence → company authority head (policy/reference/assignment generation) → family
-and revisions → Tax generation where required → approval requests/steps → issue/numbering records.
+and revisions → Company row (shared; Sales financial-policy fence, issue only) → Tax generation where
+required → approval requests/steps → issue/numbering records.
 One company authority head serialises policy/reference activation and assignment changes; this
 intentionally conservative foundation does not introduce independent locks with an inverse order.
 
@@ -25,9 +26,9 @@ intentionally conservative foundation does not introduce independent locks with 
 | Draft create/edit/cancel/revise | Security fence, authority head, family/revision in existing access order, line evidence; invalidate approvals after content changes |
 | Sales approval request/decision/withdraw | Security fence, authority head, family/revision, request/steps; compare live fingerprints inside the transaction |
 | Generic engine decision for a quotation | Optional subject transaction hook wraps the whole operation before any request lock/preflight; same security/head/family/revision order |
-| Issue/replacement | Security fence, authority head, family/revisions (ascending ids for a pair), Tax fence, approval, issue/numbering; freeze exact evaluation with issue |
+| Issue/replacement | Security fence, authority head, family/revisions (ascending ids for a pair), Company row (shared), Tax fence, approval, issue/numbering; freeze exact evaluation with issue |
 | Policy/authority mutation reached outside Sales | Database writer barrier before mutation, matching the security/head order; no raw SQL writer may bypass it |
-| Purchasing/Estimating | No quotation-specific selection, eligibility, expiry or generation semantics; retain existing consumer contracts |
+| Purchasing/Estimating | Generic decision: access fence (shared) → document lock (PO header, then lines by id) → request/steps. No authority head is taken today (the 0182 head-first order is a target, not current code). Configuration writes reach these paths only through the statement barrier. No quotation-specific selection, eligibility, expiry or generation semantics |
 
 The head is company-scoped, created under the security fence, and must exist before checking for
 an absent policy/assignment. Inserts and activations therefore cannot race a cached absence.
@@ -55,10 +56,15 @@ Row-level callbacks must never be the first acquisition point. Approval configur
 invalidate open Sales evidence even when the changed consumer differs; this is a safe foundation
 trade-off, rather than a claim of fine-grained dependency tracking.
 
+A transaction holding the shared access row must not write a barrier table (that would be a lock
+upgrade and can deadlock). Sales read and evaluate paths take `lockAll` exactly like writers.
+
 Replays check current access before returning the original receipt; they do not generate new
 evidence or rewrite old policy/reference versions. Bounded waits and whole-operation deadlock/
-serialisation retries retain QuotationOperation's existing semantics. Tests use separate real
-connections/processes to demonstrate both orderings of policy change versus decision/issue.
+serialisation retries retain QuotationOperation's existing semantics. Existing two-session tests cover Sales decisions versus suspension, permission revocation,
+employee-authority revocation and source edits. Two-session tests for approval-policy activation
+versus a Sales decision, a Sales issue and a PO decision (both orderings) are being added in the
+Phase 4 closure batch and are not yet claimed as existing.
 
 ## Consequences
 
@@ -79,7 +85,7 @@ throughput need. **Replace CompanyAccessFence** — expands scope and risks exis
 ## Research basis
 
 Local transaction design based on CompanyAccessFence, QuotationOperation, DecideApproval and
-IssueQuotationReplacement inspected on local develop at 46858b98. Business rules remain in
+IssueQuotationReplacement re-inspected against develop at 528e40b1 (independent review 2026-11-12). Business rules remain in
 [0163](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md) and ADR 0139.
 
 ## Decision-time review addendum (2026-11-10)
@@ -93,10 +99,19 @@ Sales retains its existing outer security/head/family/revision transaction hook.
 ## Acceptance condition (owner direction, 2026-11-12)
 
 This ADR stays **proposed**. It may be accepted only after (a) an independent concurrency review of the lock order and the writer barrier, and (b) a shared Approvals review confirming the
-optional subject-transaction hook and generic decision path. Neither review has happened.
+optional subject-transaction hook and generic decision path. Acceptance additionally requires the
+two-session policy-activation tests above to pass on one commit.
+
+Status of the reviews: independent concurrency review (Reviewer C, 2026-11-12, develop 528e40b1):
+no lock inversion found; the policy-activation two-session tests are outstanding. Shared Approvals
+review: outstanding (Purchasing/Estimating approval suites not yet run for this purpose).
 
 ## Related
 
 - [Domain specification](../domain/quotation-discount-authority.md)
 - [Domain integrity](../architecture/domain-integrity.md)
+- [0163 discount authority](0163-govern-quotation-discount-authority-with-independent-reference-evidence.md)
+- [0158 concessions through Approvals](0158-approve-quotation-concessions-through-the-shared-approvals-engine.md)
+- [0182 PO reapproval](0182-reapprove-unissued-purchase-orders-by-materiality-when-a-stricter-policy-takes-effect.md)
+- [0185 company configuration](0185-configure-company-business-values-and-fix-technical-invariants.md)
 - [Decision index](README.md)
