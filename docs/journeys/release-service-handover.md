@@ -1,0 +1,13 @@
+[← Journeys](README.md)
+
+# Release a prepared service handover (backend only, disabled)
+
+Phase 5 Batch 1. No screen or route yet; this is the Action-level journey the Batch 2 screens will drive. See [Sales service release](../domain/sales-service-release.md).
+
+1. An accepted, **prepared** service stage exists ([prepare journey](prepare-service-handover.md)).
+2. An authorised Sales actor records the customer-agreed completion conditions, citing the case's written consent evidence (`RecordServiceCompletionBasis`).
+3. The releaser reviews (`PreviewServiceRelease`): blockers, cost status ("not assessed" is shown, never zero), source applicability and a fingerprint.
+4. The releaser confirms (`ReleaseHandoverComponent`) with the basis and fingerprint they reviewed. With a Jobs receiver bound this atomically records release evidence and creates exactly one numbered Job; otherwise it refuses and nothing is written.
+5. A retry (same key) replays; a fresh key or another actor resolves to the same single release; a changed basis after release is refused.
+
+Failure paths: no basis, stale review, unproven applicability, mandatory cost without evidence, missing duty, suspended/revoked actor, receiver unavailable or failing — each writes nothing.

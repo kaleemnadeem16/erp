@@ -51,7 +51,9 @@ class HandoverActionsTest extends TestCase
         $p = $this->preview();
         $this->assertTrue($p['readiness']['preparation_ready']);
         $this->assertSame('NOT_READY', $p['readiness']['status']);
-        $this->assertContains('SERVICE_COST_CERTAINTY_UNKNOWN', $p['readiness']['missing']);
+        // Cost is conditional: not required by any delivered control, so it is reported separately and is not a blocker.
+        $this->assertNotContains('SERVICE_COST_CERTAINTY_UNKNOWN', $p['readiness']['missing']);
+        $this->assertSame(['required' => false, 'status' => 'UNASSESSED', 'policy_version' => 'RELEASE_COST_POLICY.1'], $p['readiness']['cost']);
         $this->assertNull($p['operational']['quantity']);
         $this->assertDatabaseCount('handover_plans', 0);
         $out = $this->prepare('prepare', $p['preview_token']);

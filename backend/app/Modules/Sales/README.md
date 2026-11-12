@@ -179,9 +179,16 @@ receipts and atomic root/choice claims. `ReadCustomerAcceptance` and `AssessAcce
 provide safe detail and pending readiness. `QuotationAcceptanceState` now reads real immutable
 acceptances, so withdraw/replace refuse after consent. Four guarded routes and the generated
 client are delivered; no duty registration/holder, dev-preview activation or demo grant.
-Acceptance screens are separately delivered; handover release remains absent. [Backend contract](../../../../docs/domain/sales-full-acceptance.md),
+Acceptance screens are separately delivered; handover release is delivered only as the disabled backend above. [Backend contract](../../../../docs/domain/sales-full-acceptance.md),
 [journey](../../../../docs/journeys/record-full-customer-acceptance.md) and
 [provisional defaults](../../../../docs/phases/phase-4-customer-acceptance-and-handover-design-brief.md#assumed-defaults-slice-2-owner-review-pending).
+
+## Service release (Phase 5 Batch 1, Sales half, disabled backend)
+
+`RecordServiceCompletionBasis` (immutable, versioned customer-agreed completion conditions citing written consent evidence), `PreviewServiceRelease` and `ReleaseHandoverComponent`
+(one atomic release through `Support\Handover\Release\ReleaseCoordinator`: immutable `handover_release_events`, conditional cost policy, catalogue-based no-obligation proof, the Sales-owned
+`ReleasedServiceReceiver`/`JobSalesOrigin` ports the Jobs module implements, and `SalesJobExecutionContextVerifier` for the Sales origin). Duties `sales.handover.completion-basis.record` and
+`sales.handover.release` are STAGED and ungranted; no route, screen or demo grant; an unbound receiver refuses every release. [Contract](../../../../docs/domain/sales-service-release.md).
 
 ## Service handover preparation (slice 3, inactive backend)
 

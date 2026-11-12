@@ -60,7 +60,8 @@ contract/rollout. Classifications do not name real people/roles or authorise a m
 | `sales.customer-decision.evidence.view` | Sales | Confidential evidence/files | C + case/Party/quote; sensitive mutation AND independent decision read | Evidence-read | S | CA1 + file adapter |
 | `sales.handover.view` | Sales/target adapter | Safe plan/readiness/target links | C + accepted source/target + owning warehouse/site where applicable | Operational | N | HA1 |
 | `sales.handover.prepare` | Sales/target adapter | Prepare plan, no target/stock | C + accepted source/target + owning warehouse/site where applicable | Operational | N | HA1 |
-| `sales.handover.release` | Sales/target adapter | Release exact supported component | C + accepted source/target + owning warehouse/site where applicable | Operational + baseline | S | HA2 + real target |
+| `sales.handover.completion-basis.record` | Sales/target adapter | Record customer-agreed completion conditions (STAGED, Phase 5 Batch 1; no route, disabled) | C + accepted source/target + owning warehouse/site where applicable | Operational + baseline | S | HA2 + real target |
+| `sales.handover.release` | Sales/target adapter | Release exact supported component (STAGED, Phase 5 Batch 1; no route, disabled) | C + accepted source/target + owning warehouse/site where applicable | Operational + baseline | S | HA2 + real target |
 | `sales.handover.hold` | Sales/target adapter | Authorised operational hold | C + accepted source/target + owning warehouse/site where applicable | Operational | S | HA5 |
 | `sales.handover.amend` | Sales/target adapter | Schedule/unused cancellation/reassignment | C + accepted source/target + owning warehouse/site where applicable | Operational/impact | S | HA4/5 |
 | `sales.document.view` | Sales | Safe generation/artefact history/status | C + subject/purpose/audience/file association; independent confidential duty | Document-min | N | DF2/DOC1 |

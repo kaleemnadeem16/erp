@@ -22,6 +22,8 @@ use App\Modules\Sales\Support\Documents\QuotationDocumentProvider;
 use App\Modules\Sales\Support\Financial\Controls\AssemblyCostEvidenceProvider;
 use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
+use App\Modules\Sales\Support\Handover\Release\NoMandatoryReleaseCostPolicy;
+use App\Modules\Sales\Support\Handover\Release\ReleaseCostPolicy;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\Issue\ConfiguredQuotationControlsProvider;
@@ -69,6 +71,8 @@ class SalesServiceProvider extends ServiceProvider
         $this->app->afterResolving(ApprovalSubjectRegistry::class, static function (ApprovalSubjectRegistry $registry): void {
             $registry->register(new QuotationApprovalSubject);
         });
+        // Cost is conditional on the applicable control policy; the default finds no mandatory control. Jobs binds ReleasedServiceReceiver and JobSalesOrigin.
+        $this->app->bindIf(ReleaseCostPolicy::class, NoMandatoryReleaseCostPolicy::class);
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });

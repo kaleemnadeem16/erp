@@ -21,6 +21,9 @@ final class CustomerDecisionRefusalStatus
     public const MAP = [
         CustomerDecisionRefusal::HANDOVER_PATH_UNSUPPORTED => self::UNPROCESSABLE,
         CustomerDecisionRefusal::HANDOVER_NOT_READY => self::UNPROCESSABLE,
+        CustomerDecisionRefusal::COMPLETION_BASIS_MISSING => self::UNPROCESSABLE,
+        CustomerDecisionRefusal::RELEASE_RECEIVER_UNAVAILABLE => self::UNPROCESSABLE,
+        CustomerDecisionRefusal::RELEASE_ALREADY_RECORDED => self::CONFLICT,
         CustomerDecisionRefusal::ACCEPTANCE_NOT_FOUND => self::NOT_FOUND,
         CustomerDecisionRefusal::ACCEPTANCE_NOT_ELIGIBLE => self::UNPROCESSABLE,
         CustomerDecisionRefusal::SCOPE_ALREADY_CLAIMED => self::CONFLICT,

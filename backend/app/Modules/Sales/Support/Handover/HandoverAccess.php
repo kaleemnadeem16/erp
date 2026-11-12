@@ -21,9 +21,10 @@ use Illuminate\Auth\Access\AuthorizationException;
 /** @internal Fresh actor/fence first, authority head second, accepted/source rows last. Shared with readiness. */
 final class HandoverAccess
 {
-    public static function early(User $actor, bool $preparing): void
+    /** @param  string|null  $duty  the exact duty judged (default: prepare when preparing, otherwise the customer-decision view duty) */
+    public static function early(User $actor, bool $preparing, ?string $duty = null): void
     {
-        CustomerDecisionAccess::early($actor, $preparing ? P::HANDOVER_PREPARE : P::CUSTOMER_DECISION_VIEW, 'prepare or read a handover');
+        CustomerDecisionAccess::early($actor, $duty ?? ($preparing ? P::HANDOVER_PREPARE : P::CUSTOMER_DECISION_VIEW), 'prepare or read a handover');
         SalesAccess::require($actor, P::CUSTOMER_DECISION_VIEW, 'see customer decisions');
         self::quotationDuty($actor);
     }
@@ -35,9 +36,22 @@ final class HandoverAccess
         }
     }
 
-    public function lock(User $actor, int $acceptanceId, bool $preparing = true): HandoverSubject
+    /** The source rows only, in the preparation lock order (authority head, acceptance, case, claim heads), for a caller whose authority was judged elsewhere (the Jobs source verifier). */
+    public function lockSource(int $acceptanceId): HandoverSubject
     {
-        $fresh = CustomerDecisionAccess::decide($actor, $preparing ? P::HANDOVER_PREPARE : P::CUSTOMER_DECISION_VIEW, 'prepare or read a handover');
+        app(AuthorityFence::class)->lock();
+        $a = CustomerAcceptance::query()->lockForUpdate()->findOrFail($acceptanceId);
+        $case = CustomerDecisionCase::query()->lockForUpdate()->findOrFail($a->case_id);
+        $line = CustomerAcceptanceLine::query()->where('acceptance_id', $a->id)->firstOrFail();
+        $issued = QuotationIssuedLine::query()->findOrFail($line->issued_line_id);
+        CustomerScopeClaimHead::query()->where('family_id', $issued->family_id)->orderBy('id')->lockForUpdate()->get();
+
+        return new HandoverSubject($a, $line, $issued, $case);
+    }
+
+    public function lock(User $actor, int $acceptanceId, bool $preparing = true, ?string $duty = null): HandoverSubject
+    {
+        $fresh = CustomerDecisionAccess::decide($actor, $duty ?? ($preparing ? P::HANDOVER_PREPARE : P::CUSTOMER_DECISION_VIEW), 'prepare or read a handover');
         SalesAccess::require($fresh, P::CUSTOMER_DECISION_VIEW, 'see customer decisions');
         self::quotationDuty($fresh);
         app(AuthorityFence::class)->lock();

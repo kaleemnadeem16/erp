@@ -83,6 +83,8 @@ final class SalesDevPreview
     public const EXCLUDED = [
         PermissionVocabulary::DOCUMENT_REPAIR => 'sensitive operator duty; never granted by any preview or preset',
         PermissionVocabulary::QUOTATION_WITHDRAW => 'no HTTP route or screen exposes offer withdrawal yet (only the replacement Action uses it)',
+        PermissionVocabulary::HANDOVER_COMPLETION_BASIS_RECORD => 'Phase 5 Batch 1 is a disabled backend integration: no route or screen records completion conditions; never granted by a preview',
+        PermissionVocabulary::HANDOVER_RELEASE => 'Phase 5 Batch 1 is a disabled backend integration: release has no route, screen or enabled receiver; never granted by a preview',
         PermissionVocabulary::HANDOVER_PREPARE => 'handover routes exist but the frontend has no handover screen; read-only readiness needs only the customer-decision view duty',
     ];
 

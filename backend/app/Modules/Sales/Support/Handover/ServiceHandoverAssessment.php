@@ -8,6 +8,7 @@ use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Support\ItemType;
 use App\Modules\Parties\Models\PartyContact;
 use App\Modules\Parties\Models\PartySite;
+use App\Modules\Sales\Support\Handover\Release\ReleaseCostPolicy;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Support\CurrentCompany;
 use App\Support\Status;
@@ -15,7 +16,7 @@ use App\Support\Status;
 /** @internal Fresh, locked operational facts. Missing release contracts remain UNKNOWN, never waived by a service Item discriminator. */
 final class ServiceHandoverAssessment
 {
-    public function __construct(private readonly HandoverSourceRegistry $sources) {}
+    public function __construct(private readonly HandoverSourceRegistry $sources, private readonly ReleaseCostPolicy $costPolicy) {}
 
     /**
      * @param  array<string,mixed>  $inputs
@@ -58,7 +59,11 @@ final class ServiceHandoverAssessment
         }
         $preparationReady = $missing === [];
         $add('COMPLETION_CONDITIONS_NOT_DELIVERED', 'Sales', 'Supply canonical versioned, customer-agreed completion conditions through the source contract; do not invent them in the plan.');
-        $add('SERVICE_COST_CERTAINTY_UNKNOWN', 'Sales', 'Deliver source-owned cost-certainty evidence; unknown cost is not zero cost.');
+        // Cost status and whether cost is REQUIRED are separate: only a mandatory commercial control that needs cost evidence makes unknown cost a blocker.
+        $cost = $this->costPolicy->requirementFor($s);
+        if (! $cost->satisfied()) {
+            $add('SERVICE_COST_CERTAINTY_UNKNOWN', 'Sales', 'Deliver source-owned cost-certainty evidence; unknown cost is not zero cost.');
+        }
         $add('INVENTORY_APPLICABILITY_UNVERIFIED', 'Inventory', 'Verify material/warehouse applicability through the owning contract; service type alone is not proof of no inventory effects.');
         $add('PURCHASING_APPLICABILITY_UNVERIFIED', 'Purchasing', 'Verify supplier/subcontracting applicability through the owning contract.');
         $add('SERVICE_JOB_ADAPTER_NOT_DELIVERED', 'Jobs', 'Deliver and verify the release receiver in separately authorised slice 4.');
@@ -67,7 +72,8 @@ final class ServiceHandoverAssessment
             'contact' => $contactValid ? ['id' => $contact->id, 'name' => $contact->name, 'email' => $contact->email, 'phone' => $contact->phone] : null,
             'site' => $siteValid ? ['id' => $site->id, 'name' => $site->name, 'address_line1' => $site->address_line1, 'city' => $site->city, 'country_code' => $site->country_code] : null];
         $assessment = ['acceptance_id' => $s->acceptance->id, 'assessment_version' => HandoverSourceRegistry::VERSION, 'path' => $inputs['path'], 'status' => 'NOT_READY',
-            'preparation_ready' => $preparationReady, 'missing' => $missing, 'next_actions' => $next];
+            'preparation_ready' => $preparationReady, 'missing' => $missing, 'next_actions' => $next,
+            'cost' => ['required' => $cost->required, 'status' => $cost->status, 'policy_version' => $cost->policyVersion]];
         $fingerprint = OperationIntent::hash('handover.review', ['acceptance' => $s->acceptance->id, 'accepted_intent' => $s->acceptance->intent_digest,
             'issued_line' => $s->line->getAttributes(), 'inputs' => $inputs, 'operational' => $operational, 'assessment' => $assessment,
             'item_state' => $item?->only(['id', 'type', 'status', 'is_stocked', 'deleted_at', 'updated_at']),

@@ -41,7 +41,9 @@ class HandoverReadinessTest extends TestCase
         $readyForPreparation = app(AssessAcceptanceReadiness::class)($this->checker, $f['acceptance'], 'SERVICE_JOB', $f['inputs']);
         $this->assertTrue($readyForPreparation['preparation_ready']);
         $this->assertSame('NOT_READY', $readyForPreparation['status']);
-        foreach (['SERVICE_COST_CERTAINTY_UNKNOWN', 'COMPLETION_CONDITIONS_NOT_DELIVERED', 'INVENTORY_APPLICABILITY_UNVERIFIED', 'PURCHASING_APPLICABILITY_UNVERIFIED', 'SERVICE_JOB_ADAPTER_NOT_DELIVERED'] as $code) {
+        $this->assertNotContains('SERVICE_COST_CERTAINTY_UNKNOWN', $readyForPreparation['missing'], 'cost is conditional on a mandatory control; none is delivered');
+        $this->assertSame('UNASSESSED', $readyForPreparation['cost']['status']);
+        foreach (['COMPLETION_CONDITIONS_NOT_DELIVERED', 'INVENTORY_APPLICABILITY_UNVERIFIED', 'PURCHASING_APPLICABILITY_UNVERIFIED', 'SERVICE_JOB_ADAPTER_NOT_DELIVERED'] as $code) {
             $this->assertContains($code, $readyForPreparation['missing']);
         }
     }

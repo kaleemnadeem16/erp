@@ -55,6 +55,7 @@ class CustomerDecisionIntakeMigrationTest extends TestCase
         return [
             require base_path('database/migrations/2026_12_11_100000_create_customer_acceptance_foundation.php'),
             require base_path('database/migrations/2026_12_12_100000_create_service_handover_preparation.php'),
+            require base_path('database/migrations/2026_12_13_100000_create_service_release_evidence.php'),
         ];
     }
 

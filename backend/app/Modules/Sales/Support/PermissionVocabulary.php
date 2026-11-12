@@ -94,6 +94,12 @@ final class PermissionVocabulary
     /** Prepare one immutable pending service plan; STAGED, no registration, grant, release or Job creation. */
     public const HANDOVER_PREPARE = 'sales.handover.prepare';
 
+    /** Record the customer-agreed completion conditions of an accepted service line (immutable, versioned); STAGED, no grant. */
+    public const HANDOVER_COMPLETION_BASIS_RECORD = 'sales.handover.completion-basis.record';
+
+    /** Release one prepared service stage to the Jobs receiver (atomic with Job creation); STAGED, no grant, no route. */
+    public const HANDOVER_RELEASE = 'sales.handover.release';
+
     /** Record full ordinary consent; STAGED, independent decision/source read still required. */
     public const CUSTOMER_DECISION_ACCEPT = 'sales.customer-decision.accept';
 

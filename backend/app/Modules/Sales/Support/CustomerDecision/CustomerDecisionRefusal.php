@@ -41,6 +41,12 @@ final class CustomerDecisionRefusal
 
     public const HANDOVER_NOT_READY = 'HANDOVER_NOT_READY';
 
+    public const COMPLETION_BASIS_MISSING = 'COMPLETION_BASIS_MISSING';
+
+    public const RELEASE_RECEIVER_UNAVAILABLE = 'RELEASE_RECEIVER_UNAVAILABLE';
+
+    public const RELEASE_ALREADY_RECORDED = 'RELEASE_ALREADY_RECORDED';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

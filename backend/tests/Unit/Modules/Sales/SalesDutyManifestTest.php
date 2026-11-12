@@ -28,7 +28,7 @@ class SalesDutyManifestTest extends TestCase
         $manifest = SalesDutyManifest::shipped();
         $names = array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->all());
 
-        $this->assertCount(63, $names, 'The 58 Sales-owned rows of the 78-row matrix plus the owner-authorised STAGED sales.quotation.assign (QA1a, #59); the other 20 belong to other modules.');
+        $this->assertCount(64, $names, 'The 58 Sales-owned rows of the 78-row matrix plus the owner-authorised STAGED sales.quotation.assign (QA1a, #59) and sales.handover.completion-basis.record (Phase 5 Batch 1, #69); the other 20 belong to other modules.');
         $this->assertSame($names, array_values(array_unique($names)));
         foreach ($names as $name) {
             $this->assertMatchesRegularExpression('/^sales\.[a-z][a-z0-9.-]*$/', $name);
@@ -58,7 +58,7 @@ class SalesDutyManifestTest extends TestCase
     {
         $manifest = SalesDutyManifest::shipped();
 
-        $this->assertCount(55, array_filter($manifest->all(), fn (SalesDuty $duty): bool => ! $duty->class->isExisting()));
+        $this->assertCount(56, array_filter($manifest->all(), fn (SalesDuty $duty): bool => ! $duty->class->isExisting()));
         $this->assertCount(8, $manifest->withStatus(DutyStatus::Active));
         $this->assertCount(5, $manifest->withStatus(DutyStatus::Dormant), 'delivery.send, delivery.reconcile, pricing exception, pricing agreement departure and claim-release');
         foreach ($manifest->withStatus(DutyStatus::Dormant) as $duty) {
@@ -68,8 +68,8 @@ class SalesDutyManifestTest extends TestCase
             $this->assertContains($duty->class, [DutyClass::NewOrdinary, DutyClass::Sensitive], $duty->name);
             $this->assertFalse($manifest->isActive($duty->name));
         }
-        $this->assertCount(26, $manifest->withStatus(DutyStatus::Specified), 'discount, price.override and commercial.view moved from SPECIFIED to STAGED with the PR4/PR5 draft concessions, and approve with the approvals integration (ADR 0158)');
-        $this->assertSame(['sales.quotation.view', 'sales.quotation.commercial.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.access.delegate', 'sales.quotation.access.revoke', 'sales.quotation.issue', 'sales.quotation.withdraw', 'sales.quotation.approve', 'sales.quotation.discount', 'sales.quotation.price.override', 'sales.financial.configure', 'sales.discount-authority.evidence.view', 'sales.pricing.reference.approve', 'sales.customer-decision.view', 'sales.customer-decision.evidence.record', 'sales.customer-decision.accept', 'sales.handover.prepare', 'sales.document.view', 'sales.document.generate', 'sales.document.repair', 'sales.document.download', 'sales.delivery.view', 'sales.delivery.record'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The staged duties: their Actions exist, the duties are disabled.');
+        $this->assertCount(25, $manifest->withStatus(DutyStatus::Specified), 'sales.handover.release became STAGED with Phase 5 Batch 1; discount, price.override and commercial.view moved from SPECIFIED to STAGED with the PR4/PR5 draft concessions, and approve with the approvals integration (ADR 0158)');
+        $this->assertSame(['sales.quotation.view', 'sales.quotation.commercial.view', 'sales.quotation.prepare', 'sales.quotation.assign', 'sales.quotation.access.delegate', 'sales.quotation.access.revoke', 'sales.quotation.issue', 'sales.quotation.withdraw', 'sales.quotation.approve', 'sales.quotation.discount', 'sales.quotation.price.override', 'sales.financial.configure', 'sales.discount-authority.evidence.view', 'sales.pricing.reference.approve', 'sales.customer-decision.view', 'sales.customer-decision.evidence.record', 'sales.customer-decision.accept', 'sales.handover.prepare', 'sales.handover.completion-basis.record', 'sales.handover.release', 'sales.document.view', 'sales.document.generate', 'sales.document.repair', 'sales.document.download', 'sales.delivery.view', 'sales.delivery.record'], array_map(fn (SalesDuty $duty): string => $duty->name, $manifest->withStatus(DutyStatus::Staged)), 'The staged duties: their Actions exist, the duties are disabled.');
         $this->assertFalse($manifest->isActive('sales.quotation.view'));
         $this->assertFalse($manifest->isActive('sales.quotation.prepare'));
         $this->assertFalse($manifest->isActive('sales.quotation.assign'));
