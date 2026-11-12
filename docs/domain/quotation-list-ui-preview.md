@@ -1,4 +1,12 @@
+[← Domain index](README.md)
+
 # Quotation list presentation preview
+
+**Historical isolated preview, consolidated 2026-11-12 (#110).** Statements below about missing
+endpoints/generated clients describe its original baseline. Current registered screens keep their
+newer live contracts and access guards; these preview components remain unregistered. All further
+work is on `develop` in the main checkout under [AGENTS.md](../../AGENTS.md).
+
 
 This is a disabled presentation exercise for the owner-authorised Batch B UI. It has no route, navigation entry, network implementation or production fixture data. `QuotationListScreen` is hard-denied by default; its separately exported presentation is used only by a browser fixture. No list client is generated yet. The existing generated `QuotationDraftResource` is an unknown dictionary, so the preview validates only the fields in the proposed #56 safe summary, strips all other properties, and refuses malformed summaries. This is provisional, not approval or a declaration that the final endpoint implements the proposal.
 
@@ -11,3 +19,10 @@ After `npm run build` in `frontend/`, run `docker/frontend/run-e2e.sh quotation-
 Primary users browse the quotations they are entitled to see, narrow the list by status and available reference choices, open a record or review its saved financial state, and start a draft when they hold prepare. The backend must apply record eligibility before pagination and counts; the screen never infers ownership or fetches wider data. Until the generated list contract is published, the presentation is mock-only and unregistered. Final integration must reconcile accepted filters, sort fields, owner projection and permissible label lookups with the generated contract, and preserve filters in the URL. No fixture data is installed into the app.
 
 The list uses the shared table/cards and preserves server pagination, loading, empty and error states. Status, dates and resolved owner/recipient/currency labels are visible; unavailable references remain explicit rather than guessed. Create and review require prepare independently; access to the list requires view. The user can reach detail by keyboard and on a phone. Issue, approval, revisions, customer decisions and documents must follow their own server states and duties; none is implied by the presence of a row.
+
+
+## Related
+
+- [Domain index](README.md)
+- [Quotation lifecycle](quotation-lifecycle.md)
+- [Screen delivery contract](../architecture/screen-delivery-contract.md)

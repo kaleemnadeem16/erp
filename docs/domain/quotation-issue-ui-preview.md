@@ -1,4 +1,12 @@
+[← Domain index](README.md)
+
 # Quotation issue-readiness and approval presentation preview
+
+**Historical isolated preview, consolidated 2026-11-12 (#110).** Statements below about missing
+endpoints/generated clients describe its original baseline. Current registered screens keep their
+newer live contracts and access guards; these preview components remain unregistered. All further
+work is on `develop` in the main checkout under [AGENTS.md](../../AGENTS.md).
+
 
 These are disabled, unregistered, fixture-only presentation components for Batch B. They are not routed or linked in the application and make no API calls. `QuotationReadinessScreen` requires the off-by-default gate and `sales.quotation.prepare`; `QuotationApprovalScreen` requires that same gate and both `sales.quotation.issue` and `sales.quotation.view`, independently. The issue duty remains STAGED. Fixture-only renderers cannot be taken as a permission grant.
 
@@ -7,3 +15,10 @@ The safe assessment shape comes from Agent A's **internal** `AssessQuotationIssu
 The draft G-A1/G-A2 proposal on #57 remains subject to separate owner decisions and authorisation. Agent A's `phase4/ql3-issue-quotation` at `0f0eff9b` now contains an internal `IssueQuotation` Action: it requires independent view and issue duties, a request key, and the expected reviewed generation, with current authority and readiness rechecked before issue. This is not an approved HTTP adapter or generated client; independent review has also identified a frozen-terms blocker. The proposal addresses customer decision intake and ordinary full acceptance, not a generic approval state machine. Reconcile both screens with the final approved API, capability checks, policy/record access and exact reviewed generation before any wiring or activation. Never infer a zero tax, a passing control, an approval, an issued number or an acceptance. Unknown and unevaluable remain blockers.
 
 Build the frontend first, then run `docker/frontend/run-e2e.sh quotation-issue-preview.unit.spec.ts --project=unit`. These isolated fixtures use synthetic data and intercepted requests. Tests cover malformed/inconsistent assessments, stripping private extras, both default-deny gates, unknown blockers, disabled issue control, keyboard focus, phone-width overflow and serious/critical accessibility checks. They do not test an actual backend endpoint or authorise issue.
+
+
+## Related
+
+- [Domain index](README.md)
+- [Quotation lifecycle](quotation-lifecycle.md)
+- [Screen delivery contract](../architecture/screen-delivery-contract.md)

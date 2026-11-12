@@ -1334,3 +1334,37 @@ seams, finite-scope/holder/reviewer gates and an explicit Phase 4 closure bounda
 [0186](decisions/0186-deliver-one-progressive-jobs-engine-through-a-bounded-service-pilot.md) is
 proposed; accepted ADRs untouched. Docs/source inspection only, no feature code, runtime test,
 grant, migration or activation. Planning branch requires owner review/integration.
+
+## 2026-11-12 — Consolidate all existing branch work into main develop (#110)
+
+Owner explicitly authorised merging all branch code into `/home/kaleem/projects/erp` on `develop`
+and publishing it. Fetched/pruned origin, inspected all local/origin refs and active worktrees;
+most were already ancestors. The remaining branch tips were reconciled as follows:
+
+| Branch / inspected tip | Resolution on develop |
+|---|---|
+| `phase5/phase5-revised-plan` / `1f2847ee` | Imported revised plan/proposed0186 and retained both status-log entries plus the newer develop-only instruction. |
+| `codex/phase5-task-c-j2-costing` / `1674daab` | Imported optional J2 labour/reporting designs; preserved Task E and revised-plan links. |
+| `agent-d/quote-detail-panel` / `83951739` | Imported side-sheet presentation and browser fixtures; retained current record-scope checks, family access and issue/approval/document actions in both presentations. |
+| `agent-d/quotes-issue-preview` / `f9cd743a` | Imported disabled isolated preview and tests; retained the live issue contract, with the older strict parser separate for its fixtures. No route/grant/activation added. |
+| `agent-d/quotes-list-preview` / `43e8bd88` | Imported disabled isolated list preview/tests and separate summary parser; retained the registered live list contract. |
+| `codex/auth-retrofit` / `c81002e2` | Every incoming non-merge commit is patch-equivalent to an already integrated commit (`git cherry`); reconciled ancestry with no content regression. |
+| `codex/auth-retrofit-safety` / `5621f9ea` | Compared three original patches to integrated retrofit counterparts: code payloads identical, historical ADR0059 renumbered to0062. Retained modern security, schema and accepted ADR numbering; no duplicate old migration/ADR. |
+| `agent-c/tax-fr3-t1-t2` / `17bbbd92` | All implementation commits already reachable; reconciled merge-only ancestry, retaining newer Tax implementation. |
+| `phase4/m1-quotation-dev-preview` / `2eea5d5c` | All implementation commits already reachable; reconciled merge-only ancestry, retaining newer preview configuration. |
+
+Every local/origin branch tip and detached safety-check HEAD is now an ancestor of develop.
+Existing branches/worktrees are retained as history, not authorised working locations. The untracked
+`docker-compose.auth-test.yml` and detached checkout's `frontend/node_modules` were left untouched;
+no unfinished application code was found in the worktrees. Accepted ADRs were not rewritten.
+Imported historical UI docs are indexed and labelled so their old missing-endpoint wording does not
+misrepresent today's live screens.
+
+Local verification: all three frontend typechecks and Vite production build passed. The first
+60-test isolated browser run passed every test but exited during unrelated saved-session teardown
+because the dev stack was unavailable; rerun uses `E2E_RUN_STARTED=0` to suppress database hygiene
+for fixtures that create no database rows: **60 passed, exit0**. Docker daemon unavailable also prevented codegen wrapper
+execution (exit65 at its dependency check); this is a verified local environment limitation, not
+client drift. No backend, migration, dependency or generated-client content changed from the
+pre-consolidation develop tree. Hosted CI on the published exact SHA supplies full backend,
+migration/codegen and integrated e2e verification; results belong on task #110.

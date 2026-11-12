@@ -163,6 +163,12 @@ Unfamiliar term? → [GLOSSARY.md](../GLOSSARY.md)
 - [Quotation family access UI](quotation-family-access-ui.md) — interaction specification and coverage matrix; implementation in progress.
 - [Quotation sharing implementation](quotation-sharing-implementation.md) — local, incomplete.
 
+## Historical quotation presentation previews
+
+- [Detail/review sheet](quotation-detail-sheet-ui.md) — consolidated presentation and isolated browser tests; current record guards retained.
+- [Issue/approval preview](quotation-issue-ui-preview.md) — unregistered historical presentation; live issue contract retained separately.
+- [List preview](quotation-list-ui-preview.md) — unregistered historical presentation; current live list retained.
+
 ## Related
 
 - [architecture/invariants.md](../architecture/invariants.md) — rules that govern all of this
