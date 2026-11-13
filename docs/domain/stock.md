@@ -96,6 +96,11 @@ reversal (`App\Modules\Inventory\Actions\PostInventoryMovement::reverseReceipt()
 Purchase receipt and QA movements enter this ledger only through ADR 0043's atomic posting and
 immutable disposition/reversal boundaries. Receipt reversal corrects an erroneous event; a later
 Supplier Return is a distinct outbound source and does not rewrite receipt or PO history.
+Rejected-stock exit retries compare the original payload hash **and** the immutable originating
+`document_type` / `document_id`, both before locking and after the receipt-line lock. Changing
+either document field under an existing request key refuses without another movement or exit.
+Omitted and explicit null identity are equivalent. The hash format is preserved so historical
+immutable exits replay correctly; no evidence backfill or rehash is required (#123).
 
 ### Progressive warehouse structure
 

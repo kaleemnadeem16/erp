@@ -77,9 +77,7 @@ final class PostRejectedStockExit
             'reason' => $reason, 'change' => $changeReason, 'portion' => $lines], JSON_THROW_ON_ERROR));
         $existing = RejectedStockExit::query()->where('request_key', $key)->first();
         if ($existing !== null) {
-            if (! hash_equals($existing->payload_hash, $hash)) {
-                throw new DomainInvariantException('This request key was already used for a different rejected-stock exit.', 'request_key');
-            }
+            $this->requireSameIntent($existing, $hash, $input);
 
             return $existing;
         }
@@ -110,9 +108,7 @@ final class PostRejectedStockExit
         // A retry racing the first request: re-check inside the lock.
         $existing = RejectedStockExit::query()->where('request_key', $key)->first();
         if ($existing !== null) {
-            if (! hash_equals($existing->payload_hash, $hash)) {
-                throw new DomainInvariantException('This request key was already used for a different rejected-stock exit.', 'request_key');
-            }
+            $this->requireSameIntent($existing, $hash, $input);
 
             return $existing;
         }
@@ -210,6 +206,19 @@ final class PostRejectedStockExit
                 'whole_count' => $line['count'], 'quantity' => (string) $line['quantity'], 'availability' => 'REJECTED']);
         }
         PackageIssueAllocation::query()->create(['operation_id' => $operation->id, 'stock_layer_id' => $layer->id, 'quantity' => $quantity]);
+    }
+
+    /** @param array<string,mixed> $input */
+    private function requireSameIntent(RejectedStockExit $existing, string $hash, array $input): void
+    {
+        // Keep the original hash format: historical immutable exits use it. Document identity is
+        // compared independently at BOTH replay checks, with omitted and explicit null equivalent.
+        $documentId = $input['document_id'] ?? null;
+        if (! hash_equals($existing->payload_hash, $hash)
+            || $existing->document_type !== ($input['document_type'] ?? null)
+            || ($existing->document_id === null ? null : (int) $existing->document_id) !== ($documentId === null ? null : (int) $documentId)) {
+            throw new DomainInvariantException('This request key was already used for a different rejected-stock exit.', 'request_key');
+        }
     }
 
     private function exact(string $quantity): BigDecimal
