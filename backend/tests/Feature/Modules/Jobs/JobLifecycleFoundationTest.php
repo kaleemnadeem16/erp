@@ -168,7 +168,7 @@ class JobLifecycleFoundationTest extends TestCase
             $this->assertRefused(fn () => DB::table($table)->delete(), 'append-only');
         }
         // A table another table references is refused by PostgreSQL itself unless truncated together with it; together, only the guard is in the way.
-        foreach (['job_assignment_events', 'job_operation_receipts', 'job_holds, job_hold_resolutions', 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts'] as $set) {
+        foreach (['job_assignment_events', 'job_operation_receipts', 'job_holds, job_hold_resolutions', 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts, job_completions, job_closeouts'] as $set) {
             $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$set}"), 'append-only');
         }
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE service_jobs CASCADE'), 'append-only');
@@ -284,7 +284,8 @@ class JobLifecycleFoundationTest extends TestCase
         $job = $this->newJob();
         $this->assign($job, $this->worker->id);
         $this->settle();
-        foreach (['COMPLETE', 'CLOSE', 'TERMINATE', 'WITHDRAW', 'CANCEL', 'REOPEN', 'release', 'START ', ''] as $operation) {
+        // COMPLETE and CLOSE are lifecycle operations since the completion/closeout foundation (JobCompletionTest, JobCloseoutTest); everything else stays refused.
+        foreach (['TERMINATE', 'WITHDRAW', 'CANCEL', 'REOPEN', 'complete', 'release', 'START ', ''] as $operation) {
             $this->assertRefused(fn () => $this->appendEvent($job, $operation, ['to_state' => $operation === '' ? 'RELEASED' : 'COMPLETED']), 'is not allowed by the lifecycle foundation');
         }
         // There is no generic head-state bypass: COMPLETED/CLOSED cannot be reached through any allowed operation.
@@ -535,7 +536,7 @@ class JobLifecycleFoundationTest extends TestCase
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
         $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         // The four lifecycle Actions (issue #62) and the Batch 1 receiver are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
-        $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'])));
+        $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssessJobCloseout.php', 'AssignJobResponsibility.php', 'CloseJob.php', 'CompleteJob.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'])));
         $this->assertFileExists(base_path('app/Modules/Jobs/routes.php'));
         foreach (glob(base_path('app/Modules/Jobs/Models/*.php')) ?: [] as $file) {
             $this->assertDoesNotMatchRegularExpression('/function\s+(?!casts)\w+\s*\(/', (string) file_get_contents($file), basename($file).' declares no behaviour');

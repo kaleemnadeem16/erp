@@ -44,6 +44,13 @@ final class JobLifecycleOperation
 
     public const RESOLVE_HOLD = 'RESOLVE_HOLD';
 
+    public const COMPLETE = 'COMPLETE';
+
+    public const CLOSE = 'CLOSE';
+
+    /** Not a lifecycle event (it never changes the Job): the operation name the source verifier is entered with for a closeout assessment. */
+    public const ASSESS_CLOSEOUT = 'ASSESS_CLOSEOUT';
+
     private const ATTEMPTS = 3;
 
     public function __construct(private readonly JobExecutionContextVerifier $verifier, private readonly CompanyContext $company) {}
@@ -97,6 +104,11 @@ final class JobLifecycleOperation
             throw new AuthorizationException('You are not permitted to change this Job.');
         }
         $context = $this->verifier->enter($actor, $job, $intent->operation);
+        // The source fences may have made this attempt WAIT: a revocation or suspension that committed meanwhile must apply before any replay is returned or any write is made.
+        // The actor is read again here, under the fences and before the Job lock, so the source-before-Job lock order is unchanged.
+        if (! JobAccess::mayAll($actor, ...$duties)) {
+            throw new AuthorizationException('You are not permitted to change this Job.');
+        }
         if (! $context->recordEligible) {
             throw JobLifecycleRefusal::make(JobLifecycleRefusal::JOB_NOT_FOUND, 'The Job was not found.', 'job_id');
         }
@@ -182,7 +194,8 @@ final class JobLifecycleOperation
         }
     }
 
-    private function snapshot(ServiceJob $job): JobSnapshot
+    /** The locked head's versions as one snapshot; callers must already hold the Job lock. */
+    public function snapshot(ServiceJob $job): JobSnapshot
     {
         $latest = JobEvent::query()->where('job_id', $job->id)->orderByDesc('sequence')->firstOrFail();
         $assignment = DB::table('job_assignment_events')->where('company_id', $this->company->id())->where('job_id', $job->id)->orderByDesc('sequence')->first(['id', 'sequence']);

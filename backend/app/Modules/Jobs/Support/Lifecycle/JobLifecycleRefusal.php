@@ -46,6 +46,12 @@ final class JobLifecycleRefusal
 
     public const CONCURRENT_CHANGE = 'CONCURRENT_CHANGE';
 
+    public const NOT_READY_TO_COMPLETE = 'NOT_READY_TO_COMPLETE';
+
+    public const CLOSEOUT_ASSESSMENT_REQUIRED = 'CLOSEOUT_ASSESSMENT_REQUIRED';
+
+    public const CLOSEOUT_BLOCKED = 'CLOSEOUT_BLOCKED';
+
     public static function make(string $code, string $message, ?string $field = null): DomainInvariantException
     {
         return new DomainInvariantException($message, $field, $code);

@@ -540,9 +540,9 @@ class JobLifecycleActionsTest extends TestCase
         $this->assertFileExists(base_path('app/Modules/Jobs/routes.php'));
         $this->assertDirectoryExists(base_path('app/Modules/Jobs/Http'));
         // Batch 1: the receiver is the one added Action; it is an internal port implementation (no route, no permission), reachable only from the Sales release coordinator.
-        $this->assertSame(['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'], array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []));
+        $this->assertSame(['AssessJobCloseout.php', 'AssignJobResponsibility.php', 'CloseJob.php', 'CompleteJob.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'], array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []));
         $jobsMigrations = array_map('basename', glob(base_path('database/migrations/*job*')) ?: []);
-        $this->assertSame(['2026_10_22_090000_create_jobs_foundation.php', '2026_10_26_090000_create_job_lifecycle_foundation.php', '2026_12_13_200000_create_job_receiver_foundation.php'],
-            array_values(array_filter($jobsMigrations, fn ($m) => ! str_contains($m, '0001_01_01'))), 'the only later Jobs migration is the Batch 1 receiver foundation');
+        $this->assertSame(['2026_10_22_090000_create_jobs_foundation.php', '2026_10_26_090000_create_job_lifecycle_foundation.php', '2026_12_13_200000_create_job_receiver_foundation.php', '2026_12_14_100000_create_job_completion_closeout.php'],
+            array_values(array_filter($jobsMigrations, fn ($m) => ! str_contains($m, '0001_01_01'))), 'the later Jobs migrations are the Batch 1 receiver foundation and the completion/closeout foundation');
     }
 }

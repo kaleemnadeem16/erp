@@ -23,6 +23,7 @@ use Illuminate\Auth\Access\AuthorizationException;
  */
 final class JobAccess
 {
+    /** @phpstan-impure reads the member, the permissions and the scope from the database on every call: a later call can answer differently */
     public static function may(?User $user, string $capability): bool
     {
         if ($user === null || ! app(JobDutyManifest::class)->isActive($capability)) {
@@ -37,6 +38,7 @@ final class JobAccess
     }
 
     /** Every duty, each by its own scope; none stands in for another. Combined operations (assign AND start) need both. */
+    /** @phpstan-impure see {@see self::may()} */
     public static function mayAll(?User $user, string ...$capabilities): bool
     {
         foreach ($capabilities as $capability) {
