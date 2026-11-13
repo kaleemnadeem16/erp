@@ -12,6 +12,7 @@ use App\Modules\Sales\Actions\ReleaseHandoverComponent;
 use App\Modules\Sales\Support\Handover\Release\JobSalesOrigin;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\Handover\Release\SalesJobExecutionContextVerifier;
+use App\Modules\Sales\Support\Handover\Release\ScopeHeader;
 use App\Modules\Sales\Support\Handover\Release\SourceApplicabilityProof;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
 use App\Support\JobSource\FamilyAssessment;
@@ -250,42 +251,130 @@ class ReleaseApplicabilityTest extends TestCase
 
     public function test_new_conditions_cannot_ride_on_the_acceptances_own_evidence(): void
     {
-        $record = fn (?string $text, int $evidence, string $m = 'UNSTATED', string $s = 'UNSTATED') => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.md5((string) $text.$m.$s), $this->f['acceptance'], $text, $evidence, $m, $s);
+        $record = fn (?string $text, int $evidence) => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.md5((string) $text), $this->f['acceptance'], $text, $evidence);
         $this->refused($record('We also promise a lifetime warranty.', $this->consentEvidence));
-        $this->refused($record(null, $this->consentEvidence, 'EXCLUDED', 'EXCLUDED'));
-        $this->refused($record($this->issuedText(), $this->consentEvidence, 'EXCLUDED', 'UNSTATED'));
+        $this->refused($record(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', $this->issuedText()), $this->consentEvidence));
         $this->assertDatabaseCount('service_completion_bases', 0);
     }
 
     public function test_dedicated_evidence_must_be_written_verified_matching_and_of_the_accepting_case(): void
     {
-        $record = fn (string $text, int $evidence) => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.$evidence, $this->f['acceptance'], $text, $evidence, 'EXCLUDED', 'EXCLUDED');
-        $this->refused($record('Verbal agreement text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, 'Verbal agreement text.', 'VERBAL')));
-        $this->refused($record('Unverified text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, 'Unverified text.', 'EMAIL', 'UNVERIFIED')));
-        $this->refused($record('Stated only text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, 'Stated only text.', 'EMAIL', 'STATED_BY_CUSTOMER')));
-        $this->refused($record('The text the employee wrote.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, 'A different text the customer evidenced.')));
+        $h = fn (string $t): string => ScopeHeader::compose('EXCLUDED', 'EXCLUDED', $t);
+        $record = fn (string $text, int $evidence) => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.$evidence, $this->f['acceptance'], $h($text), $evidence);
+        $this->refused($record('Verbal agreement text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('Verbal agreement text.'), 'VERBAL')));
+        $this->refused($record('Unverified text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('Unverified text.'), 'EMAIL', 'UNVERIFIED')));
+        $this->refused($record('Stated only text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('Stated only text.'), 'EMAIL', 'STATED_BY_CUSTOMER')));
+        $this->refused($record('The text the employee wrote.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('A different text the customer evidenced.'))));
         $other = DB::table('customer_decision_cases')->insertGetId(['company_id' => 1, 'party_id' => $this->customer->id, 'intake_identity' => 'other', 'generation' => 0, 'recorded_by' => $this->checker->id, 'recorded_at' => now()]);
-        $this->refused($record('Foreign case text.', $this->appendAgreementEvidence($other, $this->checker->id, 'Foreign case text.')));
+        $this->refused($record('Foreign case text.', $this->appendAgreementEvidence($other, $this->checker->id, $h('Foreign case text.'))));
         $this->assertDatabaseCount('service_completion_bases', 0);
 
-        $good = $this->appendAgreementEvidence($this->f['case'], $this->checker->id);
-        $ok = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $this->f['acceptance'], self::AGREED, $good, 'EXCLUDED', 'EXCLUDED');
+        $good = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h(self::AGREED));
+        $ok = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $this->f['acceptance'], $h(self::AGREED), $good);
         $this->assertSame('EVIDENCE_TEXT', DB::table('service_completion_bases')->find($ok['basis_id'])->terms_source);
-        $replay = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $this->f['acceptance'], self::AGREED, $good, 'EXCLUDED', 'EXCLUDED');
+        $replay = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $this->f['acceptance'], $h(self::AGREED), $good);
         $this->assertTrue($replay['replayed']);
         $this->assertSame($ok['basis_id'], $replay['basis_id'], 'the same key replays the same outcome');
     }
 
     public function test_one_evidence_row_cannot_back_two_bases_and_the_chain_versions_forward(): void
     {
-        $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id);
-        $first = app(RecordServiceCompletionBasis::class)($this->checker, 'a', $this->f['acceptance'], self::AGREED, $evidence, 'EXCLUDED', 'EXCLUDED');
-        $same = app(RecordServiceCompletionBasis::class)($this->checker, 'b', $this->f['acceptance'], self::AGREED, $evidence, 'EXCLUDED', 'EXCLUDED');
+        $text = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', self::AGREED);
+        $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+        $first = app(RecordServiceCompletionBasis::class)($this->checker, 'a', $this->f['acceptance'], $text, $evidence);
+        $same = app(RecordServiceCompletionBasis::class)($this->checker, 'b', $this->f['acceptance'], $text, $evidence);
         $this->assertSame($first['basis_id'], $same['basis_id'], 'the identical intent is the same head');
-        $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'c', $this->f['acceptance'], self::AGREED, $evidence, 'REQUIRED', 'EXCLUDED'));
+        // The evidence fixes the text AND the classification: the same evidence cannot be re-cited with a different classification.
+        $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'c', $this->f['acceptance'], ScopeHeader::compose('REQUIRED', 'EXCLUDED', self::AGREED), $evidence));
         $v2 = $this->recordScopedBasis($this->checker, 'v2', $this->f['acceptance'], $this->f['case'], 'Second agreed wording.');
         $this->assertSame(2, $v2['version']);
         $this->assertSame($first['basis_id'], (int) DB::table('service_completion_bases')->where('id', $v2['basis_id'])->value('predecessor_id'));
+        $this->assertSame(2, DB::table('service_completion_bases')->count());
+    }
+
+    // ---- classification integrity: the scope is DERIVED from the customer-evidenced header, never chosen (review P1) ---------------------------------------
+
+    public function test_the_scope_is_derived_from_the_evidenced_header_and_every_malformed_header_is_refused(): void
+    {
+        foreach (['EXCLUDED' => 'REQUIRED', 'REQUIRED' => 'UNSTATED', 'UNSTATED' => 'EXCLUDED'] as $m => $s) {
+            $out = $this->recordScopedBasis($this->checker, "d-{$m}", $this->f['acceptance'], $this->f['case'], "Wording for {$m}/{$s}.", $m, $s);
+            $row = DB::table('service_completion_bases')->find($out['basis_id']);
+            $this->assertSame([$m, $s], [$row->materials_scope, $row->subcontract_scope], 'stored scope equals the evidenced header');
+        }
+        $bad = [
+            'missing header' => 'The service is fully excluded of materials.',
+            'reordered' => "SUBCONTRACTORS: EXCLUDED\nMATERIALS: EXCLUDED\nText.",
+            'duplicated' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nText.\nMATERIALS: REQUIRED",
+            'duplicated subcontractors' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nSUBCONTRACTORS: REQUIRED",
+            'unknown value' => "MATERIALS: NONE\nSUBCONTRACTORS: EXCLUDED\nText.",
+            'lowercase' => "materials: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nText.",
+            'extra spaces' => "MATERIALS:  EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nText.",
+            'header not first' => "Preamble.\nMATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED",
+            'CRLF' => "MATERIALS: EXCLUDED\r\nSUBCONTRACTORS: EXCLUDED\r\nText.",
+            'one line only' => 'MATERIALS: EXCLUDED',
+        ];
+        $count = DB::table('service_completion_bases')->count();
+        foreach ($bad as $label => $text) {
+            $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+            $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'bad-'.md5($label), $this->f['acceptance'], $text, $evidence), $label);
+        }
+        $this->assertSame($count, DB::table('service_completion_bases')->count(), 'no malformed header wrote anything');
+    }
+
+    public function test_free_text_is_never_interpreted_and_a_required_header_makes_the_proof_applicable(): void
+    {
+        // The header is the classification the customer-evidenced record states; the free text is not read (documented limit — independent verification of evidence is the
+        // optional policy #114). So wording that contradicts the header does not change it.
+        $this->recordScopedBasis($this->checker, 'free', $this->f['acceptance'], $this->f['case'], 'Materials required and subcontractors required in the field.', 'EXCLUDED', 'EXCLUDED');
+        $this->assertSame('NOT_APPLICABLE', $this->preview()['applicability']['status']);
+        // A REQUIRED header, with every family clean, is APPLICABLE and the pilot refuses.
+        $this->recordScopedBasis($this->checker, 'req', $this->f['acceptance'], $this->f['case'], 'Supply the pipes.', 'REQUIRED', 'EXCLUDED');
+        $p = $this->preview();
+        $this->assertSame('APPLICABLE', $p['applicability']['status']);
+        $this->assertContains('SOURCE_OBLIGATION_UNSUPPORTED', $p['blockers']);
+    }
+
+    public function test_an_issued_line_description_that_looks_like_a_header_still_states_no_scope(): void
+    {
+        try {
+            DB::statement('SET LOCAL session_replication_role = replica');
+        } catch (QueryException) {
+            $this->markTestSkipped('The test database role cannot bypass triggers to edit the issued description.');
+        }
+        $headerLike = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'Fixed service.');
+        $lineId = (int) DB::table('customer_acceptance_lines')->where('acceptance_id', $this->f['acceptance'])->value('issued_line_id');
+        DB::table('quotation_issued_lines')->where('id', $lineId)->update(['description' => $headerLike]);
+        DB::statement('SET LOCAL session_replication_role = origin');
+        $out = app(RecordServiceCompletionBasis::class)($this->checker, 'hl', $this->f['acceptance'], null, $this->consentEvidence);
+        $row = DB::table('service_completion_bases')->find($out['basis_id']);
+        $this->assertSame(['ISSUED_LINE', 'UNSTATED', 'UNSTATED'], [$row->terms_source, $row->materials_scope, $row->subcontract_scope], 'only dedicated evidence can state a scope');
+    }
+
+    public function test_the_database_derives_the_scope_from_the_header_whatever_the_application_does(): void
+    {
+        $good = $this->recordScopedBasis($this->checker, 'good', $this->f['acceptance'], $this->f['case']);
+        $row = (array) DB::table('service_completion_bases')->find($good['basis_id']);
+        unset($row['id']);
+        $next = [...$row, 'version' => 2, 'predecessor_id' => $good['basis_id'], 'intent_digest' => str_repeat('c', 64)];
+        $insert = function (string $text, string $m, string $s) use ($next): \Closure {
+            $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+
+            return fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $evidence, 'agreed_text' => $text, 'materials_scope' => $m, 'subcontract_scope' => $s]);
+        };
+        // Contradictions between the evidenced header and the stored classification, in both directions.
+        $this->sqlRefused($insert(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'T1.'), 'REQUIRED', 'EXCLUDED'));
+        $this->sqlRefused($insert(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'T2.'), 'EXCLUDED', 'REQUIRED'));
+        $this->sqlRefused($insert(ScopeHeader::compose('REQUIRED', 'REQUIRED', 'T3.'), 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert(ScopeHeader::compose('UNSTATED', 'EXCLUDED', 'T4.'), 'EXCLUDED', 'EXCLUDED'));
+        // Flags without any header, forged UNSTATED flags without a header, and malformed headers.
+        $this->sqlRefused($insert('No header at all.', 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert('No header either.', 'UNSTATED', 'UNSTATED'));
+        $this->sqlRefused($insert("SUBCONTRACTORS: EXCLUDED\nMATERIALS: EXCLUDED\nReordered.", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nDup.\nMATERIALS: REQUIRED", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\r\nSUBCONTRACTORS: EXCLUDED\r\nCRLF.", 'EXCLUDED', 'EXCLUDED'));
+        $this->assertSame(1, DB::table('service_completion_bases')->count());
+        // The honest version: the stored classification equals the evidenced header.
+        ($insert(ScopeHeader::compose('REQUIRED', 'EXCLUDED', 'Honest.'), 'REQUIRED', 'EXCLUDED'))();
         $this->assertSame(2, DB::table('service_completion_bases')->count());
     }
 
@@ -299,17 +388,18 @@ class ReleaseApplicabilityTest extends TestCase
         // EXCLUDED declared on the issued-line path, text other than the line, wrong evidence for the path.
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'ISSUED_LINE', 'evidence_id' => $this->consentEvidence, 'agreed_text' => $issued]));
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'ISSUED_LINE', 'evidence_id' => $this->consentEvidence, 'agreed_text' => 'Invented obligation', 'materials_scope' => 'UNSTATED', 'subcontract_scope' => 'UNSTATED']));
-        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'ISSUED_LINE', 'evidence_id' => $good['basis_id'] ? $row['evidence_id'] : 0, 'agreed_text' => $issued, 'materials_scope' => 'UNSTATED', 'subcontract_scope' => 'UNSTATED']));
+        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'ISSUED_LINE', 'evidence_id' => $row['evidence_id'], 'agreed_text' => $issued, 'materials_scope' => 'UNSTATED', 'subcontract_scope' => 'UNSTATED']));
         // EVIDENCE_TEXT riding on the acceptance's own consent evidence, or on text its evidence does not say.
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'EVIDENCE_TEXT', 'evidence_id' => $this->consentEvidence, 'agreed_text' => $issued]));
-        $other = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, 'What the customer evidenced.');
-        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'EVIDENCE_TEXT', 'evidence_id' => $other, 'agreed_text' => 'What the employee invented.']));
+        $headed = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'What the customer evidenced.');
+        $other = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $headed);
+        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'EVIDENCE_TEXT', 'evidence_id' => $other, 'agreed_text' => ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'What the employee invented.')]));
         // The same evidence twice for one line (unique), a scope outside the vocabulary, a scope on the issued-line path (CHECK).
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $row['evidence_id']]));
-        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $other, 'agreed_text' => 'What the customer evidenced.', 'materials_scope' => 'MAYBE']));
+        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $other, 'agreed_text' => $headed, 'materials_scope' => 'MAYBE']));
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'ISSUED_LINE', 'evidence_id' => $this->consentEvidence, 'agreed_text' => $issued, 'materials_scope' => 'EXCLUDED']));
         // The one honest next version is accepted.
-        DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $other, 'agreed_text' => 'What the customer evidenced.', 'intent_digest' => str_repeat('b', 64)]);
+        DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $other, 'agreed_text' => $headed, 'intent_digest' => str_repeat('b', 64)]);
         $this->assertSame(2, DB::table('service_completion_bases')->count());
     }
 
@@ -323,12 +413,13 @@ class ReleaseApplicabilityTest extends TestCase
         } catch (QueryException) {
             $this->markTestSkipped('The test database role cannot bypass triggers to back-date evidence.');
         }
+        $old_text = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'Older general text.');
         $consentAt = DB::table('customer_decision_evidence')->where('id', $this->consentEvidence)->value('recorded_at');
         $old = DB::table('customer_decision_evidence')->insertGetId(['company_id' => 1, 'case_id' => $this->f['case'], 'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE',
-            'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => 'Older general text.', 'observation_state' => 'OBSERVED',
+            'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => $old_text, 'observation_state' => 'OBSERVED',
             'recorded_by' => $this->checker->id, 'recorded_at' => DB::raw("'{$consentAt}'::timestamptz - interval '1 hour'")]);
         DB::statement('SET LOCAL session_replication_role = origin');
-        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$row, 'version' => 2, 'predecessor_id' => $good['basis_id'], 'evidence_id' => $old, 'agreed_text' => 'Older general text.']));
-        $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'older', $this->f['acceptance'], 'Older general text.', $old, 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$row, 'version' => 2, 'predecessor_id' => $good['basis_id'], 'evidence_id' => $old, 'agreed_text' => $old_text]));
+        $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'older', $this->f['acceptance'], $old_text, $old));
     }
 }

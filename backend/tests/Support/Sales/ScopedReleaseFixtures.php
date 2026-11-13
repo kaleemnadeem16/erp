@@ -5,6 +5,7 @@ namespace Tests\Support\Sales;
 use App\Models\User;
 use App\Modules\Sales\Actions\RecordServiceCompletionBasis;
 use App\Modules\Sales\Models\CustomerDecisionEvidence;
+use App\Modules\Sales\Support\Handover\Release\ScopeHeader;
 use App\Support\JobSource\FamilyAssessment;
 use App\Support\JobSource\JobSourceFamilies;
 use App\Support\JobSource\SourceFamilyApplicability;
@@ -63,8 +64,9 @@ trait ScopedReleaseFixtures
      */
     protected function recordScopedBasis(User $actor, string $key, int $acceptanceId, int $caseId, string $text = self::AGREED, string $materials = 'EXCLUDED', string $subcontract = 'EXCLUDED'): array
     {
-        $evidence = $this->appendAgreementEvidence($caseId, $actor->id, $text);
+        $full = ScopeHeader::compose($materials, $subcontract, $text);
+        $evidence = $this->appendAgreementEvidence($caseId, $actor->id, $full);
 
-        return app(RecordServiceCompletionBasis::class)($actor, $key, $acceptanceId, $text, $evidence, $materials, $subcontract);
+        return app(RecordServiceCompletionBasis::class)($actor, $key, $acceptanceId, $full, $evidence);
     }
 }
