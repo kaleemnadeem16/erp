@@ -14,14 +14,20 @@ use App\Modules\Sales\Support\Handover\Release\JobSalesOrigin;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\Handover\Release\SalesJobExecutionContextVerifier;
 use App\Support\PermissionRegistry;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 /**
  * The disabled Jobs foundation (SP0b, J1-F1), its non-operative access foundation (J-AU0) and the Phase 5 Batch 1 receiver. It binds the duty manifest, the Sales-origin source verifier and the
- * receiver the Sales release coordinator calls; there is no route, no registered permission and no public entry point that creates or changes a Job (every duty is SPECIFIED).
+ * receiver the Sales release coordinator calls; there is no write route, no registered permission and no public entry point that creates or changes a Job (every duty is SPECIFIED).
  */
 class JobsServiceProvider extends ServiceProvider
 {
+    public function boot(): void
+    {
+        Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/routes.php');
+    }
+
     public function register(): void
     {
         $this->app->singleton(JobDutyManifest::class, fn (): JobDutyManifest => JobDutyManifest::shipped());

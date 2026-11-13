@@ -187,7 +187,7 @@ class JobReadQueriesTest extends TestCase
         $this->app->instance(JobDutyManifest::class, JobDutyManifest::shipped());
         $this->denyAll($this->user);
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
     }
 
     public function test_revocation_between_early_check_and_fenced_decision_refuses_before_job_lookup(): void

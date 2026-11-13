@@ -91,7 +91,7 @@ class JobAccessFoundationTest extends TestCase
         $this->assertSame(0, Permission::query()->where('name', 'like', 'job.%')->count(), 'no Jobs permission row exists');
         $this->assertSame(0, (int) DB::table('role_has_permissions')->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')->where('permissions.name', 'like', 'job.%')->count());
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         $this->assertFalse(method_exists($registry, 'registerJobs'));
     }
 

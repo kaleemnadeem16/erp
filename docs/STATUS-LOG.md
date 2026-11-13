@@ -1401,3 +1401,22 @@ the receipt-line lock and then replays/refuses correctly. No original evidence r
 Focused source/provenance and replay/race checks passed; exact module, ratchet, static and
 published-SHA CI evidence belongs on #120/#123. Only owned source paths committed; no
 permission activation or operational pilot certification.
+
+## 2026-11-13 — Jobs read-only API (#125)
+
+Added protected list, detail and operational-history GET endpoints around the existing
+ReadJobs/JobReadFilter/JobReadProjection, Requests, explicit Resources and generated API client.
+Exact current job.view/ALL, active membership, inactive production manifest and company isolation
+remain enforced. Missing and foreign ids share HTTP 404. No write, migration, grant, rollout or UI.
+Contract and completion applicability: [Jobs read API](domain/job-read-api.md).
+
+Focused read/API/access/unit regression passed 39 tests/582 assertions; relevant ratchets
+passed 39/98. The three frontend typechecks, Vite build and owned-path Pint passed. OpenAPI
+response/parameter inspection confirmed safe schemas and omission of prohibited parameters.
+The shared full Jobs run had 131 passed/11 named failures in unfinished completion-dependent
+fixtures and the receiver's old no-routes assertion; the lifecycle owner was notified on #126.
+Whole-project PHPStan similarly identified three errors in that owner's draft lifecycle code.
+A full test-server tmpfs briefly refused maintenance connections; after headroom recovered,
+focused verification resumed. No other agent database or infrastructure was changed by this task.
+Exact-SHA pipeline and final module/static evidence are recorded on #125; no partial run is
+claimed as green CI, and independent acceptance remains with the coordinator.

@@ -27,6 +27,12 @@ SIMPLE direction; no universal timesheet/name/hourly rate/HR, generic service Wo
 Jobs are not mandatory for straightforward trading/delivery. Service pilot remains a candidate,
 not permission to build before dependent handover/readiness and separate implementation authority.
 
+## Authorised read API delivery
+
+- [x] Wrap the existing Jobs read foundation in protected list/detail/history APIs,
+  with Requests, safe Resources and generated client; no screens or duty activation.
+  [Contract and verification scope](../domain/job-read-api.md).
+
 ## Historical October readiness and implementation planning
 
 Q55 costing0150, Q56 closeout0151 and Q57 Job outputs0152 are accepted/specified. No Job feature is

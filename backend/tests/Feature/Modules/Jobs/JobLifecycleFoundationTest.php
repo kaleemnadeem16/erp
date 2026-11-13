@@ -533,10 +533,10 @@ class JobLifecycleFoundationTest extends TestCase
     public function test_there_is_still_no_way_in(): void
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         // The four lifecycle Actions (issue #62) and the Batch 1 receiver are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
         $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'])));
-        $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
+        $this->assertFileExists(base_path('app/Modules/Jobs/routes.php'));
         foreach (glob(base_path('app/Modules/Jobs/Models/*.php')) ?: [] as $file) {
             $this->assertDoesNotMatchRegularExpression('/function\s+(?!casts)\w+\s*\(/', (string) file_get_contents($file), basename($file).' declares no behaviour');
         }

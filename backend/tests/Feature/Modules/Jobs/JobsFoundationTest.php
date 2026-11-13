@@ -236,7 +236,7 @@ class JobsFoundationTest extends TestCase
     public function test_there_is_no_way_in(): void
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         $this->assertSame([], array_values(array_filter(app(PermissionRegistry::class)->all(), fn ($p) => preg_match('/^jobs?[.:_]/', $p) === 1)));
 
         $files = glob(base_path('app/Modules/Jobs/*.php')) ?: [];
@@ -246,19 +246,24 @@ class JobsFoundationTest extends TestCase
         $this->assertNotEmpty($files);
         foreach ($files as $file) {
             $code = (string) file_get_contents($file);
+            if (basename($file) === 'routes.php') {
+                continue; // Read-only HTTP registration; API denial and method inventory are covered by JobReadApiTest.
+            }
             if (basename($file) === 'JobAccess.php') {
                 // J-AU0's reviewed capability predicate necessarily calls ->can(); it must still register, route and gate nothing (JobAccessFoundationTest covers its behaviour).
                 $this->assertDoesNotMatchRegularExpression('/authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, 'JobAccess must not gate, route or register anything');
 
                 continue;
             }
-            // The provider alone names the internal receiver it binds to the Sales release port (Phase 5 Batch 1); it still guards, routes and registers nothing.
-            $code = basename($file) === 'JobsServiceProvider.php' ? str_replace('ReceiveReleasedService', '', $code) : $code;
+            // The provider alone binds the receiver and registers the reviewed read-only routes; other guards/grants remain forbidden.
+            $code = basename($file) === 'JobsServiceProvider.php' ? str_replace([
+                'ReceiveReleasedService', "Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/routes.php');",
+            ], '', $code) : $code;
             $this->assertDoesNotMatchRegularExpression('/->can\(|authorize\(|Gate::|Route::|registerVocabulary|Receive[A-Z]\w*|["\']jobs?\.\w+["\']/', $code, basename($file).' must not guard, route or register anything');
         }
         // The four lifecycle Actions (issue #62) and the Batch 1 receiver are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
         $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'])));
-        $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
+        $this->assertFileExists(base_path('app/Modules/Jobs/routes.php'));
     }
 
     public function test_the_released_service_value_is_only_shape_checked(): void

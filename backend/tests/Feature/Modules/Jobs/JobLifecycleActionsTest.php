@@ -530,15 +530,15 @@ class JobLifecycleActionsTest extends TestCase
     public function test_nothing_is_routed_registered_granted_or_migrated(): void
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         // This class's fixtures may activate duties on the container's manifest; what ships registers nothing (and strictly excludes nothing).
         $shipped = new PermissionRegistry(app(PermissionRegistrar::class));
         JobDutyManifest::shipped()->registerWith($shipped);
         $this->assertSame([], array_values(array_filter($shipped->all(), fn ($p) => str_starts_with($p, 'job.'))));
         $this->assertSame([], $shipped->strictlyExcluded());
         $this->assertSame(0, Permission::query()->where('name', 'like', 'job.%')->whereNotIn('name', self::DUTIES)->count());
-        $this->assertFileDoesNotExist(base_path('app/Modules/Jobs/routes.php'));
-        $this->assertDirectoryDoesNotExist(base_path('app/Modules/Jobs/Http'));
+        $this->assertFileExists(base_path('app/Modules/Jobs/routes.php'));
+        $this->assertDirectoryExists(base_path('app/Modules/Jobs/Http'));
         // Batch 1: the receiver is the one added Action; it is an internal port implementation (no route, no permission), reachable only from the Sales release coordinator.
         $this->assertSame(['AssignJobResponsibility.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'], array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []));
         $jobsMigrations = array_map('basename', glob(base_path('database/migrations/*job*')) ?: []);

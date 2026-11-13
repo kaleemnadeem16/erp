@@ -101,3 +101,5 @@ export * from "./generated/quotation-document/quotation-document";
 export * from "./generated/customer-decision-case/customer-decision-case";
 export * from "./generated/customer-acceptance/customer-acceptance";
 export * from "./generated/handover-plan/handover-plan";
+
+export * from "./generated/job-read/job-read";

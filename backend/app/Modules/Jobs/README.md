@@ -1,7 +1,7 @@
 # Jobs module
 
 The **disabled** Phase 5 Jobs foundation (SP0b; [design](../../../../docs/phases/phase-5-sp0a-design.md), [delivery contract](../../../../docs/phases/phase-5-sp0a-delivery-contract.md)).
-It is eleven tables and their models (four from SP0b, four from J1-F1, three from the Phase 5 Batch 1 receiver). **Nothing public can create or change a real Job**: no route, ACTIVE duty, registered permission or grant. The single writer of a Sales-origin Job is the internal receiver `Actions\ReceiveReleasedService`, reachable only from the Sales release coordinator inside its transaction and refused while `job.receive` is not an ACTIVE, explicitly granted duty (all are SPECIFIED).
+It is eleven tables and their models (four from SP0b, four from J1-F1, three from the Phase 5 Batch 1 receiver). **Nothing public can create or change a real Job**: no write route, ACTIVE duty, registered permission or grant. The single writer of a Sales-origin Job is the internal receiver `Actions\ReceiveReleasedService`, reachable only from the Sales release coordinator inside its transaction and refused while `job.receive` is not an ACTIVE, explicitly granted duty (all are SPECIFIED).
 
 ## Phase 5 Batch 1 — the Sales-release receiver (disabled; [domain doc](../../../../docs/domain/job-receiver.md))
 
@@ -15,7 +15,15 @@ It is eleven tables and their models (four from SP0b, four from J1-F1, three fro
   generation 0→1), baseline v1 (scope = the verified deliverable text), generic origin, Sales lineage, component and default activity — never committing, never starting a transaction of its own. A
   business replay is resolved by Sales before the receiver is reached; the database refuses a second Job for the same release event.
 - `Support\Release\SalesJobOrigins` implements `JobSalesOrigin`. `JobExecutionContextVerifier` is bound to Sales' `SalesJobExecutionContextVerifier`, which refuses any Job without a Sales lineage row
-  (`SOURCE_CONTEXT_UNAVAILABLE`); `UnavailableJobExecutionContextVerifier` remains the class for explicit fail-closed use. Completion and closeout stay refused by the database allowlist (Batch 2).
+  (`SOURCE_CONTEXT_UNAVAILABLE`); `UnavailableJobExecutionContextVerifier` remains the class for explicit fail-closed use. Completion and closeout are internal, disabled Actions (`CompleteJob`, `AssessJobCloseout`, `CloseJob`; see [completion and closeout](../../../../docs/domain/job-completion-closeout.md)): migration `2026_12_14_100000` extends the operation allowlist with COMPLETE and CLOSE and adds `job_completions`, `job_closeout_assessments` and `job_closeouts`; `job.complete` and `job.close` stay SPECIFIED.
+
+## Read-only API (disabled)
+
+[Contract and security checklist](../../../../docs/domain/job-read-api.md): `GET /api/v1/jobs`,
+`GET /api/v1/jobs/{job}` and `GET /api/v1/jobs/{job}/history` wrap the existing
+`Queries\ReadJobs`, `JobReadFilter` and safe `JobReadProjection` through Form Requests and
+explicit Resources. Every endpoint requires exact current `job.view` with ALL scope in both
+Request and fenced query. Missing/foreign Jobs return identical 404s. No duty or grant is activated.
 
 ## Owns
 
@@ -31,7 +39,7 @@ It is eleven tables and their models (four from SP0b, four from J1-F1, three fro
   (present together, unique per Job) and a `(company, job, id)` key for same-Job foreign keys.
 - Lifecycle coherence is enforced by the database at COMMIT (`job_lifecycle_consistency_v1`, deferrable constraint triggers): the initial release, each successor against its
   predecessor, the head against the latest event, exactly one child per ASSIGN/HOLD/RESOLVE_HOLD (none for START), a receipt from each command's own actor, START only with a
-  recorded responsibility and no unresolved hold, and an operation allowlist (RELEASE, ASSIGN, HOLD, RESOLVE_HOLD, START; completion, termination and closeout are refused).
+  recorded responsibility and no unresolved hold, and an operation allowlist (RELEASE, ASSIGN, HOLD, RESOLVE_HOLD, START, plus COMPLETE and CLOSE from migration `2026_12_14_100000`; termination, cancellation and reopening are refused).
   Writers take the Job head lock first (`job_lifecycle_evidence_guard_v1`), so concurrent writers serialise. The head's company, id and code are fixed once it has evidence.
   A hold blocks ordinary mutation: START and ASSIGN are refused while any earlier hold is unresolved; only a further HOLD and a named RESOLVE_HOLD are exceptions.
   Lifecycle time is the database server's: the event's `recorded_at` is `clock_timestamp()` read inside `job_lifecycle_evidence_guard_v1` after the head lock is held, a hold's
@@ -41,7 +49,7 @@ It is eleven tables and their models (four from SP0b, four from J1-F1, three fro
 - Installing checks that stored SP0b evidence already satisfies these rules and aborts, changing nothing, if it does not. `down()` locks the tables, then refuses while any new
   table has a row or any event carries a command identity.
 - `Support\ReleasedServiceInput` and `ReleasedServiceValidator`: a typed value object and a pure shape check. They are not an entry point.
-- J-AU0 (non-operative access foundation, issue #63; [Task F plan](../../../../docs/phases/phase-5-task-f-jobs-access-plan.md), [batch](../../../../docs/phases/phase-5-task-f-jobs-access-batch.md)): `Support\Authority\JobDutyStatus` (SPECIFIED / STAGED / ACTIVE), `JobDuty` (exact name, operation, minimum projection, delivery gate; never automatically grantable), `JobDutyCatalogue` (the **23** proposed names exactly — `job.cancel_unused` keeps its spelling, no aliases or wildcards — all **SPECIFIED**, none STAGED or ACTIVE because no guarded Jobs consumer exists) and `JobDutyManifest` (lookup, `isActive`, `withStatus`, and `registerWith`, which registers only ACTIVE duties and strictly excludes them from every automatic grant, full-access mandates included, via `PermissionRegistry::excludeStrictly`; a no-op today because no duty is ACTIVE — Phase 5 Batch 1). `Support\JobAccess` (`may` / `mayAll` / `require`) is the module-local predicate: the duty must be ACTIVE in the manifest, the actor is re-read as a currently active member of the active company, and they must hold THAT duty with RecordScope resolving THAT duty to ALL, each duty independently (an empty list denies; limited modes refuse; there is no "any writer may read" helper). `JobsServiceProvider` binds the manifest and the (currently empty) registry hook. Nothing is registered with the permission registry, no permission row, grant, constant, route or Action exists, and every shipped duty refuses everyone, hand-made rows and mandates included.
+- J-AU0 (non-operative access foundation, issue #63; [Task F plan](../../../../docs/phases/phase-5-task-f-jobs-access-plan.md), [batch](../../../../docs/phases/phase-5-task-f-jobs-access-batch.md)): `Support\Authority\JobDutyStatus` (SPECIFIED / STAGED / ACTIVE), `JobDuty` (exact name, operation, minimum projection, delivery gate; never automatically grantable), `JobDutyCatalogue` (the **23** proposed names exactly — `job.cancel_unused` keeps its spelling, no aliases or wildcards — all **SPECIFIED**, none STAGED or ACTIVE; rollout remains separately gated) and `JobDutyManifest` (lookup, `isActive`, `withStatus`, and `registerWith`, which registers only ACTIVE duties and strictly excludes them from every automatic grant, full-access mandates included, via `PermissionRegistry::excludeStrictly`; a no-op today because no duty is ACTIVE — Phase 5 Batch 1). `Support\JobAccess` (`may` / `mayAll` / `require`) is the module-local predicate: the duty must be ACTIVE in the manifest, the actor is re-read as a currently active member of the active company, and they must hold THAT duty with RecordScope resolving THAT duty to ALL, each duty independently (an empty list denies; limited modes refuse; there is no "any writer may read" helper). `JobsServiceProvider` binds the manifest and the (currently empty) registry hook. Nothing is registered with the permission registry, no permission row, grant or constant is introduced by the access foundation, and every shipped duty refuses everyone, hand-made rows and mandates included.
 
 ## Boundaries
 
@@ -51,3 +59,8 @@ It is eleven tables and their models (four from SP0b, four from J1-F1, three fro
 - Only the stated constraints are claimed: company-scoped composite keys, state and generation checks, per-Job uniqueness and immutability. The Actions that
   write lifecycle evidence, the receiver, default activity, completion, closeout and costing belong to later slices.
 - Fixture rows exist only in tests (`tests/Feature/Modules/Jobs`).
+
+## Related
+
+- [Jobs read-only API](../../../../docs/domain/job-read-api.md)
+- [Job execution lifecycle](../../../../docs/domain/job-execution-lifecycle.md)
