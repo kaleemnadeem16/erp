@@ -13,10 +13,12 @@ use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Numbering\GoodsReceiptNumbering;
 use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
 use App\Modules\Purchasing\Numbering\SupplierReturnNumbering;
+use App\Modules\Purchasing\Support\JobSource\PurchasingJobSourceApplicability;
 use App\Modules\Purchasing\Support\PermissionVocabulary;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
+use App\Support\JobSource\JobSourceFamilies;
 use App\Support\PermissionRegistry;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
@@ -25,6 +27,10 @@ class PurchasingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(JobSourceFamilies::class, static function (JobSourceFamilies $families): void {
+            $families->register(new PurchasingJobSourceApplicability);
+        });
+
         $this->app->afterResolving(ImportTargetRegistry::class, static function (ImportTargetRegistry $registry): void {
             $registry->register(new OpenPurchaseOrderImportTarget);
         });

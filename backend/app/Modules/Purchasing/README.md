@@ -99,6 +99,13 @@ It preserves commercial visibility and server totals, distinguishes drafts, and 
 section/data boundary for later backend document templates. No new endpoint or print permission.
 See [printing](../../../../docs/architecture/appearance-and-printing.md#default-purchase-order-format-2026-10-06).
 
+## Job source applicability
+
+The module registers a source-owned assessment of its supported validated Job bindings.
+Generic source/document identifiers remain ordinary provenance and do not allocate materials
+or supplier obligations to a Job. The current finite binding list is empty; future bindings
+must change the assessment before activation. See the [source contract](../../../../docs/domain/job-source-safety.md).
+
 ## Related
 
 - [Packaged purchasing demo](../../../../docs/journeys/packaged-purchasing-demo.md) — opt-in PackagedPurchasingDemoSeeder; creates definitions and workflow examples once, preserving receiver progress on reruns.

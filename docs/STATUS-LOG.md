@@ -1381,3 +1381,23 @@ to #69/#111/#120. No production restriction, migration, grant or activation. Doc
 and whitespace checked. Runtime probe failed fixture setup, then corrected reruns were refused
 at RAM-disk capacity; no negative/concurrency success is claimed. Implementation remains pending
 Sales/Jobs source-identity contract coordination; other agents' work remains untouched.
+
+
+## 2026-11-13 — Source-owned Job applicability contract implemented (#120/#122)
+
+The Sales/Jobs lead froze the neutral source-family contract at 9ab38ae7; source-safety
+acknowledged exact ownership and resumed #120. Inventory and Purchasing register versioned
+assessments from their finite supported Job-binding lists: empty/current company yields
+NOT_APPLICABLE for operational attribution, foreign/invalid context UNKNOWN, nonempty bindings
+APPLICABLE. Generic stock/document provenance is preserved and is not a Job allocation; no
+global allowlist, fake writer, new permission, migration or lock edge. Customer-agreed
+material/supplier exclusion remains separate Sales authority, and independent integration
+review still gates the pilot. [Writer inventory and implementation](domain/job-source-safety.md).
+
+Separate #123 correction preserves historical rejected-exit payload hashes and compares
+immutable document identity at both replay checks. Permanent cases cover changed/null/omitted
+identity and unchanged side effects; three real PostgreSQL races verify the loser waits at
+the receipt-line lock and then replays/refuses correctly. No original evidence rewritten.
+Focused source/provenance and replay/race checks passed; exact module, ratchet, static and
+published-SHA CI evidence belongs on #120/#123. Only owned source paths committed; no
+permission activation or operational pilot certification.

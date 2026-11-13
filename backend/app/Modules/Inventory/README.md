@@ -339,6 +339,13 @@ current consistent evidence and never invokes movement writers. See
 [material cost resolution](../../../../docs/domain/material-cost-resolution.md) for certainty,
 quantity/scope, scenario attribution and guarded disclosure boundaries.
 
+## Job source applicability
+
+The module registers a source-owned assessment of its supported validated Job bindings.
+Generic source/document identifiers remain ordinary provenance and do not allocate materials
+or supplier obligations to a Job. The current finite binding list is empty; future bindings
+must change the assessment before activation. See the [source contract](../../../../docs/domain/job-source-safety.md).
+
 ## Related
 
 - [Job source safety writer inventory](../../../../docs/domain/job-source-safety.md) — Phase 5 source applicability investigation and integration requirements

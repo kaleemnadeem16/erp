@@ -14,10 +14,12 @@ use App\Modules\Inventory\Models\StockMove;
 use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Numbering\StockScrapNumbering;
 use App\Modules\Inventory\Support\Costing\CostStrategyRegistry;
+use App\Modules\Inventory\Support\JobSource\InventoryJobSourceApplicability;
 use App\Modules\Inventory\Support\PermissionVocabulary;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
+use App\Support\JobSource\JobSourceFamilies;
 use App\Support\PermissionRegistry;
 use App\Support\Scope\ScopedResourceTypes;
 use Illuminate\Support\Facades\Route;
@@ -32,6 +34,10 @@ class InventoryServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(JobSourceFamilies::class, static function (JobSourceFamilies $families): void {
+            $families->register(new InventoryJobSourceApplicability);
+        });
+
         $this->app->singleton(CostStrategyRegistry::class, function ($app) {
             $registry = new CostStrategyRegistry;
             foreach ([AvcoCostStrategy::class,
