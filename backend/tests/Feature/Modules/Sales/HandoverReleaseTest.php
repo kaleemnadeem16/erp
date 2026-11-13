@@ -268,6 +268,75 @@ class HandoverReleaseTest extends TestCase
         $this->assertCount(1, $this->receiver->received, 'the receiver ran exactly once');
     }
 
+    // ---- the receiver's authority is judged at the decision point of EVERY attempt (review P1) ---------------------------------------------------------
+
+    public function test_the_receiver_authority_is_asked_at_the_decision_point_before_any_stored_result_is_returned(): void
+    {
+        $this->bind();
+        $this->recordBasis();
+        $this->release('k1');
+        $this->receiver->calls = [];
+
+        $this->assertTrue($this->release('k1')['replayed']);
+        $this->assertSame(['assertMayReceive', 'assertMayReceive'], $this->receiver->calls, 'exact-key replay: early look + decision point, and no lookup of any stored reference');
+
+        $this->receiver->calls = [];
+        $this->release('k2');
+        $this->assertSame(['assertMayReceive', 'assertMayReceive', 'referenceFor'], $this->receiver->calls, 'business replay: the authority is asked twice BEFORE the existing release is resolved');
+    }
+
+    public function test_an_exact_key_replay_is_refused_at_the_decision_point_when_only_the_early_look_passes(): void
+    {
+        $this->bind();
+        $this->recordBasis();
+        $first = $this->release('k1');
+        $this->receiver->calls = [];
+        $this->receiver->refuseAfter(1);
+
+        try {
+            $this->release('k1');
+            $this->fail('A replay must not return the stored release once the receiving authority is gone.');
+        } catch (AuthorizationException) {
+            $this->assertSame(['assertMayReceive', 'assertMayReceive'], $this->receiver->calls, 'refused at the decision point, before any reference was looked up');
+        }
+        $this->assertDatabaseCount('handover_release_events', 1);
+        $this->assertSame($first['release_event_id'], (int) DB::table('handover_release_events')->value('id'));
+    }
+
+    public function test_a_business_replay_with_a_fresh_key_is_refused_at_the_decision_point_too(): void
+    {
+        $this->bind();
+        $this->recordBasis();
+        $this->release('k1');
+        $this->receiver->calls = [];
+        $this->receiver->refuseAfter(1);
+
+        $this->expectException(AuthorizationException::class);
+        try {
+            $this->release('k2');
+        } finally {
+            $this->assertSame(['assertMayReceive', 'assertMayReceive'], $this->receiver->calls);
+            $this->assertDatabaseCount('handover_release_events', 1);
+        }
+    }
+
+    public function test_every_receiver_must_implement_the_authority_check_there_is_no_optional_companion(): void
+    {
+        $this->assertTrue((new \ReflectionClass(ReleasedServiceReceiver::class))->hasMethod('assertMayReceive'));
+        $this->assertFalse(interface_exists('App\\Modules\\Sales\\Support\\Handover\\Release\\ReleaseReceiverAuthority'), 'the optional companion interface is gone: the port itself requires the check');
+        $implementations = [];
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(base_path('app'), \FilesystemIterator::SKIP_DOTS)) as $file) {
+            if ($file->getExtension() === 'php' && str_contains((string) file_get_contents($file->getPathname()), 'ReleasedServiceReceiver')) {
+                $class = 'App\\'.str_replace(['/', '.php'], ['\\', ''], substr($file->getPathname(), strlen(base_path('app')) + 1));
+                if (class_exists($class) && is_subclass_of($class, ReleasedServiceReceiver::class)) {
+                    $implementations[] = $class;
+                    $this->assertTrue((new \ReflectionMethod($class, 'assertMayReceive'))->getDeclaringClass()->getName() === $class, "{$class} must declare its own assertMayReceive");
+                }
+            }
+        }
+        $this->assertSame(['App\\Modules\\Jobs\\Actions\\ReceiveReleasedService'], $implementations);
+    }
+
     public function test_a_different_basis_for_an_already_released_stage_is_refused(): void
     {
         $this->bind();

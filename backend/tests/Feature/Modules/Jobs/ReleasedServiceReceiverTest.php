@@ -245,6 +245,11 @@ class ReleasedServiceReceiverTest extends TestCase
                 return $this->real->receive($release);
             }
 
+            public function assertMayReceive(\App\Models\User $actor): void
+            {
+                $this->real->assertMayReceive($actor);
+            }
+
             public function referenceFor(int $releaseEventId): ?ReleasedServiceReference
             {
                 return $this->real->referenceFor($releaseEventId);
@@ -332,6 +337,11 @@ class ReleasedServiceReceiverTest extends TestCase
             {
                 $this->real->receive($release);
                 throw new RuntimeException('Injected failure after the Job was fully written.');
+            }
+
+            public function assertMayReceive(\App\Models\User $actor): void
+            {
+                $this->real->assertMayReceive($actor);
             }
 
             public function referenceFor(int $releaseEventId): ?ReleasedServiceReference
@@ -709,6 +719,11 @@ class ReleasedServiceReceiverTest extends TestCase
                 $this->seen['after'] = $probe();
 
                 return $reference;
+            }
+
+            public function assertMayReceive(\App\Models\User $actor): void
+            {
+                $this->real->assertMayReceive($actor);
             }
 
             public function referenceFor(int $releaseEventId): ?ReleasedServiceReference

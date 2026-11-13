@@ -40,16 +40,20 @@ final class ReleaseCoordinator
         if (! app()->bound(ReleasedServiceReceiver::class)) {
             throw R::make(R::RELEASE_RECEIVER_UNAVAILABLE, 'No Jobs receiver is available, so a service cannot be released.');
         }
-        // The receiver's own authority is judged on EVERY request, replays included: a revoked `job.receive` or a suspended member never gets the Job reference back.
         $receiver = app(ReleasedServiceReceiver::class);
-        // Static analysis resolves the container binding to the Jobs receiver; tests and other receivers may bind a port without this companion, hence the runtime check.
-        if ($receiver instanceof ReleaseReceiverAuthority) { // @phpstan-ignore instanceof.alwaysTrue
-            $receiver->assertMayReceive($actor);
-        }
+        // Fail fast only: this early look is NOT the decision. The receiver's authority is judged again at the decision point of EVERY attempt, inside the locked transaction.
+        $receiver->assertMayReceive($actor);
         $acceptanceId = ReleaseLineage::acceptanceIdOfStage($intent->stageId) ?? throw R::make(R::ACCEPTANCE_NOT_FOUND, 'The handover stage was not found.');
 
         $outcome = $this->operations->run($actor, 'handover.release', $requestKey, $intent->payload(),
-            fn (): HandoverSubject => $this->access->lock($actor, $acceptanceId, false, P::HANDOVER_RELEASE),
+            function () use ($actor, $acceptanceId, $receiver): HandoverSubject {
+                // Source and access fences first (fresh actor under the company access fence, authority head, acceptance, case, claim heads, revision) — never a Job lock — and THEN the
+                // receiver's own authority, on every attempt: a fresh release, an exact-key replay (whose stored receipt is read only after this returns) and a business replay.
+                $subject = $this->access->lock($actor, $acceptanceId, false, P::HANDOVER_RELEASE);
+                $receiver->assertMayReceive($actor);
+
+                return $subject;
+            },
             fn (HandoverSubject $s): array => $this->work($actor, $requestKey, $intent, $s));
 
         return ['release_event_id' => (int) $outcome['result']['release_event_id'], 'case_id' => (int) $outcome['result']['case_id'], 'job_id' => (int) $outcome['result']['job_id'],

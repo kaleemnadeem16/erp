@@ -248,6 +248,38 @@ class JobReceiverReleaseRaceTest extends TestCase
         }
     }
 
+    public function test_a_replay_waiting_on_the_access_fence_is_refused_when_job_receive_is_revoked_or_the_actor_suspended_meanwhile(): void
+    {
+        // Review P1: the receiving duty is judged at the decision point INSIDE the locked transaction. Session B replays an existing release and WAITS on the fence the holder
+        // session owns; the holder revokes job.receive (or suspends the member) and commits; B must refuse and return the stored Job reference to nobody.
+        foreach ([['exact-key replay', 'first', 'actor'], ['business replay by a fresh key', 'fresh', 'actor'], ['business replay by a second actor', 'other-key', 'other']] as [$label, $key, $who]) {
+            foreach (['revoke', 'suspend'] as $change) {
+                $f = $this->fixture();
+                try {
+                    // Setup exactly as the existing replay test: the holder session commits release 'first'; 'second' (by the other actor) waits and resolves to it.
+                    $setup = $this->raceAction($f['pdo'], $this->gate($f), $this->release($f, 'second', 'other'), fn (PDO $h) => $this->onHolder($h, $this->release($f, 'first')));
+                    $this->assertTrue($setup['success'], (string) $setup['message']);
+                    $this->assertOneJobEverywhere($f);
+                    $before = $this->counts($f);
+                    $claims = $this->claimSnapshot($f);
+                    $o = $this->raceAction($f['pdo'], $this->gate($f), $this->release($f, $key, $who), function (PDO $h) use ($f, $change, $who): void {
+                        if ($change === 'revoke') {
+                            $this->raceRevoke($h, $f[$who], 'job.receive');
+                        } else {
+                            $h->exec("update users set status='SUSPENDED' where id={$f[$who]}");
+                        }
+                    });
+                    $this->assertFalse($o['success'], "{$label} ({$change}) must be refused, not replayed");
+                    $this->assertStringContainsString('not permitted', (string) $o['message']);
+                    $this->assertSame($before, $this->counts($f), "{$label} ({$change}) wrote nothing");
+                    $this->assertSame($claims, $this->claimSnapshot($f));
+                } finally {
+                    $this->cleanup($f);
+                }
+            }
+        }
+    }
+
     /** @return array<string,string> */
     private function claimSnapshot(array $f): array
     {

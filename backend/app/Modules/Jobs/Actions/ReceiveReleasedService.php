@@ -22,7 +22,6 @@ use App\Modules\Sales\Models\HandoverReleaseEvent;
 use App\Modules\Sales\Models\HandoverStage;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReference;
-use App\Modules\Sales\Support\Handover\Release\ReleaseReceiverAuthority;
 use App\Modules\Sales\Support\Handover\Release\VerifiedServiceRelease;
 use App\Support\CompanyContext;
 use Carbon\CarbonImmutable;
@@ -38,7 +37,7 @@ use LogicException;
  * whole release back. It never commits or starts a transaction of its own; a business replay never reaches it again (the coordinator resolves the existing release first),
  * and the database refuses a second Job for the same release event, so a fresh key, actor or retry cannot create a duplicate Job, number or claim.
  */
-final class ReceiveReleasedService implements ReleasedServiceReceiver, ReleaseReceiverAuthority
+final class ReceiveReleasedService implements ReleasedServiceReceiver
 {
     public const SOURCE_CONTRACT = 'sales-handover-release-v1';
 
@@ -101,7 +100,7 @@ final class ReceiveReleasedService implements ReleasedServiceReceiver, ReleaseRe
         return new ReleasedServiceReference((int) $job->id, (string) $job->code);
     }
 
-    /** Asked by the release coordinator at the start of every request, replays included, so a revoked duty or a suspended member never gets a Job reference back. */
+    /** Asked by the release coordinator at the decision point of every attempt, replays included (inside the locked transaction), and again by `receive` itself. */
     public function assertMayReceive(?User $actor): void
     {
         if (! JobAccess::may($actor, 'job.receive')) {

@@ -2,9 +2,11 @@
 
 namespace Tests\Support\Sales;
 
+use App\Models\User;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReference;
 use App\Modules\Sales\Support\Handover\Release\VerifiedServiceRelease;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -24,10 +26,34 @@ final class FakeReleasedServiceReceiver implements ReleasedServiceReceiver
     /** When true, links are kept in the committed table `zz_fake_receipts` (company_id, release_event_id, job_id, job_code), so a forked process and another session see them. */
     public bool $durable = false;
 
+    /** Every authority question in order ('assertMayReceive', 'receive', 'referenceFor'), so a test can prove WHEN the receiver was asked relative to any result being returned. */
+    /** @var list<string> */
+    public array $calls = [];
+
+    /** Refuse every authority question once this many have been asked (null = never): 1 passes the coordinator's early look and refuses at the decision point. */
+    public ?int $denyAfterAuthorityCalls = null;
+
+    private int $authorityCalls = 0;
+
+    /** Let the next $allowed authority questions pass, then refuse every later one (1 = pass the coordinator's early look, refuse at the decision point). */
+    public function refuseAfter(int $allowed): void
+    {
+        $this->denyAfterAuthorityCalls = $this->authorityCalls + $allowed;
+    }
+
     private int $next = 1;
+
+    public function assertMayReceive(User $actor): void
+    {
+        $this->calls[] = 'assertMayReceive';
+        if ($this->denyAfterAuthorityCalls !== null && ++$this->authorityCalls > $this->denyAfterAuthorityCalls) {
+            throw new AuthorizationException('You are not permitted to receive a released service.');
+        }
+    }
 
     public function receive(VerifiedServiceRelease $release): ReleasedServiceReference
     {
+        $this->calls[] = 'receive';
         $release->assertCurrent();
         $this->received[] = $release;
         if ($this->durable) {
@@ -49,6 +75,7 @@ final class FakeReleasedServiceReceiver implements ReleasedServiceReceiver
 
     public function referenceFor(int $releaseEventId): ?ReleasedServiceReference
     {
+        $this->calls[] = 'referenceFor';
         if ($this->durable) {
             $row = DB::table('zz_fake_receipts')->where('release_event_id', $releaseEventId)->first();
 
