@@ -506,8 +506,12 @@ class ReleasedServiceReceiverTest extends TestCase
 
     public function test_there_is_no_public_way_to_create_a_job(): void
     {
-        $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertSame([], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        // The protected READ API (#125) may expose GET/HEAD; no Jobs route may create or change anything (no POST, PUT, PATCH or DELETE).
+        $writes = collect(Route::getRoutes()->getRoutes())
+            ->filter(fn ($r) => preg_match('#^api/v1/(service-)?jobs#', $r->uri()) === 1)
+            ->flatMap(fn ($r) => array_diff($r->methods(), ['GET', 'HEAD']))
+            ->values()->all();
+        $this->assertSame([], $writes, 'a Jobs route accepts a write method');
         $shipped = new PermissionRegistry(app(PermissionRegistrar::class));
         JobDutyManifest::shipped()->registerWith($shipped);
         $this->assertSame([], array_values(array_filter($shipped->all(), fn ($p) => str_starts_with($p, 'job.'))));
