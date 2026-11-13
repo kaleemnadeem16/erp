@@ -384,8 +384,8 @@ class MaterialPlanAdoptionTest extends TestCase
         $this->assertSame(['REASON_REQUIRED', 'REASON_PROVIDED', 'Store b is next to the site'], [$item->mix_level, $item->mix_status, $item->mix_note]);
         $this->assertEquals([['warehouse_id' => $this->stores['b']->warehouse_id, 'location_id' => $this->stores['b']->id, 'batch_id' => null, 'quantity' => '10.000000000']], $item->mix);
 
-        $this->actingAsAdminLevel(StockMixLevel::ApprovalRequired);
         $this->approvals('STOCK_MIX');
+        $this->actingAsAdminLevel(StockMixLevel::ApprovalRequired);
         $needs = $this->adopt(['stock_mix' => $mix]);
 
         $this->assertSame(['APPROVAL_REQUIRED', 1], [$needs['effect'], $needs['approvals_needed']]);
@@ -461,5 +461,77 @@ class MaterialPlanAdoptionTest extends TestCase
 
         $this->assertSame([0, 0, 0], [QuotationMaterialPlan::query()->count(), QuotationMaterialPlanItem::query()->count(), QuotationMaterialPlanApproval::query()->count()]);
         $this->assertSame(ApprovalRequestStatus::Invalidated, ApprovalRequest::query()->sole()->status);
+    }
+
+    public function test_no_evidence_table_can_be_truncated_but_a_draft_line_still_takes_its_plan_with_it(): void
+    {
+        $this->approvals('MATERIAL_VARIANCE');
+        $this->varianceBand('APPROVAL_REQUIRED');
+        $this->adopt($this->adjust('15', $this->porous->id));
+        app(RevalidateQuotationMaterialPlan::class)($this->maker, $this->revision, $this->line);
+
+        foreach (['quotation_material_plans', 'quotation_material_plan_items', 'quotation_material_plan_approvals', 'quotation_material_plan_revalidations'] as $table) {
+            try {
+                DB::transaction(fn () => DB::statement("TRUNCATE {$table} CASCADE"));
+                $this->fail("{$table} must not be truncatable");
+            } catch (QueryException $refused) {
+                $this->assertStringContainsString('cannot be truncated', $refused->getMessage(), $table);
+            }
+            $this->assertGreaterThan(0, DB::table($table)->count(), "{$table} kept its rows");
+        }
+
+        app(UpdateQuotationDraft::class)($this->maker, $this->revision, $this->generation(), $this->issueKey(), ['remove_lines' => [$this->line]]);
+        $this->assertSame([0, 0, 0, 0], [QuotationMaterialPlan::query()->count(), QuotationMaterialPlanItem::query()->count(), QuotationMaterialPlanApproval::query()->count(), QuotationMaterialPlanRevalidation::query()->count()]);
+    }
+
+    public function test_the_database_ties_an_approval_to_the_controlled_item_of_its_own_plan(): void
+    {
+        $this->approvals('MATERIAL_VARIANCE');
+        $this->varianceBand('APPROVAL_REQUIRED');
+        $first = $this->adopt($this->adjust('15', $this->porous->id));
+        $second = $this->adopt($this->adjust('16', $this->porous->id));
+        $firstItem = QuotationMaterialPlanItem::query()->where('plan_id', $first['plan_id'])->sole();
+        $secondItem = QuotationMaterialPlanItem::query()->where('plan_id', $second['plan_id'])->sole();
+        $good = ['company_id' => 1, 'revision_id' => $this->revision, 'plan_id' => $second['plan_id'], 'plan_item_id' => $secondItem->id, 'subject_code' => 'STOCK_MIX', 'facts' => json_encode(['item_id' => $this->resin->id])];
+        $other = $this->receiveSecondRevision();
+
+        $bad = [
+            "another plan's item" => ['plan_id' => $first['plan_id'], 'plan_item_id' => $secondItem->id, 'subject_code' => 'MATERIAL_VARIANCE'],
+            "another revision's plan" => ['revision_id' => $other, 'subject_code' => 'MATERIAL_VARIANCE'],
+            'another company' => ['company_id' => 2, 'subject_code' => 'MATERIAL_VARIANCE'],
+            'facts for a different material' => ['subject_code' => 'MATERIAL_VARIANCE', 'facts' => json_encode(['item_id' => $this->resin->id + 99])],
+            'a stock-mix approval for an item whose stock mix needs none' => ['subject_code' => 'STOCK_MIX'],
+            'an unknown kind' => ['subject_code' => 'SOMETHING_ELSE'],
+        ];
+        foreach ($bad as $label => $override) {
+            try {
+                DB::transaction(fn () => DB::table('quotation_material_plan_approvals')->insert($override + $good));
+                $this->fail("the database accepted an approval with {$label}");
+            } catch (QueryException) {
+                $this->addToAssertionCount(1);
+            }
+        }
+        $this->assertNotSame($firstItem->id, $secondItem->id);
+        $this->assertSame(1, QuotationMaterialPlanApproval::query()->where('plan_id', $second['plan_id'])->count(), 'only the genuine approval subject exists');
+    }
+
+    private function receiveSecondRevision(): int
+    {
+        $created = app(CreateQuotationDraft::class)($this->maker, $this->issueKey(), ['recipient_party_id' => $this->customer->id, 'pricing_date' => $this->today()]);
+
+        return $created->revisionId;
+    }
+
+    public function test_a_plan_is_optional_until_adopted_and_then_its_freshness_check_cannot_be_skipped(): void
+    {
+        $this->assertSame([], $this->codes(), 'a line with no plan is priced and issued without one');
+
+        $this->adopt();
+        $this->assertSame([], $this->codes());
+
+        // The person assessing no longer holds the preview right the re-check needs: the check cannot run, and an unknown is never a pass.
+        $this->maker->revokePermissionTo('estimating.material_preview.run');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->assertSame(['MATERIAL_PLAN_NOT_REVALIDATED'], array_values(array_filter(array_map(fn (array $b): string => $b['code'], app(AssessQuotationIssueReadiness::class)(User::query()->findOrFail($this->maker->id), $this->revision)['blockers']), fn (string $c): bool => str_starts_with($c, 'MATERIAL_PLAN'))));
     }
 }

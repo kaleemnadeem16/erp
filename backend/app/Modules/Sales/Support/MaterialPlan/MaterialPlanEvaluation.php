@@ -14,8 +14,9 @@ final readonly class MaterialPlanEvaluation
      * @param  list<array<string, mixed>>  $items
      * @param  list<array{code: string, item_id: int}>  $problems
      * @param  list<array{item_id: int, subject_code: string, facts: array<string, mixed>}>  $approvals
+     * @param  array<string, mixed>  $provenance  the exact technical sources the plan was resolved from
      */
-    public function __construct(public array $items, public string $effect, public string $fingerprint, public array $problems, public array $approvals) {}
+    public function __construct(public array $items, public string $effect, public string $fingerprint, public array $problems, public array $approvals, public ?int $recipientPartyId = null, public ?int $customerId = null, public array $provenance = []) {}
 
     /** @return list<string> */
     public function problemCodes(): array

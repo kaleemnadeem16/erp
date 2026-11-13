@@ -35,7 +35,16 @@ could adopt a plan. ADR 0189 made Assembly work quotable. This ADR is the adopti
 6. **Issue freezes the plan.** The issue assessor blocks an Assembly line whose plan is stale, whose approvals are not granted for exactly its facts, or that cannot be re-evaluated for the issuer
    (`MATERIAL_PLAN_STALE`, `_APPROVAL_REQUIRED`, `_APPROVAL_PENDING`, `_APPROVAL_REJECTED`, `_NOT_REVALIDATED`). `IssueQuotation` records `quotation_issued_lines.material_plan_id`, and the
    database refuses an issued line whose plan is not its draft line's latest. An issued revision's plan can no longer change or be deleted.
-7. **A plan is optional.** A line may be priced and issued without an adopted plan. Whether a company must adopt one before issue is not decided here.
+7. **A plan is optional, and mandatory once adopted.** A line may be priced and issued without an adopted plan; whether a company must adopt one is not decided here. Once one is adopted,
+   every applicable approval and the freshness check stay mandatory at issue. A successor revision starts without a plan (plans belong to the revision that adopted them) and adopts again if wanted.
+8. **The customer is the recipient's, never the seller's choice.** Customer-specific resolution (a customer's own formulation) uses the customer account of the revision's recipient Party, or
+   none for a prospect (the company default). A request naming another customer is refused (`MATERIAL_PLAN_CUSTOMER_MISMATCH`); the plan stores the recipient and customer it was resolved for,
+   the database checks both on every plan, and changing the recipient makes the plan stale (`RECIPIENT_CHANGED` on re-check).
+9. **Technical sources are pinned.** The plan stores the exact application-rate row (and the quantity it carried) and every formulation version, top level and nested, per Assembly component;
+   they are part of the routing fingerprint. A new active formulation version or an edited rate makes the plan stale even when the resulting quantities are equal; adopted and issued plans
+   keep their stored provenance and quantities unchanged.
+10. **Evidence tables are tamper-proof.** Besides append-only row guards, each table refuses TRUNCATE; an approval subject must reference an item of its exact plan, revision and company
+    (composite key) and match that item's controlled facts and kind.
 
 ## Consequences
 

@@ -33,7 +33,10 @@ return new class extends Migration
             $t->unsignedBigInteger('assembly_version_id');
             $t->decimal('work_quantity', 19, 4);
             $t->unsignedBigInteger('work_uom_id');
+            $t->unsignedBigInteger('recipient_party_id')->nullable();
+            $t->unsignedBigInteger('customer_id')->nullable();
             $t->jsonb('inputs');
+            $t->jsonb('provenance');
             $t->string('effect', 20);
             $t->char('routing_fingerprint', 64);
             $t->unsignedBigInteger('adopted_by');
@@ -45,10 +48,13 @@ return new class extends Migration
             $t->foreign(['company_id', 'supersedes_id'], 'quotation_material_plans_supersedes_fk')->references(['company_id', 'id'])->on('quotation_material_plans');
             $t->foreign('assembly_version_id', 'quotation_material_plans_version_fk')->references('id')->on('assembly_versions');
             $t->foreign(['company_id', 'work_uom_id'], 'quotation_material_plans_uom_fk')->references(['company_id', 'id'])->on('uoms');
+            $t->foreign(['company_id', 'recipient_party_id'], 'quotation_material_plans_recipient_fk')->references(['company_id', 'id'])->on('parties');
+            $t->foreign(['company_id', 'customer_id'], 'quotation_material_plans_customer_fk')->references(['company_id', 'id'])->on('customer_accounts');
             $t->foreign(['company_id', 'adopted_by'], 'quotation_material_plans_actor_fk')->references(['company_id', 'id'])->on('users');
         });
         DB::statement("ALTER TABLE quotation_material_plans ADD CONSTRAINT quotation_material_plans_shape CHECK (
             work_quantity > 0 AND effect IN ('AUDIT_ONLY','REASON_REQUIRED','APPROVAL_REQUIRED') AND routing_fingerprint ~ '^[0-9a-f]{64}\$' AND (supersedes_id IS NULL OR supersedes_id <> id)
+            AND (customer_id IS NULL OR recipient_party_id IS NOT NULL) AND jsonb_typeof(provenance) = 'object'
         )");
 
         Schema::create('quotation_material_plan_items', function (Blueprint $t): void {
@@ -76,6 +82,7 @@ return new class extends Migration
             $t->decimal('mix_extra', 19, 4)->nullable();
             $t->unique(['company_id', 'id'], 'quotation_material_plan_items_company_id_unique');
             $t->unique(['plan_id', 'item_id'], 'quotation_material_plan_items_one_per_item');
+            $t->unique(['company_id', 'revision_id', 'plan_id', 'id'], 'quotation_material_plan_items_plan_key_unique');
             $t->foreign(['company_id', 'revision_id', 'plan_id'], 'quotation_material_plan_items_plan_fk')->references(['company_id', 'revision_id', 'id'])->on('quotation_material_plans')->cascadeOnDelete();
             $t->foreign(['company_id', 'item_id'], 'quotation_material_plan_items_item_fk')->references(['company_id', 'id'])->on('items');
             $t->foreign(['company_id', 'uom_id'], 'quotation_material_plan_items_uom_fk')->references(['company_id', 'id'])->on('uoms');
@@ -99,7 +106,7 @@ return new class extends Migration
             $t->jsonb('facts');
             $t->unique(['company_id', 'id'], 'quotation_material_plan_approvals_company_id_unique');
             $t->unique(['plan_item_id', 'subject_code'], 'quotation_material_plan_approvals_one_per_kind');
-            $t->foreign(['company_id', 'plan_item_id'], 'quotation_material_plan_approvals_item_fk')->references(['company_id', 'id'])->on('quotation_material_plan_items')->cascadeOnDelete();
+            $t->foreign(['company_id', 'revision_id', 'plan_id', 'plan_item_id'], 'quotation_material_plan_approvals_item_fk')->references(['company_id', 'revision_id', 'plan_id', 'id'])->on('quotation_material_plan_items')->cascadeOnDelete();
             $t->foreign(['company_id', 'revision_id', 'plan_id'], 'quotation_material_plan_approvals_plan_fk')->references(['company_id', 'revision_id', 'id'])->on('quotation_material_plans')->cascadeOnDelete();
         });
         DB::statement("ALTER TABLE quotation_material_plan_approvals ADD CONSTRAINT quotation_material_plan_approvals_shape CHECK (subject_code IN ('MATERIAL_VARIANCE','STOCK_MIX'))");
@@ -126,7 +133,7 @@ return new class extends Migration
 
         DB::unprepared(<<<'SQL'
 CREATE OR REPLACE FUNCTION quotation_material_plan_guard() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE rev_state text; line record;
+DECLARE rev_state text; line record; rev record; it record; derived_customer bigint;
 BEGIN
  IF TG_OP = 'UPDATE' THEN RAISE EXCEPTION '% rows are append-only', TG_TABLE_NAME USING ERRCODE = '23514'; END IF;
  SELECT state INTO rev_state FROM quotation_revisions WHERE id = CASE WHEN TG_OP = 'DELETE' THEN OLD.revision_id ELSE NEW.revision_id END FOR SHARE;
@@ -141,18 +148,39 @@ BEGIN
      OR line.offered_quantity IS DISTINCT FROM NEW.work_quantity OR line.offered_uom_id IS DISTINCT FROM NEW.work_uom_id THEN
    RAISE EXCEPTION 'A material plan is adopted for exactly its Assembly line, version and work quantity' USING ERRCODE = '23514';
   END IF;
+  SELECT recipient_party_id INTO rev FROM quotation_revisions WHERE id = NEW.revision_id;
+  SELECT c.id INTO derived_customer FROM customer_accounts c WHERE c.company_id = NEW.company_id AND c.party_id = rev.recipient_party_id;
+  IF NEW.recipient_party_id IS DISTINCT FROM rev.recipient_party_id OR NEW.customer_id IS DISTINCT FROM derived_customer THEN
+   RAISE EXCEPTION 'A material plan is resolved for the quotation''s own recipient and that recipient''s customer account' USING ERRCODE = '23514';
+  END IF;
   IF NEW.supersedes_id IS NULL THEN
    IF EXISTS (SELECT 1 FROM quotation_material_plans p WHERE p.line_id = NEW.line_id) THEN RAISE EXCEPTION 'A re-adoption names the plan it supersedes' USING ERRCODE = '23514'; END IF;
   ELSIF NOT EXISTS (SELECT 1 FROM quotation_material_plans p WHERE p.id = NEW.supersedes_id AND p.line_id = NEW.line_id AND p.revision_id = NEW.revision_id) THEN
    RAISE EXCEPTION 'A plan supersedes an earlier plan of the same line' USING ERRCODE = '23514';
   END IF;
  END IF;
+ IF TG_TABLE_NAME = 'quotation_material_plan_approvals' THEN
+  SELECT * INTO it FROM quotation_material_plan_items WHERE id = NEW.plan_item_id;
+  IF it.id IS NULL OR (NEW.facts->>'item_id')::bigint IS DISTINCT FROM it.item_id
+     OR (NEW.subject_code = 'MATERIAL_VARIANCE' AND it.effect IS DISTINCT FROM 'APPROVAL_REQUIRED')
+     OR (NEW.subject_code = 'STOCK_MIX' AND it.mix_status IS DISTINCT FROM 'APPROVAL_NEEDED') THEN
+   RAISE EXCEPTION 'An approval subject is for the controlled item of its own plan, in the kind its control requires' USING ERRCODE = '23514';
+  END IF;
+ END IF;
  RETURN NEW;
+END $$;
+CREATE OR REPLACE FUNCTION quotation_material_plan_truncate_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ RAISE EXCEPTION '% rows are append-only evidence and cannot be truncated', TG_TABLE_NAME USING ERRCODE = '23514';
 END $$;
 CREATE TRIGGER quotation_material_plans_guard BEFORE INSERT OR UPDATE OR DELETE ON quotation_material_plans FOR EACH ROW EXECUTE FUNCTION quotation_material_plan_guard();
 CREATE TRIGGER quotation_material_plan_items_guard BEFORE INSERT OR UPDATE OR DELETE ON quotation_material_plan_items FOR EACH ROW EXECUTE FUNCTION quotation_material_plan_guard();
 CREATE TRIGGER quotation_material_plan_approvals_guard BEFORE INSERT OR UPDATE OR DELETE ON quotation_material_plan_approvals FOR EACH ROW EXECUTE FUNCTION quotation_material_plan_guard();
 CREATE TRIGGER quotation_material_plan_revalidations_guard BEFORE INSERT OR UPDATE OR DELETE ON quotation_material_plan_revalidations FOR EACH ROW EXECUTE FUNCTION quotation_material_plan_guard();
+CREATE TRIGGER quotation_material_plans_truncate_guard BEFORE TRUNCATE ON quotation_material_plans FOR EACH STATEMENT EXECUTE FUNCTION quotation_material_plan_truncate_guard();
+CREATE TRIGGER quotation_material_plan_items_truncate_guard BEFORE TRUNCATE ON quotation_material_plan_items FOR EACH STATEMENT EXECUTE FUNCTION quotation_material_plan_truncate_guard();
+CREATE TRIGGER quotation_material_plan_approvals_truncate_guard BEFORE TRUNCATE ON quotation_material_plan_approvals FOR EACH STATEMENT EXECUTE FUNCTION quotation_material_plan_truncate_guard();
+CREATE TRIGGER quotation_material_plan_revalidations_truncate_guard BEFORE TRUNCATE ON quotation_material_plan_revalidations FOR EACH STATEMENT EXECUTE FUNCTION quotation_material_plan_truncate_guard();
 SQL);
         DB::unprepared(self::issuedGuard(true));
     }
@@ -173,6 +201,7 @@ SQL);
         Schema::dropIfExists('quotation_material_plan_items');
         Schema::dropIfExists('quotation_material_plans');
         DB::statement('DROP FUNCTION IF EXISTS quotation_material_plan_guard()');
+        DB::statement('DROP FUNCTION IF EXISTS quotation_material_plan_truncate_guard()');
     }
 
     private static function issuedGuard(bool $withPlan): string

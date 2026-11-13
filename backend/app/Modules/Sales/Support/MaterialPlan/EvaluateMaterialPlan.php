@@ -13,6 +13,7 @@ use App\Modules\Estimating\Support\StockMixVerdict;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Sales\Models\QuotationDraftLine;
+use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Quotation\QuotationRefusal;
 use App\Support\ActionAuthorization;
 use Brick\Math\BigDecimal;
@@ -32,7 +33,7 @@ use Brick\Math\RoundingMode;
  */
 final class EvaluateMaterialPlan
 {
-    public const VERSION = 1;
+    public const VERSION = 2;
 
     public function __construct(private readonly PreviewAssemblyMaterials $preview) {}
 
@@ -56,6 +57,9 @@ final class EvaluateMaterialPlan
             ActionAuthorization::require($actor, 'estimating.package_plan.adopt', 'adopt a hand-chosen stock mix');
         }
 
+        $revision = QuotationRevision::query()->findOrFail($line->revision_id);
+        $customerId = MaterialPlanRecipient::assertRequestMatches($revision, $inputs);
+        $inputs['customer_id'] = $customerId;
         $request = ['assembly_version_id' => $version->id, 'work_quantity' => (string) $line->offered_quantity, 'work_uom_id' => (int) $line->offered_uom_id,
             'dimension_value_ids' => $inputs['dimension_value_ids'] ?? []];
         foreach (['customer_id', 'inventory_scope', 'selection_strategy'] as $optional) {
@@ -137,13 +141,19 @@ final class EvaluateMaterialPlan
         usort($items, fn (array $a, array $b): int => $a['item_id'] <=> $b['item_id']);
         usort($approvals, fn (array $a, array $b): int => [$a['item_id'], $a['subject_code']] <=> [$b['item_id'], $b['subject_code']]);
 
-        return new MaterialPlanEvaluation($items, $strongest, $this->fingerprint($version->id, $line, $items), $problems, $approvals);
+        $provenance = ['assembly_version_id' => $version->id, 'components' => array_values($routing->sources())];
+
+        return new MaterialPlanEvaluation($items, $strongest, $this->fingerprint($version->id, $line, $items, $revision->recipient_party_id, $customerId, $provenance), $problems, $approvals, $revision->recipient_party_id === null ? null : (int) $revision->recipient_party_id, $customerId, $provenance);
     }
 
-    /** @param  list<array<string, mixed>>  $items */
-    private function fingerprint(int $versionId, QuotationDraftLine $line, array $items): string
+    /**
+     * @param  list<array<string, mixed>>  $items
+     * @param  array<string, mixed>  $provenance
+     */
+    private function fingerprint(int $versionId, QuotationDraftLine $line, array $items, ?int $recipientPartyId, ?int $customerId, array $provenance): string
     {
         $canonical = ['v' => self::VERSION, 'version_id' => $versionId, 'work_quantity' => (string) $line->offered_quantity, 'work_uom_id' => (int) $line->offered_uom_id,
+            'recipient_party_id' => $recipientPartyId, 'customer_id' => $customerId, 'provenance' => $provenance,
             'items' => array_map(fn (array $i): array => [
                 'item_id' => $i['item_id'], 'standard' => $i['standard_quantity'], 'planned' => $i['planned_quantity'], 'effect' => $i['effect'], 'reason_id' => $i['reason_id'],
                 'policy_id' => $i['policy_id'], 'routing_amount' => $i['routing_amount'], 'mix' => $i['mix'], 'mix_level' => $i['mix_level'], 'mix_status' => $i['mix_status'],

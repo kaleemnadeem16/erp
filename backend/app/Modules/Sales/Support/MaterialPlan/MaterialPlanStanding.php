@@ -11,6 +11,7 @@ use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationMaterialPlan;
 use App\Modules\Sales\Models\QuotationMaterialPlanApproval;
 use App\Modules\Sales\Models\QuotationMaterialPlanRevalidation;
+use App\Modules\Sales\Models\QuotationRevision;
 use Illuminate\Support\Collection;
 
 /**
@@ -40,10 +41,25 @@ class MaterialPlanStanding
         return QuotationMaterialPlan::query()->where('line_id', $lineId)->orderByDesc('id')->first();
     }
 
+    /** The line is still what the plan was adopted for, and so is the recipient (and the customer account the recipient resolves to). */
     public function describes(QuotationMaterialPlan $plan, QuotationDraftLine $line): bool
     {
-        return (int) $plan->assembly_version_id === (int) $line->assembly_version_id && (string) $plan->work_quantity === (string) $line->offered_quantity
-            && (int) $plan->work_uom_id === (int) $line->offered_uom_id;
+        return $this->changedSince($plan, $line) === null;
+    }
+
+    /** @return string|null `LINE_CHANGED`, `RECIPIENT_CHANGED`, or null when nothing the plan was adopted for has moved */
+    public function changedSince(QuotationMaterialPlan $plan, QuotationDraftLine $line): ?string
+    {
+        if ((int) $plan->assembly_version_id !== (int) $line->assembly_version_id || (string) $plan->work_quantity !== (string) $line->offered_quantity
+            || (int) $plan->work_uom_id !== (int) $line->offered_uom_id) {
+            return 'LINE_CHANGED';
+        }
+        $revision = QuotationRevision::query()->findOrFail($plan->revision_id);
+        if ((string) $plan->recipient_party_id !== (string) $revision->recipient_party_id || (string) $plan->customer_id !== (string) MaterialPlanRecipient::customerFor($revision)) {
+            return 'RECIPIENT_CHANGED';
+        }
+
+        return null;
     }
 
     /** @return array{state: string, plan: QuotationMaterialPlan|null} */

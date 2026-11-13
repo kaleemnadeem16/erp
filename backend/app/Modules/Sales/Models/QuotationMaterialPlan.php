@@ -19,6 +19,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, mixed> $inputs
  * @property string $effect
  * @property string $routing_fingerprint
+ * @property int|null $recipient_party_id
+ * @property int|null $customer_id
+ * @property array<string, mixed> $provenance
  * @property int $adopted_by
  *
  * Append-only evidence of a quotation Assembly line's Material Plan (ADR 0190). Written only while its revision is a draft and never updated; internal-cost figures in the
@@ -37,7 +40,7 @@ class QuotationMaterialPlan extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['work_quantity' => 'decimal:4', 'inputs' => 'array', 'adopted_at' => 'datetime'];
+        return ['work_quantity' => 'decimal:4', 'inputs' => 'array', 'provenance' => 'array', 'adopted_at' => 'datetime'];
     }
 
     /** @return HasMany<QuotationMaterialPlanItem, $this> */

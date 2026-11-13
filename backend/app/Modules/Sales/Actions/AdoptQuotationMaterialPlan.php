@@ -88,6 +88,7 @@ final class AdoptQuotationMaterialPlan
         $plan = QuotationMaterialPlan::create([
             'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'line_id' => $line->id, 'logical_scope_id' => $line->logical_scope_id, 'supersedes_id' => $previous?->id,
             'assembly_version_id' => $line->assembly_version_id, 'work_quantity' => $line->offered_quantity, 'work_uom_id' => $line->offered_uom_id, 'inputs' => $inputs,
+            'recipient_party_id' => $evaluation->recipientPartyId, 'customer_id' => $evaluation->customerId, 'provenance' => $evaluation->provenance,
             'effect' => $evaluation->effect, 'routing_fingerprint' => $evaluation->fingerprint, 'adopted_by' => $actor->id,
         ]);
         $itemIds = [];

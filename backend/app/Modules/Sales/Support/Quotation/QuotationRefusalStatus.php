@@ -34,6 +34,7 @@ final class QuotationRefusalStatus
         QuotationRefusal::MATERIAL_PLAN_APPROVAL_POLICY_MISSING => self::UNPROCESSABLE,
         QuotationRefusal::MATERIAL_PLAN_NOTHING_TO_APPROVE => self::UNPROCESSABLE,
         QuotationRefusal::MATERIAL_PLAN_STALE => self::UNPROCESSABLE,
+        QuotationRefusal::MATERIAL_PLAN_CUSTOMER_MISMATCH => self::UNPROCESSABLE,
         QuotationRefusal::QUOTATION_NOT_AVAILABLE => self::UNPROCESSABLE,
         QuotationRefusal::QUOTATION_PREDECESSOR_INVALID => self::UNPROCESSABLE,
         QuotationRefusal::QUOTATION_SUCCESSOR_EXISTS => self::UNPROCESSABLE,

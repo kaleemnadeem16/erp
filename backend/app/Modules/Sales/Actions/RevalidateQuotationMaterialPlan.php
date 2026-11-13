@@ -43,8 +43,8 @@ final class RevalidateQuotationMaterialPlan
 
             $codes = [];
             $fingerprint = $plan->routing_fingerprint;
-            if (! $this->standing->describes($plan, $line)) {
-                $codes[] = 'LINE_CHANGED';
+            if (($moved = $this->standing->changedSince($plan, $line)) !== null) {
+                $codes[] = $moved;
             } else {
                 try {
                     $now = ($this->evaluate)($actor, $line, $plan->inputs);
