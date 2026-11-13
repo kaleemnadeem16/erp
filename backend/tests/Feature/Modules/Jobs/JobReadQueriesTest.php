@@ -376,7 +376,7 @@ class JobReadQueriesTest extends TestCase
         $this->assertSame($f['revision'], $detail['sales_origin']['revision_id']);
         $this->assertSame(['family_id', 'revision_id'], array_keys($detail['sales_origin']));
         $this->assertSame(DB::table('quotation_issued_lines')->where('revision_id', $f['revision'])->value('description'), $detail['baseline']['deliverable']);
-        $this->assertStringContainsString('No materials', $detail['baseline']['agreed_conditions']);
+        $this->assertStringContainsString('MATERIALS: EXCLUDED', $detail['baseline']['agreed_conditions']);
         AccessScopeLimit::create(['user_id' => $this->user->id, 'permission' => P::QUOTATION_VIEW, 'scope' => 'OWN']);
         $this->assertArrayNotHasKey('sales_origin', $this->reads->detail($this->user, $job)->toArray(), 'another owners quotation remains inaccessible');
         AccessScopeLimit::query()->where('user_id', $this->user->id)->delete();

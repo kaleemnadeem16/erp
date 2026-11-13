@@ -20,7 +20,6 @@ use App\Modules\Sales\Support\Handover\Release\ReleaseCostPolicy;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\Handover\Release\ResolvedCompletionBasis;
 use App\Modules\Sales\Support\Handover\Release\SalesJobExecutionContextVerifier;
-use App\Modules\Sales\Support\Handover\Release\ScopeHeader;
 use App\Modules\Sales\Support\Handover\Release\VerifiedServiceRelease;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -88,8 +87,8 @@ class HandoverReleaseTest extends TestCase
     /** A basis on its own agreement evidence (created once per text, so the same text is an idempotent replay). Scopes default to the pilot's EXCLUDED/EXCLUDED. */
     private function recordBasis(string $key = 'basis', string $text = self::AGREED, ?User $actor = null, string $materials = 'EXCLUDED', string $subcontract = 'EXCLUDED'): array
     {
-        $full = ScopeHeader::compose($materials, $subcontract, $text);
-        $evidence = $this->agreementEvidence[$full] ??= $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $full);
+        $full = $this->scopeDeclaration($this->f['acceptance'], $materials, $subcontract);
+        $evidence = $this->agreementEvidence[$text.'|'.$full] ??= $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $full);
 
         return app(RecordServiceCompletionBasis::class)($actor ?? $this->checker, $key, $this->f['acceptance'], $full, $evidence);
     }
@@ -242,7 +241,7 @@ class HandoverReleaseTest extends TestCase
         $this->assertCount(1, $this->receiver->received);
         $v = $this->receiver->received[0];
         $this->assertSame($event->id, $v->releaseEventId);
-        $this->assertSame(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', self::AGREED), $v->basis->agreedText);
+        $this->assertSame($this->scopeDeclaration($this->f['acceptance']), $v->basis->agreedText);
         $this->assertEquals($claimsBefore, DB::table('customer_scope_claim_heads')->orderBy('id')->get()->all(), 'a release consumes no acceptance claim');
         $this->assertSame($acceptancesBefore, DB::table('customer_acceptances')->count());
         $this->assertSame('PREPARED', DB::table('handover_stages')->value('state'), 'preparation rows are never updated');

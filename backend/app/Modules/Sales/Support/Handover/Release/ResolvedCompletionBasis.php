@@ -23,6 +23,8 @@ final readonly class ResolvedCompletionBasis
         public string $termsSource = 'ISSUED_LINE',
         public string $materialsScope = 'UNSTATED',
         public string $subcontractScope = 'UNSTATED',
+        public ?int $declaredLineId = null,
+        public ?string $declaredDigest = null,
     ) {}
 
     /** Stable identity of exactly this basis version; the same string the database release guard requires. */
@@ -34,7 +36,8 @@ final readonly class ResolvedCompletionBasis
     /** True only for a basis that carries its OWN customer-agreement evidence (a scope declaration is never accepted on the issued-line path). */
     public function declaresScope(): bool
     {
-        return $this->termsSource === 'EVIDENCE_TEXT';
+        // A verified declaration only: the resolver sets the declared line and digest after re-checking them against the issued line's description.
+        return $this->termsSource === 'EVIDENCE_TEXT' && $this->declaredLineId !== null && $this->declaredDigest !== null;
     }
 
     public function provenance(): string

@@ -9,6 +9,7 @@ use App\Modules\Sales\Support\Handover\Release\ScopeHeader;
 use App\Support\JobSource\FamilyAssessment;
 use App\Support\JobSource\JobSourceFamilies;
 use App\Support\JobSource\SourceFamilyApplicability;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Release fixtures for the corrected applicability contract (#122): register fake source-family authorities (production registration belongs to the Inventory and
@@ -57,16 +58,29 @@ trait ScopedReleaseFixtures
             'occurrence_precision' => 'UNKNOWN', 'factual_description' => $text, 'observation_state' => 'OBSERVED', 'recorded_by' => $recorderId])->id;
     }
 
+    /** The four-line scope declaration for the issued line of this acceptance (the only text that can state a material/subcontractor scope). */
+    protected function scopeDeclaration(int $acceptanceId, string $materials = 'EXCLUDED', string $subcontract = 'EXCLUDED'): string
+    {
+        $lineId = (int) DB::table('customer_acceptance_lines')->where('acceptance_id', $acceptanceId)->value('issued_line_id');
+
+        return ScopeHeader::compose($materials, $subcontract, $lineId, (string) DB::table('quotation_issued_lines')->where('id', $lineId)->value('description'));
+    }
+
     /**
-     * A basis on its own agreement evidence that excludes materials and subcontractors (the only basis that can make the pilot's applicability NOT_APPLICABLE).
+     * A basis on its own agreement evidence that excludes materials and subcontractors (the only basis that can make the pilot's applicability NOT_APPLICABLE). A scope
+     * declaration has no free text, so `$variant` only distinguishes separate agreement evidence rows (a new version states the same declaration again).
      *
      * @return array{basis_id:int,version:int,case_id:int,replayed:bool}
      */
-    protected function recordScopedBasis(User $actor, string $key, int $acceptanceId, int $caseId, string $text = self::AGREED, string $materials = 'EXCLUDED', string $subcontract = 'EXCLUDED'): array
+    protected function recordScopedBasis(User $actor, string $key, int $acceptanceId, int $caseId, string $variant = self::AGREED, string $materials = 'EXCLUDED', string $subcontract = 'EXCLUDED'): array
     {
-        $full = ScopeHeader::compose($materials, $subcontract, $text);
-        $evidence = $this->appendAgreementEvidence($caseId, $actor->id, $full);
+        $full = $this->scopeDeclaration($acceptanceId, $materials, $subcontract);
+        $cacheKey = $variant.'|'.$full;
+        $evidence = $this->scopedEvidence[$cacheKey] ??= $this->appendAgreementEvidence($caseId, $actor->id, $full);
 
         return app(RecordServiceCompletionBasis::class)($actor, $key, $acceptanceId, $full, $evidence);
     }
+
+    /** @var array<string,int> */
+    protected array $scopedEvidence = [];
 }

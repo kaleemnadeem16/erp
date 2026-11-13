@@ -253,40 +253,42 @@ class ReleaseApplicabilityTest extends TestCase
     {
         $record = fn (?string $text, int $evidence) => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.md5((string) $text), $this->f['acceptance'], $text, $evidence);
         $this->refused($record('We also promise a lifetime warranty.', $this->consentEvidence));
-        $this->refused($record(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', $this->issuedText()), $this->consentEvidence));
+        $this->refused($record($this->scopeDeclaration($this->f['acceptance']), $this->consentEvidence));
         $this->assertDatabaseCount('service_completion_bases', 0);
     }
 
     public function test_dedicated_evidence_must_be_written_verified_matching_and_of_the_accepting_case(): void
     {
-        $h = fn (string $t): string => ScopeHeader::compose('EXCLUDED', 'EXCLUDED', $t);
-        $record = fn (string $text, int $evidence) => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.$evidence, $this->f['acceptance'], $h($text), $evidence);
-        $this->refused($record('Verbal agreement text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('Verbal agreement text.'), 'VERBAL')));
-        $this->refused($record('Unverified text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('Unverified text.'), 'EMAIL', 'UNVERIFIED')));
-        $this->refused($record('Stated only text.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('Stated only text.'), 'EMAIL', 'STATED_BY_CUSTOMER')));
-        $this->refused($record('The text the employee wrote.', $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h('A different text the customer evidenced.'))));
+        $acc = $this->f['acceptance'];
+        $text = $this->scopeDeclaration($acc);
+        $record = fn (string $agreed, int $evidence) => fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'k'.$evidence, $acc, $agreed, $evidence);
+        $this->refused($record($text, $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text, 'VERBAL')));
+        $this->refused($record($text, $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text, 'EMAIL', 'UNVERIFIED')));
+        $this->refused($record($text, $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text, 'EMAIL', 'STATED_BY_CUSTOMER')));
+        // The employee's text differs from what the customer-evidenced record says (another classification).
+        $this->refused($record($text, $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $this->scopeDeclaration($acc, 'REQUIRED', 'EXCLUDED'))));
         $other = DB::table('customer_decision_cases')->insertGetId(['company_id' => 1, 'party_id' => $this->customer->id, 'intake_identity' => 'other', 'generation' => 0, 'recorded_by' => $this->checker->id, 'recorded_at' => now()]);
-        $this->refused($record('Foreign case text.', $this->appendAgreementEvidence($other, $this->checker->id, $h('Foreign case text.'))));
+        $this->refused($record($text, $this->appendAgreementEvidence($other, $this->checker->id, $text)));
         $this->assertDatabaseCount('service_completion_bases', 0);
 
-        $good = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $h(self::AGREED));
-        $ok = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $this->f['acceptance'], $h(self::AGREED), $good);
+        $good = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+        $ok = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $acc, $text, $good);
         $this->assertSame('EVIDENCE_TEXT', DB::table('service_completion_bases')->find($ok['basis_id'])->terms_source);
-        $replay = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $this->f['acceptance'], $h(self::AGREED), $good);
+        $replay = app(RecordServiceCompletionBasis::class)($this->checker, 'ok', $acc, $text, $good);
         $this->assertTrue($replay['replayed']);
         $this->assertSame($ok['basis_id'], $replay['basis_id'], 'the same key replays the same outcome');
     }
 
     public function test_one_evidence_row_cannot_back_two_bases_and_the_chain_versions_forward(): void
     {
-        $text = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', self::AGREED);
+        $text = $this->scopeDeclaration($this->f['acceptance']);
         $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
         $first = app(RecordServiceCompletionBasis::class)($this->checker, 'a', $this->f['acceptance'], $text, $evidence);
         $same = app(RecordServiceCompletionBasis::class)($this->checker, 'b', $this->f['acceptance'], $text, $evidence);
         $this->assertSame($first['basis_id'], $same['basis_id'], 'the identical intent is the same head');
         // The evidence fixes the text AND the classification: the same evidence cannot be re-cited with a different classification.
-        $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'c', $this->f['acceptance'], ScopeHeader::compose('REQUIRED', 'EXCLUDED', self::AGREED), $evidence));
-        $v2 = $this->recordScopedBasis($this->checker, 'v2', $this->f['acceptance'], $this->f['case'], 'Second agreed wording.');
+        $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'c', $this->f['acceptance'], $this->scopeDeclaration($this->f['acceptance'], 'REQUIRED', 'EXCLUDED'), $evidence));
+        $v2 = $this->recordScopedBasis($this->checker, 'v2', $this->f['acceptance'], $this->f['case'], 'Second agreement evidence.');
         $this->assertSame(2, $v2['version']);
         $this->assertSame($first['basis_id'], (int) DB::table('service_completion_bases')->where('id', $v2['basis_id'])->value('predecessor_id'));
         $this->assertSame(2, DB::table('service_completion_bases')->count());
@@ -294,44 +296,89 @@ class ReleaseApplicabilityTest extends TestCase
 
     // ---- classification integrity: the scope is DERIVED from the customer-evidenced header, never chosen (review P1) ---------------------------------------
 
-    public function test_the_scope_is_derived_from_the_evidenced_header_and_every_malformed_header_is_refused(): void
+    public function test_the_scope_is_derived_from_the_declaration_and_every_ambiguous_agreement_is_refused(): void
     {
         foreach (['EXCLUDED' => 'REQUIRED', 'REQUIRED' => 'UNSTATED', 'UNSTATED' => 'EXCLUDED'] as $m => $s) {
-            $out = $this->recordScopedBasis($this->checker, "d-{$m}", $this->f['acceptance'], $this->f['case'], "Wording for {$m}/{$s}.", $m, $s);
+            $out = $this->recordScopedBasis($this->checker, "d-{$m}", $this->f['acceptance'], $this->f['case'], "Evidence for {$m}/{$s}.", $m, $s);
             $row = DB::table('service_completion_bases')->find($out['basis_id']);
-            $this->assertSame([$m, $s], [$row->materials_scope, $row->subcontract_scope], 'stored scope equals the evidenced header');
+            $this->assertSame([$m, $s], [$row->materials_scope, $row->subcontract_scope], 'stored scope equals the evidenced declaration');
         }
+        $acc = $this->f['acceptance'];
+        $lineId = (int) DB::table('customer_acceptance_lines')->where('acceptance_id', $acc)->value('issued_line_id');
+        $digest = ScopeHeader::digest((string) DB::table('quotation_issued_lines')->where('id', $lineId)->value('description'));
+        $valid = $this->scopeDeclaration($acc);
         $bad = [
-            'missing header' => 'The service is fully excluded of materials.',
-            'reordered' => "SUBCONTRACTORS: EXCLUDED\nMATERIALS: EXCLUDED\nText.",
-            'duplicated' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nText.\nMATERIALS: REQUIRED",
-            'duplicated subcontractors' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nSUBCONTRACTORS: REQUIRED",
-            'unknown value' => "MATERIALS: NONE\nSUBCONTRACTORS: EXCLUDED\nText.",
-            'lowercase' => "materials: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nText.",
-            'extra spaces' => "MATERIALS:  EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nText.",
-            'header not first' => "Preamble.\nMATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED",
-            'CRLF' => "MATERIALS: EXCLUDED\r\nSUBCONTRACTORS: EXCLUDED\r\nText.",
-            'one line only' => 'MATERIALS: EXCLUDED',
+            // The incorrect case from the owner review: the header says EXCLUDED, the free text says materials are required.
+            'free text contradicting the header' => $valid."\nMaterials required for the work",
+            'free text on its own line' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nMaterials required for the work\nLINE: {$lineId}\nDELIVERABLE_SHA256: {$digest}",
+            'trailing newline' => $valid."\n",
+            'only two lines (the previous format)' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED",
+            'two lines plus free text (the previous format)' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nMaterials required for the work",
+            'missing digest' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}",
+            'missing line' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nDELIVERABLE_SHA256: {$digest}",
+            'reordered' => "SUBCONTRACTORS: EXCLUDED\nMATERIALS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: {$digest}",
+            'line and digest swapped' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nDELIVERABLE_SHA256: {$digest}\nLINE: {$lineId}",
+            'duplicated materials' => $valid."\nMATERIALS: REQUIRED",
+            'duplicated digest' => $valid."\nDELIVERABLE_SHA256: {$digest}",
+            'wrong line id' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: ".($lineId + 1)."\nDELIVERABLE_SHA256: {$digest}",
+            'wrong digest' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: ".str_repeat('0', 64),
+            'digest of another text' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: ".ScopeHeader::digest('Some other deliverable text'),
+            'uppercase digest' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: ".strtoupper($digest),
+            'unknown value' => "MATERIALS: NONE\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: {$digest}",
+            'lowercase keyword' => "materials: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: {$digest}",
+            'extra spaces' => "MATERIALS:  EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: {$digest}",
+            'CRLF' => str_replace("\n", "\r\n", $valid),
+            'preamble before the declaration' => "Preamble.\n".$valid,
+            'keyword line inside conditions text' => "The customer agrees to the following.\nMATERIALS: EXCLUDED",
         ];
         $count = DB::table('service_completion_bases')->count();
         foreach ($bad as $label => $text) {
             $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
-            $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'bad-'.md5($label), $this->f['acceptance'], $text, $evidence), $label);
+            $this->refused(fn () => app(RecordServiceCompletionBasis::class)($this->checker, 'bad-'.md5($label), $acc, $text, $evidence), $label);
         }
-        $this->assertSame($count, DB::table('service_completion_bases')->count(), 'no malformed header wrote anything');
+        $this->assertSame($count, DB::table('service_completion_bases')->count(), 'no ambiguous agreement wrote anything');
     }
 
-    public function test_free_text_is_never_interpreted_and_a_required_header_makes_the_proof_applicable(): void
+    public function test_a_required_declaration_is_applicable_and_a_conditions_only_head_resets_the_scope_to_unknown(): void
     {
-        // The header is the classification the customer-evidenced record states; the free text is not read (documented limit — independent verification of evidence is the
-        // optional policy #114). So wording that contradicts the header does not change it.
-        $this->recordScopedBasis($this->checker, 'free', $this->f['acceptance'], $this->f['case'], 'Materials required and subcontractors required in the field.', 'EXCLUDED', 'EXCLUDED');
+        $this->recordScopedBasis($this->checker, 'excl', $this->f['acceptance'], $this->f['case']);
         $this->assertSame('NOT_APPLICABLE', $this->preview()['applicability']['status']);
-        // A REQUIRED header, with every family clean, is APPLICABLE and the pilot refuses.
+        // Re-stating conditions as free text (no declaration) makes the HEAD declare no scope: UNKNOWN, release refuses until the declaration is recorded again.
+        $conditions = 'Completion also needs the written sign-off of the site contact.';
+        $ev = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $conditions);
+        $out = app(RecordServiceCompletionBasis::class)($this->checker, 'cond', $this->f['acceptance'], $conditions, $ev);
+        $row = DB::table('service_completion_bases')->find($out['basis_id']);
+        $this->assertSame(['EVIDENCE_TEXT', 'UNSTATED', 'UNSTATED'], [$row->terms_source, $row->materials_scope, $row->subcontract_scope]);
+        $p = $this->preview();
+        $this->assertSame('UNKNOWN', $p['applicability']['status']);
+        $this->assertContains('SOURCE_APPLICABILITY_UNPROVEN', $p['blockers']);
+        $this->refused(fn () => $this->release($p));
+        $this->assertDatabaseCount('handover_release_events', 0);
+        // Declaring again (new evidence, new version) restores the proof.
+        $this->recordScopedBasis($this->checker, 'again', $this->f['acceptance'], $this->f['case'], 'Declared again.');
+        $this->assertSame('NOT_APPLICABLE', $this->preview()['applicability']['status']);
+        // A REQUIRED declaration, with every family clean, is APPLICABLE and the pilot refuses.
         $this->recordScopedBasis($this->checker, 'req', $this->f['acceptance'], $this->f['case'], 'Supply the pipes.', 'REQUIRED', 'EXCLUDED');
         $p = $this->preview();
         $this->assertSame('APPLICABLE', $p['applicability']['status']);
         $this->assertContains('SOURCE_OBLIGATION_UNSUPPORTED', $p['blockers']);
+    }
+
+    public function test_the_resolver_ignores_a_stored_scope_that_is_not_a_verified_declaration(): void
+    {
+        // Defence in depth: a legacy-format row (or any row whose text is not a declaration for THIS line with its current digest) counts as UNSTATED => UNKNOWN.
+        $good = $this->recordScopedBasis($this->checker, 'good', $this->f['acceptance'], $this->f['case']);
+        $this->assertSame('NOT_APPLICABLE', $this->preview()['applicability']['status']);
+        try {
+            DB::statement('SET LOCAL session_replication_role = replica');
+        } catch (QueryException) {
+            $this->markTestSkipped('The test database role cannot bypass triggers to plant a legacy-format row.');
+        }
+        DB::table('service_completion_bases')->where('id', $good['basis_id'])->update(['agreed_text' => "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nMaterials required for the work"]);
+        DB::statement('SET LOCAL session_replication_role = origin');
+        $p = $this->preview();
+        $this->assertSame('UNKNOWN', $p['applicability']['status']);
+        $this->assertSame('UNSTATED', $p['applicability']['scope']['materials']);
     }
 
     public function test_an_issued_line_description_that_looks_like_a_header_still_states_no_scope(): void
@@ -341,8 +388,8 @@ class ReleaseApplicabilityTest extends TestCase
         } catch (QueryException) {
             $this->markTestSkipped('The test database role cannot bypass triggers to edit the issued description.');
         }
-        $headerLike = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'Fixed service.');
         $lineId = (int) DB::table('customer_acceptance_lines')->where('acceptance_id', $this->f['acceptance'])->value('issued_line_id');
+        $headerLike = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', $lineId, 'Fixed service.');
         DB::table('quotation_issued_lines')->where('id', $lineId)->update(['description' => $headerLike]);
         DB::statement('SET LOCAL session_replication_role = origin');
         $out = app(RecordServiceCompletionBasis::class)($this->checker, 'hl', $this->f['acceptance'], null, $this->consentEvidence);
@@ -350,32 +397,50 @@ class ReleaseApplicabilityTest extends TestCase
         $this->assertSame(['ISSUED_LINE', 'UNSTATED', 'UNSTATED'], [$row->terms_source, $row->materials_scope, $row->subcontract_scope], 'only dedicated evidence can state a scope');
     }
 
-    public function test_the_database_derives_the_scope_from_the_header_whatever_the_application_does(): void
+    public function test_the_database_derives_the_scope_from_the_declaration_whatever_the_application_does(): void
     {
         $good = $this->recordScopedBasis($this->checker, 'good', $this->f['acceptance'], $this->f['case']);
         $row = (array) DB::table('service_completion_bases')->find($good['basis_id']);
         unset($row['id']);
         $next = [...$row, 'version' => 2, 'predecessor_id' => $good['basis_id'], 'intent_digest' => str_repeat('c', 64)];
-        $insert = function (string $text, string $m, string $s) use ($next): \Closure {
+        $insert = function (string $text, string $m, string $s) use (&$next): \Closure {
             $evidence = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+            $base = $next;
 
-            return fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $evidence, 'agreed_text' => $text, 'materials_scope' => $m, 'subcontract_scope' => $s]);
+            return fn () => DB::table('service_completion_bases')->insert([...$base, 'evidence_id' => $evidence, 'agreed_text' => $text, 'materials_scope' => $m, 'subcontract_scope' => $s]);
         };
-        // Contradictions between the evidenced header and the stored classification, in both directions.
-        $this->sqlRefused($insert(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'T1.'), 'REQUIRED', 'EXCLUDED'));
-        $this->sqlRefused($insert(ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'T2.'), 'EXCLUDED', 'REQUIRED'));
-        $this->sqlRefused($insert(ScopeHeader::compose('REQUIRED', 'REQUIRED', 'T3.'), 'EXCLUDED', 'EXCLUDED'));
-        $this->sqlRefused($insert(ScopeHeader::compose('UNSTATED', 'EXCLUDED', 'T4.'), 'EXCLUDED', 'EXCLUDED'));
-        // Flags without any header, forged UNSTATED flags without a header, and malformed headers.
-        $this->sqlRefused($insert('No header at all.', 'EXCLUDED', 'EXCLUDED'));
-        $this->sqlRefused($insert('No header either.', 'UNSTATED', 'UNSTATED'));
-        $this->sqlRefused($insert("SUBCONTRACTORS: EXCLUDED\nMATERIALS: EXCLUDED\nReordered.", 'EXCLUDED', 'EXCLUDED'));
-        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nDup.\nMATERIALS: REQUIRED", 'EXCLUDED', 'EXCLUDED'));
-        $this->sqlRefused($insert("MATERIALS: EXCLUDED\r\nSUBCONTRACTORS: EXCLUDED\r\nCRLF.", 'EXCLUDED', 'EXCLUDED'));
+        $acc = $this->f['acceptance'];
+        $lineId = (int) DB::table('customer_acceptance_lines')->where('acceptance_id', $acc)->value('issued_line_id');
+        $digest = ScopeHeader::digest((string) DB::table('quotation_issued_lines')->where('id', $lineId)->value('description'));
+        // Contradictions between the evidenced declaration and the stored classification, in both directions.
+        $this->sqlRefused($insert($this->scopeDeclaration($acc, 'EXCLUDED', 'EXCLUDED'), 'REQUIRED', 'EXCLUDED'));
+        $this->sqlRefused($insert($this->scopeDeclaration($acc, 'EXCLUDED', 'EXCLUDED'), 'EXCLUDED', 'REQUIRED'));
+        $this->sqlRefused($insert($this->scopeDeclaration($acc, 'REQUIRED', 'REQUIRED'), 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert($this->scopeDeclaration($acc, 'UNSTATED', 'EXCLUDED'), 'EXCLUDED', 'EXCLUDED'));
+        // The incorrect case: a declaration followed by free text that contradicts it — whatever the columns say.
+        $this->sqlRefused($insert($this->scopeDeclaration($acc)."\nMaterials required for the work", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nMaterials required for the work", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nMaterials required for the work", 'UNSTATED', 'UNSTATED'));
+        // Wrong line id, wrong digest, the digest of another text, uppercase digest.
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: ".($lineId + 1)."\nDELIVERABLE_SHA256: {$digest}", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: ".str_repeat('a', 64), 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: ".ScopeHeader::digest('Another deliverable'), 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: ".strtoupper($digest), 'EXCLUDED', 'EXCLUDED'));
+        // Flags without any declaration, malformed and reordered declarations, CRLF, keyword lines inside conditions text.
+        $this->sqlRefused($insert('No declaration at all.', 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("SUBCONTRACTORS: EXCLUDED\nMATERIALS: EXCLUDED\nLINE: {$lineId}\nDELIVERABLE_SHA256: {$digest}", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert($this->scopeDeclaration($acc)."\nMATERIALS: REQUIRED", 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert(str_replace("\n", "\r\n", $this->scopeDeclaration($acc)), 'EXCLUDED', 'EXCLUDED'));
+        $this->sqlRefused($insert("Conditions.\nMATERIALS: EXCLUDED", 'UNSTATED', 'UNSTATED'));
         $this->assertSame(1, DB::table('service_completion_bases')->count());
-        // The honest version: the stored classification equals the evidenced header.
-        ($insert(ScopeHeader::compose('REQUIRED', 'EXCLUDED', 'Honest.'), 'REQUIRED', 'EXCLUDED'))();
+        // Honest rows: a declaration whose columns equal it, and conditions-only text stating no scope.
+        ($insert($this->scopeDeclaration($acc, 'REQUIRED', 'EXCLUDED'), 'REQUIRED', 'EXCLUDED'))();
         $this->assertSame(2, DB::table('service_completion_bases')->count());
+        $next['version'] = 3;
+        $next['predecessor_id'] = (int) DB::table('service_completion_bases')->where('version', 2)->value('id');
+        $next['intent_digest'] = str_repeat('d', 64);
+        ($insert('The site contact signs off on completion.', 'UNSTATED', 'UNSTATED'))();
+        $this->assertSame(3, DB::table('service_completion_bases')->count());
     }
 
     public function test_the_database_refuses_forged_agreement_rows_whatever_the_application_does(): void
@@ -391,9 +456,9 @@ class ReleaseApplicabilityTest extends TestCase
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'ISSUED_LINE', 'evidence_id' => $row['evidence_id'], 'agreed_text' => $issued, 'materials_scope' => 'UNSTATED', 'subcontract_scope' => 'UNSTATED']));
         // EVIDENCE_TEXT riding on the acceptance's own consent evidence, or on text its evidence does not say.
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'EVIDENCE_TEXT', 'evidence_id' => $this->consentEvidence, 'agreed_text' => $issued]));
-        $headed = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'What the customer evidenced.');
+        $headed = $this->scopeDeclaration($this->f['acceptance'], 'EXCLUDED', 'EXCLUDED');
         $other = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $headed);
-        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'EVIDENCE_TEXT', 'evidence_id' => $other, 'agreed_text' => ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'What the employee invented.')]));
+        $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'terms_source' => 'EVIDENCE_TEXT', 'evidence_id' => $other, 'agreed_text' => $this->scopeDeclaration($this->f['acceptance'], 'EXCLUDED', 'UNSTATED')]));
         // The same evidence twice for one line (unique), a scope outside the vocabulary, a scope on the issued-line path (CHECK).
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $row['evidence_id']]));
         $this->sqlRefused(fn () => DB::table('service_completion_bases')->insert([...$next, 'evidence_id' => $other, 'agreed_text' => $headed, 'materials_scope' => 'MAYBE']));
@@ -413,7 +478,7 @@ class ReleaseApplicabilityTest extends TestCase
         } catch (QueryException) {
             $this->markTestSkipped('The test database role cannot bypass triggers to back-date evidence.');
         }
-        $old_text = ScopeHeader::compose('EXCLUDED', 'EXCLUDED', 'Older general text.');
+        $old_text = $this->scopeDeclaration($this->f['acceptance']);
         $consentAt = DB::table('customer_decision_evidence')->where('id', $this->consentEvidence)->value('recorded_at');
         $old = DB::table('customer_decision_evidence')->insertGetId(['company_id' => 1, 'case_id' => $this->f['case'], 'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE',
             'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => $old_text, 'observation_state' => 'OBSERVED',

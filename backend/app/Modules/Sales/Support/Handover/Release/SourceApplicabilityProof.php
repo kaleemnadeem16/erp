@@ -29,7 +29,7 @@ final class SourceApplicabilityProof
     private const LINEAGE = ['service_jobs', 'handover_plans', 'handover_allocations', 'handover_stages', 'handover_baselines', 'handover_readiness_evidence', 'handover_release_events', 'service_completion_bases'];
 
     /**
-     * @return array{status:string,version:string,scope:array{materials:string,subcontract:string,basis:?array{id:int,version:int,terms_source:string}},families:array<string,array{status:string,contract:string,reason:?string}>,referencing:list<string>,pin:string}
+     * @return array{status:string,version:string,scope:array{materials:string,subcontract:string,basis:?array{id:int,version:int,terms_source:string},declared:?array{line:int,digest:string}},families:array<string,array{status:string,contract:string,reason:?string}>,referencing:list<string>,pin:string}
      */
     public function evaluate(?ResolvedCompletionBasis $basis): array
     {
@@ -55,7 +55,8 @@ final class SourceApplicabilityProof
             $status = FamilyAssessment::UNKNOWN;
         }
         $result = ['status' => $status, 'version' => self::VERSION,
-            'scope' => ['materials' => $materials, 'subcontract' => $subcontract, 'basis' => $basis === null ? null : ['id' => $basis->basisId, 'version' => $basis->version, 'terms_source' => $basis->termsSource]],
+            'scope' => ['materials' => $materials, 'subcontract' => $subcontract, 'basis' => $basis === null ? null : ['id' => $basis->basisId, 'version' => $basis->version, 'terms_source' => $basis->termsSource],
+                'declared' => $declared ? ['line' => $basis->declaredLineId, 'digest' => $basis->declaredDigest] : null],
             'families' => $families, 'referencing' => $referencing];
         $result['pin'] = self::pin($result);
 

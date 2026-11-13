@@ -20,8 +20,9 @@ use App\Modules\Sales\Support\PermissionVocabulary as P;
  *  - the lightweight default: the issued line's own description, verbatim, citing the acceptance's own consent evidence (pass `$agreedText` null) — states no material or
  *    subcontractor scope, so source applicability stays UNKNOWN;
  *  - new or extra conditions, or any EXCLUDED/REQUIRED scope: DEDICATED written, authority-verified evidence of the accepting case that is not the acceptance's own consent
- *    evidence, recorded after it, whose factual description IS the agreed text. The text must start with the strict {@see ScopeHeader} (MATERIALS / SUBCONTRACTORS lines); the
- *    stored scope is DERIVED from that header, never passed in, so a classification can never contradict the text the customer-evidenced record states. An employee cannot
+ *    evidence, recorded after it, whose factual description IS the agreed text. A SCOPE is stated only by a {@see ScopeHeader} declaration — the whole text is exactly four lines
+ *    (MATERIALS, SUBCONTRACTORS, LINE, DELIVERABLE_SHA256 of the issued description) with no free text — and the stored scope is DERIVED from it, never passed in; a conditions-only text may
+ *    not contain any keyword line (scope stays UNSTATED => UNKNOWN). So a classification can never contradict free text in the same record. An employee cannot
  *    invent an obligation or an exclusion and cite old general acceptance evidence.
  * Never backfills agreement; the same intent again is an idempotent no-op. No route, no Job, no release.
  */
@@ -33,6 +34,9 @@ final class RecordServiceCompletionBasis
     public function __invoke(User $actor, ?string $requestKey, int $acceptanceId, ?string $agreedText, int $evidenceId): array
     {
         HandoverAccess::early($actor, false, P::HANDOVER_COMPLETION_BASIS_RECORD);
+        if ($agreedText !== null && trim($agreedText) !== $agreedText && ScopeHeader::claimsDeclaration(trim($agreedText))) {
+            throw R::make(R::INVALID_INPUT, 'A scope declaration must be exactly the four lines MATERIALS, SUBCONTRACTORS, LINE and DELIVERABLE_SHA256 and nothing else (no surrounding whitespace).', 'agreed_text');
+        }
         $text = $agreedText === null ? null : trim($agreedText);
         if ($text !== null && ($text === '' || mb_strlen($text) > 4000)) {
             throw R::make(R::INVALID_INPUT, 'The agreed completion conditions must be 1 to 4000 characters.', 'agreed_text');
@@ -66,7 +70,22 @@ final class RecordServiceCompletionBasis
                     if ($text === null || $evidence->recorded_at->lte($consent->recorded_at) || trim($evidence->factual_description) !== $text) {
                         throw R::make(R::INVALID_INPUT, 'New conditions need written evidence recorded after the acceptance whose description is exactly the agreed text.', 'evidence_id');
                     }
-                    $scope = ScopeHeader::parse($text) ?? throw R::make(R::INVALID_INPUT, 'The agreed text must start with exactly the two lines "MATERIALS: EXCLUDED|REQUIRED|UNSTATED" and "SUBCONTRACTORS: EXCLUDED|REQUIRED|UNSTATED" (each stated once).', 'agreed_text');
+                    $scope = ['materials' => 'UNSTATED', 'subcontract' => 'UNSTATED'];
+                    if (ScopeHeader::claimsDeclaration($text)) {
+                        $declared = ScopeHeader::parse($text);
+                        if ($declared === null) {
+                            throw R::make(R::INVALID_INPUT, 'A scope declaration must be exactly the four lines MATERIALS, SUBCONTRACTORS, LINE and DELIVERABLE_SHA256 and nothing else.', 'agreed_text');
+                        }
+                        if ($declared['line'] !== (int) $s->line->id) {
+                            throw R::make(R::INVALID_INPUT, 'The declaration names a different issued line than the accepted one.', 'agreed_text');
+                        }
+                        if ($declared['digest'] !== ScopeHeader::digest((string) $s->line->description)) {
+                            throw R::make(R::INVALID_INPUT, 'The declaration does not match the exact agreed deliverable text of this line.', 'agreed_text');
+                        }
+                        $scope = ['materials' => $declared['materials'], 'subcontract' => $declared['subcontract']];
+                    } elseif (ScopeHeader::hasKeywordLine($text)) {
+                        throw R::make(R::INVALID_INPUT, 'Conditions text may not contain scope keyword lines; a scope is stated only by a complete declaration.', 'agreed_text');
+                    }
                 }
                 $basis = ServiceCompletionBasis::query()->create(['issued_line_id' => $s->line->id, 'version' => ($head === null ? 0 : $head->version) + 1, 'predecessor_id' => $head?->id,
                     'agreed_text' => $text, 'evidence_id' => $evidence->id, 'intent_digest' => $digest, 'recorded_by' => $actor->id, 'terms_source' => $ownConsent ? 'ISSUED_LINE' : 'EVIDENCE_TEXT',

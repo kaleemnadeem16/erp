@@ -24,9 +24,14 @@ final class SalesCompletionBasis
             return null;
         }
         $issued = QuotationIssuedLine::query()->findOrFail($line->issued_line_id);
+        // Defence in depth (the guard already enforces it at insert): a scope counts ONLY when the stored agreed text is exactly a declaration for THIS line whose digest still
+        // equals the issued description's digest. Anything else — a legacy row, a mismatch — is UNSTATED, i.e. applicability UNKNOWN.
+        $declared = $basis->terms_source === 'EVIDENCE_TEXT' ? ScopeHeader::parse((string) $basis->agreed_text) : null;
+        $verified = $declared !== null && $declared['line'] === (int) $issued->id && $declared['digest'] === ScopeHeader::digest((string) $issued->description)
+            && $declared['materials'] === $basis->materials_scope && $declared['subcontract'] === $basis->subcontract_scope;
 
         return new ResolvedCompletionBasis($basis->id, app(CompanyContext::class)->id(), $issued->id, $basis->version, (string) $issued->description, $basis->agreed_text, $basis->evidence_id, $basis->attestation_policy,
-            (string) $basis->terms_source, (string) $basis->materials_scope, (string) $basis->subcontract_scope);
+            (string) $basis->terms_source, $verified ? $declared['materials'] : 'UNSTATED', $verified ? $declared['subcontract'] : 'UNSTATED', $verified ? $declared['line'] : null, $verified ? $declared['digest'] : null);
     }
 
     /** @throws DomainInvariantException COMPLETION_BASIS_MISSING when no agreed conditions were recorded */
