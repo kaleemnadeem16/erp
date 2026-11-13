@@ -24,11 +24,22 @@ Everything marked **OPEN** below must be answered by the owner/coordinator; none
 | Item | Outcome |
 |---|---|
 | O5 completion basis | Existing issued/acceptance evidence is **not** sufficient (no agreed conditions anywhere). New append-only Sales `service_completion_bases` record; issued-line text referenced verbatim. |
-| Inventory/Purchasing writers | No writer references a Job/lineage by construction; guarded by `JobLineageIsolationTest`. No fence needed from those modules; any future job-material writer must define its lock order first. |
+| Inventory/Purchasing writers | **Corrected (#122):** absence of Job foreign keys does NOT prove no obligation — Inventory accepts generic `source_type/source_id` and rejected-exit `document_type/document_id`, which are provenance only, never a Job allocation. Applicability is now proved by customer-agreed scope evidence + source-owner family authorities (`app/Support/JobSource`) + the FK catalogue; anything else is UNKNOWN and blocks release. See [job-source-safety](../domain/job-source-safety.md). |
 | Strict no-growth | `PermissionRegistry::excludeStrictly` + `JobDutyManifest::registerWith`; mandates cannot carry Jobs duties. |
 | Appointments (O1/O2) | Implemented by delegated sessions acting as Agent A (Sales), Agent B (Jobs) and the shared-security change; independent reviewers are **not yet appointed**. |
 
-Commits: `0ddf5306`, `f3ea6069` (security), `cc4c8940` (Sales), `914c51bf` (Jobs), `4f47c581`, `e90ef6bc` (test follow-ups). Known limits: default release cost policy is "not required" (owner decision 3); no mid-COMMIT failure injection, release-versus-source-mutation race, or two-stage same-parent test yet; independent Sales/security and transaction review and Inventory/Purchasing sign-off still required before any activation.
+Commits: `0ddf5306`, `f3ea6069` (security), `cc4c8940` (Sales), `914c51bf` (Jobs), `4f47c581`, `e90ef6bc`, `b1cac392` (follow-ups), `9ab38ae7` (neutral source-family contract), `8ead9694` (scope-evidence applicability + agreement-bound completion basis), `0441ff9f` (receiver coverage gaps; fixes replay-after-revocation), plus the source owner's `67aa379f` (Inventory/Purchasing family authorities) and `dc983345` (#123).
+
+**Status (2026-11-13):**
+
+| Area | State |
+|---|---|
+| Backend code | Implemented, disabled (no route, grant or activation). |
+| Source safety | Code and tests landed; **independent source/security review and Inventory/Purchasing owner sign-off pending.** Real releases need a customer-agreed EXCLUDED scope with dedicated written evidence. |
+| Tests | Local combined regression 2810 passed / 1 skipped on the pre-push tree; exact-SHA CI on `0441ff9f` pending at the time of writing. |
+| Independent reviews | **Not done** (Sales/security, transaction, shared-security, Inventory, Purchasing). |
+| Batch 1 | **Not complete.** Pilot activation is not authorised. |
+ Known limits: default release cost policy is "not required" (owner decision 3); no mid-COMMIT failure injection, release-versus-source-mutation race, or two-stage same-parent test yet; independent Sales/security and transaction review and Inventory/Purchasing sign-off still required before any activation.
 
 ## 1. Finite scope (what Batch 1 delivers, disabled)
 
