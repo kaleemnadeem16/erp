@@ -6,6 +6,7 @@ use App\Contracts\NumberingScheme;
 use App\Support\CompanyContext;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\DefaultNumberingScheme;
+use App\Support\JobSource\JobSourceFamilies;
 use App\Support\OpenApi\CustomFieldsRuleTransformer;
 use App\Support\OpenApi\DecimalAsStringRuleTransformer;
 use App\Support\Performance\QueryTimings;
@@ -35,6 +36,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(CompanyContext::class);
         $this->app->singleton(PermissionRegistry::class);
         $this->app->singleton(ResourceScopeAdapters::class);
+        $this->app->singleton(JobSourceFamilies::class);
         $this->app->singleton(FinancialActivity::class);
         $this->app->singleton(QueryTimings::class);
         $this->app->bind(NumberingScheme::class, DefaultNumberingScheme::class);
