@@ -77,7 +77,9 @@ inventory planning. It explains effective versions/fallbacks, standard versus pl
 hypothetical ADR 0054 outcome, permitted availability/package proposals, cost evidence and every
 precision limitation. It returns a stale-comparison fingerprint, not a reservation token.
 
-Phase 3 stores no adopted plan because no quotation revision owns one yet. Phase 4 reruns and
+Phase 3 stores no adopted plan; a quotation revision owns it ([0190](../decisions/0190-adopt-material-plans-on-quotation-assembly-lines.md), adopted in Sales as append-only evidence — the sentence that follows is historical).
+
+Historical: Phase 3 stores no adopted plan because no quotation revision owned one yet. Phase 4 reruns and
 revalidates the same resolver when a real draft adopts a plan; Phase 5 reserves stock. The first
 slice may be `QUANTITY_ONLY` and approximate, but must never infer sealed packs or containers from
 aggregate stock.

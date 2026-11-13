@@ -16,6 +16,7 @@ use App\Modules\Sales\Support\DiscountAuthority\AuthorityParticipants;
 use App\Modules\Sales\Support\Financial\Arithmetic;
 use App\Modules\Sales\Support\Financial\Policy\RoundingPolicyBinding;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Modules\Sales\Support\MaterialPlan\MaterialPlanStaleness;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Pricing\PricingSourceKind;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
@@ -124,7 +125,9 @@ final class UpdateQuotationDraft
         /** @var Collection<int, QuotationDraftLine> $lines */
         $lines = $revision->lines()->get()->keyBy('id');
         foreach ($changes->remove as $id) {
-            ($lines[$id] ?? throw QuotationRefusal::make(QuotationRefusal::LINE_NOT_FOUND, 'The line is not on this draft.', 'remove_lines'))->delete();
+            $gone = $lines[$id] ?? throw QuotationRefusal::make(QuotationRefusal::LINE_NOT_FOUND, 'The line is not on this draft.', 'remove_lines');
+            app(MaterialPlanStaleness::class)->discard($gone);
+            $gone->delete();
         }
         // A baseline moves by clearing the old one before setting the new one, because the database allows one baseline per group at every moment.
         $baselineLast = static fn (array $a, array $b): int => (int) ($a['is_baseline'] ?? false) <=> (int) ($b['is_baseline'] ?? false);
@@ -139,6 +142,7 @@ final class UpdateQuotationDraft
             $this->guard(fn () => $this->addLine($actor, $revision, $fields));
         }
 
+        app(MaterialPlanStaleness::class)->sweep($revision);
         $this->refreshEvidence($revision);
         $this->applyDocumentDiscount($actor, $revision, $changes);
         $this->reassess($revision);

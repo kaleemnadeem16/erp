@@ -4,19 +4,26 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Quotation\Issue;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Company;
 use App\Models\User;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Parties\Models\Party;
 use App\Modules\Sales\Actions\PreviewQuotation;
+use App\Modules\Sales\Models\QuotationDraftLine;
+use App\Modules\Sales\Models\QuotationMaterialPlan;
 use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\DiscountAuthority\AssessDiscountAuthority;
 use App\Modules\Sales\Support\DiscountAuthority\QuotationAuthorityApproval;
 use App\Modules\Sales\Support\Financial\Certainty;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Modules\Sales\Support\MaterialPlan\EvaluateMaterialPlan;
+use App\Modules\Sales\Support\MaterialPlan\MaterialPlanStanding;
+use App\Modules\Sales\Support\Pricing\PricingSourceKind;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
 use App\Support\CompanyContext;
 use App\Support\Status;
+use Illuminate\Auth\Access\AuthorizationException;
 
 /**
  * Decides, from the facts of a draft alone, whether it could be issued: the header, every line through the same PR0/FR4 preview the preparer sees, and the two independent
@@ -43,6 +50,7 @@ final class QuotationIssueAssessor
         } elseif ($revision->recipient_party_id !== null && $revision->pricing_date !== null && ! $this->recipientBlocked($revision)) {
             $preview = $this->preview->forRevision($actor, $revision);
             array_push($blockers, ...$this->lines($preview));
+            array_push($blockers, ...$this->materialPlans($actor, $revision));
         }
         $nets = $this->nets($revision, $preview);
         $tax = $this->tax->assess($context, $revision, $nets);
@@ -99,6 +107,46 @@ final class QuotationIssueAssessor
         }
 
         return [$result, $standing['state'] === QuotationApprovals::APPROVED ? $standing['request'] : null];
+    }
+
+    /**
+     * An Assembly line that adopted a Material Plan is issued only on a plan that still stands (ADR 0054 §6, ADR 0122): it must still describe the line, every approval it needs must be
+     * granted for exactly its facts, and evaluating it again now must give the same routing fingerprint. A line that never adopted a plan is priced without one. An evaluation that cannot
+     * run for the issuer (a missing Estimating right, a withdrawn version) is NOT_REVALIDATED — unknown is never a pass.
+     *
+     * @return list<IssueBlocker>
+     */
+    private function materialPlans(User $actor, QuotationRevision $revision): array
+    {
+        $blockers = [];
+        $standing = app(MaterialPlanStanding::class);
+        foreach (QuotationDraftLine::query()->where('revision_id', $revision->id)->where('source_kind', PricingSourceKind::AssemblyWork->value)->orderBy('id')->get() as $line) {
+            $result = $standing->forLine($line);
+            $code = match ($result['state']) {
+                MaterialPlanStanding::NONE => null,
+                MaterialPlanStanding::STALE => 'MATERIAL_PLAN_STALE',
+                MaterialPlanStanding::APPROVAL_NOT_REQUESTED => 'MATERIAL_PLAN_APPROVAL_REQUIRED',
+                MaterialPlanStanding::APPROVAL_PENDING => 'MATERIAL_PLAN_APPROVAL_PENDING',
+                MaterialPlanStanding::APPROVAL_REJECTED => 'MATERIAL_PLAN_APPROVAL_REJECTED',
+                default => $result['plan'] === null ? null : $this->drift($actor, $line, $result['plan']),
+            };
+            if ($code !== null) {
+                $blockers[] = new IssueBlocker($code, IssueBlocker::LINE, $line->id);
+            }
+        }
+
+        return $blockers;
+    }
+
+    private function drift(User $actor, QuotationDraftLine $line, QuotationMaterialPlan $plan): ?string
+    {
+        try {
+            $now = app(EvaluateMaterialPlan::class)($actor, $line, $plan->inputs, false);
+        } catch (DomainInvariantException|AuthorizationException) {
+            return 'MATERIAL_PLAN_NOT_REVALIDATED';
+        }
+
+        return $now->problems === [] && hash_equals($plan->routing_fingerprint, $now->fingerprint) ? null : 'MATERIAL_PLAN_STALE';
     }
 
     /** @return list<IssueBlocker> */

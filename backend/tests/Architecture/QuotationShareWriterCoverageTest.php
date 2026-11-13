@@ -26,7 +26,7 @@ class QuotationShareWriterCoverageTest extends TestCase
             }
         }
         $this->assertEqualsCanonicalizing([
-            'CreateQuotationDraft', 'UpdateQuotationDraft', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
+            'CreateQuotationDraft', 'UpdateQuotationDraft', 'AdoptQuotationMaterialPlan', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
             'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline',
             'Access/GrantQuotationAccess', 'Access/RevokeQuotationAccess',
             // Approvals integration (ADR 0158): the approval Actions take the same governed quotation operation.

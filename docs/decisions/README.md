@@ -200,8 +200,9 @@ in the same commit.
 | [0187](0187-record-phase-4-closure-decisions-d1-d16.md) | Phase 4 closure decisions D1-D16 | accepted (owner decisions 2026-11-12) | 2026-11-12 |
 | [0188](0188-record-phase-4-closure-owner-decisions-second-response-2026-11-12.md) | Record Phase 4 closure owner decisions, second response (2026-11-12) | accepted (owner decisions 2026-11-12) | 2026-11-12 |
 | [0189](0189-prove-assembly-quotation-lines-cost-blind-and-freeze-the-sold-version.md) | Prove Assembly quotation lines cost-blind and freeze the sold version | accepted (implementation; owner decision 2026-11-13) | 2026-11-13 |
+| [0190](0190-adopt-material-plans-on-quotation-assembly-lines.md) | Adopt Material Plans on quotation Assembly lines | accepted (implementation; owner decision 2026-11-13) | 2026-11-13 |
 
-**Next number: 0190** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
+**Next number: 0191** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

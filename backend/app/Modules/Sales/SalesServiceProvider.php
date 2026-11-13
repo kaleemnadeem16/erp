@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
 use App\Modules\Documents\Support\DocumentTypeRegistry;
 use App\Modules\Estimating\Support\CostEvidenceAuthorities;
+use App\Modules\Estimating\Support\MaterialPlanApprovalFacts;
 use App\Modules\Numbering\Support\NumberingRegistry;
 use App\Modules\Parties\Support\PartyCandidateAccess;
 use App\Modules\Sales\Models\QuotationDraftLine;
@@ -24,6 +25,7 @@ use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\Handover\Release\NoMandatoryReleaseCostPolicy;
 use App\Modules\Sales\Support\Handover\Release\ReleaseCostPolicy;
+use App\Modules\Sales\Support\MaterialPlan\QuotationMaterialPlanApprovalFacts;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\Issue\ConfiguredQuotationControlsProvider;
@@ -63,6 +65,7 @@ class SalesServiceProvider extends ServiceProvider
         // Slice 2: lifecycle writers see immutable acceptance facts under their existing authority coordinator.
         $this->app->bind(QuotationAcceptanceState::class, RecordedQuotationAcceptance::class);
         $this->app->bind(AssemblyCostEvidenceProvider::class, EstimatingAssemblyCostEvidence::class);
+        $this->app->bind(MaterialPlanApprovalFacts::class, QuotationMaterialPlanApprovalFacts::class);
         // Estimating opens cost evidence only for the authority the owning workflow registers: this is Sales' (active member + preparer duty, judged now).
         $this->app->afterResolving(CostEvidenceAuthorities::class, static function (CostEvidenceAuthorities $authorities): void {
             $authorities->register(new QuotationControlEvaluationAuthority);

@@ -17,6 +17,7 @@ use App\Modules\Estimating\Support\AssemblyComponentKind;
 use App\Modules\Estimating\Support\CostReadAuthorization;
 use App\Modules\Estimating\Support\EstimateCostResolution;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
+use App\Modules\Estimating\Support\PlanRoutingCollector;
 use App\Modules\Estimating\Support\ResolutionMethod;
 use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Models\Item;
@@ -63,7 +64,7 @@ final class PreviewAssemblyMaterials
      * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null, stock_mix?: list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>, stock_mix_notes?: list<array{item_id: int, note: string|null}>, planned_adjustments?: list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>}  $input
      * @return array<string, mixed>
      */
-    public function __invoke(Assembly $assembly, array $input, User $actor): array
+    public function __invoke(Assembly $assembly, array $input, User $actor, ?PlanRoutingCollector $routing = null): array
     {
         ActionAuthorization::require($actor, 'estimating.material_preview.run', 'preview Assembly materials');
         if ($actor->company_id !== app(CompanyContext::class)->id() || $assembly->company_id !== $actor->company_id) {
@@ -158,6 +159,7 @@ final class PreviewAssemblyMaterials
                 $leafRows,
                 $input['planned_adjustments'] ?? [],
                 $actor,
+                $routing,
             );
 
             $inventory = null;
@@ -172,6 +174,7 @@ final class PreviewAssemblyMaterials
                     $plannedByItem,
                     $input['stock_mix'] ?? [],
                     $input['stock_mix_notes'] ?? [],
+                    $routing,
                 );
             }
 

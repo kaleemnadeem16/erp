@@ -22,6 +22,7 @@ use App\Modules\Sales\Support\Documents\QuotationCustomerDocumentAdapter;
 use App\Modules\Sales\Support\Documents\QuotationCustomerProjection;
 use App\Modules\Sales\Support\Kernel\ActiveActor;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Modules\Sales\Support\MaterialPlan\MaterialPlanStanding;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Issue\IssueAssessment;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationIssueAssessor;
@@ -198,7 +199,7 @@ final class IssueQuotation
             $rows[] = [
                 'source_line_id' => $line->id, 'logical_scope_id' => $line->logical_scope_id, 'sort_order' => $line->sort_order, 'section_title' => $line->section_title, 'description' => $line->description,
                 'membership' => $line->membership, 'choice_group_id' => $line->choice_group_id, 'is_baseline' => (bool) $line->is_baseline, 'counts_in_total' => $counts, 'source_kind' => $line->source_kind,
-                'item_id' => $line->item_id, 'assembly_version_id' => $line->assembly_version_id, 'manual_measure' => $line->manual_measure, 'offered_quantity' => (string) $line->offered_quantity, 'offered_uom_id' => $line->offered_uom_id,
+                'item_id' => $line->item_id, 'assembly_version_id' => $line->assembly_version_id, 'material_plan_id' => app(MaterialPlanStanding::class)->currentPlan($line->id)?->id, 'manual_measure' => $line->manual_measure, 'offered_quantity' => (string) $line->offered_quantity, 'offered_uom_id' => $line->offered_uom_id,
                 'unit_price' => (string) $line->unit_price, 'price_currency_id' => $line->price_currency_id ?? $revision->currency_id, 'fx_fingerprint' => $line->fx_fingerprint,
                 'line_reduction_kind' => $this->lineReductionKind($previewLine),
                 'line_reduction_amount' => (string) BigDecimal::of((string) ($previewLine['list_amount'] ?? $previewLine['net']['amount']))->minus((string) ($previewLine['pre_document_net'] ?? $previewLine['net']['amount']))->toScale(4),
