@@ -133,6 +133,7 @@ J2 labour/costing is separate. This adds no application code, migration, permiss
 ## Related
 
 - [Revised dependency-ordered implementation plan](phase-5-revised-implementation-plan.md) — current source inventory, paired receiver/release, usable basic workflow, owner decisions and review gates.
+- [Batch 1 authorisation package (draft, #111)](phase-5-batch1-authorisation-package.md) — finite file ownership, interfaces, FKs, migration order, lock inventory and open appointments for owner approval.
 
 - [Task D lifecycle foundation design](phase-5-task-d-j1-foundation.md) and [J1-F1 batch proposal](phase-5-task-d-j1-f1-proposal.md) — technical candidates for separate review/implementation authority.
 - [Task E source integration design](phase-5-task-e-source-integration.md) — Sales/Inventory/Purchasing readiness, ownership and transaction delivery gates.
