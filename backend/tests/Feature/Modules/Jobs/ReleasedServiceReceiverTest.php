@@ -245,7 +245,7 @@ class ReleasedServiceReceiverTest extends TestCase
                 return $this->real->receive($release);
             }
 
-            public function assertMayReceive(\App\Models\User $actor): void
+            public function assertMayReceive(User $actor): void
             {
                 $this->real->assertMayReceive($actor);
             }
@@ -339,7 +339,7 @@ class ReleasedServiceReceiverTest extends TestCase
                 throw new RuntimeException('Injected failure after the Job was fully written.');
             }
 
-            public function assertMayReceive(\App\Models\User $actor): void
+            public function assertMayReceive(User $actor): void
             {
                 $this->real->assertMayReceive($actor);
             }
@@ -721,7 +721,7 @@ class ReleasedServiceReceiverTest extends TestCase
                 return $reference;
             }
 
-            public function assertMayReceive(\App\Models\User $actor): void
+            public function assertMayReceive(User $actor): void
             {
                 $this->real->assertMayReceive($actor);
             }
