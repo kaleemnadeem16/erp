@@ -40,6 +40,12 @@ final class ReleaseCoordinator
         if (! app()->bound(ReleasedServiceReceiver::class)) {
             throw R::make(R::RELEASE_RECEIVER_UNAVAILABLE, 'No Jobs receiver is available, so a service cannot be released.');
         }
+        // The receiver's own authority is judged on EVERY request, replays included: a revoked `job.receive` or a suspended member never gets the Job reference back.
+        $receiver = app(ReleasedServiceReceiver::class);
+        // Static analysis resolves the container binding to the Jobs receiver; tests and other receivers may bind a port without this companion, hence the runtime check.
+        if ($receiver instanceof ReleaseReceiverAuthority) { // @phpstan-ignore instanceof.alwaysTrue
+            $receiver->assertMayReceive($actor);
+        }
         $acceptanceId = ReleaseLineage::acceptanceIdOfStage($intent->stageId) ?? throw R::make(R::ACCEPTANCE_NOT_FOUND, 'The handover stage was not found.');
 
         $outcome = $this->operations->run($actor, 'handover.release', $requestKey, $intent->payload(),

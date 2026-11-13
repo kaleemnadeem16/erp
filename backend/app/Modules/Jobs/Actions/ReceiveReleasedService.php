@@ -22,6 +22,7 @@ use App\Modules\Sales\Models\HandoverReleaseEvent;
 use App\Modules\Sales\Models\HandoverStage;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReference;
+use App\Modules\Sales\Support\Handover\Release\ReleaseReceiverAuthority;
 use App\Modules\Sales\Support\Handover\Release\VerifiedServiceRelease;
 use App\Support\CompanyContext;
 use Carbon\CarbonImmutable;
@@ -37,7 +38,7 @@ use LogicException;
  * whole release back. It never commits or starts a transaction of its own; a business replay never reaches it again (the coordinator resolves the existing release first),
  * and the database refuses a second Job for the same release event, so a fresh key, actor or retry cannot create a duplicate Job, number or claim.
  */
-final class ReceiveReleasedService implements ReleasedServiceReceiver
+final class ReceiveReleasedService implements ReleasedServiceReceiver, ReleaseReceiverAuthority
 {
     public const SOURCE_CONTRACT = 'sales-handover-release-v1';
 
@@ -56,9 +57,7 @@ final class ReceiveReleasedService implements ReleasedServiceReceiver
         }
         // The releasing actor is judged again, independently of Sales: a currently active member holding `job.receive` with company-wide scope, duty ACTIVE.
         $actor = User::query()->where('company_id', $release->companyId)->whereKey($release->actorId)->first();
-        if (! JobAccess::may($actor, 'job.receive')) {
-            throw new AuthorizationException('You are not permitted to receive a released service.');
-        }
+        $this->assertMayReceive($actor);
         $event = HandoverReleaseEvent::query()->whereKey($release->releaseEventId)->first();
         if ($event === null || (int) $event->stage_id !== $release->stageId || (int) $event->baseline_id !== $release->baselineId || (int) $event->basis_id !== $release->basis->basisId) {
             throw new LogicException('The release event does not match the verified release.');
@@ -100,6 +99,14 @@ final class ReceiveReleasedService implements ReleasedServiceReceiver
         JobActivity::query()->create(['job_id' => $job->id, 'kind' => 'DEFAULT', 'description' => $release->deliverableText]);
 
         return new ReleasedServiceReference((int) $job->id, (string) $job->code);
+    }
+
+    /** Asked by the release coordinator at the start of every request, replays included, so a revoked duty or a suspended member never gets a Job reference back. */
+    public function assertMayReceive(?User $actor): void
+    {
+        if (! JobAccess::may($actor, 'job.receive')) {
+            throw new AuthorizationException('You are not permitted to receive a released service.');
+        }
     }
 
     public function referenceFor(int $releaseEventId): ?ReleasedServiceReference

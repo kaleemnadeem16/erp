@@ -10,8 +10,8 @@ the receiver refuses everyone today; the tests prove the logic with a fixture-ac
 Sales' `ReleaseHandoverComponent` runs ONE transaction: actor authority → source locks → business uniqueness → completion basis and readiness → immutable `handover_release_events` row → the Jobs receiver
 (`ReceiveReleasedService`, a Sales-owned port bound by Jobs) → a check that the receiver linked exactly this release. The receiver, in that same transaction and session:
 
-1. proves the `VerifiedServiceRelease` is current and the company matches; independently requires `job.receive` of the releasing actor;
-2. numbers the Job (`JOB-{SEQ:5}`, per company, gaps allowed);
+1. proves the `VerifiedServiceRelease` is current and the company matches; independently requires `job.receive` of the releasing actor — also asked at the start of every release request, replays included, through `ReleaseReceiverAuthority` (a revoked duty or a suspended member never gets the Job reference back);
+2. numbers the Job (`JOB-{SEQ:5}`, per company, gaps allowed by policy; a rolled-back release does not burn a number, proven: the counter is untouched and the next committed Job takes `JOB-00001`);
 3. writes `service_jobs` (RELEASED, generation 1), the RELEASE `job_events` row (sequence 1, generation 0→1), `job_baselines` v1 (scope = the verified deliverable text, rule `SIMPLE_ATTESTATION_V1`),
    the generic `job_handover_origins` (purpose, `stage:<id>`, the release intent hash), the Sales lineage `job_sales_origins`, `job_baseline_components` (deliverable and exact agreed conditions) and the one
    DEFAULT `job_activities` row.
@@ -26,3 +26,7 @@ Any exception, including a deferred COMMIT-time check, rolls everything back: th
 - Cost is conditional and separate from completion (Sales). No labour, material, supplier, hours, percentage, signature or PDF is involved.
 - `down()` of the migration refuses while any receiver row exists. Backout of a pilot is "disable new work", never destructive.
 - Independent security/transaction review, Inventory/Purchasing owner sign-off of the no-obligation catalogue, and an owner activation decision are required before any duty is activated (Batch 3).
+
+## Verified invariants (tests)
+
+`ReleasedServiceReceiverTest` / `JobReceiverReleaseRaceTest`: one connection and one transaction through the receiver; Sales authority head and acceptance are locked, and the verifier has returned, before the Job row is locked; no second stage, purpose, allocation, plan, origin or component can exist for the same accepted line; cross-company and same-parent rows are refused in every Jobs lineage table; acceptance claim heads, acceptances and accepted lines stay byte-equal through failure, replay, fresh key, second actor and two real sessions.

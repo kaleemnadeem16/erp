@@ -13,9 +13,11 @@ use App\Modules\Sales\Actions\ReleaseHandoverComponent;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationControlsProvider;
 use App\Modules\Sales\Support\Quotation\Issue\QuotationTaxProvider;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PDO;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Sales\Concerns\BuildsHandoverFixture;
 use Tests\Feature\Security\Concerns\TwoSessionRace;
 use Tests\Support\Sales\FakeQuotationControlsProvider;
@@ -200,5 +202,61 @@ class JobReceiverReleaseRaceTest extends TestCase
                 $this->cleanup($f);
             }
         }
+    }
+
+    public function test_revoking_the_jobs_and_the_sales_duty_at_once_while_waiting_refuses_before_any_write(): void
+    {
+        $f = $this->fixture();
+        try {
+            $before = $this->counts($f);
+            $o = $this->raceAction($f['pdo'], $this->gate($f), $this->release($f, 'late'), function (PDO $h) use ($f): void {
+                $this->raceRevoke($h, $f['actor'], 'job.receive');
+                $this->raceRevoke($h, $f['actor'], P::HANDOVER_RELEASE);
+            });
+            $this->assertFalse($o['success']);
+            $this->assertStringContainsString('not permitted', (string) $o['message']);
+            $this->assertSame($before, $this->counts($f));
+        } finally {
+            $this->cleanup($f);
+        }
+    }
+
+    public function test_a_replay_after_the_receiving_duty_was_revoked_is_refused_and_a_race_never_touches_the_claims(): void
+    {
+        $f = $this->fixture();
+        try {
+            $claims = $this->claimSnapshot($f);
+            $o = $this->raceAction($f['pdo'], $this->gate($f), $this->release($f, 'second', 'other'), fn (PDO $h) => $this->onHolder($h, $this->release($f, 'first')));
+            $this->assertTrue($o['success'], (string) $o['message']);
+            $this->assertOneJobEverywhere($f);
+            $this->assertSame($claims, $this->claimSnapshot($f), 'two simultaneous releases leave every claim head, acceptance and accepted line byte-equal');
+
+            $before = $this->counts($f);
+            $this->raceRevoke($f['pdo'], $f['actor'], 'job.receive');
+            // Refused before any lock is taken, so there is nothing to stage: call it directly against the committed state.
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+            try {
+                ($this->release($f, 'first'))();
+                $this->fail('a replay by an actor whose job.receive was revoked must not succeed');
+            } catch (AuthorizationException $e) {
+                $this->assertStringContainsString('not permitted', $e->getMessage());
+            }
+            $this->assertSame($before, $this->counts($f));
+            $this->assertSame($claims, $this->claimSnapshot($f));
+        } finally {
+            $this->cleanup($f);
+        }
+    }
+
+    /** @return array<string,string> */
+    private function claimSnapshot(array $f): array
+    {
+        $company = $f['r']['company'];
+        $out = [];
+        foreach (['customer_scope_claim_heads', 'customer_acceptances', 'customer_acceptance_lines'] as $table) {
+            $out[$table] = md5(json_encode($f['pdo']->query("select * from {$table} where company_id={$company} order by id")->fetchAll(PDO::FETCH_ASSOC), JSON_THROW_ON_ERROR));
+        }
+
+        return $out;
     }
 }
