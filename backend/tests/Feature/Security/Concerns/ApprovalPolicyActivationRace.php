@@ -35,7 +35,7 @@ trait ApprovalPolicyActivationRace
     private function activationMustWaitForActionOnceRequestLocked(int $supersededId, int $draftId): void
     {
         $checked = false;
-        DB::listen(function ($query) use (&$checked, $supersededId, $draftId): void {
+        DB::listen(function ($query) use (&$checked, $supersededId): void {
             if ($checked || ! str_contains($query->sql, 'approval_requests') || ! str_contains($query->sql, 'for update')) {
                 return;
             }

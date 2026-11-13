@@ -178,7 +178,7 @@ class InventoryPurchasingDecisionAuthorityGuardTest extends TestCase
             PHP;
         $this->assertTrue(self::decidesOnlyBeforeTheTransaction($bad));
 
-        $decisionOutside = str_replace("return DB::transaction", "DecisionActor::require(\$actor, 'a', 'b');\n return DB::transaction", $bad);
+        $decisionOutside = str_replace('return DB::transaction', "DecisionActor::require(\$actor, 'a', 'b');\n return DB::transaction", $bad);
         $this->assertTrue(self::decidesOnlyBeforeTheTransaction($decisionOutside), 'a decision before the transaction does not count');
     }
 
@@ -203,6 +203,6 @@ class InventoryPurchasingDecisionAuthorityGuardTest extends TestCase
             }
             PHP;
         $this->assertFalse(self::decidesOnlyBeforeTheTransaction($good));
-        $this->assertFalse(self::decidesOnlyBeforeTheTransaction("<?php final class Query { public function f() { return 1; } }"), 'an Action that checks no authority is not flagged');
+        $this->assertFalse(self::decidesOnlyBeforeTheTransaction('<?php final class Query { public function f() { return 1; } }'), 'an Action that checks no authority is not flagged');
     }
 }

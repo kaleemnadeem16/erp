@@ -14,6 +14,7 @@ use App\Modules\Purchasing\Actions\PostGoodsReceipt;
 use App\Modules\Purchasing\Actions\RecordReceiptComposition;
 use App\Modules\Purchasing\Actions\ReverseGoodsReceipt;
 use App\Modules\Purchasing\Models\GoodsReceipt;
+use App\Modules\Purchasing\Models\GoodsReceiptLine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PDO;
 use Tests\Feature\Security\Concerns\TwoSessionRace;
@@ -255,7 +256,7 @@ class PackageStateDecisionAuthorityRaceTest extends TestCase
                 'composition' => [['packaging_id' => $can, 'count' => 3], ['quantity' => '5']],
             ], $by);
             app(ActivateGroupedPackageTracking::class)(['item_id' => $r['item'], 'request_key' => 'race-activate', 'reason' => 'Start', 'checkpoints' => [$count->id]], $by);
-            app(RecordReceiptComposition::class)(\App\Modules\Purchasing\Models\GoodsReceiptLine::query()->findOrFail($line), [['packaging_id' => $can, 'count' => 2], ['quantity' => '2']], 'Observed on arrival', $by);
+            app(RecordReceiptComposition::class)(GoodsReceiptLine::query()->findOrFail($line), [['packaging_id' => $can, 'count' => 2], ['quantity' => '2']], 'Observed on arrival', $by);
             app(PostGoodsReceipt::class)(GoodsReceipt::query()->findOrFail($receipt), $by);
             if ($alreadyReversed) {
                 app(ReverseGoodsReceipt::class)(GoodsReceipt::query()->findOrFail($receipt), 'wrong delivery', $actor);

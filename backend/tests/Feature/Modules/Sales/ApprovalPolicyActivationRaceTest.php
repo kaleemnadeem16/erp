@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Modules\Sales;
 
+use App\Exceptions\DomainInvariantException;
 use App\Modules\Approvals\Actions\ActivateApprovalPolicy;
 use App\Modules\Approvals\Actions\DecideApproval;
 use App\Modules\Approvals\Models\ApprovalPolicy;
+use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Models\ApprovalSubjectSetting;
 use App\Modules\Approvals\Support\ApprovalDecisionKind;
 use App\Modules\Approvals\Support\ApprovalMode;
 use App\Modules\Approvals\Support\ApprovalPolicyStatus;
 use App\Modules\Sales\Actions\IssueQuotation;
 use App\Modules\Sales\Actions\RequestQuotationApproval;
+use App\Modules\Sales\Models\QuotationRevision;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\PermissionVocabulary as Duty;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovals;
@@ -51,7 +54,7 @@ class ApprovalPolicyActivationRaceTest extends TestCase
         });
     }
 
-    /** @return array{revision: \App\Modules\Sales\Models\QuotationRevision, request: \App\Modules\Approvals\Models\ApprovalRequest, v1: int, v2: int} */
+    /** @return array{revision: QuotationRevision, request: ApprovalRequest, v1: int, v2: int} */
     private function stage(bool $approved): array
     {
         $this->setUpDiscountAuthority();
@@ -118,7 +121,7 @@ class ApprovalPolicyActivationRaceTest extends TestCase
         $outcome = $this->raceAction($this->pdo(), self::ACCESS_FENCE, $this->decisionAction($f), fn (\PDO $holder) => $this->activatePolicy($holder, $f['v1'], $f['v2']));
 
         $this->assertFalse($outcome['success'], json_encode($outcome));
-        $this->assertSame(\App\Exceptions\DomainInvariantException::class, $outcome['class'], json_encode($outcome));
+        $this->assertSame(DomainInvariantException::class, $outcome['class'], json_encode($outcome));
         $this->assertStringContainsString('not eligible to decide', (string) $outcome['message']);
         $this->assertNoDeadlockOrTimeout($outcome);
         $this->assertSame(0, $f['request']->decisions()->count());

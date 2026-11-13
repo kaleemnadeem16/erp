@@ -60,9 +60,9 @@ return new class extends Migration
             $t->foreign(['company_id', 'issued_line_id'], 'job_baseline_components_line_fk')->references(['company_id', 'id'])->on('quotation_issued_lines');
             $t->foreign(['company_id', 'basis_id'], 'job_baseline_components_basis_fk')->references(['company_id', 'id'])->on('service_completion_bases');
         });
-        DB::statement("ALTER TABLE job_baseline_components ADD CONSTRAINT job_baseline_components_shape CHECK (
+        DB::statement('ALTER TABLE job_baseline_components ADD CONSTRAINT job_baseline_components_shape CHECK (
             length(btrim(deliverable_identity)) > 0 AND length(btrim(deliverable_text)) > 0 AND length(btrim(agreed_conditions)) > 0 AND length(btrim(condition_identity)) > 0
-        )");
+        )');
 
         Schema::create('job_activities', function (Blueprint $t): void {
             $t->id();
