@@ -116,6 +116,7 @@ Evidence is never edited, so a wrong fact is put right by a **new version**.
   prepare/view duties judged by the quotation-family policy and moves the draft's input generation. Item lines cannot carry a seller declaration: their classification is Tax's.
   Whether Tax covers a declared classification is Tax's decision: uncovered is UNKNOWN with a code, never zero. Decision: a seller's declaration is the accepted "manual explicit" fact
   (`TaxClassification::resolve`), and no separate Sales duty exists for it in the accepted matrix.
+- **Assembly classification** (`tax_quotation_assembly_classifications`, [0189](../decisions/0189-prove-assembly-quotation-lines-cost-blind-and-freeze-the-sold-version.md)): an Assembly's own explicit nature and classification, declared by `DeclareQuotationTaxSource::assembly`, append-only with a non-overlapping effective period and read by `QuotationTaxSourceFacts::assembly()`. Offered work is classified as a whole (ADR 0056). Corrections as later versions and the Assembly-group/company-services defaults are not delivered; an Assembly with no fact stays unclassified (blocked, never defaulted).
 - Sales' `QuotationTaxFacts` is bound to `DraftQuotationTaxFacts`: jurisdiction and Item classification from Tax's own reader, a manual line's from its latest declaration; nothing is
   defaulted, so with nothing configured every line stays blocked. The review shows the per-line disposition, tax and gross when Tax can determine them.
 

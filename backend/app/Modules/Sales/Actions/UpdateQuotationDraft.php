@@ -44,7 +44,7 @@ use Illuminate\Support\Str;
  * Changes a DRAFT quotation revision: header fields, and lines added, changed or removed, in one transaction. The caller states the input generation it saw
  * (optimistic concurrency); a revision that has moved since is refused as stale, and a retry of a completed request replays before that check. Saving never
  * prices, approves or adopts anything: it stores the seller's inputs. Entered unit prices are stored only with their dual-money evidence (currency, pinned FX
- * and the computed base amount) — a price that cannot be converted is refused, while a non-money edit is unaffected. Only direct Item and manual lines are
+ * and the computed base amount) — a price that cannot be converted is refused, while a non-money edit is unaffected. Direct Item, service Item, Assembly work and manual lines are
  * authorised; tax is not determined here. Guarded by `sales.quotation.prepare`, a STAGED duty: until it is activated `SalesAccess` refuses every caller.
  */
 final class UpdateQuotationDraft
@@ -159,7 +159,7 @@ final class UpdateQuotationDraft
         $this->assertMembership($membership, $groupId, $baseline);
 
         $source = $this->sources->resolve($actor, $kind, $fields['item_id'] ?? null, $fields['description'] ?? null, $fields['manual_measure'] ?? null, $fields['offered_quantity'],
-            $fields['offered_uom_id'] ?? null, $revision->currency_id, $revision->recipient_party_id);
+            $fields['offered_uom_id'] ?? null, $revision->currency_id, $revision->recipient_party_id, $fields['assembly_version_id'] ?? null);
         $scope = $this->scope($revision, $actor, $fields['scope_ref'] ?? null);
         if (QuotationDraftLine::query()->where('revision_id', $revision->id)->where('logical_scope_id', $scope->id)->exists()) {
             throw QuotationRefusal::make(QuotationRefusal::SCOPE_ALREADY_ON_REVISION, 'That deliverable is already a line of this draft.', 'scope_ref');
@@ -175,7 +175,7 @@ final class UpdateQuotationDraft
             'family_id' => $revision->family_id, 'revision_id' => $revision->id, 'logical_scope_id' => $scope->id, 'created_by' => $actor->id,
             'sort_order' => $fields['sort_order'] ?? ((int) QuotationDraftLine::query()->where('revision_id', $revision->id)->max('sort_order') + 10),
             'section_title' => $fields['section_title'] ?? null, 'description' => $source['description'], 'membership' => $membership, 'choice_group_id' => $groupId, 'is_baseline' => $baseline,
-            'source_kind' => $kind->value, 'item_id' => $fields['item_id'] ?? null, 'manual_measure' => $fields['manual_measure'] ?? null,
+            'source_kind' => $kind->value, 'item_id' => $fields['item_id'] ?? null, 'assembly_version_id' => $fields['assembly_version_id'] ?? null, 'manual_measure' => $fields['manual_measure'] ?? null,
             'offered_quantity' => $source['offered_quantity'], 'offered_uom_id' => $source['offered_uom_id'],
         ] + $source['measures'] + $money + $concessions);
         if ($declaration !== null) {
@@ -219,13 +219,13 @@ final class UpdateQuotationDraft
                 $attributes[$plain] = $fields[$plain];
             }
         }
-        if (array_intersect_key($fields, array_flip(['description', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id'])) !== []) {
+        if (array_intersect_key($fields, array_flip(['description', 'item_id', 'assembly_version_id', 'manual_measure', 'offered_quantity', 'offered_uom_id'])) !== []) {
             $source = $this->sources->resolve($actor, $line->sourceKind(), $fields['item_id'] ?? $line->item_id, $fields['description'] ?? $line->description, $fields['manual_measure'] ?? $line->manual_measure,
                 $fields['offered_quantity'] ?? (string) $line->offered_quantity, array_key_exists('offered_uom_id', $fields) ? $fields['offered_uom_id'] : $line->offered_uom_id,
-                $revision->currency_id, $revision->recipient_party_id);
+                $revision->currency_id, $revision->recipient_party_id, $fields['assembly_version_id'] ?? $line->assembly_version_id);
             $attributes += [
                 'description' => $source['description'], 'offered_quantity' => $source['offered_quantity'], 'offered_uom_id' => $source['offered_uom_id'],
-                'item_id' => $fields['item_id'] ?? $line->item_id, 'manual_measure' => $fields['manual_measure'] ?? $line->manual_measure,
+                'item_id' => $fields['item_id'] ?? $line->item_id, 'assembly_version_id' => $fields['assembly_version_id'] ?? $line->assembly_version_id, 'manual_measure' => $fields['manual_measure'] ?? $line->manual_measure,
             ] + $source['measures'];
         }
         if (array_key_exists('unit_price', $fields)) {
@@ -234,7 +234,7 @@ final class UpdateQuotationDraft
         $priced = array_key_exists('unit_price', $fields) ? $fields['unit_price'] !== null : $line->unit_price !== null;
         // A final-net override replaces a figure calculated from the price and quantity: changing either without restating the override would leave a stale concession.
         if ($line->net_override !== null && ! array_key_exists('net_override', $fields)
-            && (array_key_exists('unit_price', $fields) || array_key_exists('offered_quantity', $fields) || array_key_exists('item_id', $fields) || array_key_exists('offered_uom_id', $fields))) {
+            && (array_key_exists('unit_price', $fields) || array_key_exists('offered_quantity', $fields) || array_key_exists('item_id', $fields) || array_key_exists('assembly_version_id', $fields) || array_key_exists('offered_uom_id', $fields))) {
             throw QuotationRefusal::make(QuotationRefusal::OVERRIDE_BASIS_CHANGED, 'This line has a final-net override; restate or clear the override in the same update as a price or quantity change.', 'net_override');
         }
         $attributes += $this->concessions($actor, $fields, $line, $priced);

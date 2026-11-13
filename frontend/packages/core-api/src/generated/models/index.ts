@@ -1924,6 +1924,7 @@ export type * from "./quotationDraftEditableResource";
 export type * from "./quotationDraftEditableResourceCurrentOpportunityId";
 export type * from "./quotationDraftEditableResourceLinesItem";
 export type * from "./quotationDraftEditableResourceLinesItemApprovalReason";
+export type * from "./quotationDraftEditableResourceLinesItemAssemblyVersionId";
 export type * from "./quotationDraftEditableResourceLinesItemChoiceGroupRef";
 export type * from "./quotationDraftEditableResourceLinesItemDiscount";
 export type * from "./quotationDraftEditableResourceLinesItemDiscountAnyOf";

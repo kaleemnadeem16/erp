@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Support\Pricing;
 
 use App\Modules\Sales\Support\Pricing\Sources\AssemblyWorkSourceAdapter;
+use App\Modules\Sales\Support\Pricing\Sources\CostBlindAssemblyAdapter;
 use App\Modules\Sales\Support\Pricing\Sources\DirectItemSourceAdapter;
 use App\Modules\Sales\Support\Pricing\Sources\ManualSourceAdapter;
 use App\Modules\Sales\Support\Pricing\Sources\ServiceItemSourceAdapter;
@@ -20,6 +21,17 @@ final class PricingSourceRegistry
         foreach ([$direct, $service, $assembly, $manual] as $adapter) {
             $this->adapters[$adapter->kind()->value] = $adapter;
         }
+    }
+
+    /**
+     * The adapter a quotation uses to prove a line's source. Assembly work is proven without reading its cost, so a seller without the estimating cost duty can still
+     * prepare and preview it (owner decision 2026-11-13); every other kind is proven exactly as before. Cost for controls comes only from the guarded cost-blind seam.
+     */
+    public function quotationAdapterFor(PricingSourceKind $kind): PricingSourceAdapter
+    {
+        $adapter = $this->adapterFor($kind);
+
+        return $adapter instanceof AssemblyWorkSourceAdapter ? new CostBlindAssemblyAdapter($adapter) : $adapter;
     }
 
     public function adapterFor(PricingSourceKind $kind): PricingSourceAdapter

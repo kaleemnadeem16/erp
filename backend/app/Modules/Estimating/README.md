@@ -252,6 +252,10 @@ company-wide scope; department-limited availability waits on Q26. The remaining 
 reserve stable Phase 4 transaction boundaries for draft adjustment/adoption, approval and history;
 Phase 3 does not invent a temporary persisted draft to exercise them.
 
+## Quotation use (Phase 4)
+
+Sales quotes ACTIVE Assembly versions as `ASSEMBLY_WORK` lines without the estimating cost duty ([0189](../../../../docs/decisions/0189-prove-assembly-quotation-lines-cost-blind-and-freeze-the-sold-version.md)): the line pins one version id, the sold version is frozen at issue and stays identifiable after a newer version activates. Estimating adds nothing to its own surface for this; cost for margin controls still comes only through `ReadAssemblyCostEvidence`.
+
 ## Events
 
 No events emitted yet.

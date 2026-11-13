@@ -45,6 +45,7 @@ class QuotationDraftEditableResource extends JsonResource
                 'is_baseline' => (bool) $line->is_baseline,
                 'source_kind' => (string) $line->source_kind,
                 'item_id' => $line->item_id === null ? null : (int) $line->item_id,
+                'assembly_version_id' => $line->assembly_version_id === null ? null : (int) $line->assembly_version_id,
                 'manual_measure' => $line->manual_measure,
                 'offered_quantity' => (string) $line->offered_quantity,
                 'offered_uom_id' => $line->offered_uom_id === null ? null : (int) $line->offered_uom_id,

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Sales\Support\Quotation\Issue;
 
+use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
+use App\Modules\Sales\Actions\EvaluateAssemblyLineControls;
 use App\Modules\Sales\Models\QuotationControlSet;
 use App\Modules\Sales\Models\QuotationDraftLine;
 use App\Modules\Sales\Models\QuotationRevision;
@@ -23,9 +25,11 @@ use App\Modules\Sales\Support\Financial\Policy\ResolveRoundingPolicy;
 use App\Modules\Sales\Support\Financial\Policy\RoundingPolicy;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\Kernel\SalesActorContext;
+use App\Modules\Sales\Support\Pricing\PricingSourceKind;
 use App\Modules\Sales\Support\Quotation\QuotationAdjustmentEngine;
 use App\Support\CompanyContext;
 use Brick\Math\BigDecimal;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -65,6 +69,46 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
         return [new GovernedReference($list, $currencyId, 'ENTERED_PRICE'), $discretionary];
     }
 
+    private function withoutCostControls(NetControlSet $set): NetControlSet
+    {
+        return new NetControlSet($set->companyId, $set->version, array_values(array_filter($set->controls, static fn (NetControl $c): bool => ! $c->kind->needsCost())), $set->roundingFingerprint);
+    }
+
+    private function costControls(NetControlSet $set): NetControlSet
+    {
+        return new NetControlSet($set->companyId, $set->version, array_values(array_filter($set->controls, static fn (NetControl $c): bool => $c->kind->needsCost())), $set->roundingFingerprint);
+    }
+
+    /**
+     * The margin controls of ONE Assembly line, judged by the cost-blind evaluator: only its opaque outcome per control comes back, never a cost or a margin. Anything that stops
+     * the evaluation (the issuer lacks the quotation duty, no cost evidence, a refused read) leaves the controls UNEVALUABLE, which blocks issue; it is never read as a pass.
+     *
+     * @return array{0: array{outcome: string, controls: list<array{ref: string, outcome: string, blocks_issue: bool}>}, 1: list<IssueBlocker>}
+     */
+    private function costBlind(SalesActorContext $actor, QuotationRevision $revision, QuotationDraftLine $line, string $net, string $pricingDate, NetControlSet $costSet): array
+    {
+        try {
+            $view = app(EvaluateAssemblyLineControls::class)($actor->actor, $revision->id, (int) $line->assembly_version_id, (string) $line->offered_quantity, $net, $revision->currency_id, $pricingDate, $costSet);
+        } catch (DomainInvariantException|AuthorizationException) {
+            return [['outcome' => ControlOutcome::Unevaluable->value, 'controls' => []], [new IssueBlocker('CONTROL_UNEVALUABLE', IssueBlocker::CONTROLS, $line->id)]];
+        }
+        $blockers = [];
+        foreach ($view->controls as $control) {
+            if ($control['blocks_issue']) {
+                $blockers[] = new IssueBlocker($control['outcome'] === ControlOutcome::Fail->value ? 'CONTROL_FAILED' : 'CONTROL_UNEVALUABLE', IssueBlocker::CONTROLS, $line->id);
+            }
+        }
+
+        return [['outcome' => $view->outcome, 'controls' => $view->controls], $blockers];
+    }
+
+    private function worse(ControlOutcome $current, string $outcome): ControlOutcome
+    {
+        $other = ControlOutcome::from($outcome);
+
+        return $other->severity() > $current->severity() ? $other : $current;
+    }
+
     public function assess(SalesActorContext $actor, QuotationRevision $revision, array $settledNets): QuotationControlsOutcome
     {
         $stored = QuotationControlSet::query()->orderByDesc('version_no')->with('controls')->first();
@@ -92,7 +136,10 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
                 continue;
             }
             [$reference, $discretionary] = $this->concession($line, $revision->currency_id, $policy);
-            $evaluation = ($this->evaluate)(new SettledNetFacts($this->company->id(), $revision->currency_id, $net, (string) $line->offered_quantity, $pricingDate, $reference, $discretionary, null, [], $policy), $set);
+            // An Assembly line's margin controls are judged by the cost-blind evaluator (the only holder of its cost); every other control, and every other line, is judged here.
+            $assembly = $line->sourceKind() === PricingSourceKind::AssemblyWork;
+            $local = $assembly ? $this->withoutCostControls($set) : $set;
+            $evaluation = ($this->evaluate)(new SettledNetFacts($this->company->id(), $revision->currency_id, $net, (string) $line->offered_quantity, $pricingDate, $reference, $discretionary, null, [], $policy), $local);
             $judged[] = [$line->id, $net, $evaluation->fingerprint()];
             foreach ($evaluation->results as $result) {
                 if ($result->blocksIssue()) {
@@ -101,6 +148,15 @@ final class ConfiguredQuotationControlsProvider implements QuotationControlsProv
             }
             if ($evaluation->outcome()->severity() > $worst->severity()) {
                 $worst = $evaluation->outcome();
+            }
+            if ($assembly) {
+                $costSet = $this->costControls($set);
+                if ($costSet->controls !== []) {
+                    [$view, $viewBlockers] = $this->costBlind($actor, $revision, $line, $net, $pricingDate, $costSet);
+                    $judged[] = [$line->id, 'cost_blind', $costSet->fingerprint(), $view];
+                    array_push($blockers, ...$viewBlockers);
+                    $worst = $this->worse($worst, $view['outcome']);
+                }
             }
         }
         $document = DB::table('quotation_draft_document_discounts')->where('company_id', $this->company->id())->where('revision_id', $revision->id)->first();

@@ -33,6 +33,8 @@ export type UpdateQuotationDraftRequestAddLinesItem = {
   is_baseline?: boolean;
   /** @minimum 1 */
   item_id?: number;
+  /** @minimum 1 */
+  assembly_version_id?: number;
   /** @maxLength 100 */
   manual_measure?: string;
   /** @minimum 1 */

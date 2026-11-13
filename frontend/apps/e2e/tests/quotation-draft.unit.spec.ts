@@ -72,6 +72,31 @@ test("minimal changes preserve references and exact decimals", () => {
     }),
   ).toThrow();
 });
+test("an Assembly line keeps its pinned version and an edit never rewrites it", () => {
+  const assembly = {
+    ...editable.lines[0],
+    id: 14,
+    source_kind: "ASSEMBLY_WORK",
+    item_id: null,
+    assembly_version_id: 31,
+    manual_measure: null,
+    offered_quantity: "3.0000",
+    offered_uom_id: 5,
+  };
+  const base = readEditable({ ...editable, lines: [assembly] });
+  expect(base.lines[0]!.assembly_version_id).toBe(31);
+  const values = valuesFromEditable(base);
+  values.lines[0]!.offered_quantity = "4.2500";
+  expect(buildChanges(base, values)).toEqual({
+    expected_generation: 3,
+    update_lines: [{ id: 14, offered_quantity: "4.2500" }],
+  });
+  // A draft written before the field existed still reads, with no version.
+  expect(
+    readEditable({ ...editable, lines: [{ ...assembly, assembly_version_id: undefined }] }).lines[0]!
+      .assembly_version_id,
+  ).toBeNull();
+});
 test("draft routes stay default-deny", () => {
   expect(
     canAccessScreen("/quotations/new", new Set(["sales.quotation.prepare"])),
