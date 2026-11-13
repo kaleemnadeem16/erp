@@ -21,7 +21,7 @@ use LogicException;
  */
 final class SalesJobExecutionContextVerifier implements JobExecutionContextVerifier
 {
-    public function __construct(private readonly JobSalesOrigin $origins, private readonly HandoverAccess $access, private readonly SourceApplicabilityProof $applicability) {}
+    public function __construct(private readonly JobSalesOrigin $origins, private readonly HandoverAccess $access, private readonly SourceApplicabilityProof $applicability, private readonly SalesCompletionBasis $bases) {}
 
     public function enter(User $actor, ServiceJob $job, string $operation): JobExecutionContext
     {
@@ -36,15 +36,19 @@ final class SalesJobExecutionContextVerifier implements JobExecutionContextVerif
             return new JobExecutionContext([], false, false);
         }
         $subject = $this->access->lockSource($acceptanceId);
-        $proof = $this->applicability->evaluate();
+        // Re-prove against the CURRENT head of the line's completion basis and the CURRENT family authorities, and compare with what the release pinned: any change of basis,
+        // scope or family contract version makes fresh work unready (the Job itself stays readable).
+        $proof = $this->applicability->evaluate($this->bases->find($subject->acceptanceLine));
+        $pinned = $event->relied_on['applicability']['pin'] ?? null;
         $vector = [
             'release_event' => (string) $event->id,
             'condition' => $event->condition_identity,
             'applicability' => $proof['status'].':'.$proof['version'],
+            'applicability_pin' => $proof['pin'],
             'acceptance' => (string) $subject->acceptance->id,
         ];
 
         // Eligible: the accepted source still exists. Ready for fresh work only while the no-obligation proof still holds.
-        return new JobExecutionContext($vector, true, $proof['status'] === 'NOT_APPLICABLE');
+        return new JobExecutionContext($vector, true, $proof['status'] === 'NOT_APPLICABLE' && is_string($pinned) && hash_equals($pinned, $proof['pin']));
     }
 }

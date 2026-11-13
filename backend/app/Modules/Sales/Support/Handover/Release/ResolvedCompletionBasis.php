@@ -20,12 +20,21 @@ final readonly class ResolvedCompletionBasis
         public string $agreedText,
         public int $evidenceId,
         public string $attestationPolicy,
+        public string $termsSource = 'ISSUED_LINE',
+        public string $materialsScope = 'UNSTATED',
+        public string $subcontractScope = 'UNSTATED',
     ) {}
 
     /** Stable identity of exactly this basis version; the same string the database release guard requires. */
     public function conditionIdentity(): string
     {
         return 'completion-basis:'.$this->companyId.':'.$this->basisId.':v'.$this->version;
+    }
+
+    /** True only for a basis that carries its OWN customer-agreement evidence (a scope declaration is never accepted on the issued-line path). */
+    public function declaresScope(): bool
+    {
+        return $this->termsSource === 'EVIDENCE_TEXT';
     }
 
     public function provenance(): string

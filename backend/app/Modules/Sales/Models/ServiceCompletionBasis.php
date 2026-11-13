@@ -18,6 +18,9 @@ use Illuminate\Support\Carbon;
  * @property string $agreed_text
  * @property int $evidence_id
  * @property string $attestation_policy
+ * @property string $terms_source ISSUED_LINE (the line description verbatim) or EVIDENCE_TEXT (its own later customer-agreement evidence)
+ * @property string $materials_scope EXCLUDED|REQUIRED|UNSTATED; only EVIDENCE_TEXT may state it
+ * @property string $subcontract_scope EXCLUDED|REQUIRED|UNSTATED; only EVIDENCE_TEXT may state it
  * @property string $intent_digest
  * @property int $recorded_by
  * @property Carbon $recorded_at

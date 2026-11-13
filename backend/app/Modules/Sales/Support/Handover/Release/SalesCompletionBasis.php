@@ -25,7 +25,8 @@ final class SalesCompletionBasis
         }
         $issued = QuotationIssuedLine::query()->findOrFail($line->issued_line_id);
 
-        return new ResolvedCompletionBasis($basis->id, app(CompanyContext::class)->id(), $issued->id, $basis->version, (string) $issued->description, $basis->agreed_text, $basis->evidence_id, $basis->attestation_policy);
+        return new ResolvedCompletionBasis($basis->id, app(CompanyContext::class)->id(), $issued->id, $basis->version, (string) $issued->description, $basis->agreed_text, $basis->evidence_id, $basis->attestation_policy,
+            (string) $basis->terms_source, (string) $basis->materials_scope, (string) $basis->subcontract_scope);
     }
 
     /** @throws DomainInvariantException COMPLETION_BASIS_MISSING when no agreed conditions were recorded */

@@ -39,6 +39,7 @@ use Spatie\Permission\PermissionRegistrar;
 use Tests\Feature\Modules\Sales\Concerns\BuildsHandoverFixture;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
 use Tests\Support\Sales\FakeReleasedServiceReceiver;
+use Tests\Support\Sales\ScopedReleaseFixtures;
 use Tests\TestCase;
 
 /**
@@ -51,6 +52,10 @@ class ReleasedServiceReceiverTest extends TestCase
     use BuildsHandoverFixture;
     use BuildsIssuableQuotations;
     use RefreshDatabase;
+    use ScopedReleaseFixtures;
+
+    /** @var array<string,int> */
+    private array $agreementEvidence = [];
 
     private const JOB_DUTIES = ['job.receive', 'job.assign', 'job.start'];
 
@@ -72,6 +77,7 @@ class ReleasedServiceReceiverTest extends TestCase
     {
         parent::setUp();
         app(PermissionRegistrar::class)->setPermissionsTeamId(1);
+        $this->registerSourceFamilies();
         $this->setUpIssuing();
         $this->activateHandover();
         foreach ($this->handoverDuties() as $duty) {
@@ -107,9 +113,12 @@ class ReleasedServiceReceiverTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 
-    private function recordBasis(string $key = 'basis', string $text = 'The fixed service is complete when the customer-named contact confirms delivery.'): array
+    /** A basis on its own customer-agreement evidence excluding materials and subcontractors (once per text, so the same text replays). */
+    private function recordBasis(string $key = 'basis', string $text = self::AGREED): array
     {
-        return app(RecordServiceCompletionBasis::class)($this->checker, $key, $this->f['acceptance'], $text, $this->evidenceId);
+        $evidence = $this->agreementEvidence[$text] ??= $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+
+        return app(RecordServiceCompletionBasis::class)($this->checker, $key, $this->f['acceptance'], $text, $evidence, 'EXCLUDED', 'EXCLUDED');
     }
 
     private function release(string $key = 'release', ?User $actor = null): array
@@ -179,7 +188,7 @@ class ReleasedServiceReceiverTest extends TestCase
         $component = DB::table('job_baseline_components')->where('job_id', $job->id)->first();
         $this->assertSame($baseline[0]->id, $component->baseline_id);
         $this->assertSame($baseline[0]->scope_description, $component->deliverable_text, 'the baseline scope is the verified deliverable text');
-        $this->assertSame('The fixed service is complete when the customer-named contact confirms delivery.', $component->agreed_conditions);
+        $this->assertSame(self::AGREED, $component->agreed_conditions);
         $this->assertSame($release->condition_identity, $component->condition_identity);
         $this->assertSame($release->basis_id, $component->basis_id);
         $line = DB::table('handover_baselines')->where('id', $release->baseline_id)->first();

@@ -50,16 +50,30 @@ final class ServiceReleaseReadiness
             $blockers[] = 'SERVICE_COST_EVIDENCE_REQUIRED';
             $next[] = ['fact' => 'SERVICE_COST_EVIDENCE_REQUIRED', 'owner' => 'Sales', 'action' => 'A mandatory commercial control needs cost evidence from a supported source.'];
         }
-        $applicability = $this->applicability->evaluate();
-        if ($applicability['status'] !== 'NOT_APPLICABLE') {
+        $applicability = $this->applicability->evaluate($basis);
+        if ($applicability['status'] === 'APPLICABLE') {
+            $blockers[] = 'SOURCE_OBLIGATION_UNSUPPORTED';
+            $next[] = ['fact' => 'SOURCE_OBLIGATION_UNSUPPORTED', 'owner' => 'Sales', 'action' => 'The agreed scope (or a source owner) says materials or subcontractors apply; the first pilot supports neither.'];
+        } elseif ($applicability['status'] !== 'NOT_APPLICABLE') {
             $blockers[] = 'SOURCE_APPLICABILITY_UNPROVEN';
-            $next[] = ['fact' => 'SOURCE_APPLICABILITY_UNPROVEN', 'owner' => 'Inventory', 'action' => 'The Job lineage is referenced by another module; applicability cannot be proved.'];
+            if ($applicability['scope']['materials'] !== 'EXCLUDED' || $applicability['scope']['subcontract'] !== 'EXCLUDED') {
+                $next[] = ['fact' => 'SOURCE_APPLICABILITY_UNPROVEN', 'owner' => 'Sales', 'action' => 'Record customer-agreement evidence stating that materials and subcontractors are excluded from the agreed scope.'];
+            }
+            foreach ($applicability['families'] as $family => $answer) {
+                if ($answer['status'] !== 'NOT_APPLICABLE') {
+                    $next[] = ['fact' => 'SOURCE_APPLICABILITY_UNPROVEN', 'owner' => $family === 'INVENTORY_MATERIAL' ? 'Inventory' : ($family === 'PURCHASING_SUPPLY' ? 'Purchasing' : 'Source owner'),
+                        'action' => "The {$family} source owner has not established that no supported Job binding exists."];
+                }
+            }
+            if ($applicability['referencing'] !== []) {
+                $next[] = ['fact' => 'SOURCE_APPLICABILITY_UNPROVEN', 'owner' => 'Inventory', 'action' => 'The Job lineage is referenced by another module; applicability cannot be proved.'];
+            }
         }
         $relied = [
             'authority_head_generation' => $this->fence->lock(),
             'claim_heads' => CustomerScopeClaimHead::query()->where('family_id', $subject->line->family_id)->orderBy('id')->get()->mapWithKeys(fn ($h): array => [(string) $h->id => $h->generation])->all(),
             'completion_basis' => $basis === null ? null : ['id' => $basis->basisId, 'version' => $basis->version],
-            'applicability' => ['status' => $applicability['status'], 'version' => $applicability['version']],
+            'applicability' => ['status' => $applicability['status'], 'version' => $applicability['version'], 'pin' => $applicability['pin']],
             'preparation_fingerprint' => $state['fingerprint'],
         ];
         $fingerprint = OperationIntent::hash('handover.release.review', ['stage' => $stage->id, 'baseline' => $baseline->id, 'relied' => $relied, 'blockers' => $blockers,

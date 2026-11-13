@@ -6,7 +6,6 @@ use App\Models\User;
 use App\Modules\Sales\Actions\PrepareHandoverPlan;
 use App\Modules\Sales\Actions\PreviewHandover;
 use App\Modules\Sales\Actions\PreviewServiceRelease;
-use App\Modules\Sales\Actions\RecordServiceCompletionBasis;
 use App\Modules\Sales\Actions\ReleaseHandoverComponent;
 use App\Modules\Sales\Support\Handover\Release\ReleasedServiceReceiver;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
@@ -20,6 +19,7 @@ use Tests\Feature\Security\Concerns\TwoSessionRace;
 use Tests\Support\Sales\FakeQuotationControlsProvider;
 use Tests\Support\Sales\FakeQuotationTaxProvider;
 use Tests\Support\Sales\FakeReleasedServiceReceiver;
+use Tests\Support\Sales\ScopedReleaseFixtures;
 use Tests\TestCase;
 
 /**
@@ -30,6 +30,7 @@ class HandoverReleaseRaceTest extends TestCase
 {
     use BuildsHandoverFixture;
     use RefreshDatabase;
+    use ScopedReleaseFixtures;
     use TwoSessionRace;
 
     protected function handoverDuties(): array
@@ -60,6 +61,7 @@ class HandoverReleaseRaceTest extends TestCase
         $receiver = new FakeReleasedServiceReceiver;
         $receiver->durable = true;
         $this->app->instance(ReleasedServiceReceiver::class, $receiver);
+        $this->registerSourceFamilies();
         $data = $this->raceCommitted(function () use ($actor): array {
             $user = User::findOrFail($actor);
             $party = (int) DB::table('parties')->where('company_id', (int) DB::table('users')->where('id', $actor)->value('company_id'))->value('id');
@@ -67,8 +69,7 @@ class HandoverReleaseRaceTest extends TestCase
             $token = app(PreviewHandover::class)($user, $data['acceptance'], $data['inputs'])['preview_token'];
             app(PrepareHandoverPlan::class)($user, 'prepare', $data['acceptance'], $data['inputs'], $token);
             DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
-            $evidence = (int) DB::table('customer_decision_evidence')->where('case_id', $data['case'])->value('id');
-            $basis = app(RecordServiceCompletionBasis::class)($user, 'basis', $data['acceptance'], 'Complete when the named contact confirms delivery.', $evidence);
+            $basis = $this->recordScopedBasis($user, 'basis', $data['acceptance'], $data['case']);
             $stage = (int) DB::table('handover_stages')->value('id');
             $preview = app(PreviewServiceRelease::class)($user, $stage);
 

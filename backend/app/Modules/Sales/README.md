@@ -185,8 +185,8 @@ Acceptance screens are separately delivered; handover release is delivered only 
 
 ## Service release (Phase 5 Batch 1, Sales half, disabled backend)
 
-`RecordServiceCompletionBasis` (immutable, versioned customer-agreed completion conditions citing written consent evidence), `PreviewServiceRelease` and `ReleaseHandoverComponent`
-(one atomic release through `Support\Handover\Release\ReleaseCoordinator`: immutable `handover_release_events`, conditional cost policy, catalogue-based no-obligation proof, the Sales-owned
+`RecordServiceCompletionBasis` (immutable, versioned customer-agreed completion conditions: the issued line verbatim on the acceptance's own evidence, or new conditions/material-subcontractor scope only on dedicated later written authority-verified agreement evidence whose text equals the agreed text), `PreviewServiceRelease` and `ReleaseHandoverComponent`
+(one atomic release through `Support\Handover\Release\ReleaseCoordinator`: immutable `handover_release_events`, conditional cost policy, the #122 applicability proof (customer-agreed scope + every `App\Support\JobSource` family authority + FK catalogue; UNKNOWN until all three hold and re-proved at start), the Sales-owned
 `ReleasedServiceReceiver`/`JobSalesOrigin` ports the Jobs module implements, and `SalesJobExecutionContextVerifier` for the Sales origin). Duties `sales.handover.completion-basis.record` and
 `sales.handover.release` are STAGED and ungranted; no route, screen or demo grant; an unbound receiver refuses every release. [Contract](../../../../docs/domain/sales-service-release.md).
 

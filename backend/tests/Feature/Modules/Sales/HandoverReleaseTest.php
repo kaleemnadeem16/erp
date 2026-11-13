@@ -32,6 +32,7 @@ use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsHandoverFixture;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
 use Tests\Support\Sales\FakeReleasedServiceReceiver;
+use Tests\Support\Sales\ScopedReleaseFixtures;
 use Tests\TestCase;
 
 /** Phase 5 Batch 1 (Sales half): completion basis, release readiness, atomic release with a fake Jobs receiver, authority, idempotency, rollback and the source verifier. */
@@ -40,8 +41,12 @@ class HandoverReleaseTest extends TestCase
     use BuildsHandoverFixture;
     use BuildsIssuableQuotations;
     use RefreshDatabase;
+    use ScopedReleaseFixtures;
 
     private array $f;
+
+    /** @var array<string,int> */
+    private array $agreementEvidence = [];
 
     private int $evidenceId;
 
@@ -71,6 +76,7 @@ class HandoverReleaseTest extends TestCase
         DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
         $this->stageId = (int) DB::table('handover_stages')->value('id');
         $this->receiver = new FakeReleasedServiceReceiver;
+        $this->registerSourceFamilies();
     }
 
     private function bind(): void
@@ -78,9 +84,12 @@ class HandoverReleaseTest extends TestCase
         $this->app->instance(ReleasedServiceReceiver::class, $this->receiver);
     }
 
-    private function recordBasis(string $key = 'basis', string $text = 'The fixed service is complete when the customer-named contact confirms delivery.', ?User $actor = null): array
+    /** A basis on its own agreement evidence (created once per text, so the same text is an idempotent replay). Scopes default to the pilot's EXCLUDED/EXCLUDED. */
+    private function recordBasis(string $key = 'basis', string $text = self::AGREED, ?User $actor = null, string $materials = 'EXCLUDED', string $subcontract = 'EXCLUDED'): array
     {
-        return app(RecordServiceCompletionBasis::class)($actor ?? $this->checker, $key, $this->f['acceptance'], $text, $this->evidenceId);
+        $evidence = $this->agreementEvidence[$text] ??= $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $text);
+
+        return app(RecordServiceCompletionBasis::class)($actor ?? $this->checker, $key, $this->f['acceptance'], $text, $evidence, $materials, $subcontract);
     }
 
     private function preview(): array
@@ -139,7 +148,7 @@ class HandoverReleaseTest extends TestCase
     public function test_an_empty_basis_text_is_refused_and_writes_nothing(): void
     {
         try {
-            $this->recordBasis('empty', '   ');
+            app(RecordServiceCompletionBasis::class)($this->checker, 'empty', $this->f['acceptance'], '   ', $this->evidenceId);
             $this->fail('empty text');
         } catch (DomainInvariantException) {
             $this->assertDatabaseCount('service_completion_bases', 0);
@@ -231,7 +240,7 @@ class HandoverReleaseTest extends TestCase
         $this->assertCount(1, $this->receiver->received);
         $v = $this->receiver->received[0];
         $this->assertSame($event->id, $v->releaseEventId);
-        $this->assertSame('The fixed service is complete when the customer-named contact confirms delivery.', $v->basis->agreedText);
+        $this->assertSame(self::AGREED, $v->basis->agreedText);
         $this->assertEquals($claimsBefore, DB::table('customer_scope_claim_heads')->orderBy('id')->get()->all(), 'a release consumes no acceptance claim');
         $this->assertSame($acceptancesBefore, DB::table('customer_acceptances')->count());
         $this->assertSame('PREPARED', DB::table('handover_stages')->value('state'), 'preparation rows are never updated');

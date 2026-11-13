@@ -65,16 +65,16 @@ class JobLineageIsolationTest extends TestCase
             }
         }
         $this->assertSame([], $offenders);
-        $this->assertSame('NOT_APPLICABLE', app(SourceApplicabilityProof::class)->evaluate()['status']);
+        $this->assertSame([], app(SourceApplicabilityProof::class)->referencing(), 'the secondary FK-catalogue check is clean; it is never sufficient for NOT_APPLICABLE on its own (#122)');
     }
 
     public function test_a_foreign_table_referencing_the_lineage_makes_applicability_unknown(): void
     {
         DB::statement('CREATE TABLE zz_lineage_probe (id bigserial primary key, job_id bigint references service_jobs(id))');
         try {
-            $proof = app(SourceApplicabilityProof::class)->evaluate();
-            $this->assertSame('UNKNOWN', $proof['status']);
-            $this->assertSame(['zz_lineage_probe'], $proof['referencing']);
+            $proof = app(SourceApplicabilityProof::class);
+            $this->assertSame(['zz_lineage_probe'], $proof->referencing());
+            $this->assertSame('UNKNOWN', $proof->evaluate(null)['status']);
         } finally {
             DB::statement('DROP TABLE zz_lineage_probe');
         }
