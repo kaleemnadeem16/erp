@@ -79,7 +79,8 @@ All are Sales-owned, company-wide scope only, **no predecessor** (no CRM or edit
 | `sales.customer-decision.evidence.view` | Sensitive | SPECIFIED | Confidential evidence/files | Evidence-read | CA1 + file adapter |
 | `sales.handover.view` | New ordinary | SPECIFIED | Safe plan/readiness/target links | Operational | HA1 |
 | `sales.handover.prepare` | New ordinary | STAGED | Prepare plan, no target/stock | Operational | HA1; handover preparation API (inactive; no holder recipe) |
-| `sales.handover.release` | Sensitive | SPECIFIED | Release exact supported component | Operational + baseline | HA2 + real target |
+| `sales.handover.completion-basis.record` | Sensitive | STAGED | Record customer-agreed completion conditions | Exact agreed text | Phase 5 Batch 1 (inactive; no holder recipe) |
+| `sales.handover.release` | Sensitive | STAGED | Release exact supported component | Operational + baseline | Phase 5 Batch 1 + Jobs receiver (inactive; no holder recipe) |
 | `sales.handover.hold` | Sensitive | SPECIFIED | Authorised operational hold | Operational | HA5 |
 | `sales.handover.amend` | Sensitive | SPECIFIED | Schedule/unused cancellation/reassignment | Operational/impact | HA4/5 |
 | `sales.document.view` | New ordinary | STAGED | Safe generation/artefact history/status | Document-min | DF2/DOC1 |

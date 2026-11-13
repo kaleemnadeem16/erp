@@ -4,6 +4,7 @@ namespace Tests\Architecture;
 
 use App\Modules\Sales\Support\Handover\Release\SourceApplicabilityProof;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -15,6 +16,9 @@ use Tests\TestCase;
  */
 class JobLineageIsolationTest extends TestCase
 {
+    // The proof reads the live catalogue: it must own a migrated schema instead of inheriting whatever an earlier test in the shard left behind.
+    use RefreshDatabase;
+
     /** @return list<string> */
     private function guardedTables(): array
     {
