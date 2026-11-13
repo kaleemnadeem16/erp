@@ -1401,3 +1401,12 @@ the receipt-line lock and then replays/refuses correctly. No original evidence r
 Focused source/provenance and replay/race checks passed; exact module, ratchet, static and
 published-SHA CI evidence belongs on #120/#123. Only owned source paths committed; no
 permission activation or operational pilot certification.
+
+## 2026-11-13 — Cross-phase integration: Assembly quotation lines and Material Plan adoption (ADR 0189, ADR 0190)
+
+First cross-phase integration (Phase 3 Estimating → Phase 4 Sales), owner-approved 2026-11-13. Batch 1: Assembly work is a quotation line that a seller without any estimating
+permission can prepare, preview and issue — the source is proven without reading cost, one Assembly version is pinned (kept after a newer activation, frozen on the issued line), the
+work quantity is judged at six places then four without rounding, margin controls go through the existing cost-blind evaluator, and Tax classifies by an explicit Assembly fact. Batch 2:
+append-only Material Plan evidence per line (variance and stock-choice controls from Phase 3, approvals through the shared engine via a sealed routing collector, deliberate
+revalidation, `MATERIAL_PLAN_*` issue blockers, a database-guarded freeze of the latest plan). Staged Actions only for Batch 2: no route, screen or permission activation, and no stock
+reservation, movement or Job execution (Phase 5). Not delivered: HTTP/UI for plan adoption, a rule making a plan mandatory, Assembly tax-fact corrections.
