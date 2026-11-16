@@ -41,3 +41,15 @@ test("the print shows the order's own terms, 'Not recorded' for an old issued or
   expect(termsOnPrint(order({ payment_terms_state: "NOT_RECORDED", payment_terms_days: null }))).toBe("Not recorded");
   expect(termsOnPrint(order({ status: "DRAFT", payment_terms_state: "DRAFT_SUPPLIER_DEFAULT", payment_terms_effective_days: 90 }))).toBe("90 days (supplier default)");
 });
+
+test("without commercial access nothing about payment terms is printed, even if the order object carries them", () => {
+  const carrying = order({ payment_terms_state: "ISSUED_ORDER", payment_terms_effective_days: 45, payment_terms_days: 45, payment_terms_source: "PURCHASE_ORDER" });
+  const document = print(carrying, false);
+  expect(termsOnPrint(carrying, false)).toBeUndefined();
+  const text = JSON.stringify(document);
+  expect(text).not.toMatch(/Payment terms/i);
+  expect(text).not.toContain("45 days");
+  expect(text).not.toContain("90 days"); // nor the supplier's own record, which this test's supplier carries
+  // The same order printed for a commercial reader does show them.
+  expect(termsOnPrint(carrying, true)).toBe("45 days (agreed on this order)");
+});

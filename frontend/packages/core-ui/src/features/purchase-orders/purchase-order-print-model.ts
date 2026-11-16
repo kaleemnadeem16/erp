@@ -146,8 +146,8 @@ export function buildPurchaseOrderPrintDocument(input: {
         label: "Expected delivery",
         value: order.expected_delivery_date ?? "Not specified",
       },
-      // Terms are commercial and are read from the order alone: no commercial access, no terms; an issued order that recorded none says so.
-      ...field("Payment terms", paymentTermsLabel(order)),
+      // Terms are commercial: printed only for a reader with commercial access (whatever the order object carries), read from the order alone; an issued order that recorded none says so.
+      ...(commercial ? field("Payment terms", paymentTermsLabel(order)) : []),
       ...(order.ship_to?.warehouse
         ? [
             {
