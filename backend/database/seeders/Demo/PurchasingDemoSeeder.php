@@ -508,10 +508,14 @@ final class PurchasingDemoSeeder extends Seeder
         }
 
         $orderedAt = now()->subDays(2)->format('Y-m-d');
+        $warehouse = Warehouse::query()->where('code', 'demo-main')->firstOrFail();
         $order = app(CreatePurchaseOrder::class)([
             'supplier_account_id' => $supplier->getKey(), 'currency_id' => $currency->getKey(),
             'fx_rate' => '1.000000000', 'fx_rate_date' => $orderedAt, 'fx_rate_type' => 'SPOT', 'fx_rate_source' => 'manual',
             'order_date' => $orderedAt,
+            // Delivery, ownership and terms (ADR 0191): delivered to the main store's stock location, a 45-day term of this order's own, by supplier delivery.
+            'ship_to_warehouse_id' => $warehouse->getKey(), 'ship_to_location_id' => $warehouse->locations()->where('code', 'stock')->value('id'),
+            'buyer_user_id' => $this->actor->getKey(), 'payment_terms_days' => 45, 'shipping_method' => 'Supplier delivery',
             'lines' => [[
                 'line_number' => 1, 'item_id' => $item->getKey(), 'description' => $item->name,
                 'ordered_qty' => '75.0000', 'purchase_uom_id' => $item->stock_uom_id, 'unit_price' => '505.0000',

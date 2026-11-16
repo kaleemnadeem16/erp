@@ -46,7 +46,7 @@ class PurchaseOrderResource extends JsonResource
             // Terms are commercial. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued); the effective figure falls back to the supplier's default.
             'payment_terms_days' => $this->when($commercial, fn () => $this->payment_terms_days),
             'payment_terms_source' => $this->when($commercial, fn () => $this->payment_terms_source),
-            'payment_terms_effective_days' => $this->when($commercial && $detail, fn () => $this->payment_terms_days ?? $this->supplierAccount?->payment_terms_days),
+            'payment_terms_effective_days' => $this->when($commercial && $detail, fn () => $this->payment_terms_days ?? $this->supplierAccount->payment_terms_days),
             'notes' => $this->notes, 'inventory_cutover_id' => $this->inventory_cutover_id,
             'source_system' => $this->source_system, 'source_record_id' => $this->source_record_id,
             'total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('line_amount')),

@@ -114,3 +114,7 @@ must change the assessment before activation. See the [source contract](../../..
 - [Parties module](../Parties/README.md)
 - [ADR 0042](../../../../docs/decisions/0042-immutable-item-supplier-identity.md)
 - [Approval workflows](../../../../docs/architecture/approval-workflows.md)
+
+## Delivery, ownership and terms on purchase orders (ADR 0191)
+
+`purchase_orders` carries four optional facts and a server-set creator: `ship_to_warehouse_id` / `ship_to_location_id` (composite company and warehouse keys; both must be active at save and at issue), `buyer_user_id`, `payment_terms_days` / `payment_terms_source` (a draft override, NULL = follow the supplier; issuing freezes the effective value and its origin) and `shipping_method`. `created_by` is recorded by `CreatePurchaseOrder` (and by the cutover commit) and never changes. After issue every one of them is immutable — `PurchaseOrder`'s guard and the extended `guard_purchase_order_mutation` trigger. `PurchaseOrderApprovalSubject::routing()` adds each stated fact to the fingerprint (nothing for an order that states none, so earlier approvals still hold); `UpdatePurchaseOrder` ends an approval on any edit as before. `PurchaseOrderResource` returns the identities everywhere and names, ship-to detail and the effective terms on single-order reads; terms are commercial-gated. Demo: the outstanding Pakchem order carries all four. Not built here: Q26 record scope, a buyer lookup beyond the signed-in person, a shipping-method list.
