@@ -13,6 +13,8 @@ import type { JobDetailResourceBaseline } from "./jobDetailResourceBaseline";
 import type { JobDetailResourceAssignment } from "./jobDetailResourceAssignment";
 import type { JobDetailResourceOpenHoldsItem } from "./jobDetailResourceOpenHoldsItem";
 import type { JobDetailResourceDefaultActivity } from "./jobDetailResourceDefaultActivity";
+import type { JobDetailResourceCompletion } from "./jobDetailResourceCompletion";
+import type { JobDetailResourceCloseout } from "./jobDetailResourceCloseout";
 import type { JobDetailResourceSalesOrigin } from "./jobDetailResourceSalesOrigin";
 
 export interface JobDetailResource {
@@ -29,5 +31,7 @@ export interface JobDetailResource {
   assignment: JobDetailResourceAssignment;
   open_holds: JobDetailResourceOpenHoldsItem[];
   default_activity: JobDetailResourceDefaultActivity;
+  completion: JobDetailResourceCompletion;
+  closeout: JobDetailResourceCloseout;
   sales_origin?: JobDetailResourceSalesOrigin;
 }

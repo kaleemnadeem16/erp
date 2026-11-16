@@ -45,6 +45,10 @@ final class JobDetailResource extends JsonResource
             'open_holds' => $fields['open_holds'],
             /** @var array{id:int,description:string}|null */
             'default_activity' => $fields['default_activity'],
+            /** @var array{statement:string|null,recorded_at:string|null,claimed_occurred_at:string|null,occurrence_precision:string}|null */
+            'completion' => $fields['completion'],
+            /** @var array{statement:string|null,recorded_at:string|null,claimed_occurred_at:string|null,occurrence_precision:string}|null */
+            'closeout' => $fields['closeout'],
             /** @var array{family_id:int,revision_id:int} */
             'sales_origin' => $this->when(array_key_exists('sales_origin', $fields), fn () => $fields['sales_origin']),
         ];

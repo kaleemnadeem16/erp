@@ -30,8 +30,12 @@ not permission to build before dependent handover/readiness and separate impleme
 ## Authorised read API delivery
 
 - [x] Wrap the existing Jobs read foundation in protected list/detail/history APIs,
-  with Requests, safe Resources and generated client; no screens or duty activation.
+  with Requests, safe Resources and generated client; no duty activation.
   [Contract and verification scope](../domain/job-read-api.md).
+- [x] Include immutable COMPLETE/CLOSE history and safe completion/closeout detail;
+  deliver the read-only Jobs list, detail sheet/page and paginated timeline with exact
+  effective `job.view`, mobile/keyboard/accessibility states, without write controls or grants.
+  [Review journey](../journeys/review-job-progress.md).
 
 ## Historical October readiness and implementation planning
 

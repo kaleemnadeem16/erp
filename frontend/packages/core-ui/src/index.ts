@@ -307,3 +307,6 @@ export { CustomerAcceptanceRoute } from "./features/customer-acceptances/custome
 
 export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";
 export { QuotationEditScreen } from "./features/quotations/quotation-edit-screen";
+
+export { JobsListScreen } from './features/jobs/jobs-list-screen';
+export { JobDetailScreen } from './features/jobs/job-detail-screen';

@@ -183,7 +183,7 @@ class JobReadApiTest extends TestCase
         $this->getJson('/api/v1/jobs/'.$a.'/history?per_page=2&page=3')->assertOk()->assertJsonPath('data.0.operation', 'START');
         $summaryKeys = ['id', 'number', 'state', 'description', 'responsible_member', 'has_open_hold', 'created_at', 'released_at', 'started_at'];
         $this->assertEqualsCanonicalizing($summaryKeys, array_keys($this->getJson('/api/v1/jobs')->json('data.0')));
-        $this->assertEqualsCanonicalizing([...$summaryKeys, 'baseline', 'assignment', 'open_holds', 'default_activity'], array_keys($detail->json('data')));
+        $this->assertEqualsCanonicalizing([...$summaryKeys, 'baseline', 'assignment', 'open_holds', 'default_activity', 'completion', 'closeout'], array_keys($detail->json('data')));
         $this->assertEqualsCanonicalizing(['id', 'sequence', 'operation', 'from_state', 'to_state', 'recorded_at', 'claimed_occurred_at',
             'occurrence_precision', 'actor', 'reason', 'responsible_member_id', 'hold_id'], array_keys($first->json('data.0')));
         foreach (['PRIVATE-HASH', 'fingerprint', 'semantic_intent_hash', 'intent_hash', 'command_identity', 'cost', 'price', 'customer_representative_snapshot', 'evidence_version'] as $secret) {

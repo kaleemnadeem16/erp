@@ -84,6 +84,7 @@ const recalculation = [
 ] as const;
 
 const rules: readonly Rule[] = [
+  { path: "/jobs", allOf: ["job.view"] },
   { path: "/", allOf: legacySetup },
   { path: "/purchase-orders", anyOf: purchaseOrder },
   { path: "/goods-receipts", anyOf: goodsReceipt },

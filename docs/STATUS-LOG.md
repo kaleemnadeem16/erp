@@ -1420,3 +1420,33 @@ A full test-server tmpfs briefly refused maintenance connections; after headroom
 focused verification resumed. No other agent database or infrastructure was changed by this task.
 Exact-SHA pipeline and final module/static evidence are recorded on #125; no partial run is
 claimed as green CI, and independent acceptance remains with the coordinator.
+
+
+## 2026-11-16 — Complete Jobs history and read-only screens (#127)
+
+The Jobs read projection now includes COMPLETE and CLOSE in sequence-ordered history,
+and additive safe completion/closeout statements, server-recorded event times and separately
+labelled claimed occurrence/precision. All joins are company/Job/event scoped and bounded
+by the captured Job generation. A real Sales release-to-CLOSED API fixture verifies pages,
+immutable recorded times, absent evidence, revocation and safe response keys. Current-user
+`job.view` is omitted unless JobAccess confirms the exact ACTIVE duty, current membership
+and ALL scope, keeping navigation/direct screens unavailable for inactive or limited grants.
+
+Read-only `/jobs` and record sheet/page details use the generated client, shared screen,
+record, table/cards, saved column/view controls, URL filters/sort/page, status badges and
+loading/error/denied states. The timeline includes holds/resolutions and completion/closeout.
+No write controls, grants, production activation, migration, financial/private evidence,
+print/export or employee-directory access was added. Exact employee-id filtering is explicit;
+see the [screen coverage](domain/job-read-api.md) and [review journey](journeys/review-job-progress.md).
+
+Focused backend/API/auth verification passed 24 tests/352 assertions; architecture/security
+ratchets passed 39/98. Browser tests cover server requests, pagination, sort/page reset,
+keyboard context, timeline pages, mobile filters, light/dark axe, sheet bounds and refusal
+states: 17 browser tests passed (11 Jobs and 6 existing navigation regressions). All three
+frontend typechecks and the production build passed. Whole-project PHPStan passed with a
+private cache after the shared cache refused writes.
+The broad shared-draft Jobs regression reported 143 passed/8 failed (1507 assertions):
+new fulfilment receipt FKs require the lifecycle owner's rollback/truncate fixtures to unwind
+or include that table. Exact failures and owner were reported on #69/#127; no failed test
+was suppressed and no lifecycle Action/migration was edited. Commit/check/CI evidence is
+recorded on #127. Earlier #125/#126 published head fe0e7088 passed complete CI run 43852469741.

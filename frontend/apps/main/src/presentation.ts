@@ -7,6 +7,7 @@ import type { OptionsStyle, Presentation } from "@erp/core-ui";
  * What exists and where: docs/architecture/ui-building-blocks.md.
  */
 export const presentation: {
+  jobDetail: Presentation;
   purchaseOrderCreate: Presentation;
   purchaseOrderDetail: Presentation;
   purchaseOrderEdit: Presentation;
@@ -77,6 +78,7 @@ export const presentation: {
   assemblyCreate: Presentation;
   assemblyEdit: Presentation;
 } = {
+  jobDetail: "sheet",
   purchaseOrderCreate: "sheet",
   purchaseOrderDetail: "sheet",
   purchaseOrderEdit: "sheet",

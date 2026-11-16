@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\DB;
  * Disabled internal read foundation (#124). Every call requires exact ACTIVE job.view / ALL.
  * Materialise under the existing company access fence: no cached actor, builder or model escapes.
  * No source or Job locks: each detail SQL statement reads a coherent PostgreSQL snapshot; history
- * is bounded by its captured head generation. No command, permission registration or public API.
+ * is bounded by its captured head generation. No command or permission registration; the HTTP layer reuses these guarded reads.
  *
  * list: SQL count/page, 25 by default (1–100); number/short description literal substring,
  * state, latest responsible member, open-hold flag and inclusive UTC creation-date range.
@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\DB;
  * open holds and default activity. Only independently eligible quotation readers get a Sales
  * family/revision reference. Unsupported or absent origins disclose no origin reference.
  * history: SQL count/page, 50 by default (1–100), server sequence ascending; claimed occurrence
- * time is labelled separately. Only RELEASE/ASSIGN/START/HOLD/RESOLVE_HOLD are supported.
+ * time is labelled separately. Includes RELEASE/ASSIGN/START/HOLD/RESOLVE_HOLD/COMPLETE/CLOSE.
  * Missing and foreign IDs share JOB_NOT_FOUND. Close-only and limited actors are refused.
  */
 final class ReadJobs
@@ -84,6 +84,14 @@ final class ReadJobs
                 'effective_from', h.effective_from, 'recorded_at', h.recorded_at) ORDER BY he.sequence), '[]'::jsonb)"), 'open_holds');
             $query->selectSub(DB::table('job_activities as activity')->whereColumn('activity.company_id', 'j.company_id')->whereColumn('activity.job_id', 'j.id')
                 ->where('activity.kind', 'DEFAULT')->selectRaw("jsonb_build_object('id', activity.id, 'description', activity.description)"), 'activity');
+            foreach (['completion' => 'job_completions', 'closeout' => 'job_closeouts'] as $field => $table) {
+                $query->selectSub(DB::table($table.' as evidence')
+                    ->join('job_events as event', fn ($join) => $join->on('event.company_id', 'evidence.company_id')->on('event.job_id', 'evidence.job_id')->on('event.id', 'evidence.event_id'))
+                    ->whereColumn('evidence.company_id', 'j.company_id')->whereColumn('evidence.job_id', 'j.id')
+                    ->whereColumn('event.next_generation', '<=', 'j.generation')
+                    ->selectRaw("jsonb_build_object('statement', evidence.statement, 'recorded_at', event.recorded_at,
+                        'claimed_occurred_at', event.occurred_at, 'occurrence_precision', event.occurrence_precision)"), $field);
+            }
             $row = $query->first() ?? $this->notFound();
 
             return JobReadProjection::detail($row, $this->salesOrigin($actor, $jobId));
@@ -98,7 +106,7 @@ final class ReadJobs
             $company = app(CompanyContext::class)->id();
             $head = ServiceJob::query()->where('company_id', $company)->whereKey($jobId)->first(['generation']) ?? $this->notFound();
             $query = DB::table('job_events as e')->where('e.company_id', $company)->where('e.job_id', $jobId)
-                ->where('e.next_generation', '<=', $head->generation)->whereIn('e.operation', ['RELEASE', 'ASSIGN', 'START', 'HOLD', 'RESOLVE_HOLD']);
+                ->where('e.next_generation', '<=', $head->generation)->whereIn('e.operation', ['RELEASE', 'ASSIGN', 'START', 'HOLD', 'RESOLVE_HOLD', 'COMPLETE', 'CLOSE']);
             foreach (['job_assignment_events as a', 'job_holds as h', 'job_hold_resolutions as r'] as $table) {
                 $alias = substr($table, -1);
                 $query->leftJoin($table, function ($join) use ($alias): void {

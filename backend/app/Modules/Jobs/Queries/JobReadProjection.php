@@ -58,6 +58,15 @@ final readonly class JobReadProjection implements Arrayable, JsonSerializable
             'effective_from' => self::time($hold['effective_from']), 'recorded_at' => self::time($hold['recorded_at']),
         ], self::json($row->open_holds) ?? []);
         $fields['default_activity'] = $activity === null ? null : ['id' => (int) $activity['id'], 'description' => $activity['description']];
+        foreach (['completion', 'closeout'] as $field) {
+            $evidence = self::json($row->{$field});
+            $fields[$field] = $evidence === null ? null : [
+                'statement' => $evidence['statement'],
+                'recorded_at' => self::time($evidence['recorded_at']),
+                'claimed_occurred_at' => self::time($evidence['claimed_occurred_at']),
+                'occurrence_precision' => $evidence['occurrence_precision'],
+            ];
+        }
         if ($origin !== null) {
             $fields['sales_origin'] = $origin;
         }

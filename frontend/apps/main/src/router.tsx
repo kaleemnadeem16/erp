@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Outlet } from "react-router";
 import {
   AppShell,
+  JobsListScreen,
+  JobDetailScreen,
   QuotationsWorkspaceScreen,
   QuotationListRoute,
   QuotationApprovalRoute,
@@ -853,6 +855,33 @@ export function AppRouter() {
         {/* Sheet presentations are nested so the list stays mounted (and visible,
             dimmed) behind the side sheet the child route renders through
             <Outlet />. Which screens are sheets: ./presentation.ts */}
+        <Route
+          path="/jobs"
+          element={
+            <ProtectedRoute>
+              <AppShell>
+                <JobsListScreen />
+                {presentation.jobDetail === "sheet" && <Outlet />}
+              </AppShell>
+            </ProtectedRoute>
+          }
+        >
+          {presentation.jobDetail === "sheet" && (
+            <Route path=":id" element={<JobDetailScreen presentation="sheet" />} />
+          )}
+        </Route>
+        {presentation.jobDetail === "page" && (
+          <Route
+            path="/jobs/:id"
+            element={
+              <ProtectedRoute>
+                <AppShell>
+                  <JobDetailScreen presentation="page" />
+                </AppShell>
+              </ProtectedRoute>
+            }
+          />
+        )}
         <Route
           path="/purchase-orders"
           element={

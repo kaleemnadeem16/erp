@@ -20,6 +20,7 @@ They sit beside the existing documentation rather than replacing it:
 
 | Journey | Audience | Coverage |
 |---|---|---|
+| [Review Job progress](review-job-progress.md) | Authorised Job reader | Inactive read-only list, agreed work, assignment, holds, completion/closeout and full timeline |
 | [Quotation discount authority](quotation-discount-authority.md) | Configuration holder, preparer, independent reviewer, issuer | Disabled backend flow for governed references, named authority, independent review, expiry and pinned issue evidence; screens follow later |
 | [Approvals journey](approvals-journey.md) | Administrator, buyer, approver, finance | Switching approvals on, writing policies and limits, submitting and deciding a purchase order, delegation |
 | [Phase 2 operational journey](phase-2-operational-journey.md) | New operator, buyer, receiver/QA operator, inventory controller | Implemented entry-to-exit flow from login and setup through purchasing, receiving, QA, stock visibility and control work |

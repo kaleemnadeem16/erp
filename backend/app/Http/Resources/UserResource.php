@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\User;
+use App\Modules\Jobs\Support\JobAccess;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,7 +29,9 @@ class UserResource extends JsonResource
             // grants when this resource is nested in audit/history data.
             'permissions' => $this->when(
                 $request->user()?->is($user) === true,
-                fn () => $user->getAllPermissions()->pluck('name')->sort()->values()->all(),
+                fn () => $user->getAllPermissions()->pluck('name')
+                    ->filter(fn (string $permission): bool => $permission !== 'job.view' || JobAccess::may($user, 'job.view'))
+                    ->sort()->values()->all(),
             ),
         ];
     }

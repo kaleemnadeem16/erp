@@ -62,5 +62,7 @@ Request and fenced query. Missing/foreign Jobs return identical 404s. No duty or
 
 ## Related
 
+- [Read-only Job progress screens](../../../../docs/journeys/review-job-progress.md)
+
 - [Jobs read-only API](../../../../docs/domain/job-read-api.md)
 - [Job execution lifecycle](../../../../docs/domain/job-execution-lifecycle.md)

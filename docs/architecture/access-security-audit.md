@@ -14,7 +14,7 @@ designing a new access policy, reuse existing ADR/domain research; if the behavi
 new, follow the bounded primary-source comparison in
 [research-and-design.md](research-and-design.md).
 
-## Jobs read-only API coverage (2026-11-13)
+## Jobs read-only API and screens coverage (2026-11-16)
 
 The [Jobs read-only API](../domain/job-read-api.md) requires exact `job.view` at the
 Request boundary and again in `ReadJobs` under the company access fence. Its list,
@@ -22,7 +22,12 @@ detail and operational-history GETs support only ALL scope, re-read active compa
 membership and grants, and return the safe operational projection. Missing/foreign
 ids share 404; unsupported scope and inactive duties refuse 403. `JobReadApiTest` and
 `JobReadQueriesTest` cover allowed/denied, revoked/suspended, cross-company, safe-field
-and scope paths. No production duty, permission registration or grant is activated.
+and scope paths. `JobClosedReadApiTest` adds real release-to-close history pagination,
+immutable completion/closeout time projection and effective current-user permission tests.
+`UserResource` omits `job.view` unless `JobAccess` passes; shared screen-access/navigation
+and screen-level guards use that effective duty. Isolated Jobs browser tests cover denied
+navigation/direct reads, operational fields, keyboard, mobile/light-dark accessibility and
+server request controls. No production duty, permission registration or grant is activated.
 
 ## Evidence and confidence
 
