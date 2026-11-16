@@ -95,6 +95,7 @@ final class CommitInventoryCutoverOpenPurchaseOrders
                 $importBatchId = (int) $sourceBatchIds->sole();
 
                 $order = $this->create->forWorkflow([
+                    'created_by' => $actor->id,
                     'supplier_account_id' => $supplier->id,
                     'supplier_site_id' => $supplierSite?->id,
                     'currency_id' => $currency->id,
