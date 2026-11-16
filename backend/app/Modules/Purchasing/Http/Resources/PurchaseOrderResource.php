@@ -43,10 +43,18 @@ class PurchaseOrderResource extends JsonResource
             'buyer' => $this->when($detail, fn () => $this->buyer === null ? null : ['id' => $this->buyer->id, 'name' => $this->buyer->name]),
             'creator' => $this->when($detail, fn () => $this->creator === null ? null : ['id' => $this->creator->id, 'name' => $this->creator->name]),
             'shipping_method' => $this->shipping_method,
-            // Terms are commercial. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued); the effective figure falls back to the supplier's default.
+            // Terms are commercial and so follow commercial visibility. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued).
+            // The effective figure falls back to the supplier's live default ONLY while the order has not been issued; an issued order that never recorded terms has none
+            // (`NOT_RECORDED`) — today's supplier default is not what was agreed.
             'payment_terms_days' => $this->when($commercial, fn () => $this->payment_terms_days),
             'payment_terms_source' => $this->when($commercial, fn () => $this->payment_terms_source),
-            'payment_terms_effective_days' => $this->when($commercial && $detail, fn () => $this->payment_terms_days ?? $this->supplierAccount->payment_terms_days),
+            'payment_terms_effective_days' => $this->when($commercial && $detail, fn () => $this->issued_at === null ? ($this->payment_terms_days ?? $this->supplierAccount->payment_terms_days) : $this->payment_terms_days),
+            'payment_terms_state' => $this->when($commercial, fn () => match (true) {
+                $this->issued_at !== null && $this->payment_terms_days === null => 'NOT_RECORDED',
+                $this->issued_at !== null => $this->payment_terms_source === 'PURCHASE_ORDER' ? 'ISSUED_ORDER' : 'ISSUED_SUPPLIER_DEFAULT',
+                $this->payment_terms_days !== null => 'DRAFT_ORDER',
+                default => 'DRAFT_SUPPLIER_DEFAULT',
+            }),
             'notes' => $this->notes, 'inventory_cutover_id' => $this->inventory_cutover_id,
             'source_system' => $this->source_system, 'source_record_id' => $this->source_record_id,
             'total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('line_amount')),

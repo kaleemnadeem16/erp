@@ -19,6 +19,8 @@ import type { PurchaseOrderResourceCreator } from "./purchaseOrderResourceCreato
 import type { PurchaseOrderResourceShippingMethod } from "./purchaseOrderResourceShippingMethod";
 import type { PurchaseOrderResourcePaymentTermsDays } from "./purchaseOrderResourcePaymentTermsDays";
 import type { PurchaseOrderResourcePaymentTermsSource } from "./purchaseOrderResourcePaymentTermsSource";
+import type { PurchaseOrderResourcePaymentTermsEffectiveDays } from "./purchaseOrderResourcePaymentTermsEffectiveDays";
+import type { PurchaseOrderResourcePaymentTermsState } from "./purchaseOrderResourcePaymentTermsState";
 import type { PurchaseOrderResourceNotes } from "./purchaseOrderResourceNotes";
 import type { PurchaseOrderResourceInventoryCutoverId } from "./purchaseOrderResourceInventoryCutoverId";
 import type { PurchaseOrderResourceSourceSystem } from "./purchaseOrderResourceSourceSystem";
@@ -55,10 +57,13 @@ export interface PurchaseOrderResource {
   buyer?: PurchaseOrderResourceBuyer;
   creator?: PurchaseOrderResourceCreator;
   shipping_method: PurchaseOrderResourceShippingMethod;
-  /** Terms are commercial. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued); the effective figure falls back to the supplier's default. */
+  /** Terms are commercial and so follow commercial visibility. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued).
+The effective figure falls back to the supplier's live default ONLY while the order has not been issued; an issued order that never recorded terms has none
+(`NOT_RECORDED`) — today's supplier default is not what was agreed. */
   payment_terms_days?: PurchaseOrderResourcePaymentTermsDays;
   payment_terms_source?: PurchaseOrderResourcePaymentTermsSource;
-  payment_terms_effective_days?: number;
+  payment_terms_effective_days?: PurchaseOrderResourcePaymentTermsEffectiveDays;
+  payment_terms_state?: PurchaseOrderResourcePaymentTermsState;
   notes: PurchaseOrderResourceNotes;
   inventory_cutover_id: PurchaseOrderResourceInventoryCutoverId;
   source_system: PurchaseOrderResourceSourceSystem;

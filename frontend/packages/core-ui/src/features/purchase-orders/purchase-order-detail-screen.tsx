@@ -1,3 +1,4 @@
+import { paymentTermsLabel } from "./purchase-order-terms";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PurchaseOrderQuickPrint } from "./purchase-order-print";
 import { useEffect, useState, type ReactNode } from "react";
@@ -535,17 +536,11 @@ export function PurchaseOrderDetailScreen({
                 )}
               </DetailField>
             )}
-            <DetailField label="Payment terms">
-              {order.payment_terms_effective_days !== undefined && order.payment_terms_effective_days !== null
-                ? `${order.payment_terms_effective_days} days${
-                    order.payment_terms_source === "PURCHASE_ORDER" || (order.payment_terms_days !== null && order.payment_terms_days !== undefined && order.status === "DRAFT")
-                      ? " (set on this order)"
-                      : " (supplier default)"
-                  }`
-                : supplier
-                  ? `${supplier.payment_terms_days} days (supplier default)`
-                  : undefined}
-            </DetailField>
+            {paymentTermsLabel(order) !== null && (
+              <DetailField label="Payment terms">
+                {paymentTermsLabel(order)}
+              </DetailField>
+            )}
             {supplier?.party?.tax_id && (
               <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
             )}

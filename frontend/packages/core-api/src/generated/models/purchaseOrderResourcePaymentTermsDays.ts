@@ -6,6 +6,8 @@
  */
 
 /**
- * Terms are commercial. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued); the effective figure falls back to the supplier's default.
+ * Terms are commercial and so follow commercial visibility. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued).
+The effective figure falls back to the supplier's live default ONLY while the order has not been issued; an issued order that never recorded terms has none
+(`NOT_RECORDED`) — today's supplier default is not what was agreed.
  */
 export type PurchaseOrderResourcePaymentTermsDays = number | null;

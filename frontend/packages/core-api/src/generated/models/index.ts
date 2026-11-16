@@ -3,7 +3,7 @@
  * Do not edit manually.
  *
  * Pure-type schemas are re-exported with `export type *` so a browser never requests them;
- * only the 200 schemas that export a runtime value use `export *`.
+ * only the 201 schemas that export a runtime value use `export *`.
  */
 export type * from "./accountDevicesIndex200";
 export type * from "./accountShow200";
@@ -1834,7 +1834,9 @@ export type * from "./purchaseOrderResourceIssuedAt";
 export type * from "./purchaseOrderResourceNotes";
 export type * from "./purchaseOrderResourceNumber";
 export type * from "./purchaseOrderResourcePaymentTermsDays";
+export type * from "./purchaseOrderResourcePaymentTermsEffectiveDays";
 export type * from "./purchaseOrderResourcePaymentTermsSource";
+export * from "./purchaseOrderResourcePaymentTermsState";
 export type * from "./purchaseOrderResourceReplacesPurchaseOrderId";
 export type * from "./purchaseOrderResourceShipTo";
 export type * from "./purchaseOrderResourceShipToLocation";

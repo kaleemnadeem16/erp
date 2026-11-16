@@ -319,7 +319,35 @@ class PurchaseOrderLogisticsTest extends PurchaseOrderFoundationTest
         $data = $this->actingAsUnprivileged($reader)->getJson("/api/v1/purchase-orders/{$id}")->assertOk()->json('data');
 
         $this->assertArrayNotHasKey('payment_terms_days', $data);
-        $this->assertArrayNotHasKey('payment_terms_effective_days', $data);
+        foreach (['payment_terms_effective_days', 'payment_terms_source', 'payment_terms_state'] as $hidden) {
+            $this->assertArrayNotHasKey($hidden, $data, 'terms are commercial: nothing about them, not even a fallback, reaches this reader');
+        }
         $this->assertSame('Courier', $data['shipping_method'], 'where and how it travels is operational, not commercial');
+    }
+
+    public function test_an_old_issued_order_with_no_recorded_terms_says_so_and_never_borrows_todays_supplier_default(): void
+    {
+        [$order, $item, $uom] = $this->makeOrder();
+        $order->lines()->create($this->lineAttributes($order, $item, $uom));
+        // An order issued before terms were recorded: issued, with no terms and no source.
+        DB::table('purchase_orders')->where('id', $order->id)->update(['status' => 'ISSUED', 'number' => 'PO-OLD-1', 'issued_at' => now()]);
+
+        $data = $this->actingAsUnprivileged($this->issuer)->getJson("/api/v1/purchase-orders/{$order->id}")->assertOk()->json('data');
+        $this->assertSame(['NOT_RECORDED', null, null], [$data['payment_terms_state'], $data['payment_terms_effective_days'], $data['payment_terms_days']]);
+
+        DB::table('supplier_accounts')->update(['payment_terms_days' => 90]);
+        $again = $this->getJson("/api/v1/purchase-orders/{$order->id}")->json('data');
+        $this->assertSame(['NOT_RECORDED', null], [$again['payment_terms_state'], $again['payment_terms_effective_days']], "the supplier's later default is not a historical agreement");
+    }
+
+    public function test_each_stage_of_an_orders_terms_reports_its_state(): void
+    {
+        $draftFollowing = $this->create()->json('data');
+        $draftOwn = $this->create(['payment_terms_days' => 45])->json('data');
+        $this->assertSame([['DRAFT_SUPPLIER_DEFAULT', 30], ['DRAFT_ORDER', 45]], [[$draftFollowing['payment_terms_state'], $draftFollowing['payment_terms_effective_days']], [$draftOwn['payment_terms_state'], $draftOwn['payment_terms_effective_days']]], 'a draft may show the live supplier default');
+
+        $a = $this->actingAsUnprivileged($this->issuer)->postJson("/api/v1/purchase-orders/{$draftOwn['id']}/issue")->assertOk()->json('data');
+        $b = $this->postJson("/api/v1/purchase-orders/{$draftFollowing['id']}/issue")->assertOk()->json('data');
+        $this->assertSame([['ISSUED_ORDER', 45], ['ISSUED_SUPPLIER_DEFAULT', 30]], [[$a['payment_terms_state'], $a['payment_terms_effective_days']], [$b['payment_terms_state'], $b['payment_terms_effective_days']]]);
     }
 }
