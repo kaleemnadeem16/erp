@@ -18,15 +18,16 @@ class JobReceiverMigrationTest extends TestCase
 
     private const FUNCTIONS = ['job_activity_guard_v1', 'job_baseline_component_guard_v1', 'job_sales_origin_consistency_v1', 'job_sales_origin_guard_v1'];
 
-    /** The receiver migration, unwinding the completion/closeout foundation that depends on it first and re-applying it last. */
+    /** The receiver migration, unwinding the Sales fulfilment receipts and the completion/closeout foundation that depend on it first and re-applying it last. */
     private function migration(): object
     {
-        return new class(require base_path('database/migrations/2026_12_13_200000_create_job_receiver_foundation.php'), require base_path('database/migrations/2026_12_14_100000_create_job_completion_closeout.php'))
+        return new class(require base_path('database/migrations/2026_12_13_200000_create_job_receiver_foundation.php'), require base_path('database/migrations/2026_12_14_100000_create_job_completion_closeout.php'), require base_path('database/migrations/2026_12_14_200000_create_service_fulfilment_receipts.php'))
         {
-            public function __construct(private readonly object $receiver, private readonly object $completion) {}
+            public function __construct(private readonly object $receiver, private readonly object $completion, private readonly object $fulfilment) {}
 
             public function down(): void
             {
+                $this->fulfilment->down();
                 $this->completion->down();
                 $this->receiver->down();
             }
@@ -35,6 +36,7 @@ class JobReceiverMigrationTest extends TestCase
             {
                 $this->receiver->up();
                 $this->completion->up();
+                $this->fulfilment->up();
             }
         };
     }

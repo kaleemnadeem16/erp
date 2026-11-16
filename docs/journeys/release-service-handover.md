@@ -11,3 +11,5 @@ Phase 5 Batch 1. No screen or route yet; this is the Action-level journey the Ba
 5. A retry (same key) replays; a fresh key or another actor resolves to the same single release; a changed basis after release is refused.
 
 Failure paths: no basis, stale review, unproven applicability, mandatory cost without evidence, missing duty, suspended/revoked actor, receiver unavailable or failing — each writes nothing.
+
+After the Job is started, completing it records the Sales fulfilment receipt in the same transaction (the exact agreed deliverable and conditions were fulfilled); closeout checks that receipt again and refuses if it is missing, mismatched or stale. Neither step settles an invoice or frees accepted capacity.

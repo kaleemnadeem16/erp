@@ -168,7 +168,7 @@ class JobLifecycleFoundationTest extends TestCase
             $this->assertRefused(fn () => DB::table($table)->delete(), 'append-only');
         }
         // A table another table references is refused by PostgreSQL itself unless truncated together with it; together, only the guard is in the way.
-        foreach (['job_assignment_events', 'job_operation_receipts', 'job_holds, job_hold_resolutions', 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts, job_completions, job_closeouts'] as $set) {
+        foreach (['job_assignment_events', 'job_operation_receipts', 'job_holds, job_hold_resolutions', 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts, job_completions, job_closeouts, handover_fulfilment_receipts'] as $set) {
             $this->assertRefused(fn () => DB::statement("TRUNCATE TABLE {$set}"), 'append-only');
         }
         $this->assertRefused(fn () => DB::statement('TRUNCATE TABLE service_jobs CASCADE'), 'append-only');

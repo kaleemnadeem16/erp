@@ -12,6 +12,7 @@ use App\Modules\Jobs\Actions\StartJob;
 use App\Modules\Jobs\Models\ServiceJob;
 use App\Modules\Jobs\Support\Lifecycle\JobLifecycleIntent;
 use App\Modules\Jobs\Support\Lifecycle\JobLifecycleOutcome;
+use App\Modules\Sales\Support\Handover\Release\ScopeHeader;
 use App\Support\JobSource\FamilyAssessment;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\QueryException;
@@ -227,6 +228,10 @@ class JobCompletionTest extends TestCase
             DB::table('job_completions')->insert($override + ['company_id' => 1, 'job_id' => $job->id, 'event_id' => $event, 'baseline_id' => $baseline->id, 'release_event_id' => $origin->release_event_id,
                 'condition_identity' => $component->condition_identity, 'baseline_fingerprint' => $baseline->fingerprint, 'statement' => 'Raw', 'completed_by' => $this->checker->id,
                 'occurrence_precision' => 'NONE']);
+            // A Sales-origin completion also carries its Sales fulfilment receipt (the database refuses a COMPLETE event without it); the completion rows above are what the cases forge.
+            $issued = DB::table('quotation_issued_lines')->where('id', $component->issued_line_id)->first();
+            DB::table('handover_fulfilment_receipts')->insert(['company_id' => 1, 'job_id' => $job->id, 'event_id' => $event, 'release_event_id' => $origin->release_event_id, 'issued_line_id' => $component->issued_line_id,
+                'basis_id' => $component->basis_id, 'condition_identity' => $component->condition_identity, 'deliverable_digest' => ScopeHeader::digest((string) $issued->description), 'completed_by' => $this->checker->id]);
         }
         DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
     }
@@ -243,7 +248,8 @@ class JobCompletionTest extends TestCase
         $this->refusedBecause('job_completions_job_unique', fn () => DB::table('job_completions')->insert($completion));
         $this->refusedBecause('append-only', fn () => DB::table('job_completions')->where('job_id', $job->id)->update(['statement' => 'changed']));
         $this->refusedBecause('append-only', fn () => DB::table('job_completions')->where('job_id', $job->id)->delete());
-        $this->refusedBecause('append-only', fn () => DB::statement('TRUNCATE job_completions'));
+        // The Sales fulfilment receipts reference job_completions, so the database refuses the TRUNCATE on that ground before the append-only trigger is reached.
+        $this->refusedBecause('cannot truncate a table referenced in a foreign key', fn () => DB::statement('TRUNCATE job_completions'));
         $this->refusedBecause('foreign key', fn () => DB::table('job_completions')->insert(['company_id' => 999] + $completion));
     }
 

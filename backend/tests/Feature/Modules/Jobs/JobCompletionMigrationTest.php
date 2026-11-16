@@ -27,6 +27,12 @@ class JobCompletionMigrationTest extends TestCase
         return require base_path('database/migrations/2026_12_14_100000_create_job_completion_closeout.php');
     }
 
+    /** The Sales fulfilment receipts depend on job_completions, so they are backed out first and re-applied after. */
+    private function fulfilment(): object
+    {
+        return require base_path('database/migrations/2026_12_14_200000_create_service_fulfilment_receipts.php');
+    }
+
     private function definition(string $function): string
     {
         return (string) DB::selectOne("select pg_get_functiondef('{$function}'::regprocedure) as def")->def;
@@ -40,6 +46,7 @@ class JobCompletionMigrationTest extends TestCase
         $this->assertStringContainsString('COMPLETE must move ACTIVE to COMPLETED', $consistency);
         $migration = $this->migration();
 
+        $this->fulfilment()->down();
         $migration->down();
         foreach (self::TABLES as $table) {
             $this->assertFalse(Schema::hasTable($table), $table);
@@ -52,6 +59,7 @@ class JobCompletionMigrationTest extends TestCase
         }
 
         $migration->up();
+        $this->fulfilment()->up();
         foreach (self::TABLES as $table) {
             $this->assertTrue(Schema::hasTable($table), $table);
         }
@@ -85,6 +93,7 @@ class JobCompletionMigrationTest extends TestCase
     public function test_an_unexpected_function_definition_stops_the_migration_before_a_thing_changes(): void
     {
         // Run against a function body that is not the one this migration extends: it must refuse, never overwrite.
+        $this->fulfilment()->down();
         $this->migration()->down();
         DB::unprepared('CREATE OR REPLACE FUNCTION job_lifecycle_evidence_guard_v1() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RETURN NEW; END $$');
         try {

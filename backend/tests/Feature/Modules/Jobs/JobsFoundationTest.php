@@ -186,10 +186,10 @@ class JobsFoundationTest extends TestCase
             $this->assertDbRefuses(fn () => DB::table($table)->delete(), 'append-only');
             // job_events is now referenced by the lifecycle tables, so PostgreSQL refuses a lone TRUNCATE on it by itself; truncated together with them, only the guard stands in the way.
             $set = match ($table) {
-                'job_events' => 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts, job_completions, job_closeouts',
+                'job_events' => 'job_events, job_assignment_events, job_holds, job_hold_resolutions, job_operation_receipts, job_completions, job_closeouts, handover_fulfilment_receipts',
                 // The Batch 1 receiver tables reference origins and baselines the same way.
-                'job_handover_origins' => 'job_handover_origins, job_sales_origins, job_baseline_components, job_completions',
-                'job_baselines' => 'job_baselines, job_baseline_components, job_completions',
+                'job_handover_origins' => 'job_handover_origins, job_sales_origins, job_baseline_components, job_completions, handover_fulfilment_receipts',
+                'job_baselines' => 'job_baselines, job_baseline_components, job_completions, handover_fulfilment_receipts',
                 default => $table,
             };
             $this->assertDbRefuses(fn () => DB::statement("TRUNCATE TABLE {$set}"), 'append-only');
@@ -200,7 +200,7 @@ class JobsFoundationTest extends TestCase
         $this->assertDbRefuses(fn () => DB::table('service_jobs')->where('id', $job)->delete(), 'violates foreign key');
 
         $guards = DB::select("select c.relname as tbl, p.proname as fn from pg_trigger t join pg_class c on c.oid = t.tgrelid join pg_proc p on p.oid = t.tgfoid
-            where not t.tgisinternal and c.relname in ('job_handover_origins','job_baselines','job_events') and p.proname not like 'job_lifecycle_%' and p.proname not like 'job_completion_%' order by c.relname");
+            where not t.tgisinternal and c.relname in ('job_handover_origins','job_baselines','job_events') and p.proname not like 'job_lifecycle_%' and p.proname not like 'job_completion_%' and p.proname not like 'handover_fulfilment_%' order by c.relname");
         $this->assertCount(6, $guards, 'a row guard and a truncate guard on each evidence table');
         foreach ($guards as $g) {
             $this->assertSame('job_evidence_append_only_guard', $g->fn, "{$g->tbl} uses the Jobs guard, never the Documents one");

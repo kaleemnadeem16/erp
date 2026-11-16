@@ -34,15 +34,16 @@ class JobLifecycleMigrationTest extends TestCase
         $this->worker = User::factory()->create();
     }
 
-    /** The lifecycle migration, unwinding the completion/closeout foundation that depends on it first and re-applying it last. */
+    /** The lifecycle migration, unwinding the Sales fulfilment receipts and the completion/closeout foundation that depend on it first and re-applying it last. */
     private function migration(): object
     {
-        return new class(require base_path('database/migrations/2026_10_26_090000_create_job_lifecycle_foundation.php'), require base_path('database/migrations/2026_12_14_100000_create_job_completion_closeout.php'))
+        return new class(require base_path('database/migrations/2026_10_26_090000_create_job_lifecycle_foundation.php'), require base_path('database/migrations/2026_12_14_100000_create_job_completion_closeout.php'), require base_path('database/migrations/2026_12_14_200000_create_service_fulfilment_receipts.php'))
         {
-            public function __construct(private readonly object $lifecycle, private readonly object $completion) {}
+            public function __construct(private readonly object $lifecycle, private readonly object $completion, private readonly object $fulfilment) {}
 
             public function down(): void
             {
+                $this->fulfilment->down();
                 $this->completion->down();
                 $this->lifecycle->down();
             }
@@ -51,6 +52,7 @@ class JobLifecycleMigrationTest extends TestCase
             {
                 $this->lifecycle->up();
                 $this->completion->up();
+                $this->fulfilment->up();
             }
         };
     }

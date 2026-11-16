@@ -24,6 +24,8 @@ use App\Modules\Sales\Support\Financial\Controls\EstimatingAssemblyCostEvidence;
 use App\Modules\Sales\Support\Financial\Controls\QuotationControlEvaluationAuthority;
 use App\Modules\Sales\Support\Handover\Release\NoMandatoryReleaseCostPolicy;
 use App\Modules\Sales\Support\Handover\Release\ReleaseCostPolicy;
+use App\Modules\Sales\Support\Handover\Release\SalesServiceFulfilment;
+use App\Modules\Sales\Support\Handover\Release\ServiceFulfilmentRecorder;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use App\Modules\Sales\Support\Quotation\Approval\QuotationApprovalSubject;
 use App\Modules\Sales\Support\Quotation\Issue\ConfiguredQuotationControlsProvider;
@@ -73,6 +75,8 @@ class SalesServiceProvider extends ServiceProvider
         });
         // Cost is conditional on the applicable control policy; the default finds no mandatory control. Jobs binds ReleasedServiceReceiver and JobSalesOrigin.
         $this->app->bindIf(ReleaseCostPolicy::class, NoMandatoryReleaseCostPolicy::class);
+        // The Sales fulfilment receipt Jobs writes with a completion and verifies at closeout.
+        $this->app->bindIf(ServiceFulfilmentRecorder::class, SalesServiceFulfilment::class);
         $this->app->afterResolving(PermissionRegistry::class, function (PermissionRegistry $registry): void {
             $this->app->make(SalesDutyManifest::class)->registerWith($registry);
         });

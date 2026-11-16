@@ -33,25 +33,26 @@ trait BuildsHandoverFixture
         $this->app->instance(SalesDutyManifest::class, SalesDutyManifest::shipped()->withActivated($this->handoverDuties()));
     }
 
-    protected function serviceAcceptance(User $actor, int $partyId, string $sourceKind = 'SERVICE_ITEM'): array
+    /** `$tag` makes every code and request key unique, so a second, independent accepted service can be built in the same test. */
+    protected function serviceAcceptance(User $actor, int $partyId, string $sourceKind = 'SERVICE_ITEM', string $tag = ''): array
     {
-        $uom = Uom::create(['code' => 'SERVICE-EA', 'name' => 'Service commercial unit', 'dimension' => 'COUNT', 'factor_to_base' => '1', 'is_base' => false]);
-        $category = Category::create(['code' => 'SERVICE', 'name' => 'Services']);
-        $item = Item::create(['code' => 'SERVICE', 'name' => 'Fixed service deliverable', 'type' => $sourceKind === 'SERVICE_ITEM' ? 'SERVICE' : 'RAW', 'stock_uom_id' => $uom->id, 'is_stocked' => false,
+        $uom = Uom::create(['code' => 'SERVICE-EA'.$tag, 'name' => 'Service commercial unit', 'dimension' => 'COUNT', 'factor_to_base' => '1', 'is_base' => false]);
+        $category = Category::create(['code' => 'SERVICE'.$tag, 'name' => 'Services']);
+        $item = Item::create(['code' => 'SERVICE'.$tag, 'name' => 'Fixed service deliverable', 'type' => $sourceKind === 'SERVICE_ITEM' ? 'SERVICE' : 'RAW', 'stock_uom_id' => $uom->id, 'is_stocked' => false,
             'is_sellable' => true, 'is_purchasable' => false, 'valuation_method' => 'FIFO', 'tracking' => 'NONE', 'category_id' => $category->id]);
         $today = now('Asia/Karachi')->toDateString();
-        $draft = app(CreateQuotationDraft::class)($actor, 'service-draft', ['recipient_party_id' => $partyId, 'pricing_date' => $today, 'tax_estimate_date' => $today, 'valid_through_local_date' => now('Asia/Karachi')->addMonth()->toDateString()]);
-        app(UpdateQuotationDraft::class)($actor, $draft->revisionId, $draft->inputGeneration, 'service-line', ['add_lines' => [['source_kind' => $sourceKind, 'item_id' => $item->id,
+        $draft = app(CreateQuotationDraft::class)($actor, 'service-draft'.$tag, ['recipient_party_id' => $partyId, 'pricing_date' => $today, 'tax_estimate_date' => $today, 'valid_through_local_date' => now('Asia/Karachi')->addMonth()->toDateString()]);
+        app(UpdateQuotationDraft::class)($actor, $draft->revisionId, $draft->inputGeneration, 'service-line'.$tag, ['add_lines' => [['source_kind' => $sourceKind, 'item_id' => $item->id,
             'offered_quantity' => '2', 'unit_price' => '100.0000']]]);
         $revision = QuotationRevision::findOrFail($draft->revisionId);
-        app(IssueQuotation::class)($actor, $revision->id, $revision->input_generation, 'service-issue');
+        app(IssueQuotation::class)($actor, $revision->id, $revision->input_generation, 'service-issue'.$tag);
         $line = QuotationIssuedLine::where('revision_id', $revision->id)->firstOrFail();
-        $case = CustomerDecisionCase::create(['party_id' => $partyId, 'intake_identity' => 'Synthetic service consent', 'recorded_by' => $actor->id]);
+        $case = CustomerDecisionCase::create(['party_id' => $partyId, 'intake_identity' => 'Synthetic service consent'.$tag, 'recorded_by' => $actor->id]);
         $component = CustomerDecisionComponent::create(['case_id' => $case->id, 'intent_identity' => 'service', 'family_id' => $line->family_id, 'original_scope_anchor_id' => $line->logical_scope_id, 'recorded_by' => $actor->id]);
         $e = CustomerDecisionEvidence::create(['case_id' => $case->id, 'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE', 'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => 'The buyer agrees to the full issued service unchanged.', 'observation_state' => 'OBSERVED', 'recorded_by' => $actor->id]);
         $args = [$revision->id, $component->id, $e->id, $line->id, 0, 0, null];
         $token = app(PreviewCustomerAcceptance::class)($actor, ...$args)['preview_token'];
-        $accepted = app(RecordCustomerAcceptance::class)($actor, 'service-accept', ...[...$args, $token, true]);
+        $accepted = app(RecordCustomerAcceptance::class)($actor, 'service-accept'.$tag, ...[...$args, $token, true]);
         $contact = PartyContact::create(['party_id' => $partyId, 'name' => 'Synthetic delivery contact', 'email' => 'service@example.invalid']);
 
         return ['acceptance' => $accepted['acceptance_id'], 'revision' => $revision->id, 'item' => $item->id, 'contact' => $contact->id, 'case' => $case->id,

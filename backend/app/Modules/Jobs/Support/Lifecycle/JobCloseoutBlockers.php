@@ -6,6 +6,8 @@ namespace App\Modules\Jobs\Support\Lifecycle;
 
 use App\Modules\Jobs\Models\JobCompletion;
 use App\Modules\Jobs\Support\Execution\JobExecutionContext;
+use App\Modules\Sales\Support\Handover\Release\FulfilmentState;
+use App\Modules\Sales\Support\Handover\Release\ServiceFulfilmentRecorder;
 
 /**
  * The one place that decides what blocks a closeout, shared by the assessment and by the close itself (which re-runs it under the Job lock, so an assessment can never be
@@ -24,6 +26,14 @@ final class JobCloseoutBlockers
 
     public const SOURCE_CONDITIONS_CHANGED = 'SOURCE_CONDITIONS_CHANGED';
 
+    /** The Sales source holds no fulfilment receipt for the completion (the evidence a closeout rests on). */
+    public const FULFILMENT_MISSING = 'FULFILMENT_MISSING';
+
+    /** The Sales fulfilment receipt no longer agrees with the Job's completion or the agreed work it was released with. */
+    public const FULFILMENT_MISMATCH = 'FULFILMENT_MISMATCH';
+
+    public function __construct(private readonly ServiceFulfilmentRecorder $fulfilment) {}
+
     /** @return list<string> sorted, unique */
     public function for(JobSnapshot $snapshot, JobExecutionContext $context): array
     {
@@ -37,6 +47,14 @@ final class JobCloseoutBlockers
         } elseif (isset($context->sourceVector['condition']) && $context->sourceVector['condition'] !== $completion->condition_identity) {
             // The agreed conditions the source holds now are not the ones the Job was completed against.
             $blockers[] = self::SOURCE_CONDITIONS_CHANGED;
+        }
+        if ($completion !== null) {
+            $state = $this->fulfilment->verify($snapshot->job->id);
+            if ($state === FulfilmentState::MISSING) {
+                $blockers[] = self::FULFILMENT_MISSING;
+            } elseif ($state !== FulfilmentState::OK) {
+                $blockers[] = self::FULFILMENT_MISMATCH;
+            }
         }
         if ($snapshot->openHoldIds !== []) {
             $blockers[] = self::OPEN_HOLDS;

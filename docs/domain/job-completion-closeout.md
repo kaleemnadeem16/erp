@@ -42,6 +42,17 @@ is still refused. New tables are append-only (row and TRUNCATE guards), company/
 COMPLETE never commits without its completion row agreeing with the event and the original agreed work and with no unresolved hold; a CLOSE never without its closeout row and a READY assessment of
 the generation it closes, after the completion. `down()` refuses while any row, COMPLETE/CLOSE event or COMPLETED/CLOSED Job exists, checked after the tables are locked.
 
+## Sales fulfilment receipt
+
+Completing a Sales-origin Job also writes the Sales-owned, immutable `handover_fulfilment_receipts` row — in the SAME transaction as the COMPLETE event, the completion row, the head advance and the
+actor's receipt (inside the existing child write, after the source fences and the Job head lock, so the lock order is unchanged). It names the real release (the Job's own Sales origin), the Job's
+completion event, the accepted issued line and completion basis, the agreed-conditions identity, the sha256 digest of the exact agreed deliverable text and the source applicability pin; it
+records no money and changes no claim, allocation or accepted capacity. One receipt per release, per Job and per completion event, whatever key, actor or command identity arrives. Jobs reaches Sales only
+through the port `ServiceFulfilmentRecorder` (`record`, `verify`). **Closeout re-verifies it** under the Job lock, in the assessment and again in the close: `FULFILMENT_MISSING` (no receipt) and
+`FULFILMENT_MISMATCH` (it no longer agrees with the completion, the release, the conditions or the current deliverable text) block, alongside the existing source-readiness blockers.
+Migration `2026_12_14_200000_create_service_fulfilment_receipts.php` is additive: an insert guard proves the facts again in SQL, a deferred COMMIT trigger refuses a Sales-origin COMPLETE without exactly
+its receipt, `up()` refuses if a Sales-origin Job was already completed (a genuine receipt cannot be back-filled) and `down()` refuses while any receipt exists.
+
 ## Limits
 
 - **Mandatory evidence:** the pilot has none beyond the source proof; a source that cannot prove readiness refuses. Policy-required evidence (signatures, approvals) is a later slice.
