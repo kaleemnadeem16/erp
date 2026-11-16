@@ -64,6 +64,8 @@ function AsideSummary({
   paymentTermsDays,
   leadTimeDays,
   currencyPlaces,
+  warehouseOptions = [],
+  buyerLabel,
 }: {
   control: Control<PurchaseOrderFormValues>;
   supplierOptions: Option[];
@@ -76,6 +78,8 @@ function AsideSummary({
   leadTimeDays?: number | null;
   /** Minor-unit places by currency id, so amounts show the currency's own places (0 for a yen, 3 for a dinar), not an assumed two. */
   currencyPlaces?: Readonly<Record<string, number>>;
+  warehouseOptions?: Option[];
+  buyerLabel?: string;
 }) {
   const values = useWatch({ control });
   const label = (options: Option[], value?: string) =>
@@ -101,9 +105,15 @@ function AsideSummary({
         {values.supplier_site_id && (
           <SummaryGroup title="Site">{label(siteOptions, values.supplier_site_id)}</SummaryGroup>
         )}
-        {(paymentTermsDays !== undefined || (leadTimeDays !== undefined && leadTimeDays !== null)) && (
+        {(paymentTermsDays !== undefined || values.payment_terms_days?.trim() || (leadTimeDays !== undefined && leadTimeDays !== null)) && (
           <div className="grid grid-cols-2 gap-4">
-            {paymentTermsDays !== undefined && <SummaryGroup title="Payment terms">{paymentTermsDays} days</SummaryGroup>}
+            {(values.payment_terms_days?.trim() || paymentTermsDays !== undefined) && (
+              <SummaryGroup title="Payment terms">
+                {values.payment_terms_days?.trim()
+                  ? `${values.payment_terms_days.trim()} days (this order)`
+                  : `${paymentTermsDays} days (supplier default)`}
+              </SummaryGroup>
+            )}
             {leadTimeDays !== undefined && leadTimeDays !== null && (
               <SummaryGroup title="Lead time">{leadTimeDays} days</SummaryGroup>
             )}
@@ -113,6 +123,11 @@ function AsideSummary({
           <SummaryGroup title="Order date">{values.order_date || NOT_SET}</SummaryGroup>
           <SummaryGroup title="Expected">{values.expected_delivery_date || NOT_SET}</SummaryGroup>
         </div>
+        {values.ship_to_warehouse_id && (
+          <SummaryGroup title="Deliver to">{label(warehouseOptions, values.ship_to_warehouse_id) ?? NOT_SET}</SummaryGroup>
+        )}
+        {values.shipping_method?.trim() && <SummaryGroup title="Shipping method">{values.shipping_method.trim()}</SummaryGroup>}
+        {values.buyer_user_id && buyerLabel && <SummaryGroup title="Buyer / requester">{buyerLabel}</SummaryGroup>}
         <SummaryGroup title="Currency">{currencyLabel ?? NOT_SET}</SummaryGroup>
         {values.fx_rate && (
           <SummaryGroup title="Exchange rate">
@@ -202,6 +217,8 @@ interface SummaryProps {
   paymentTermsDays?: number;
   leadTimeDays?: number | null;
   currencyPlaces?: Readonly<Record<string, number>>;
+  warehouseOptions?: Option[];
+  buyerLabel?: string;
 }
 
 /**
@@ -262,6 +279,8 @@ function ReviewSummary({
   paymentTermsDays,
   leadTimeDays,
   currencyPlaces,
+  warehouseOptions = [],
+  buyerLabel,
 }: SummaryProps) {
   const values = useWatch({ control });
   const { resolved, loading } = useResolvedLines(values);
@@ -314,7 +333,14 @@ function ReviewSummary({
             {[values.fx_policy, values.fx_rate_date, values.fx_rate_type, values.fx_rate_source].filter(Boolean).join(" · ")}
           </span>
         </Fact>
-        {paymentTermsDays !== undefined && <Fact label="Payment terms">{paymentTermsDays} days</Fact>}
+        {(values.payment_terms_days?.trim() || paymentTermsDays !== undefined) && (
+          <Fact label="Payment terms">
+            {values.payment_terms_days?.trim() ? `${values.payment_terms_days.trim()} days (this order)` : `${paymentTermsDays} days (supplier default)`}
+          </Fact>
+        )}
+        <Fact label="Deliver to">{label(warehouseOptions, values.ship_to_warehouse_id) ?? NOT_SET}</Fact>
+        <Fact label="Shipping method">{values.shipping_method?.trim() || NOT_SET}</Fact>
+        <Fact label="Buyer / requester">{values.buyer_user_id ? (buyerLabel ?? NOT_SET) : NOT_SET}</Fact>
         {leadTimeDays !== undefined && leadTimeDays !== null && <Fact label="Supplier lead time">{leadTimeDays} days</Fact>}
         {values.replaces_purchase_order_id && <Fact label="Replaces order">#{values.replaces_purchase_order_id}</Fact>}
         {values.notes?.trim() && (

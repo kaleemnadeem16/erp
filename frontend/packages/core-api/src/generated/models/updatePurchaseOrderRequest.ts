@@ -10,6 +10,11 @@ import type { PurchaseOrderFxPolicy } from "./purchaseOrderFxPolicy";
 import type { UpdatePurchaseOrderRequestFxOverrideReason } from "./updatePurchaseOrderRequestFxOverrideReason";
 import type { UpdatePurchaseOrderRequestExpectedDeliveryDate } from "./updatePurchaseOrderRequestExpectedDeliveryDate";
 import type { UpdatePurchaseOrderRequestNotes } from "./updatePurchaseOrderRequestNotes";
+import type { UpdatePurchaseOrderRequestShipToWarehouseId } from "./updatePurchaseOrderRequestShipToWarehouseId";
+import type { UpdatePurchaseOrderRequestShipToLocationId } from "./updatePurchaseOrderRequestShipToLocationId";
+import type { UpdatePurchaseOrderRequestBuyerUserId } from "./updatePurchaseOrderRequestBuyerUserId";
+import type { UpdatePurchaseOrderRequestPaymentTermsDays } from "./updatePurchaseOrderRequestPaymentTermsDays";
+import type { UpdatePurchaseOrderRequestShippingMethod } from "./updatePurchaseOrderRequestShippingMethod";
 import type { UpdatePurchaseOrderRequestLinesItem } from "./updatePurchaseOrderRequestLinesItem";
 
 export interface UpdatePurchaseOrderRequest {
@@ -31,6 +36,20 @@ export interface UpdatePurchaseOrderRequest {
   expected_delivery_date?: UpdatePurchaseOrderRequestExpectedDeliveryDate;
   /** @maxLength 2000 */
   notes?: UpdatePurchaseOrderRequestNotes;
+  /** Delivery, ownership and terms (ADR 0191). All optional; a warehouse must be one of this company's active ones and a location one of that warehouse's. */
+  ship_to_warehouse_id?: UpdatePurchaseOrderRequestShipToWarehouseId;
+  ship_to_location_id?: UpdatePurchaseOrderRequestShipToLocationId;
+  buyer_user_id?: UpdatePurchaseOrderRequestBuyerUserId;
+  /**
+   * @minimum 0
+   * @maximum 32767
+   */
+  payment_terms_days?: UpdatePurchaseOrderRequestPaymentTermsDays;
+  /**
+   * @maxLength 100
+   * @pattern \S
+   */
+  shipping_method?: UpdatePurchaseOrderRequestShippingMethod;
   /** @minItems 1 */
   lines?: UpdatePurchaseOrderRequestLinesItem[];
 }

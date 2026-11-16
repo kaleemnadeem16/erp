@@ -9,6 +9,16 @@ import type { PurchaseOrderResourceNumber } from "./purchaseOrderResourceNumber"
 import type { PurchaseOrderResourceSupplierSiteId } from "./purchaseOrderResourceSupplierSiteId";
 import type { PurchaseOrderResourceSupplierSite } from "./purchaseOrderResourceSupplierSite";
 import type { PurchaseOrderResourceExpectedDeliveryDate } from "./purchaseOrderResourceExpectedDeliveryDate";
+import type { PurchaseOrderResourceShipToWarehouseId } from "./purchaseOrderResourceShipToWarehouseId";
+import type { PurchaseOrderResourceShipToLocationId } from "./purchaseOrderResourceShipToLocationId";
+import type { PurchaseOrderResourceShipTo } from "./purchaseOrderResourceShipTo";
+import type { PurchaseOrderResourceBuyerUserId } from "./purchaseOrderResourceBuyerUserId";
+import type { PurchaseOrderResourceCreatedBy } from "./purchaseOrderResourceCreatedBy";
+import type { PurchaseOrderResourceBuyer } from "./purchaseOrderResourceBuyer";
+import type { PurchaseOrderResourceCreator } from "./purchaseOrderResourceCreator";
+import type { PurchaseOrderResourceShippingMethod } from "./purchaseOrderResourceShippingMethod";
+import type { PurchaseOrderResourcePaymentTermsDays } from "./purchaseOrderResourcePaymentTermsDays";
+import type { PurchaseOrderResourcePaymentTermsSource } from "./purchaseOrderResourcePaymentTermsSource";
 import type { PurchaseOrderResourceNotes } from "./purchaseOrderResourceNotes";
 import type { PurchaseOrderResourceInventoryCutoverId } from "./purchaseOrderResourceInventoryCutoverId";
 import type { PurchaseOrderResourceSourceSystem } from "./purchaseOrderResourceSourceSystem";
@@ -37,6 +47,18 @@ export interface PurchaseOrderResource {
   fx_rate_source?: string;
   order_date: string;
   expected_delivery_date: PurchaseOrderResourceExpectedDeliveryDate;
+  ship_to_warehouse_id: PurchaseOrderResourceShipToWarehouseId;
+  ship_to_location_id: PurchaseOrderResourceShipToLocationId;
+  ship_to?: PurchaseOrderResourceShipTo;
+  buyer_user_id: PurchaseOrderResourceBuyerUserId;
+  created_by: PurchaseOrderResourceCreatedBy;
+  buyer?: PurchaseOrderResourceBuyer;
+  creator?: PurchaseOrderResourceCreator;
+  shipping_method: PurchaseOrderResourceShippingMethod;
+  /** Terms are commercial. `payment_terms_days` is the order's own (a draft override, or the value frozen when it was issued); the effective figure falls back to the supplier's default. */
+  payment_terms_days?: PurchaseOrderResourcePaymentTermsDays;
+  payment_terms_source?: PurchaseOrderResourcePaymentTermsSource;
+  payment_terms_effective_days?: number;
   notes: PurchaseOrderResourceNotes;
   inventory_cutover_id: PurchaseOrderResourceInventoryCutoverId;
   source_system: PurchaseOrderResourceSourceSystem;

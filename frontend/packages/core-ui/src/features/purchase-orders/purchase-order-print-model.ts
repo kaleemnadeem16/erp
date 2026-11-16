@@ -145,14 +145,25 @@ export function buildPurchaseOrderPrintDocument(input: {
         label: "Expected delivery",
         value: order.expected_delivery_date ?? "Not specified",
       },
-      ...(supplier?.payment_terms_days !== undefined
+      // The order's own terms (its override, or the value frozen when it was issued); only an order that never recorded any follows the supplier.
+      ...((order.payment_terms_days ?? supplier?.payment_terms_days) !== undefined && (order.payment_terms_days ?? supplier?.payment_terms_days) !== null
         ? [
             {
               label: "Payment terms",
-              value: `${supplier.payment_terms_days} days`,
+              value: `${order.payment_terms_days ?? supplier?.payment_terms_days} days`,
             },
           ]
         : []),
+      ...(order.ship_to?.warehouse
+        ? [
+            {
+              label: "Deliver to",
+              value: `${order.ship_to.warehouse.name}${order.ship_to.location ? ` · ${order.ship_to.location.name}` : ""}`,
+            },
+          ]
+        : []),
+      ...field("Shipping method", order.shipping_method),
+      ...field("Buyer", order.buyer?.name),
       ...(currency ? [{ label: "Currency", value: currency }] : []),
       ...(supplier?.lead_time_days != null
         ? [{ label: "Lead time", value: `${supplier.lead_time_days} days` }]
