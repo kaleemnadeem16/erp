@@ -31,6 +31,7 @@ use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsHandoverFixture;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
+use Tests\Support\Jobs\BuildsRawSalesJob;
 use Tests\Support\Sales\FakeReleasedServiceReceiver;
 use Tests\Support\Sales\ScopedReleaseFixtures;
 use Tests\TestCase;
@@ -40,6 +41,7 @@ class HandoverReleaseTest extends TestCase
 {
     use BuildsHandoverFixture;
     use BuildsIssuableQuotations;
+    use BuildsRawSalesJob;
     use RefreshDatabase;
     use ScopedReleaseFixtures;
 
@@ -522,7 +524,7 @@ class HandoverReleaseTest extends TestCase
         $this->bind();
         $this->recordBasis();
         $out = $this->release();
-        $job = new ServiceJob;
+        $job = $this->rawSalesJobFor($out['release_event_id'], $this->checker);
         $origin = fn (?int $id): JobSalesOrigin => new class($id) implements JobSalesOrigin
         {
             public function __construct(private readonly ?int $id) {}

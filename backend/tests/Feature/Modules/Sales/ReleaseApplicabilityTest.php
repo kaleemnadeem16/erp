@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Tests\Feature\Modules\Sales\Concerns\BuildsHandoverFixture;
 use Tests\Feature\Modules\Sales\Concerns\BuildsIssuableQuotations;
+use Tests\Support\Jobs\BuildsRawSalesJob;
 use Tests\Support\Sales\FakeReleasedServiceReceiver;
 use Tests\Support\Sales\ScopedReleaseFixtures;
 use Tests\TestCase;
@@ -35,6 +36,7 @@ class ReleaseApplicabilityTest extends TestCase
 {
     use BuildsHandoverFixture;
     use BuildsIssuableQuotations;
+    use BuildsRawSalesJob;
     use RefreshDatabase;
     use ScopedReleaseFixtures;
 
@@ -130,7 +132,7 @@ class ReleaseApplicabilityTest extends TestCase
     {
         $ctx = null;
         DB::transaction(function () use ($eventId, &$ctx): void {
-            $ctx = app()->makeWith(SalesJobExecutionContextVerifier::class, ['origins' => $this->origin($eventId)])->enter($this->checker, new ServiceJob, 'START');
+            $ctx = app()->makeWith(SalesJobExecutionContextVerifier::class, ['origins' => $this->origin($eventId)])->enter($this->checker, $this->rawSalesJobFor($eventId, $this->checker), 'START');
         });
 
         return $ctx;

@@ -51,6 +51,20 @@ final class JobLifecycleOperation
     /** Not a lifecycle event (it never changes the Job): the operation name the source verifier is entered with for a closeout assessment. */
     public const ASSESS_CLOSEOUT = 'ASSESS_CLOSEOUT';
 
+    /**
+     * The exact Jobs duties each operation name needs — the ONE place the operation→duty relation is written, so the Actions and the source verifier cannot drift apart.
+     * Each duty is judged independently by its own ALL scope; none stands in for another. An unknown operation has no duties and is refused by the verifier.
+     */
+    public const DUTIES = [
+        self::ASSIGN => ['job.assign'],
+        self::START => ['job.start'],
+        self::HOLD => ['job.hold'],
+        self::RESOLVE_HOLD => ['job.hold.resolve'],
+        self::COMPLETE => ['job.complete'],
+        self::CLOSE => ['job.close'],
+        self::ASSESS_CLOSEOUT => ['job.close'],
+    ];
+
     private const ATTEMPTS = 3;
 
     public function __construct(private readonly JobExecutionContextVerifier $verifier, private readonly CompanyContext $company) {}
