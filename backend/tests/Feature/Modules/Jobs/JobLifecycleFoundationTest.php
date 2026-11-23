@@ -534,7 +534,7 @@ class JobLifecycleFoundationTest extends TestCase
     public function test_there_is_still_no_way_in(): void
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         // The four lifecycle Actions (issue #62) and the Batch 1 receiver are the only Actions: internal, SPECIFIED-duty-guarded, with no route; nothing else may appear here.
         $this->assertSame([], array_values(array_diff(array_map('basename', glob(base_path('app/Modules/Jobs/Actions/*.php')) ?: []), ['AssessJobCloseout.php', 'AssignJobResponsibility.php', 'CloseJob.php', 'CompleteJob.php', 'PlaceJobHold.php', 'ReceiveReleasedService.php', 'ResolveJobHold.php', 'StartJob.php'])));
         $this->assertFileExists(base_path('app/Modules/Jobs/routes.php'));

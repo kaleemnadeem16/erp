@@ -201,13 +201,14 @@ class JobReadApiTest extends TestCase
         }
     }
 
-    public function test_only_the_three_read_routes_exist_and_no_write_route_is_registered(): void
+    public function test_only_approved_read_and_command_routes_exist_with_authentication(): void
     {
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/v1/jobs'));
-        $this->assertCount(3, $routes);
+        $this->assertCount(11, $routes);
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context'], $routes->map(fn ($route) => $route->uri())->values()->all());
         foreach ($routes as $route) {
-            $this->assertSame(['GET', 'HEAD'], $route->methods());
+            $this->assertSame(in_array($route->uri(), ['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/operation-context'], true) ? ['GET', 'HEAD'] : ['POST'], $route->methods());
             $this->assertContains('auth:sanctum', $route->gatherMiddleware());
         }
     }

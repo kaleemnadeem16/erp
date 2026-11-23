@@ -29,6 +29,12 @@ and screen-level guards use that effective duty. Isolated Jobs browser tests cov
 navigation/direct reads, operational fields, keyboard, mobile/light-dark accessibility and
 server request controls. No production duty, permission registration or grant is activated.
 
+The disabled [Jobs command API](../domain/job-write-api.md) (#128) adds exact-duty Request guards,
+independent existing Action guards, ALL scope and current membership, plus actor-specific owning-source
+eligibility before operation-context disclosure or command replay. Company/source fences precede any
+Job lock. Command-only operators need no broad Job/Sales read duty; responses omit commercial facts,
+private evidence and hashes. No permission, grant or activation is included.
+
 ## Evidence and confidence
 
 The first pass inspected API route files, controllers, Form Requests, selected Actions and

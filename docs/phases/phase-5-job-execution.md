@@ -8,6 +8,14 @@ completion/closeout and public workflow remain undelivered. No new feature code 
 authorised by the [revised implementation plan](phase-5-revised-implementation-plan.md) (#108/#69).
 Earlier dated assessments below describe their historical baselines, not current delivery.
 
+## Authorised Jobs HTTP slice — 23 November 2026
+
+Owner-authorised #128 adds the [Jobs command API](../domain/job-write-api.md) after independent
+approval of #127 and the #129 source-security correction. Seven POST adapters and the minimal
+source-eligible operation-context GET reuse the existing lifecycle/source boundaries. No duty is
+activated, no grant/migration/public Job creation/write screen is included. Independent review of
+this implementation remains required before acceptance.
+
 ## Accepted architecture and closed questions
 
 | Area | Governing authority / bounded specification | Delivery state |

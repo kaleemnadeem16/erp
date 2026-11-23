@@ -11,6 +11,7 @@ class ControllerActionBoundaryTest extends TestCase
     public static function phaseOneCrudControllers(): array
     {
         return [
+            'job commands' => ['app/Modules/Jobs/Http/Controllers/Api/V1/JobCommandController.php'],
             'categories' => ['app/Modules/Inventory/Http/Controllers/Api/V1/CategoryController.php'],
             'items' => ['app/Modules/Inventory/Http/Controllers/Api/V1/ItemController.php'],
             'parties' => ['app/Modules/Parties/Http/Controllers/Api/V1/PartyController.php'],

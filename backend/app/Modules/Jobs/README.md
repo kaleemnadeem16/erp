@@ -1,7 +1,7 @@
 # Jobs module
 
 The **disabled** Phase 5 Jobs foundation (SP0b; [design](../../../../docs/phases/phase-5-sp0a-design.md), [delivery contract](../../../../docs/phases/phase-5-sp0a-delivery-contract.md)).
-It is eleven tables and their models (four from SP0b, four from J1-F1, three from the Phase 5 Batch 1 receiver). **Nothing public can create or change a real Job**: no write route, ACTIVE duty, registered permission or grant. The single writer of a Sales-origin Job is the internal receiver `Actions\ReceiveReleasedService`, reachable only from the Sales release coordinator inside its transaction and refused while `job.receive` is not an ACTIVE, explicitly granted duty (all are SPECIFIED).
+It is eleven tables and their models (four from SP0b, four from J1-F1, three from the Phase 5 Batch 1 receiver). **Nothing public can create a real Job**. Protected command routes are delivered but all Jobs duties remain disabled; no ACTIVE duty, registered permission or grant. The single writer of a Sales-origin Job is the internal receiver `Actions\ReceiveReleasedService`, reachable only from the Sales release coordinator inside its transaction and refused while `job.receive` is not an ACTIVE, explicitly granted duty (all are SPECIFIED).
 
 ## Phase 5 Batch 1 — the Sales-release receiver (disabled; [domain doc](../../../../docs/domain/job-receiver.md))
 
@@ -24,6 +24,12 @@ It is eleven tables and their models (four from SP0b, four from J1-F1, three fro
 `Queries\ReadJobs`, `JobReadFilter` and safe `JobReadProjection` through Form Requests and
 explicit Resources. Every endpoint requires exact current `job.view` with ALL scope in both
 Request and fenced query. Missing/foreign Jobs return identical 404s. No duty or grant is activated.
+
+## Command API (disabled)
+
+[Jobs command API contract](../../../../docs/domain/job-write-api.md) documents the seven POST adapters
+and source-eligible minimal operation-context GET. Existing Actions retain lifecycle, source,
+transaction, lock and retry ownership. No general Job view duty is required for a command.
 
 ## Owns
 

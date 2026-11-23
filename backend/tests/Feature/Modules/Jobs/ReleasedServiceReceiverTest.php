@@ -506,12 +506,10 @@ class ReleasedServiceReceiverTest extends TestCase
 
     public function test_there_is_no_public_way_to_create_a_job(): void
     {
-        // The protected READ API (#125) may expose GET/HEAD; no Jobs route may create or change anything (no POST, PUT, PATCH or DELETE).
-        $writes = collect(Route::getRoutes()->getRoutes())
-            ->filter(fn ($r) => preg_match('#^api/v1/(service-)?jobs#', $r->uri()) === 1)
-            ->flatMap(fn ($r) => array_diff($r->methods(), ['GET', 'HEAD']))
-            ->values()->all();
-        $this->assertSame([], $writes, 'a Jobs route accepts a write method');
+        // Only the seven approved command POSTs may write; creation and arbitrary state writes stay forbidden.
+        $writes = collect(Route::getRoutes()->getRoutes())->filter(fn ($r) => str_starts_with($r->uri(), 'api/v1/jobs'))
+            ->flatMap(fn ($r) => array_map(fn ($method) => $method.' '.$r->uri(), array_diff($r->methods(), ['GET', 'HEAD'])))->values()->all();
+        $this->assertEqualsCanonicalizing(['POST api/v1/jobs/{job}/assign', 'POST api/v1/jobs/{job}/start', 'POST api/v1/jobs/{job}/holds', 'POST api/v1/jobs/{job}/resolve-hold', 'POST api/v1/jobs/{job}/complete', 'POST api/v1/jobs/{job}/closeout-assessments', 'POST api/v1/jobs/{job}/close'], $writes);
         $shipped = new PermissionRegistry(app(PermissionRegistrar::class));
         JobDutyManifest::shipped()->registerWith($shipped);
         $this->assertSame([], array_values(array_filter($shipped->all(), fn ($p) => str_starts_with($p, 'job.'))));

@@ -14,6 +14,7 @@ the model is specific to any one industry
 
 - [Quotation discount authority](quotation-discount-authority.md) · [API and rollout](quotation-discount-authority-api.md) — governed references, employee limits, routing, expiry and disabled backend rollout.
 
+- [Jobs command API](job-write-api.md) — exact-duty lifecycle commands and source-eligible minimal context
 - [Jobs read-only API](job-read-api.md) — protected operational list, detail and history; duties remain disabled.
 
 ## The costing chain

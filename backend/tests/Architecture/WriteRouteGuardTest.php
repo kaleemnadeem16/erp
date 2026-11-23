@@ -2,6 +2,9 @@
 
 namespace Tests\Architecture;
 
+use App\Modules\Jobs\Actions\StartJob;
+use App\Modules\Jobs\Support\JobAccess;
+use App\Modules\Jobs\Support\Lifecycle\JobLifecycleOperation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Routing\Route;
 use ReflectionClass;
@@ -21,7 +24,7 @@ use Tests\TestCase;
  */
 class WriteRouteGuardTest extends TestCase
 {
-    private const GATE = '/->can\(|->canAny\(|->authorize\(|Gate::|->hasPermissionTo\(|->hasAnyPermission\(|abort_unless\(|abort_if\(|PartyWriteAccess|SalesAccess::|NumberingAccess|ActionAuthorization::|->require\(|ApprovalGrant|assertMay|app\(QuotationAccess::class\)->(?:queryFor|requireRevision|requireFamily)\(/';
+    private const GATE = '/->can\(|->canAny\(|->authorize\(|Gate::|->hasPermissionTo\(|->hasAnyPermission\(|abort_unless\(|abort_if\(|PartyWriteAccess|JobAccess::(?:may|mayAll|require)\(|SalesAccess::|NumberingAccess|ActionAuthorization::|->require\(|ApprovalGrant|assertMay|app\(QuotationAccess::class\)->(?:queryFor|requireRevision|requireFamily)\(/';
 
     /** Routes that need no capability, and why. `METHOD uri`. */
     private const NO_CAPABILITY_NEEDED = [
@@ -79,7 +82,7 @@ class WriteRouteGuardTest extends TestCase
                 $source = $this->methodSource($authorize);
                 $request = (bool) preg_match(self::GATE, $source);
             } elseif (str_contains($name, '\\Actions\\')) {
-                $actions[] = (bool) preg_match(self::GATE, (string) file_get_contents((new ReflectionClass($name))->getFileName()));
+                $actions[] = $this->actionGuarded($name);
             }
         }
         $controllerFile = (string) file_get_contents((new ReflectionClass($class))->getFileName());
@@ -89,6 +92,42 @@ class WriteRouteGuardTest extends TestCase
             'controller' => (bool) preg_match(self::GATE, $this->methodSource($reflection)) || (bool) preg_match('/function assertMay/', $controllerFile) && str_contains($this->methodSource($reflection), 'assertMay'),
             'actions' => $actions,
         ];
+    }
+
+    /** Inspect the invoked method and typed lifecycle delegation, never an unused import or unrelated helper. */
+    private function actionGuarded(string $class): bool
+    {
+        $reflection = new ReflectionClass($class);
+        if ($reflection->hasMethod('execute')) {
+            $method = $reflection->getMethod('execute');
+            $source = $this->methodSource($method);
+            if (preg_match(self::GATE, $source)) {
+                return true;
+            }
+            $constructor = $reflection->getConstructor();
+            $lifecycleDependency = false;
+            foreach ($constructor?->getParameters() ?? [] as $parameter) {
+                $type = $parameter->getType();
+                if ($type instanceof ReflectionNamedType && $type->getName() === JobLifecycleOperation::class) {
+                    $lifecycleDependency = true;
+                }
+                if ($type instanceof ReflectionNamedType && $type->getName() === JobLifecycleOperation::class && preg_match('/\$this->'.preg_quote($parameter->getName(), '/').'->run\s*\(/', $source)) {
+                    return (bool) preg_match(self::GATE, $this->methodSource(new ReflectionMethod($type->getName(), 'run')));
+                }
+            }
+            if ($lifecycleDependency) {
+                return false;
+            }
+        }
+
+        // Existing non-Jobs Actions retain the historical recogniser. Jobs delegation must satisfy the stricter check above.
+        return ! str_starts_with($class, 'App\\Modules\\Jobs\\') && (bool) preg_match(self::GATE, (string) file_get_contents($reflection->getFileName()));
+    }
+
+    public function test_unused_lifecycle_imports_and_unrelated_helpers_are_not_authority(): void
+    {
+        $this->assertFalse($this->actionGuarded(UnusedLifecycleDelegation::class));
+        $this->assertTrue($this->actionGuarded(StartJob::class));
     }
 
     private function methodSource(ReflectionMethod $method): string
@@ -164,5 +203,18 @@ class WriteRouteGuardTest extends TestCase
 
         $this->assertSame([], array_values(array_diff($actionOnly, $known)), 'New write route(s) with no capability check in the Form Request or controller. Check the capability in authorize() so an HTTP caller gets a 403 (authorization.md R1); do not extend the ratchet list.');
         $this->assertSame([], array_values(array_diff($known, $actionOnly)), 'These routes now have a request-layer gate (or are gone): remove them from REQUEST_WITHOUT_GATE so the ratchet tightens.');
+    }
+}
+
+/** A Jobs-shaped fixture with a typed dependency but no invocation of its guarded operation. */
+final class UnusedLifecycleDelegation
+{
+    public function __construct(private readonly JobLifecycleOperation $operation) {}
+
+    public function execute(): void {}
+
+    public function unrelated(): bool
+    {
+        return JobAccess::may(null, 'job.start');
     }
 }

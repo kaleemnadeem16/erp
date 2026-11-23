@@ -1450,3 +1450,14 @@ new fulfilment receipt FKs require the lifecycle owner's rollback/truncate fixtu
 or include that table. Exact failures and owner were reported on #69/#127; no failed test
 was suppressed and no lifecycle Action/migration was edited. Commit/check/CI evidence is
 recorded on #127. Earlier #125/#126 published head fe0e7088 passed complete CI run 43852469741.
+
+## 2026-11-23 — Jobs command HTTP slice (#128)
+
+Owner-authorised seven lifecycle/assessment POST adapters and operation-context GET reuse the existing
+Jobs Actions, JobAccess and independently reviewed actor-specific Sales source verifier. Minimal
+Resources preserve original replay results and exclude commercial/private source evidence. Strict
+transport validation, scoped target refusal, source-before-Job fences and generation/identity semantics
+remain explicit. Route inventories retain public-create prohibition; the generated command client,
+HTTP/security/replay/real-commit tests and domain contract accompany this slice. All 23 duties remain
+SPECIFIED, with no permissions/grants/activation, migration or write screen. Independent review remains
+with the owner; exact checks/CI are recorded on #128.
