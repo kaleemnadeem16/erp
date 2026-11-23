@@ -7,6 +7,7 @@ import { quotationApprovalAccess } from "../features/quotations/quotation-approv
 import { discountAuthorityAccess } from "../features/discount-authority/discount-authority-access";
 import { customerDecisionAccess } from "../features/customer-decisions/customer-decision-access";
 import { customerAcceptanceAccess } from "../features/customer-acceptances/customer-acceptance-access";
+import { handoverReleaseAccess } from "../features/handover-release/handover-release-access";
 /**
  * Screen-level presentation gate. API/Action authorisation remains authoritative.
  * Some legacy setup screens have no dedicated capability yet; keep them behind
@@ -272,6 +273,10 @@ export function canAccessScreen(
   if (/^\/customer-acceptances\/[1-9]\d*$/.test(pathname))
     return customerAcceptanceAccess(permissions).read;
   if (pathname.startsWith("/customer-acceptances")) return false;
+  // A prepared handover and its release: same production gate; the read duties are required, the write duties are judged on the screen and by the server.
+  if (/^\/handover-plans\/[1-9]\d*$/.test(pathname))
+    return handoverReleaseAccess(permissions).read;
+  if (pathname.startsWith("/handover-plans")) return false;
   if (pathname === "/quotations" || pathname.startsWith("/quotations/")) {
     const access = quotationAccess(permissions);
     if (pathname === "/quotations") return access.detail || access.review;

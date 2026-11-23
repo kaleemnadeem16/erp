@@ -304,6 +304,7 @@ export { DiscountAuthorityReferencesScreen } from "./features/discount-authority
 export { QuotationDetailScreen } from "./features/quotations/quotation-detail-screen";
 export { CustomerDecisionListRoute, CustomerDecisionCaseRoute } from "./features/customer-decisions/customer-decision-routes";
 export { CustomerAcceptanceRoute } from "./features/customer-acceptances/customer-acceptance-routes";
+export { HandoverReleaseRoute } from "./features/handover-release/handover-release-routes";
 
 export { QuotationCreateScreen } from "./features/quotations/quotation-create-screen";
 export { QuotationEditScreen } from "./features/quotations/quotation-edit-screen";

@@ -50,6 +50,12 @@ Thin Sales controller (`HandoverReleaseController`) over the three Actions; ever
 
 Withheld everywhere: evidence and agreed text, source pins/versions, family answers, lineage references, cost policy version, full Job records. Unknown or foreign stages/acceptances are 404 after the duty check; a stale review, reused key or already-released stage is 409 (`PREVIEW_TOKEN_STALE`, `REQUEST_KEY_REUSED`, `RELEASE_ALREADY_RECORDED`); a blocked or unevidenced release is 422. A fresh key for the same business intent resolves to the one existing release and Job (the Action reports `replayed:false`; no row is added). The HTTP layer's global string trimming means a whitespace-only `agreed_text` becomes null/empty before the Action sees it. Tests: `HandoverReleaseApiTest` (real HTTP over the real Jobs receiver), plus the existing race/COMMIT proofs.
 
+## Screen ([#130](https://github.com/kaleemnadeem16/erp/issues/130) follow-up)
+
+`/handover-plans/:plan` (feature `handover-release`, behind the same production gate as the quotation and acceptance screens; exact duties on the page and again on the server) shows the prepared handover and the issued description, records completion conditions by **citing existing customer evidence** (the issued description on the acceptance's own message, or a later written, authority-verified message whose exact text is sent; never typed text, never a checkbox or local scope declaration), reviews release readiness (the server's blockers and next actions, unknown codes fall back to a neutral line) and enables **Release to a Job** only when the review says ready, behind one confirmation. The result shows the Job number and links to `/jobs/{id}`; an already-released stage says a second Job is impossible. Business rules stay in the Actions.
+
+Contract gaps found while building it (not invented around): there is no read from an acceptance to its handover plan or stage (the plan id is only known to whoever prepared it, so nothing links to this screen yet); the current completion basis is exposed only as id, version and scope labels, not its agreed text; and there is no read-only release status for a stage, so a released stage is recognised only by releasing again (an exact replay) or by the 409.
+
 ## Limits (deliberate)
 
 No screen, completion, closeout, cancellation or recovery. The mandatory-cost policy has no delivered source of cost evidence, so a *required* cost always blocks; only the default (not required) path can release. Existing acceptances have no completion basis until an authorised actor records one.

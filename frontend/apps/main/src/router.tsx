@@ -11,6 +11,7 @@ import {
   CustomerDecisionListRoute,
   CustomerDecisionCaseRoute,
   CustomerAcceptanceRoute,
+  HandoverReleaseRoute,
   QuotationAuthorityHistoryRoute,
   QuotationCreateScreen,
   QuotationEditScreen,
@@ -227,6 +228,8 @@ export function AppRouter() {
         )}
         {/* A recorded full acceptance and its readiness: same production gate; the exact read duties are also required. */}
         <Route path="/customer-acceptances/:acceptance" element={<ProtectedRoute><AppShell><CustomerAcceptanceRoute /></AppShell></ProtectedRoute>} />
+        {/* A prepared service handover, its completion conditions and its release to one Job: same production gate; exact duties on the screen and the server. */}
+        <Route path="/handover-plans/:plan" element={<ProtectedRoute><AppShell><HandoverReleaseRoute /></AppShell></ProtectedRoute>} />
         <Route
           path="/quotations/:revision"
           element={<ProtectedRoute><AppShell><QuotationDetailScreen /></AppShell></ProtectedRoute>}
