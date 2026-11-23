@@ -5,6 +5,7 @@ use App\Modules\Sales\Http\Controllers\Api\V1\CustomerAcceptanceController;
 use App\Modules\Sales\Http\Controllers\Api\V1\CustomerDecisionCaseController;
 use App\Modules\Sales\Http\Controllers\Api\V1\DiscountAuthorityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\HandoverPlanController;
+use App\Modules\Sales\Http\Controllers\Api\V1\HandoverReleaseController;
 use App\Modules\Sales\Http\Controllers\Api\V1\LeadController;
 use App\Modules\Sales\Http\Controllers\Api\V1\OpportunityController;
 use App\Modules\Sales\Http\Controllers\Api\V1\QuotationApprovalController;
@@ -88,6 +89,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('quotations/{revision}/acceptances', [CustomerAcceptanceController::class, 'store'])->whereNumber('revision')->name('quotations.acceptances.store');
     Route::get('customer-acceptances/{acceptance}/handover-preview', [HandoverPlanController::class, 'preview'])->whereNumber('acceptance')->name('customer-acceptances.handover-preview');
     Route::post('customer-acceptances/{acceptance}/handover-plans', [HandoverPlanController::class, 'store'])->whereNumber('acceptance')->name('customer-acceptances.handover-plans.store');
+    Route::post('customer-acceptances/{acceptance}/completion-bases', [HandoverReleaseController::class, 'recordBasis'])->whereNumber('acceptance')->name('customer-acceptances.completion-bases.store');
+    Route::get('handover-stages/{stage}/release-preview', [HandoverReleaseController::class, 'preview'])->whereNumber('stage')->name('handover-stages.release-preview');
+    Route::post('handover-stages/{stage}/release', [HandoverReleaseController::class, 'release'])->whereNumber('stage')->name('handover-stages.release');
     Route::get('handover-plans/{plan}', [HandoverPlanController::class, 'show'])->whereNumber('plan')->name('handover-plans.show');
 
     Route::get('customer-acceptances/{acceptance}', [CustomerAcceptanceController::class, 'show'])->whereNumber('acceptance')->name('customer-acceptances.show');

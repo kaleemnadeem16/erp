@@ -14,6 +14,7 @@ use App\Modules\Sales\Support\Handover\HandoverSubject;
 use App\Modules\Sales\Support\Handover\Release\ScopeHeader;
 use App\Modules\Sales\Support\Kernel\OperationIntent;
 use App\Modules\Sales\Support\PermissionVocabulary as P;
+use App\Modules\Sales\Support\SalesAccess;
 
 /**
  * Records the customer-agreed completion conditions of one accepted service line as a new immutable version. Two honest ways (the database guard enforces both):
@@ -33,6 +34,7 @@ final class RecordServiceCompletionBasis
     /** @return array{basis_id:int,version:int,case_id:int,replayed:bool} */
     public function __invoke(User $actor, ?string $requestKey, int $acceptanceId, ?string $agreedText, int $evidenceId): array
     {
+        SalesAccess::require($actor, P::HANDOVER_COMPLETION_BASIS_RECORD, 'record completion conditions');
         HandoverAccess::early($actor, false, P::HANDOVER_COMPLETION_BASIS_RECORD);
         if ($agreedText !== null && trim($agreedText) !== $agreedText && ScopeHeader::claimsDeclaration(trim($agreedText))) {
             throw R::make(R::INVALID_INPUT, 'A scope declaration must be exactly the four lines MATERIALS, SUBCONTRACTORS, LINE and DELIVERABLE_SHA256 and nothing else (no surrounding whitespace).', 'agreed_text');

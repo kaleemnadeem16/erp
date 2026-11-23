@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
+use App\Modules\Sales\Support\PermissionVocabulary as P;
+use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\Handover\Release\ReleaseCoordinator;
 use App\Modules\Sales\Support\Handover\Release\ReleaseIntent;
 
@@ -19,6 +21,9 @@ final class ReleaseHandoverComponent
     /** @return array{release_event_id:int,case_id:int,job_id:int,job_code:string,replayed:bool} */
     public function __invoke(User $actor, ?string $requestKey, int $stageId, int $basisId, string $readinessFingerprint): array
     {
+        // The exact release duty is judged here as well as in the coordinator's locked decision (the coordinator remains the owner of every other rule).
+        SalesAccess::require($actor, P::HANDOVER_RELEASE, 'release a handover');
+
         return $this->coordinator->release($actor, $requestKey, new ReleaseIntent($stageId, $basisId, $readinessFingerprint));
     }
 }

@@ -420,6 +420,33 @@ class HandoverReleaseTest extends TestCase
         $this->assertDatabaseCount('handover_release_events', 1);
     }
 
+    public function test_the_database_refuses_a_release_bound_to_the_baseline_of_another_real_stage(): void
+    {
+        $v = $this->recordBasis();
+        // a second, genuinely accepted and prepared service: a REAL other stage with its own real baseline in the same company and plan family
+        DB::statement('SET CONSTRAINTS ALL DEFERRED'); // the fixture builds quotation families whose ownership checks run at commit
+        $second = $this->serviceAcceptance($this->checker, $this->customer->id, 'SERVICE_ITEM', '-b');
+        $token = app(PreviewHandover::class)($this->checker, $second['acceptance'], $second['inputs'])['preview_token'];
+        app(PrepareHandoverPlan::class)($this->checker, 'prepare-b', $second['acceptance'], $second['inputs'], $token);
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        $this->assertSame(2, DB::table('handover_stages')->count());
+        $otherStage = (int) DB::table('handover_stages')->where('id', '<>', $this->stageId)->value('id');
+        $ownBaseline = (int) DB::table('handover_baselines')->where('stage_id', $this->stageId)->value('id');
+        $otherBaseline = (int) DB::table('handover_baselines')->where('stage_id', $otherStage)->value('id');
+        $this->assertNotSame($ownBaseline, $otherBaseline);
+
+        $row = ['company_id' => 1, 'stage_id' => $this->stageId, 'baseline_id' => $otherBaseline, 'purpose' => 'SERVICE_JOB_RECEIPT', 'actor_id' => $this->checker->id, 'request_key' => 'raw',
+            'intent_hash' => str_repeat('a', 64), 'cost_required' => false, 'cost_status' => 'UNASSESSED', 'cost_policy_version' => 'X', 'relied_on' => '{}', 'basis_id' => $v['basis_id'],
+            'condition_version' => 1, 'condition_identity' => 'completion-basis:1:'.$v['basis_id'].':v1'];
+        // this stage with the other real stage's baseline, and the other real stage with this stage's baseline
+        $this->assertSqlRefused(fn () => DB::table('handover_release_events')->insert($row));
+        $this->assertSqlRefused(fn () => DB::table('handover_release_events')->insert([...$row, 'stage_id' => $otherStage, 'baseline_id' => $ownBaseline]));
+        $this->assertDatabaseCount('handover_release_events', 0);
+        // control: the matching pair is accepted, so the refusals above are the same-parent guard and not the fixture
+        DB::table('handover_release_events')->insert([...$row, 'baseline_id' => $ownBaseline]);
+        $this->assertDatabaseCount('handover_release_events', 1);
+    }
+
     public function test_a_populated_migration_refuses_backout_and_leaves_the_guards_intact(): void
     {
         $this->recordBasis();

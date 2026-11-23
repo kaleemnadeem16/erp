@@ -3,7 +3,7 @@
 # Sales service release (Phase 5 Batch 1, Sales half — disabled backend)
 
 2026-11-12 · tracker [#69](https://github.com/kaleemnadeem16/erp/issues/69) · scope [Batch 1 authorisation package](../phases/phase-5-batch1-authorisation-package.md) · direction [ADR 0186](../decisions/0186-deliver-one-progressive-jobs-engine-through-a-bounded-service-pilot.md).
-**Inactive.** Both new duties are STAGED and ungranted, there is no route or screen, and a release refuses unless the Jobs module binds a receiver. Nothing here is an
+**Inactive.** Both new duties are STAGED and ungranted, the three HTTP endpoints below exist but refuse every caller until the duties are activated and granted (no screen), and a release refuses unless the Jobs module binds a receiver. Nothing here is an
 operational delivery by itself; the Jobs receiver ships in the paired half.
 
 ## What exists
@@ -38,9 +38,21 @@ A released service is later fulfilled by its Job's completion: Jobs writes the i
 [Job completion and closeout](job-completion-closeout.md#sales-fulfilment-receipt)). It carries the release, the completion event, the agreed-conditions identity and the digest of the exact agreed
 deliverable text, and changes no acceptance claim, allocation, capacity or financial record. Closeout refuses a missing or mismatched receipt.
 
+## HTTP surface ([#130](https://github.com/kaleemnadeem16/erp/issues/130))
+
+Thin Sales controller (`HandoverReleaseController`) over the three Actions; every rule stays in the Actions. Each request body names only what the contract allows (unknown fields are a 422); `Idempotency-Key` is required on both writes.
+
+| Endpoint | Duties (Request + Action) | Body | Response (minimal, non-disclosing) |
+|---|---|---|---|
+| `POST /customer-acceptances/{acceptance}/completion-bases` | `sales.handover.completion-basis.record` + `sales.customer-decision.view` | `agreed_text` (string or null = issued-line default), `evidence_id` | `basis_id`, `version`, `replayed` (201; 200 + `Idempotency-Replayed` on exact replay) |
+| `GET /handover-stages/{stage}/release-preview` | `sales.handover.release` + `sales.customer-decision.view` | none | `ready`, `blockers`, `next_actions`, `cost{required,status}`, `applicability{status,materials,subcontract}`, `basis_id`, `basis_version`, `fingerprint` |
+| `POST /handover-stages/{stage}/release` | as preview, plus the receiver's independent `job.receive` judged by the Action at the decision point | `basis_id`, `readiness_fingerprint` | `release_event_id`, `job_id`, `job_code`, `replayed` |
+
+Withheld everywhere: evidence and agreed text, source pins/versions, family answers, lineage references, cost policy version, full Job records. Unknown or foreign stages/acceptances are 404 after the duty check; a stale review, reused key or already-released stage is 409 (`PREVIEW_TOKEN_STALE`, `REQUEST_KEY_REUSED`, `RELEASE_ALREADY_RECORDED`); a blocked or unevidenced release is 422. A fresh key for the same business intent resolves to the one existing release and Job (the Action reports `replayed:false`; no row is added). The HTTP layer's global string trimming means a whitespace-only `agreed_text` becomes null/empty before the Action sees it. Tests: `HandoverReleaseApiTest` (real HTTP over the real Jobs receiver), plus the existing race/COMMIT proofs.
+
 ## Limits (deliberate)
 
-No Jobs rows, numbering, route, UI, completion, closeout, cancellation or recovery. The mandatory-cost policy has no delivered source of cost evidence, so a *required* cost always blocks; only the default (not required) path can release. Existing acceptances have no completion basis until an authorised actor records one.
+No screen, completion, closeout, cancellation or recovery. The mandatory-cost policy has no delivered source of cost evidence, so a *required* cost always blocks; only the default (not required) path can release. Existing acceptances have no completion basis until an authorised actor records one.
 
 ## Related
 
