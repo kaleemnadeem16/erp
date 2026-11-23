@@ -52,6 +52,10 @@ final class StockMixApprovalSubject implements ApprovalSubject
 
     public function routing(int $subjectId): ApprovalRouting
     {
-        throw new DomainInvariantException('A hand-chosen stock mix can only be submitted for approval once its plan is adopted on a quotation revision; that arrives with Phase 4.', 'subject_id');
+        if (! app()->bound(MaterialPlanApprovalFacts::class)) {
+            throw new DomainInvariantException('A hand-chosen stock mix can only be submitted for approval once its plan is adopted on a quotation revision.', 'subject_id');
+        }
+
+        return app(MaterialPlanApprovalFacts::class)->routing(self::CODE, $subjectId);
     }
 }

@@ -17,6 +17,7 @@ use App\Modules\Estimating\Support\AssemblyComponentKind;
 use App\Modules\Estimating\Support\CostReadAuthorization;
 use App\Modules\Estimating\Support\EstimateCostResolution;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
+use App\Modules\Estimating\Support\PlanRoutingCollector;
 use App\Modules\Estimating\Support\ResolutionMethod;
 use App\Modules\Inventory\Actions\QueryMaterialCost;
 use App\Modules\Inventory\Models\Item;
@@ -63,7 +64,7 @@ final class PreviewAssemblyMaterials
      * @param  array{assembly_version_id?: int|null, work_quantity: string, work_uom_id: int, customer_id?: int|null, dimension_value_ids?: list<int>, inventory_scope?: array{warehouse_ids?: list<int>, location_ids?: list<int>}, selection_strategy?: string|null, stock_mix?: list<array{item_id: int, location_id: int, batch_id?: int|null, quantity: string, uom_id: int}>, stock_mix_notes?: list<array{item_id: int, note: string|null}>, planned_adjustments?: list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>}  $input
      * @return array<string, mixed>
      */
-    public function __invoke(Assembly $assembly, array $input, User $actor): array
+    public function __invoke(Assembly $assembly, array $input, User $actor, ?PlanRoutingCollector $routing = null): array
     {
         ActionAuthorization::require($actor, 'estimating.material_preview.run', 'preview Assembly materials');
         if ($actor->company_id !== app(CompanyContext::class)->id() || $assembly->company_id !== $actor->company_id) {
@@ -124,6 +125,7 @@ final class PreviewAssemblyMaterials
                     $warnings,
                     $includeCost,
                     $session,
+                    $routing,
                 );
                 $materialComponents[] = $resolved['component'];
                 if ($resolved['cost'] !== null) {
@@ -158,6 +160,7 @@ final class PreviewAssemblyMaterials
                 $leafRows,
                 $input['planned_adjustments'] ?? [],
                 $actor,
+                $routing,
             );
 
             $inventory = null;
@@ -172,6 +175,7 @@ final class PreviewAssemblyMaterials
                     $plannedByItem,
                     $input['stock_mix'] ?? [],
                     $input['stock_mix_notes'] ?? [],
+                    $routing,
                 );
             }
 
@@ -265,8 +269,10 @@ final class PreviewAssemblyMaterials
         array &$warnings,
         bool $includeCost,
         CostReadSession $session,
+        ?PlanRoutingCollector $routing = null,
     ): array {
         $rateData = null;
+        $chain = [];
 
         if ($component->application_rate_id !== null) {
             $anchor = $component->applicationRate;
@@ -317,18 +323,25 @@ final class PreviewAssemblyMaterials
 
             $outputQuantity = $this->convert($standardQuantity, $quantityUom, $formulation->outputUom, 'formulation_id');
             $formulationData = $this->formulationData($formulation, $activeVersion);
+            $chain[] = ['formulation_id' => $formulation->id, 'version_id' => $activeVersion->id, 'version_no' => $activeVersion->version_no, 'customer_id' => $formulation->customer_id];
             $componentLeaves = $this->expandFormulation(
                 $activeVersion,
                 $outputQuantity,
                 $customerId,
                 [...$path, "Formulation {$formulation->code} v{$activeVersion->version_no}"],
                 1,
+                $chain,
             );
         } else {
             $stockQuantity = $this->convert($standardQuantity, $quantityUom, $item->stockUom, 'uom_id');
             $componentLeaves[] = ['item' => $item, 'quantity' => $stockQuantity, 'path' => $path];
         }
 
+        $routing?->recordSource($component->id, [
+            'rate' => $rateData === null ? null : ['anchor_id' => $rateData['anchor_id'], 'resolved_id' => $rateData['resolved_id'], 'qty_per_work_unit' => $rateData['qty_per_work_unit'],
+                'uom_id' => $rateData['quantity_uom']['id'], 'work_uom_id' => $rateData['work_uom']['id'], 'dimension_value_ids' => $rateData['dimension_value_ids']],
+            'formulations' => $chain,
+        ]);
         foreach ($componentLeaves as $leaf) {
             $this->addLeafRequirement($leafRequirements, $leaf['item'], $leaf['quantity'], $leaf['path'], $component->id);
         }
@@ -365,6 +378,7 @@ final class PreviewAssemblyMaterials
 
     /**
      * @param  list<string>  $path
+     * @param  list<array{formulation_id: int, version_id: int, version_no: int, customer_id: int|null}>  $chain  every formulation version used, appended to as nested ones resolve
      * @return list<array{item: Item, quantity: BigDecimal, path: list<string>}>
      */
     private function expandFormulation(
@@ -373,6 +387,7 @@ final class PreviewAssemblyMaterials
         ?int $customerId,
         array $path,
         int $depth,
+        array &$chain,
     ): array {
         if ($depth > self::MAX_FORMULATION_DEPTH) {
             throw new DomainInvariantException('Formulation nesting exceeds the maximum supported depth.');
@@ -405,6 +420,7 @@ final class PreviewAssemblyMaterials
                 throw new DomainInvariantException("Formulation {$nested->code} has no ACTIVE version.", 'formulation_id');
             }
             $nestedOutputQuantity = $this->convert($lineQuantity, $line->uom, $nested->outputUom, 'uom_id');
+            $chain[] = ['formulation_id' => $nested->id, 'version_id' => $nestedVersion->id, 'version_no' => $nestedVersion->version_no, 'customer_id' => $nested->customer_id];
             array_push(
                 $leaves,
                 ...$this->expandFormulation(
@@ -413,6 +429,7 @@ final class PreviewAssemblyMaterials
                     $customerId,
                     [...$linePath, "Formulation {$nested->code} v{$nestedVersion->version_no}"],
                     $depth + 1,
+                    $chain,
                 ),
             );
         }

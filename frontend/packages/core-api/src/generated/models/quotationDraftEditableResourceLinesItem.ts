@@ -7,6 +7,7 @@
 import type { QuotationDraftEditableResourceLinesItemSectionTitle } from "./quotationDraftEditableResourceLinesItemSectionTitle";
 import type { QuotationDraftEditableResourceLinesItemChoiceGroupRef } from "./quotationDraftEditableResourceLinesItemChoiceGroupRef";
 import type { QuotationDraftEditableResourceLinesItemItemId } from "./quotationDraftEditableResourceLinesItemItemId";
+import type { QuotationDraftEditableResourceLinesItemAssemblyVersionId } from "./quotationDraftEditableResourceLinesItemAssemblyVersionId";
 import type { QuotationDraftEditableResourceLinesItemManualMeasure } from "./quotationDraftEditableResourceLinesItemManualMeasure";
 import type { QuotationDraftEditableResourceLinesItemOfferedUomId } from "./quotationDraftEditableResourceLinesItemOfferedUomId";
 import type { QuotationDraftEditableResourceLinesItemUnitPrice } from "./quotationDraftEditableResourceLinesItemUnitPrice";
@@ -24,6 +25,7 @@ export type QuotationDraftEditableResourceLinesItem = {
   is_baseline: boolean;
   source_kind: string;
   item_id: QuotationDraftEditableResourceLinesItemItemId;
+  assembly_version_id: QuotationDraftEditableResourceLinesItemAssemblyVersionId;
   manual_measure: QuotationDraftEditableResourceLinesItemManualMeasure;
   offered_quantity: string;
   offered_uom_id: QuotationDraftEditableResourceLinesItemOfferedUomId;

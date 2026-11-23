@@ -252,6 +252,17 @@ company-wide scope; department-limited availability waits on Q26. The remaining 
 reserve stable Phase 4 transaction boundaries for draft adjustment/adoption, approval and history;
 Phase 3 does not invent a temporary persisted draft to exercise them.
 
+## Quotation use (Phase 4)
+
+Sales quotes ACTIVE Assembly versions as `ASSEMBLY_WORK` lines without the estimating cost duty ([0189](../../../../docs/decisions/0189-prove-assembly-quotation-lines-cost-blind-and-freeze-the-sold-version.md)): the line pins one version id, the sold version is frozen at issue and stays identifiable after a newer version activates. Estimating adds nothing to its own surface for this; cost for margin controls still comes only through `ReadAssemblyCostEvidence`.
+
+## Material Plan adoption (Phase 4)
+
+A quotation Assembly line adopts a plan through Sales ([0190](../../../../docs/decisions/0190-adopt-material-plans-on-quotation-assembly-lines.md)). Estimating's part: the two previews take an optional `Support/PlanRoutingCollector`
+that records the real internal-cost delta of a planned quantity, the cost consequence of a hand-chosen mix and the exact technical sources each component resolved to (application-rate row and quantity, formulation versions), so a cost-blind adopter's approval can still be routed correctly; it is `@internal`,
+never serialised, and read only by Sales' `EvaluateMaterialPlan` (`PlanRoutingCollectorHasOneCallerTest`). `MaterialVarianceApprovalSubject` and `StockMixApprovalSubject` delegate `routing()`
+to `Support/MaterialPlanApprovalFacts`, which the adopting module binds (they refuse until something does). The preview itself is unchanged and still writes nothing.
+
 ## Events
 
 No events emitted yet.

@@ -17,8 +17,11 @@ final class ResolveSalesPrice
 {
     public function __construct(private readonly PricingSourceRegistry $sources) {}
 
-    /** @param  list<PriceCandidate>  $candidates  prices the caller has already found eligible for this Party and source */
-    public function __invoke(PricingInput $input, array $candidates): PricingResult
+    /**
+     * @param  list<PriceCandidate>  $candidates  prices the caller has already found eligible for this Party and source
+     * @param  bool  $costBlind  prove the source without reading its cost (a quotation never needs the cost to settle a price)
+     */
+    public function __invoke(PricingInput $input, array $candidates, bool $costBlind = false): PricingResult
     {
         // A prospect is a Party with no CustomerAccount; only a missing, foreign or archived Party refuses.
         $party = Party::query()->find($input->partyId);
@@ -29,7 +32,7 @@ final class ResolveSalesPrice
             throw PricingRefusal::make(PricingRefusal::PARTY_NOT_FOUND, 'The Party is archived.', 'party_id');
         }
 
-        $source = $this->sources->adapterFor($input->source->kind)->resolve($input);
+        $source = ($costBlind ? $this->sources->quotationAdapterFor($input->source->kind) : $this->sources->adapterFor($input->source->kind))->resolve($input);
         $price = PriceCandidateSelector::select($candidates, $input->settlement->currencyId);
         $line = Arithmetic::settleLine($price->unitAmount, $source->quantity, $input->settlement);
 

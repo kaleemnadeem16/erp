@@ -14,6 +14,7 @@ use App\Modules\Estimating\Support\CostReadAuthorization;
 use App\Modules\Estimating\Support\MaterialVarianceApprovalSubject;
 use App\Modules\Estimating\Support\MaterialVarianceEvaluation;
 use App\Modules\Estimating\Support\MaterialVariancePolicyResolution;
+use App\Modules\Estimating\Support\PlanRoutingCollector;
 use App\Modules\Estimating\Support\VarianceCostComparison;
 use App\Modules\Estimating\Support\VarianceEffect;
 use App\Modules\Estimating\Support\VarianceMeasure;
@@ -62,7 +63,7 @@ final class PreviewMaterialVariance
      * @param  list<array{item_id: int, planned_quantity: string, uom_id: int, reason_id?: int|null, note?: string|null}>  $adjustments
      * @return array{0: array<string, mixed>, 1: array<int, string>, 2: list<array<string, mixed>>} variance block, item id → planned stock quantity, fingerprint evidence
      */
-    public function __invoke(array $leafRows, array $adjustments, User $actor): array
+    public function __invoke(array $leafRows, array $adjustments, User $actor, ?PlanRoutingCollector $routing = null): array
     {
         ActionAuthorization::require($actor, 'estimating.material_preview.run', 'evaluate material variance');
         if ($actor->company_id !== app(CompanyContext::class)->id()) {
@@ -122,6 +123,7 @@ final class PreviewMaterialVariance
                 $counts['adoptable'] += $adoptable ? 1 : 0;
 
                 $planned[$itemId] = (string) $plannedStock;
+                $routing?->recordVariance($itemId, $comparison->delta() === null ? null : (string) $comparison->delta()->abs()->toScale(4, RoundingMode::HALF_UP));
                 $cost = $this->cost($comparison, $includeCost);
                 if ($includeCost) {
                     if ($cost['status'] === 'AVAILABLE') {

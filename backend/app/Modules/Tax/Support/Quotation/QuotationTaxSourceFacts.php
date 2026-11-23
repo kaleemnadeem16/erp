@@ -50,6 +50,25 @@ final class QuotationTaxSourceFacts
         return new TaxClassification(SourceKind::Item, $nature, (string) $row->classification, 'item_explicit');
     }
 
+    /** The Assembly's own explicit classification on the date (ADR 0056), or null: no group or company default is invented, and an unclassified Assembly stays blocked. */
+    public function assembly(int $assemblyId, string $date): ?TaxClassification
+    {
+        new EffectivePeriod($date);
+        if ($assemblyId < 1) {
+            return null;
+        }
+        $rows = $this->onDate('tax_quotation_assembly_classifications', $date)->where('assembly_id', $assemblyId)->limit(2)->get(['id', 'nature', 'classification']);
+        if ($rows->count() !== 1) {
+            return null;
+        }
+        $nature = TaxNature::tryFrom((string) $rows->first()->nature);
+        if ($nature === null || $nature === TaxNature::Both) {
+            return null;
+        }
+
+        return new TaxClassification(SourceKind::Assembly, $nature, (string) $rows->first()->classification, 'assembly_explicit');
+    }
+
     private function latestCorrection(string $column, int $factId): ?object
     {
         return DB::table('tax_quotation_source_corrections')->where('company_id', app(CompanyContext::class)->id())->where($column, $factId)->orderByDesc('version_no')->first();

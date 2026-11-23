@@ -25,6 +25,7 @@ use App\Support\Concerns\BelongsToCompany;
  * @property bool $counts_in_total
  * @property string $source_kind
  * @property int|null $item_id
+ * @property int|null $assembly_version_id the exact Assembly version offered, frozen at issue (null for every other source kind)
  * @property string|null $manual_measure
  * @property string $offered_quantity
  * @property int|null $offered_uom_id

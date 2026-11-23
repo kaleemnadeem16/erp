@@ -79,7 +79,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
 
     public function test_internal_family_writers_keep_the_exclusive_fence_before_subject_and_receipt(): void
     {
-        $registered = ['CreateQuotationDraft', 'UpdateQuotationDraft', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
+        $registered = ['CreateQuotationDraft', 'UpdateQuotationDraft', 'AdoptQuotationMaterialPlan', 'CreateQuotationRevision', 'IssueQuotation', 'IssueQuotationReplacement',
             'WithdrawQuotationOffer', 'CancelQuotationDraft', 'ReassignQuotationOwner', 'ChangeQuotationAccessUnit', 'CaptureQuotationAccessBaseline',
             'RequestQuotationApproval', 'DecideQuotationApproval', 'WithdrawQuotationApproval', 'BindQuotationAuthorityReferences', 'EvaluateQuotationDiscountAuthority'];
         $found = [];

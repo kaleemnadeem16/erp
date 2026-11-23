@@ -39,6 +39,7 @@ trait DescribesQuotationDraftBody
             "{$list}.*.choice_group_ref" => ['sometimes', 'nullable', 'string', 'max:80'],
             "{$list}.*.is_baseline" => ['sometimes', 'boolean'],
             "{$list}.*.item_id" => ['sometimes', 'integer', 'min:1'],
+            "{$list}.*.assembly_version_id" => ['sometimes', 'integer', 'min:1'],
             "{$list}.*.manual_measure" => ['sometimes', 'string', 'max:100'],
             "{$list}.*.offered_uom_id" => ['sometimes', 'nullable', 'integer', 'min:1'],
             "{$list}.*.sort_order" => ['sometimes', 'integer', 'min:0'],

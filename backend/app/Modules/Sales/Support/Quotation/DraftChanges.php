@@ -13,9 +13,9 @@ use App\Modules\Sales\Support\Pricing\PricingSourceKind;
  */
 final readonly class DraftChanges
 {
-    private const ADD_FIELDS = ['scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
+    private const ADD_FIELDS = ['scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'assembly_version_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
 
-    private const UPDATE_FIELDS = ['id', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
+    private const UPDATE_FIELDS = ['id', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'item_id', 'assembly_version_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration'];
 
     /**
      * @param  array<string, int|string|null>  $header
@@ -196,7 +196,7 @@ final readonly class DraftChanges
         $bad = fn (string $why) => QuotationRefusal::make(QuotationRefusal::INVALID_INPUT, $why, "{$where}.{$key}");
 
         return match ($key) {
-            'id', 'item_id', 'offered_uom_id' => $value === null && $key === 'offered_uom_id' ? null : (is_int($value) && $value > 0 ? $value : throw $bad('An identifier is a positive whole number.')),
+            'id', 'item_id', 'assembly_version_id', 'offered_uom_id' => $value === null && $key === 'offered_uom_id' ? null : (is_int($value) && $value > 0 ? $value : throw $bad('An identifier is a positive whole number.')),
             'sort_order' => is_int($value) && $value >= 0 ? $value : throw $bad('The order is a whole number.'),
             'is_baseline' => is_bool($value) ? $value : throw $bad('This is true or false.'),
             'section_title' => $value === null || (is_string($value) && mb_strlen(trim($value)) <= 200) ? ($value === null || trim($value) === '' ? null : trim($value)) : throw $bad('A section title is at most 200 characters.'),

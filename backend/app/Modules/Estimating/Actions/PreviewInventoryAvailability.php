@@ -8,6 +8,7 @@ use App\Exceptions\DomainInvariantException;
 use App\Modules\Estimating\Http\Resources\Costing\CostResolutionResource;
 use App\Modules\Estimating\Support\InventoryAllocation;
 use App\Modules\Estimating\Support\MaterialSelectionStrategy;
+use App\Modules\Estimating\Support\PlanRoutingCollector;
 use App\Modules\Estimating\Support\ResolvedSelectionStrategy;
 use App\Modules\Estimating\Support\ResolvedStockMixControl;
 use App\Modules\Estimating\Support\StockMix;
@@ -78,7 +79,7 @@ final class PreviewInventoryAvailability
      * @param  list<array{item_id: int, note: string|null}>  $stockMixNotes  the reason given for a mix, where the company's control asks for one (ADR 0076)
      * @return array{data: array<string, mixed>, evidence: array<string, mixed>}
      */
-    public function __invoke(CostReadSession $session, array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = [], array $stockMixNotes = []): array
+    public function __invoke(CostReadSession $session, array $leafRows, array $scopeInput, ?MaterialSelectionStrategy $override, bool $includeCost, array $plannedByItem = [], array $stockMix = [], array $stockMixNotes = [], ?PlanRoutingCollector $routing = null): array
     {
         $headline = ($this->resolveStrategies)->companyLevel($override);
         $resolved = ($this->resolveStrategies)(array_map(fn (array $row): int => $row['item']['id'], $leafRows), $override);
@@ -124,7 +125,7 @@ final class PreviewInventoryAvailability
                 : ($this->priceMix)($item, $required, $balances, $mixLinesByItem[$itemId], $session);
             $verdict = $mix === null
                 ? null
-                : ($this->judgeMix)($item, $mixControls[$itemId], $mix, $recommendation, $mixNotes[$itemId] ?? null);
+                : $this->judged($routing, $item, $mixControls[$itemId], $mix, $recommendation, $mixNotes[$itemId] ?? null);
 
             $otherStrategies = $recommendation === null
                 ? []
@@ -235,6 +236,15 @@ final class PreviewInventoryAvailability
                 'items' => $itemEvidence,
             ],
         ];
+    }
+
+    /** The control's verdict on a hand-built mix; its internal-cost consequence is also handed to the adopting module's collector, which the response never shows. */
+    private function judged(?PlanRoutingCollector $routing, Item $item, ResolvedStockMixControl $control, StockMix $mix, InventoryAllocation $recommendation, ?string $note): StockMixVerdict
+    {
+        $verdict = ($this->judgeMix)($item, $control, $mix, $recommendation, $note);
+        $routing?->recordMix((int) $item->id, $verdict->observedPercent === null ? null : (string) $verdict->observedPercent, $verdict->extraCost === null ? null : (string) $verdict->extraCost);
+
+        return $verdict;
     }
 
     /**

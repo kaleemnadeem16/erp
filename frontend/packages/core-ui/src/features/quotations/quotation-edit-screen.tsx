@@ -13,6 +13,7 @@ import { ScreenTemplate } from "../../components/page/screen-template";
 import { PageHeader } from "../../components/page/page-header";
 import { DetailSection } from "../../components/detail/detail-page-layout";
 import {
+  AssemblyCombobox,
   PartyCombobox,
   ItemCombobox,
 } from "../../components/lookups/entity-comboboxes";
@@ -167,6 +168,11 @@ export function QuotationEditForm({ id }: { id: number }) {
         (!line.item_id || !line.offered_uom_id)
       )
         return "Select an Item and its stock unit for each Item line.";
+      if (
+        line.source_kind === "ASSEMBLY_WORK" &&
+        (!line.assembly_version_id || !line.offered_uom_id)
+      )
+        return "Select an Assembly with an active version for each Assembly line.";
       if (
         line.sort_order !== undefined &&
         (!Number.isSafeInteger(line.sort_order) || line.sort_order < 0)
@@ -610,6 +616,30 @@ export function QuotationEditForm({ id }: { id: number }) {
                 >
                   Add Item line
                 </Button>
+                <Button className="min-h-11"
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    update({
+                      ...values,
+                      added: [
+                        ...values.added,
+                        {
+                          client_id: newAttemptKey(),
+                          source_kind: "ASSEMBLY_WORK",
+                          description: "",
+                          offered_quantity: "1",
+                          unit_price: null,
+                          membership: "BASE",
+                          choice_group_ref: null,
+                          is_baseline: false,
+                        },
+                      ],
+                    })
+                  }
+                >
+                  Add Assembly line
+                </Button>
               </div>
             </div>
           </DetailSection>
@@ -725,14 +755,53 @@ function LineEditor({
   onRemove: () => void;
 }) {
   const key = "id" in line ? String(line.id) : line.client_id;
+  // Only the picker's own choice; the line itself stores just the pinned version.
+  const [assemblyId, setAssemblyId] = useState("");
   function set(patch: Partial<Line>) {
     onChange({ ...line, ...patch } as Line);
   }
   return (
     <fieldset className="space-y-3 rounded-lg border p-4">
       <legend className="px-1 font-medium">
-        {line.source_kind === "MANUAL" ? "Manual line" : "Item line"}
+        {{
+          DIRECT_ITEM: "Item line",
+          SERVICE_ITEM: "Service line",
+          ASSEMBLY_WORK: "Assembly line",
+          MANUAL: "Manual line",
+        }[line.source_kind] ?? "Item line"}
       </legend>
+      {line.source_kind === "ASSEMBLY_WORK" &&
+        ("id" in line ? (
+          <p className="text-sm text-muted-foreground">
+            Assembly version #{line.assembly_version_id} is pinned to this line
+            and stays identifiable if a newer version is activated. Remove the
+            line and add it again to price a newer version.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            <Label htmlFor={`assembly-${key}`}>Assembly</Label>
+            <AssemblyCombobox
+              id={`assembly-${key}`}
+              label="Assembly"
+              value={assemblyId}
+              onValueChange={(value, assembly) => {
+                setAssemblyId(value);
+                const active = assembly?.versions?.find(
+                  (v) => v.status === "ACTIVE",
+                );
+                if (assembly && active)
+                  set({
+                    assembly_version_id: active.id,
+                    offered_uom_id: assembly.work_uom_id,
+                  });
+              }}
+            />
+            <p className="text-sm text-muted-foreground">
+              The line is pinned to the Assembly&apos;s active version and sold
+              in its work unit. Cost is not shown here.
+            </p>
+          </div>
+        ))}
       {line.source_kind === "DIRECT_ITEM" && (
         <div className="space-y-2">
           <Label htmlFor={`item-${key}`}>Item</Label>

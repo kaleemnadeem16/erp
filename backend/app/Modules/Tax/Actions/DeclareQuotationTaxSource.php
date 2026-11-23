@@ -54,4 +54,24 @@ final class DeclareQuotationTaxSource
 
         return $outcome['id'];
     }
+
+    /** An Assembly's explicit classification for quotation tax (ADR 0056): its offered work is classified as a whole, never as the sum of its components. */
+    public function assembly(User $actor, int $assemblyId, TaxNature $nature, string $classification, EffectivePeriod $period, string $reason, string $key, int $generation): int
+    {
+        TaxAccess::requireConfiguration($actor);
+        $classification = trim($classification);
+        $reason = trim($reason);
+        if ($assemblyId < 1 || $nature === TaxNature::Both || $classification === '' || mb_strlen($classification) > 80 || $reason === '') {
+            throw TaxRefusal::because('TAX_SOURCE_INVALID', 'An assembly, single nature, classification and reason are required.');
+        }
+
+        $outcome = $this->mutation->run($key, $generation, ['operation' => 'quotation_assembly_classification', 'actor' => $actor->id, 'assembly' => $assemblyId,
+            'nature' => $nature->value, 'classification' => $classification, 'from' => $period->from, 'to' => $period->endExclusive, 'reason' => $reason],
+            fn (): array => ['id' => (int) DB::table('tax_quotation_assembly_classifications')->insertGetId([
+                'company_id' => app(CompanyContext::class)->id(), 'assembly_id' => $assemblyId, 'nature' => $nature->value, 'classification' => $classification,
+                'effective_from' => $period->from, 'effective_to' => $period->endExclusive, 'created_by' => $actor->id, 'reason' => $reason,
+            ])]);
+
+        return $outcome['id'];
+    }
 }

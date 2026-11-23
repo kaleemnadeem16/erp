@@ -172,7 +172,7 @@ final class PreviewQuotation
         $row = [
             'id' => $line->id, 'logical_scope_id' => $line->logical_scope_id, 'sort_order' => $line->sort_order, 'section_title' => $line->section_title, 'description' => $line->description,
             'membership' => $line->membership, 'choice_group_id' => $line->choice_group_id, 'is_baseline' => $line->is_baseline, 'source_kind' => $line->source_kind,
-            'item_id' => $line->item_id, 'manual_measure' => $line->manual_measure,
+            'item_id' => $line->item_id, 'assembly_version_id' => $line->assembly_version_id, 'manual_measure' => $line->manual_measure,
             'offered' => ['quantity' => $line->offered_quantity, 'uom_id' => $line->offered_uom_id],
             'priced' => $line->priced_uom_id === null ? null : ['quantity' => $line->priced_quantity, 'uom_id' => $line->priced_uom_id],
             'stock' => $line->stock_uom_id === null ? null : ['quantity' => $line->stock_quantity, 'uom_id' => $line->stock_uom_id, 'conversion_version' => $line->conversion_version],
@@ -186,12 +186,12 @@ final class PreviewQuotation
             $input = new PricingInput($context, (int) $revision->recipient_party_id, $line->pricingSource(), $line->offered_quantity, $line->offered_uom_id, $rule ?? $this->placeholderRule($currencyId));
             if ($line->unit_price === null || $rule === null) {
                 // Nothing to settle, but the source is still proven so an archived or changed Item shows up now rather than at issue.
-                $this->sources->adapterFor($line->sourceKind())->resolve($input);
+                $this->sources->quotationAdapterFor($line->sourceKind())->resolve($input);
                 if ($line->unit_price !== null) {
                     $net = FinancialResult::unknown([['code' => 'PRICING_DATE_REQUIRED']]);
                 }
             } else {
-                $result = ($this->prices)($input, [new PriceCandidate('entered:'.$line->id, 1, (string) $line->unit_price, $currencyId)]);
+                $result = ($this->prices)($input, [new PriceCandidate('entered:'.$line->id, 1, (string) $line->unit_price, $currencyId)], true);
                 $figures = $this->adjustments->line($line, $currencyId, (string) $date, $policy, $rule, $result->quantity);
                 $net = FinancialResult::complete($figures['net'], $currencyId);
                 $row['list_amount'] = (string) $figures['list'];

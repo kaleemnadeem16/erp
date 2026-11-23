@@ -134,7 +134,7 @@ class QuotationDraftEditableApiTest extends TestCase
         $data = $this->getJson("/api/v1/quotations/{$revision}/editable")->assertOk()->json('data');
 
         $this->assertEqualsCanonicalizing(['revision_id', 'family_id', 'state', 'input_generation', 'recipient_party_id', 'currency_id', 'pricing_date', 'tax_estimate_date', 'valid_through_local_date', 'current_opportunity_id', 'document_discount', 'lines'], array_keys($data));
-        $this->assertEqualsCanonicalizing(['id', 'scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration', 'approval_required', 'approval_reason'], array_keys($data['lines'][0]));
+        $this->assertEqualsCanonicalizing(['id', 'scope_ref', 'section_title', 'description', 'membership', 'choice_group_ref', 'is_baseline', 'source_kind', 'item_id', 'assembly_version_id', 'manual_measure', 'offered_quantity', 'offered_uom_id', 'unit_price', 'sort_order', 'discount', 'net_override', 'tax_declaration', 'approval_required', 'approval_reason'], array_keys($data['lines'][0]));
         $this->assertNull($data['lines'][0]['tax_declaration']);
         $this->assertSame('scope-a', $data['lines'][0]['scope_ref']);
         $this->assertSame('15.5000', $data['lines'][0]['unit_price']);
