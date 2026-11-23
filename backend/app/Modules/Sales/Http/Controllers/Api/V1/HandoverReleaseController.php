@@ -44,8 +44,8 @@ final class HandoverReleaseController extends Controller
 
         return new ServiceReleasePreviewResource([
             'ready' => $d['ready'],
-            'blockers' => array_values($d['blockers']),
-            'next_actions' => array_map(fn (array $a): array => ['fact' => $a['fact'], 'owner' => $a['owner'], 'action' => $a['action']], array_values($d['next_actions'])),
+            'blockers' => $d['blockers'],
+            'next_actions' => array_map(fn (array $a): array => ['fact' => $a['fact'], 'owner' => $a['owner'], 'action' => $a['action']], $d['next_actions']),
             'cost' => ['required' => (bool) $d['cost']['required'], 'status' => (string) $d['cost']['status']],
             'applicability' => ['status' => (string) $d['applicability']['status'], 'materials' => (string) $d['applicability']['scope']['materials'], 'subcontract' => (string) $d['applicability']['scope']['subcontract']],
             'basis_id' => $d['basis_id'],
