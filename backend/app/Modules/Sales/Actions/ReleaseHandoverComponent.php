@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Sales\Actions;
 
 use App\Models\User;
-use App\Modules\Sales\Support\PermissionVocabulary as P;
-use App\Modules\Sales\Support\SalesAccess;
 use App\Modules\Sales\Support\Handover\Release\ReleaseCoordinator;
 use App\Modules\Sales\Support\Handover\Release\ReleaseIntent;
+use App\Modules\Sales\Support\PermissionVocabulary as P;
+use App\Modules\Sales\Support\SalesAccess;
 
 /**
  * Releases one prepared SERVICE_JOB stage: immutable release evidence and exactly one numbered Job, atomically. DISABLED: the duty is STAGED, there is no route, and with
