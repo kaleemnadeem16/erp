@@ -13,9 +13,9 @@ final class ServiceReleaseOutcomeResource extends JsonResource
     /** @return array{release_event_id:int,job_id:int,job_code:string,replayed:bool} */
     public function toArray(Request $request): array
     {
-        /** @var array{release_event_id:int,job_id:int,job_code:string,replayed:bool} $d */
-        $d = $this->resource;
+        /** @var array{release_event_id:int,job_id:int,job_code:string,replayed:bool} $data */
+        $data = $this->resource;
 
-        return ['release_event_id' => $d['release_event_id'], 'job_id' => $d['job_id'], 'job_code' => $d['job_code'], 'replayed' => $d['replayed']];
+        return $data;
     }
 }

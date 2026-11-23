@@ -6,8 +6,8 @@
  */
 
 export interface ServiceReleaseOutcomeResource {
-  release_event_id: string;
-  job_id: string;
+  release_event_id: number;
+  job_id: number;
   job_code: string;
-  replayed: string;
+  replayed: boolean;
 }

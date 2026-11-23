@@ -4,16 +4,19 @@
  * ERP
  * OpenAPI spec version: 0.0.1
  */
+import type { ServiceReleasePreviewResourceNextActionsItem } from "./serviceReleasePreviewResourceNextActionsItem";
 import type { ServiceReleasePreviewResourceCost } from "./serviceReleasePreviewResourceCost";
 import type { ServiceReleasePreviewResourceApplicability } from "./serviceReleasePreviewResourceApplicability";
+import type { ServiceReleasePreviewResourceBasisId } from "./serviceReleasePreviewResourceBasisId";
+import type { ServiceReleasePreviewResourceBasisVersion } from "./serviceReleasePreviewResourceBasisVersion";
 
 export interface ServiceReleasePreviewResource {
   ready: boolean;
-  blockers: unknown[];
-  next_actions: unknown[];
+  blockers: string[];
+  next_actions: ServiceReleasePreviewResourceNextActionsItem[];
   cost: ServiceReleasePreviewResourceCost;
   applicability: ServiceReleasePreviewResourceApplicability;
-  basis_id: string;
-  basis_version: string;
+  basis_id: ServiceReleasePreviewResourceBasisId;
+  basis_version: ServiceReleasePreviewResourceBasisVersion;
   fingerprint: string;
 }

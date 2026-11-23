@@ -35,12 +35,23 @@ final class HandoverReleaseController extends Controller
     {
         $out = $this->refusing(fn (): array => $record($request->user(), $request->header('Idempotency-Key'), $acceptance, $request->input('agreed_text'), $request->integer('evidence_id')));
 
-        return $this->respond(new CompletionBasisOutcomeResource($out), $out['replayed']);
+        return $this->respond(new CompletionBasisOutcomeResource(['basis_id' => $out['basis_id'], 'version' => $out['version'], 'replayed' => $out['replayed']]), $out['replayed']);
     }
 
     public function preview(PreviewServiceReleaseRequest $request, int $stage, PreviewServiceRelease $preview): ServiceReleasePreviewResource
     {
-        return new ServiceReleasePreviewResource($this->refusing(fn (): array => $preview($request->user(), $stage)));
+        $d = $this->refusing(fn (): array => $preview($request->user(), $stage));
+
+        return new ServiceReleasePreviewResource([
+            'ready' => $d['ready'],
+            'blockers' => array_values($d['blockers']),
+            'next_actions' => array_map(fn (array $a): array => ['fact' => $a['fact'], 'owner' => $a['owner'], 'action' => $a['action']], array_values($d['next_actions'])),
+            'cost' => ['required' => (bool) $d['cost']['required'], 'status' => (string) $d['cost']['status']],
+            'applicability' => ['status' => (string) $d['applicability']['status'], 'materials' => (string) $d['applicability']['scope']['materials'], 'subcontract' => (string) $d['applicability']['scope']['subcontract']],
+            'basis_id' => $d['basis_id'],
+            'basis_version' => $d['basis_version'],
+            'fingerprint' => $d['fingerprint'],
+        ]);
     }
 
     #[HeaderParameter('Idempotency-Key', 'Per-person request key. Current authority, including the receiver\'s own duty, is rechecked before exact retry.', required: true, type: 'string')]
@@ -51,7 +62,7 @@ final class HandoverReleaseController extends Controller
     {
         $out = $this->refusing(fn (): array => $release($request->user(), $request->header('Idempotency-Key'), $stage, $request->integer('basis_id'), (string) $request->input('readiness_fingerprint')));
 
-        return $this->respond(new ServiceReleaseOutcomeResource($out), $out['replayed']);
+        return $this->respond(new ServiceReleaseOutcomeResource(['release_event_id' => $out['release_event_id'], 'job_id' => $out['job_id'], 'job_code' => $out['job_code'], 'replayed' => $out['replayed']]), $out['replayed']);
     }
 
     private function respond(JsonResource $resource, bool $replayed): JsonResponse

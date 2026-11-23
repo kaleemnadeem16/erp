@@ -6,7 +6,7 @@
  */
 
 export interface CompletionBasisOutcomeResource {
-  basis_id: string;
-  version: string;
-  replayed: string;
+  basis_id: number;
+  version: number;
+  replayed: boolean;
 }

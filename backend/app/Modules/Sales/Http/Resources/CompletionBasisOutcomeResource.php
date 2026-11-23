@@ -7,7 +7,7 @@ namespace App\Modules\Sales\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/** Minimal projection: no evidence, text, scope or source detail. */
+/** Minimal projection: no evidence, text, scope or source detail. The controller selects exactly these fields. */
 final class CompletionBasisOutcomeResource extends JsonResource
 {
     /** @return array{basis_id:int,version:int,replayed:bool} */
@@ -16,6 +16,6 @@ final class CompletionBasisOutcomeResource extends JsonResource
         /** @var array{basis_id:int,version:int,replayed:bool} $data */
         $data = $this->resource;
 
-        return ['basis_id' => $data['basis_id'], 'version' => $data['version'], 'replayed' => $data['replayed']];
+        return $data;
     }
 }
