@@ -1470,3 +1470,11 @@ work quantity is judged at six places then four without rounding, margin control
 append-only Material Plan evidence per line (variance and stock-choice controls from Phase 3, approvals through the shared engine via a sealed routing collector, deliberate
 revalidation, `MATERIAL_PLAN_*` issue blockers, a database-guarded freeze of the latest plan). Staged Actions only for Batch 2: no route, screen or permission activation, and no stock
 reservation, movement or Job execution (Phase 5). Not delivered: HTTP/UI for plan adoption, a rule making a plan mandatory, Assembly tax-fact corrections.
+
+## 2026-11-16 — Purchasing completeness: ship-to, buyer, payment terms, shipping method (ADR 0191)
+
+Phase 2 follow-up assigned after the Assembly-quotation integration was approved. Purchase orders gain an optional ship-to warehouse/location, buyer/requester, a per-order
+payment-terms override (supplier default as the fallback, frozen with its origin at issue) and a shipping method, plus a server-set immutable creator; the database, model, Actions,
+Requests, API, form, detail, summary, print, approval fingerprint, demo and tests were extended together. Existing orders are untouched and stay readable. Not built: Q26 record scope,
+a buyer lookup beyond the signed-in person, a shipping-method list, any Phase 6 payables or Job costing, permission activation.
+

@@ -16,6 +16,7 @@ import {
   type SupplierAccountResource,
   useSupplierAccountsSitesIndex,
   useUomsIndex,
+  useWarehousesIndex,
   type SupplierSiteResource,
 } from "@erp/core-api";
 
@@ -56,7 +57,11 @@ import { clearDraft, readDraft, writeDraft } from "../../lib/session-draft";
 import { usePermission } from "../../hooks/use-permission";
 import { PurchaseOrderLineFields } from "./purchase-order-line-fields";
 import { useItemsById, useSuppliersById } from "../../lib/use-records-by-id";
-import { SupplierCombobox } from "../../components/lookups/entity-comboboxes";
+import {
+  LocationCombobox,
+  SupplierCombobox,
+} from "../../components/lookups/entity-comboboxes";
+import { useAuthStore } from "../../stores/auth-store";
 import { PurchaseOrderSummary } from "./purchase-order-summary";
 import { SupplierSiteDialog } from "./supplier-site-form";
 import { lookupState } from "../../lib/api-errors";
@@ -107,6 +112,16 @@ const schema = z.object({
   order_date: z.string().min(1, "Order date is required"),
   expected_delivery_date: z.string(),
   notes: z.string().max(2000, "Notes must be 2000 characters or fewer."),
+  // Delivery, ownership and terms (ADR 0191): all optional. Blank payment terms mean "the supplier's default".
+  ship_to_warehouse_id: z.string(),
+  ship_to_location_id: z.string(),
+  buyer_user_id: z.string(),
+  payment_terms_days: z
+    .string()
+    .trim()
+    .regex(/^\d{0,5}$/, "Payment terms are a whole number of days.")
+    .refine((v) => v === "" || Number(v) <= 32767, "Payment terms are at most 32767 days."),
+  shipping_method: z.string().max(100, "Shipping method must be 100 characters or fewer."),
   lines: z.array(lineSchema).min(1, "At least one line is required"),
 });
 export type PurchaseOrderFormValues = z.infer<typeof schema>;
@@ -145,6 +160,11 @@ const createDefaults = (): PurchaseOrderFormValues => ({
   order_date: today,
   expected_delivery_date: "",
   notes: "",
+  ship_to_warehouse_id: "",
+  ship_to_location_id: "",
+  buyer_user_id: "",
+  payment_terms_days: "",
+  shipping_method: "",
   lines: [emptyLine()],
 });
 
@@ -216,6 +236,11 @@ const WIZARD_STEP_FIELDS: FieldPath<PurchaseOrderFormValues>[][] = [
     "expected_delivery_date",
     "currency_id",
     "notes",
+    "ship_to_warehouse_id",
+    "ship_to_location_id",
+    "buyer_user_id",
+    "payment_terms_days",
+    "shipping_method",
     "fx_policy",
     "fx_rate",
     "fx_rate_date",
@@ -244,6 +269,20 @@ export function toPurchaseOrderPayload(values: PurchaseOrderFormValues) {
     order_date: values.order_date,
     expected_delivery_date: values.expected_delivery_date || null,
     notes: values.notes.trim() || null,
+    ship_to_warehouse_id: values.ship_to_warehouse_id
+      ? Number(values.ship_to_warehouse_id)
+      : null,
+    // A location only means something inside its warehouse.
+    ship_to_location_id:
+      values.ship_to_warehouse_id && values.ship_to_location_id
+        ? Number(values.ship_to_location_id)
+        : null,
+    buyer_user_id: values.buyer_user_id ? Number(values.buyer_user_id) : null,
+    payment_terms_days:
+      values.payment_terms_days.trim() === ""
+        ? null
+        : Number(values.payment_terms_days),
+    shipping_method: values.shipping_method.trim() || null,
     lines: values.lines.map((line, index) => ({
       line_number: index + 1,
       item_id: Number(line.item_id),
@@ -280,6 +319,7 @@ export function PurchaseOrderForm({
   formError,
   onAdvancedOptionsChange,
   optionsStyle = "disclosure",
+  existingBuyerName = null,
 }: {
   defaultValues?: PurchaseOrderFormValues;
   onSubmit: (
@@ -302,6 +342,8 @@ export function PurchaseOrderForm({
    * checkbox menu. Both are kept; the choice is made in `apps/main/src/presentation.ts`.
    */
   optionsStyle?: OptionsStyle;
+  /** The name of the buyer the order being edited already names (the picker itself only offers the signed-in person). */
+  existingBuyerName?: string | null;
 }) {
   const isCreate = !defaultValues;
   const mayManageSupplierSites = usePermission("parties.supplier-site.manage");
@@ -534,6 +576,30 @@ export function PurchaseOrderForm({
         shouldValidate: true,
       });
   }, [form, supplierId, suppliers]);
+  const warehousesQuery = useWarehousesIndex({ per_page: 100, sort: "name" });
+  const warehouseOptions = useMemo(
+    () =>
+      (warehousesQuery.data?.status === 200 ? warehousesQuery.data.data.data : [])
+        .filter((warehouse) => warehouse.active)
+        .map((warehouse) => ({
+          value: String(warehouse.id),
+          label: `${warehouse.code} — ${warehouse.name}`,
+        })),
+    [warehousesQuery.data],
+  );
+  // The buyer picker offers the signed-in person (plus whoever the order already names): a full people lookup is not part of purchasing's access.
+  const me = useAuthStore((state) => state.user);
+  const buyerId = form.watch("buyer_user_id");
+  const buyerOptions = useMemo(() => {
+    const options: { value: string; label: string }[] = [];
+    if (me) options.push({ value: String(me.id), label: `${me.name} (me)` });
+    if (buyerId && (!me || String(me.id) !== buyerId))
+      options.push({ value: buyerId, label: existingBuyerName ?? `User #${buyerId}` });
+    return options;
+  }, [me, buyerId, existingBuyerName]);
+  const supplierDefaultTerms =
+    suppliers.find((candidate) => candidate.id === Number(supplierId))
+      ?.payment_terms_days ?? null;
   // A site belongs to one supplier — dropping the old one when the supplier
   // itself changes, but not on first mount, where it's the resumed or
   // already-saved order's own valid combination and must survive untouched.
@@ -605,6 +671,8 @@ export function PurchaseOrderForm({
     itemOptions,
     uomOptions,
     paymentTermsDays: chosenSupplier?.payment_terms_days,
+    warehouseOptions,
+    buyerLabel: buyerOptions.find((option) => option.value === buyerId)?.label,
     leadTimeDays: chosenSupplier?.lead_time_days,
     currencyPlaces: Object.fromEntries(currencies.map((currency) => [String(currency.id), currency.decimal_places])),
   };
@@ -767,6 +835,138 @@ export function PurchaseOrderForm({
               )}
             />
           ))}
+          <FormField
+            control={form.control}
+            name="ship_to_warehouse_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabelWithHint hint="Where the goods are to be delivered — one of your warehouses. Leave empty if the order does not say.">
+                  Deliver to
+                </FormLabelWithHint>
+                <FormControl>
+                  <Combobox
+                    {...lookupState(warehousesQuery, "warehouses")}
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      form.setValue("ship_to_location_id", "");
+                    }}
+                    options={warehouseOptions}
+                    placeholder="Not specified"
+                    searchPlaceholder="Search warehouses…"
+                    emptyText="No warehouses found."
+                  />
+                </FormControl>
+                {field.value && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground underline"
+                    onClick={() => {
+                      field.onChange("");
+                      form.setValue("ship_to_location_id", "");
+                    }}
+                  >
+                    Clear delivery point
+                  </button>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {form.watch("ship_to_warehouse_id") && (
+            <FormField
+              control={form.control}
+              name="ship_to_location_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabelWithHint hint="A specific place inside that warehouse, such as a goods-in dock. Optional.">
+                    Delivery location
+                  </FormLabelWithHint>
+                  <FormControl>
+                    <LocationCombobox
+                      label="Delivery location"
+                      value={field.value}
+                      warehouseId={Number(form.watch("ship_to_warehouse_id"))}
+                      onValueChange={field.onChange}
+                      placeholder="Anywhere in the warehouse"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+          <FormField
+            control={form.control}
+            name="buyer_user_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabelWithHint hint="The person responsible for this order (the buyer or requester). It is recorded on the order; who drafted it is recorded separately and automatically.">
+                  Buyer / requester
+                </FormLabelWithHint>
+                <FormControl>
+                  <Combobox
+                    ref={field.ref}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    options={buyerOptions}
+                    placeholder="Not specified"
+                    searchPlaceholder="Search…"
+                    emptyText="No one to choose."
+                  />
+                </FormControl>
+                {field.value && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground underline"
+                    onClick={() => field.onChange("")}
+                  >
+                    Clear buyer
+                  </button>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="payment_terms_days"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabelWithHint hint="Days the supplier allows for payment. Leave empty to follow the supplier's default; it is fixed on the order when it is issued.">
+                  Payment terms (days)
+                </FormLabelWithHint>
+                <FormControl>
+                  <Input
+                    {...field}
+                    inputMode="numeric"
+                    placeholder={
+                      supplierDefaultTerms === null
+                        ? "Supplier default"
+                        : `Supplier default: ${supplierDefaultTerms} days`
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="shipping_method"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabelWithHint hint="How the goods will travel, for example courier, supplier delivery or sea freight.">
+                  Shipping method
+                </FormLabelWithHint>
+                <FormControl>
+                  <Input {...field} maxLength={100} placeholder="Not specified" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="notes"

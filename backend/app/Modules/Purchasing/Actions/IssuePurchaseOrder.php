@@ -7,8 +7,11 @@ namespace App\Modules\Purchasing\Actions;
 use App\Exceptions\DomainInvariantException;
 use App\Models\User;
 use App\Modules\Approvals\Actions\RequireApproval;
+use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Inventory\Support\ItemQuantityRules;
 use App\Modules\Numbering\Services\NumberingService;
+use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
@@ -50,6 +53,7 @@ final class IssuePurchaseOrder
             if ($order->inventory_cutover_id === null) {
                 ($this->requireApproval)(PurchaseOrderApprovalSubject::CODE, $order->id);
             }
+            $this->requireShipToStillUsable($order);
             $settings = ($this->resolveSettings)();
             foreach ($order->lines()->with('item')->lockForUpdate()->get() as $line) {
                 if ($line->offer_snapshot !== null && (($line->offer_snapshot['supplier_account_id'] ?? null) !== $order->supplier_account_id
@@ -75,9 +79,25 @@ final class IssuePurchaseOrder
             $issuedAt = CarbonImmutable::now();
             // The number is taken at the moment the order becomes official, by the central numbering framework (ADR 0079).
             $number = $this->numbering->allocate(PurchaseOrderNumbering::contextFor($order, $issuedAt, $actor->id))->number;
-            $order->update(['number' => $number, 'status' => PurchaseOrderStatus::Issued, 'issued_at' => $issuedAt]);
+            // The terms in force are frozen with the order: its own override, or else the supplier's default as it stands now, and where they came from.
+            $terms = $order->payment_terms_days !== null
+                ? [$order->payment_terms_days, 'PURCHASE_ORDER']
+                : [SupplierAccount::query()->whereKey($order->supplier_account_id)->value('payment_terms_days'), 'SUPPLIER_DEFAULT'];
+            $order->update(['number' => $number, 'status' => PurchaseOrderStatus::Issued, 'issued_at' => $issuedAt,
+                'payment_terms_days' => $terms[0], 'payment_terms_source' => $terms[0] === null ? null : $terms[1]]);
 
             return $order->refresh()->load('lines');
         });
+    }
+
+    /** The delivery point named on the draft must still be a place the company can receive into when the order becomes official. */
+    private function requireShipToStillUsable(PurchaseOrder $order): void
+    {
+        if ($order->ship_to_warehouse_id !== null && ! Warehouse::query()->whereKey($order->ship_to_warehouse_id)->where('active', true)->exists()) {
+            throw new DomainInvariantException('The ship-to warehouse is no longer active; choose another before issuing.', 'ship_to_warehouse_id');
+        }
+        if ($order->ship_to_location_id !== null && ! Location::query()->whereKey($order->ship_to_location_id)->where('active', true)->exists()) {
+            throw new DomainInvariantException('The ship-to location is no longer active; choose another before issuing.', 'ship_to_location_id');
+        }
     }
 }

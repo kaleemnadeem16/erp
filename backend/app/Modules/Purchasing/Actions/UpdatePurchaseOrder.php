@@ -46,6 +46,14 @@ final class UpdatePurchaseOrder
             // Whatever was approved was approved for the order as it was; any edit means it is approved again or not at all.
             $this->invalidateApprovals->forSubject(PurchaseOrderApprovalSubject::CODE, $order->id, 'The order was edited after it was approved.');
             $lines = Arr::pull($attributes, 'lines');
+            // A location only means something inside its warehouse: clearing the warehouse clears it too.
+            if (array_key_exists('ship_to_warehouse_id', $attributes) && $attributes['ship_to_warehouse_id'] === null) {
+                $attributes['ship_to_location_id'] = null;
+            }
+            // Changing the warehouse without naming a location must not leave the old warehouse's location behind.
+            if (($attributes['ship_to_warehouse_id'] ?? $order->ship_to_warehouse_id) !== $order->ship_to_warehouse_id && ! array_key_exists('ship_to_location_id', $attributes)) {
+                $attributes['ship_to_location_id'] = null;
+            }
             $order->fill($attributes);
             if ($order->isDirty(['currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_policy', 'fx_override_reason'])) {
                 // A changed rate is checked against the governed rate exactly as a new order's is (issue #90); an unrelated edit is not re-litigated.

@@ -1,3 +1,4 @@
+import { paymentTermsLabel } from "./purchase-order-terms";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PurchaseOrderQuickPrint } from "./purchase-order-print";
 import { useEffect, useState, type ReactNode } from "react";
@@ -481,6 +482,20 @@ export function PurchaseOrderDetailScreen({
             <DetailField label="Expected delivery">
               {order.expected_delivery_date ?? "Not set"}
             </DetailField>
+            <DetailField label="Deliver to">
+              {order.ship_to?.warehouse
+                ? `${order.ship_to.warehouse.code} — ${order.ship_to.warehouse.name}${order.ship_to.location ? ` · ${order.ship_to.location.name}` : ""}`
+                : "Not specified"}
+            </DetailField>
+            <DetailField label="Shipping method">
+              {order.shipping_method ?? "Not specified"}
+            </DetailField>
+            <DetailField label="Buyer / requester">
+              {order.buyer?.name ?? "Not specified"}
+            </DetailField>
+            {order.creator && (
+              <DetailField label="Drafted by">{order.creator.name}</DetailField>
+            )}
             {order.issued_at && (
               <DetailField label="Issued at">
                 {formatDateTime(order.issued_at)}
@@ -521,9 +536,11 @@ export function PurchaseOrderDetailScreen({
                 )}
               </DetailField>
             )}
-            <DetailField label="Payment terms">
-              {supplier ? `${supplier.payment_terms_days} days` : undefined}
-            </DetailField>
+            {paymentTermsLabel(order) !== null && (
+              <DetailField label="Payment terms">
+                {paymentTermsLabel(order)}
+              </DetailField>
+            )}
             {supplier?.party?.tax_id && (
               <DetailField label="Tax ID">{supplier.party.tax_id}</DetailField>
             )}

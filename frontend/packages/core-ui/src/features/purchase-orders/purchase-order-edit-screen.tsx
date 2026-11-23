@@ -206,6 +206,12 @@ export function PurchaseOrderEditScreen({
     order_date: order.order_date,
     expected_delivery_date: order.expected_delivery_date ?? "",
     notes: order.notes ?? "",
+    ship_to_warehouse_id: order.ship_to_warehouse_id ? String(order.ship_to_warehouse_id) : "",
+    ship_to_location_id: order.ship_to_location_id ? String(order.ship_to_location_id) : "",
+    buyer_user_id: order.buyer_user_id ? String(order.buyer_user_id) : "",
+    // Only the order's own override is edited; the effective figure follows the supplier.
+    payment_terms_days: order.payment_terms_days === null || order.payment_terms_days === undefined ? "" : String(order.payment_terms_days),
+    shipping_method: order.shipping_method ?? "",
     replaces_purchase_order_id: order.replaces_purchase_order_id
       ? String(order.replaces_purchase_order_id)
       : "",
@@ -240,6 +246,7 @@ export function PurchaseOrderEditScreen({
       formError={formError}
       onAdvancedOptionsChange={setAdvancedOptions}
       optionsStyle={optionsStyle}
+      existingBuyerName={order.buyer?.name ?? null}
     />,
     {
       title: `Edit draft #${order.id}`,

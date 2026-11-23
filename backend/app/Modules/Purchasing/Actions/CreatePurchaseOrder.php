@@ -25,7 +25,8 @@ final class CreatePurchaseOrder
             // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
             $actor = DecisionActor::require($actor, 'purchasing.purchase-order.create', 'create a purchase order');
 
-            return $this->forWorkflow(array_merge($attributes, ($this->reconcileFx)($attributes, $actor)));
+            // The drafter is recorded by the server, never taken from the request; it is the identity record scope will later follow.
+            return $this->forWorkflow(array_merge($attributes, ($this->reconcileFx)($attributes, $actor), ['created_by' => $actor->id]));
         });
     }
 

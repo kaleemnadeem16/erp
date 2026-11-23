@@ -48,6 +48,12 @@ purchase_orders
   fx_policy                              -- FLOATING | FIXED, snapshotted on issue
   order_date, expected_delivery_date NULLABLE
   notes NULLABLE                          -- order-level remarks, not any one line's own description
+  created_by NULLABLE                     -- the drafter, server-set, never changes (Q26's identity); NULL for orders drafted before ADR 0191
+  buyer_user_id NULLABLE                  -- the named buyer/requester (an active user of the company)
+  ship_to_warehouse_id NULLABLE, ship_to_location_id NULLABLE  -- delivery point; the location is tied to that warehouse by composite key
+  payment_terms_days NULLABLE             -- the order's own override; draft NULL = follow the supplier; frozen with its source on issue
+  payment_terms_source NULLABLE           -- PURCHASE_ORDER | SUPPLIER_DEFAULT, set at issue
+  shipping_method NULLABLE                -- free text, at most 100 characters
   issued_at NULLABLE, closed_at NULLABLE, cancelled_at NULLABLE
   cancellation_reason NULLABLE
   inventory_cutover_id, import_batch_id NULLABLE  -- both set for an imported open PO
@@ -471,6 +477,15 @@ Template 1 is the browser-local default selected under Settings → Printing. It
 continuation sheets repeat order identity and item headings, retain the final server total once,
 and show calculated page counts. A PO-specific toggle controls blank signature lines; no new
 permission or transition is introduced. A missing delivery destination is explicitly unspecified.
+
+## Delivery, ownership and terms (ADR 0191)
+
+A purchase order optionally names where it is delivered (a warehouse and, within it, a location), a buyer/requester, payment terms of its own and a shipping method; the server also
+records who drafted it. On a draft each can be set, changed or cleared (clearing the terms means "follow the supplier's default"); issuing freezes the effective terms and where they came
+from, and from then on all of it is immutable — in the model and in the database guard. Deliver-to must still be an active warehouse/location when the order is issued. The approval
+fingerprint covers each fact the order states, so editing one voids an approval; an order that states none keeps the fingerprint it had. Existing orders carry none of it and are
+unchanged (an old issued order's terms read the supplier's current default). Terms follow `purchasing.commercial-cost.view`; ship-to, buyer and method are operational. The print shows the
+order's own terms, ship-to, method and buyer. Not built: Purchasing record scope (Q26), a buyer lookup beyond the signed-in person, a shipping-method list.
 
 ## Receipts of items with grouped package tracking
 

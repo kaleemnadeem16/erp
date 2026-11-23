@@ -7,8 +7,11 @@ namespace App\Modules\Purchasing\Models;
 use App\Exceptions\DomainInvariantException;
 use App\Models\Currency;
 use App\Models\Model;
+use App\Models\User;
 use App\Modules\Imports\Models\ImportBatch;
 use App\Modules\Inventory\Models\InventoryCutover;
+use App\Modules\Inventory\Models\Location;
+use App\Modules\Inventory\Models\Warehouse;
 use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Parties\Models\SupplierSite;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
@@ -35,6 +38,13 @@ use Illuminate\Support\Carbon;
  * @property Carbon $order_date
  * @property Carbon|null $expected_delivery_date
  * @property string|null $notes
+ * @property int|null $created_by the drafter, set once by the server (the identity record scope will use)
+ * @property int|null $buyer_user_id
+ * @property int|null $ship_to_warehouse_id
+ * @property int|null $ship_to_location_id
+ * @property int|null $payment_terms_days the order's own terms; on a draft NULL means the supplier's default, and issuing freezes the effective value
+ * @property string|null $payment_terms_source PURCHASE_ORDER or SUPPLIER_DEFAULT once issued
+ * @property string|null $shipping_method
  * @property CarbonImmutable|null $issued_at
  * @property CarbonImmutable|null $closed_at
  * @property CarbonImmutable|null $cancelled_at
@@ -58,12 +68,19 @@ class PurchaseOrder extends Model
     {
         static::updating(function (PurchaseOrder $purchaseOrder): void {
             if ($purchaseOrder->getOriginal('status') !== PurchaseOrderStatus::Draft
-                && $purchaseOrder->isDirty(['replaces_purchase_order_id', 'supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'fx_governed_rate', 'fx_governed_rate_date', 'fx_override_reason', 'fx_override_by', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id'])) {
+                && $purchaseOrder->isDirty(['replaces_purchase_order_id', 'supplier_account_id', 'supplier_site_id', 'currency_id', 'fx_policy', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source', 'fx_governed_rate', 'fx_governed_rate_date', 'fx_override_reason', 'fx_override_by', 'order_date', 'expected_delivery_date', 'inventory_cutover_id', 'import_batch_id', 'source_system', 'source_record_id', 'ship_to_warehouse_id', 'ship_to_location_id', 'buyer_user_id', 'payment_terms_days', 'payment_terms_source', 'shipping_method'])) {
                 throw new DomainInvariantException('Issued purchase-order commercial data is immutable.', 'status');
             }
         });
 
         static::saving(function (PurchaseOrder $purchaseOrder): void {
+            if ($purchaseOrder->exists && $purchaseOrder->isDirty('created_by')) {
+                throw new DomainInvariantException('The creator of a purchase order never changes.', 'created_by');
+            }
+            if ($purchaseOrder->ship_to_location_id !== null && $purchaseOrder->isDirty(['ship_to_warehouse_id', 'ship_to_location_id'])
+                && Location::query()->whereKey($purchaseOrder->ship_to_location_id)->where('warehouse_id', $purchaseOrder->ship_to_warehouse_id)->doesntExist()) {
+                throw new DomainInvariantException('The ship-to location must belong to the ship-to warehouse.', 'ship_to_location_id');
+            }
             if ($purchaseOrder->isDirty('replaces_purchase_order_id') && $purchaseOrder->replaces_purchase_order_id !== null) {
                 $previous = self::query()->findOrFail($purchaseOrder->replaces_purchase_order_id);
                 if ($previous->id === $purchaseOrder->id || ($previous->status !== PurchaseOrderStatus::Cancelled
@@ -91,6 +108,7 @@ class PurchaseOrder extends Model
         return [
             'replaces_purchase_order_id' => self::class, 'supplier_account_id' => SupplierAccount::class, 'supplier_site_id' => SupplierSite::class,
             'inventory_cutover_id' => InventoryCutover::class, 'import_batch_id' => ImportBatch::class,
+            'ship_to_warehouse_id' => Warehouse::class, 'buyer_user_id' => User::class, 'created_by' => User::class,
         ];
     }
 
@@ -127,6 +145,30 @@ class PurchaseOrder extends Model
     public function supplierSite(): BelongsTo
     {
         return $this->belongsTo(SupplierSite::class);
+    }
+
+    /** @return BelongsTo<Warehouse, $this> */
+    public function shipToWarehouse(): BelongsTo
+    {
+        return $this->belongsTo(Warehouse::class, 'ship_to_warehouse_id');
+    }
+
+    /** @return BelongsTo<Location, $this> */
+    public function shipToLocation(): BelongsTo
+    {
+        return $this->belongsTo(Location::class, 'ship_to_location_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function buyer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'buyer_user_id');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /** @return BelongsTo<Currency, $this> */

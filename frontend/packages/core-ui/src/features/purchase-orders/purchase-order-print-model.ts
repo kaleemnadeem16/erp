@@ -1,3 +1,4 @@
+import { paymentTermsLabel } from "./purchase-order-terms";
 import { formatDateTime } from "../../lib/format-date";
 import type {
   PurchaseOrderResource,
@@ -145,14 +146,18 @@ export function buildPurchaseOrderPrintDocument(input: {
         label: "Expected delivery",
         value: order.expected_delivery_date ?? "Not specified",
       },
-      ...(supplier?.payment_terms_days !== undefined
+      // Terms are commercial: printed only for a reader with commercial access (whatever the order object carries), read from the order alone; an issued order that recorded none says so.
+      ...(commercial ? field("Payment terms", paymentTermsLabel(order)) : []),
+      ...(order.ship_to?.warehouse
         ? [
             {
-              label: "Payment terms",
-              value: `${supplier.payment_terms_days} days`,
+              label: "Deliver to",
+              value: `${order.ship_to.warehouse.name}${order.ship_to.location ? ` · ${order.ship_to.location.name}` : ""}`,
             },
           ]
         : []),
+      ...field("Shipping method", order.shipping_method),
+      ...field("Buyer", order.buyer?.name),
       ...(currency ? [{ label: "Currency", value: currency }] : []),
       ...(supplier?.lead_time_days != null
         ? [{ label: "Lead time", value: `${supplier.lead_time_days} days` }]

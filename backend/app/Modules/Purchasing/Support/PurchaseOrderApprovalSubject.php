@@ -57,8 +57,16 @@ final class PurchaseOrderApprovalSubject implements ApprovalSubject
         $sum = fn (string $column): BigDecimal => $order->lines->reduce(fn (BigDecimal $t, $line): BigDecimal => $t->plus((string) $line->{$column}), BigDecimal::zero())->toScale(4, RoundingMode::HALF_UP);
         $base = (string) $sum('base_line_amount');
 
+        // Delivery, ownership and terms facts travel with the approval only when the order states them, so an order approved before they existed keeps the fingerprint it was approved on.
+        // Payment terms count when the order's own override stands (a draft override, or an issued order whose frozen terms came from it); terms that merely follow the supplier do not.
+        $own = $order->payment_terms_source === null ? $order->payment_terms_days : ($order->payment_terms_source === 'PURCHASE_ORDER' ? $order->payment_terms_days : null);
+        $stated = array_filter([
+            'ship_to_warehouse_id' => $order->ship_to_warehouse_id, 'ship_to_location_id' => $order->ship_to_location_id, 'buyer_user_id' => $order->buyer_user_id,
+            'payment_terms_days' => $own, 'shipping_method' => $order->shipping_method,
+        ], fn ($value): bool => $value !== null);
+
         return new ApprovalRouting(
-            ['supplier_account_id' => $order->supplier_account_id, 'currency_id' => $order->currency_id],
+            ['supplier_account_id' => $order->supplier_account_id, 'currency_id' => $order->currency_id] + $stated,
             $base,
             [
                 'original_amount' => (string) $sum('line_amount'), 'currency_code' => $order->currency->code,

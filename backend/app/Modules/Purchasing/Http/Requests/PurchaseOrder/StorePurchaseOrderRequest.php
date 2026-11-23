@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Purchasing\Http\Requests\PurchaseOrder;
 
+use App\Modules\Administration\Support\MemberStatus;
 use App\Modules\Purchasing\Support\OverReceiptMode;
 use App\Modules\Purchasing\Support\PurchaseOrderFxPolicy;
 use App\Rules\Support\CompanyScoped;
@@ -32,6 +33,12 @@ class StorePurchaseOrderRequest extends FormRequest
             'fx_rate_source' => ['required', 'string', 'max:100'], 'order_date' => ['required', 'date_format:Y-m-d'],
             'expected_delivery_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:order_date'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            // Delivery, ownership and terms (ADR 0191). All optional; a warehouse must be one of this company's active ones and a location one of that warehouse's.
+            'ship_to_warehouse_id' => ['nullable', 'integer', CompanyScoped::exists('warehouses')->where('active', true)],
+            'ship_to_location_id' => ['nullable', 'integer', Rule::exists('locations', 'id')->where('active', true)->where(fn ($q) => $q->where('warehouse_id', $this->shipToWarehouseId()))],
+            'buyer_user_id' => ['nullable', 'integer', CompanyScoped::exists('users')->where('status', MemberStatus::Active->value)],
+            'payment_terms_days' => ['nullable', 'integer', 'between:0,32767'],
+            'shipping_method' => ['nullable', 'string', 'max:100', 'regex:/\S/'],
             'lines' => ['required', 'array', 'min:1'],
             'lines.*.line_number' => ['required', 'integer', 'between:1,32767', 'distinct'],
             'lines.*.item_id' => ['required', 'integer', CompanyScoped::exists('items')],
@@ -49,5 +56,11 @@ class StorePurchaseOrderRequest extends FormRequest
             'lines.*.over_receipt_mode' => ['nullable', Rule::enum(OverReceiptMode::class)],
             'lines.*.over_receipt_tolerance_percent' => ['nullable', 'decimal:0,4', 'between:0,100'],
         ];
+    }
+
+    /** The warehouse the ship-to location is judged against: the one in the request (a draft being created has no other). */
+    protected function shipToWarehouseId(): mixed
+    {
+        return $this->input('ship_to_warehouse_id');
     }
 }
