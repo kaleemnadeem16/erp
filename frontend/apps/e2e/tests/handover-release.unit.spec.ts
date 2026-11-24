@@ -12,6 +12,9 @@ import {
   evidenceProblem,
   needsFreshReview,
   readBasisOutcome,
+  readConditions,
+  readHandoverStatus,
+  readPlan,
   readReleaseOutcome,
   readReleasePreview,
   refusalMessage,
@@ -231,5 +234,134 @@ test("phone and desktop, light and dark, are free of overflow and accessibility 
     await expect(page.getByText("Ready to release")).toBeVisible();
     await expectPhoneSafe(page);
     await expectNoA11yViolations(page);
+  }
+});
+
+const planPayload = {
+  id: 12,
+  acceptance_id: 55,
+  stage_id: 9,
+  recorded_at: "2026-11-11T09:00:00+05:00",
+  state: "PREPARED",
+  release_performed: true,
+  operational: { deliverable_identity: "x", description: "d", location_kind: "REMOTE", instructions: "", contact: null, site: null },
+};
+
+test("the release status, conditions and navigation reads are parsed to exactly the safe shape", () => {
+  const release = { release_event_id: 3, released_at: "2026-11-20T10:00:00+05:00", job_access: "VISIBLE", job: { id: 8, code: "JOB-00001", secret: "x" }, cost: "1" };
+  expect(readPlan({ ...planPayload, release }).release).toEqual({ release_event_id: 3, released_at: "2026-11-20T10:00:00+05:00", job_access: "VISIBLE", job: { id: 8, code: "JOB-00001" } });
+  expect(readPlan({ ...planPayload, release: null }).release).toBeNull();
+  expect(() => readPlan(planPayload)).toThrow(); // the server always says; absence is a contract break, never "not released"
+  expect(() => readPlan({ ...planPayload, release: { ...release, job_access: "MAYBE" } })).toThrow();
+  const cond = { basis_id: 4, version: 2, terms_source: "EVIDENCE_TEXT", agreed_text: "t", materials_scope: "EXCLUDED", subcontract_scope: "EXCLUDED", evidence_current: true, recorded_at: "2026-11-12T09:00:00+05:00", evidence_id: 9 };
+  expect(JSON.stringify(readConditions({ acceptance_id: 55, current: cond }))).not.toContain("evidence_id");
+  expect(readConditions({ acceptance_id: 55, current: null }).current).toBeNull();
+  expect(readHandoverStatus({ acceptance_id: 55, prepared: false, plan_id: null, stage_id: null, release_performed: false, other: 1 })).toEqual({ acceptance_id: 55, prepared: false, plan_id: null, stage_id: null, release_performed: false });
+  expect(blockerText("COMPLETION_EVIDENCE_SUPERSEDED")).toMatch(/corrected/);
+});
+
+test("the exact agreed text and version are shown to people who may record or release, and hidden from readers", async ({ page }) => {
+  await mount(page, { permissions: ALL });
+  await expect(page.getByTestId("agreed-text")).toContainText("MATERIALS: EXCLUDED");
+  await expect(page.getByText("Version 1")).toBeVisible();
+  await expect(page.getByText("from a later written customer message")).toBeVisible();
+  await expect(page.getByTestId("evidence-corrected")).toHaveCount(0);
+  await mount(page, { permissions: READ });
+  await expect(page.getByTestId("conditions-hidden")).toBeVisible();
+  await expect(page.getByTestId("agreed-text")).toHaveCount(0);
+  expect((await calls(page)).filter((c) => c.startsWith("conditions:"))).toEqual([]);
+});
+
+test("a corrected customer message is called out, and a failed conditions read is retryable", async ({ page }) => {
+  await mount(page, { permissions: ALL, evidenceCorrected: true, blockers: ["COMPLETION_EVIDENCE_SUPERSEDED"] });
+  await expect(page.getByTestId("evidence-corrected")).toContainText("no longer support a release");
+  await expect(page.getByTestId("blockers")).toContainText("later corrected");
+  await expect(page.getByRole("button", { name: "Release to a Job" })).toBeDisabled();
+  await expectNoA11yViolations(page);
+  await mount(page, { permissions: ALL, conditionsFail: true });
+  await expect(page.getByRole("alert").first()).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+});
+
+test("a new basis version elsewhere makes the reviewed release stale: it is refreshed before release is possible again", async ({ page }) => {
+  await mount(page, { permissions: ALL, basisMovesOn: true });
+  await expect(page.getByText("Version 1")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Release to a Job" })).toBeEnabled();
+  await page.evaluate(() => window.dispatchEvent(new Event("visibilitychange")));
+  await expect(page.getByText("Version 2")).toBeVisible();
+  await expect.poll(async () => (await calls(page)).filter((c) => c.startsWith("preview:")).length).toBeGreaterThan(1);
+  await page.getByRole("button", { name: "Release to a Job" }).click();
+  await page.getByRole("button", { name: "Release", exact: true }).click();
+  // the release carries the refreshed review (basis 99, fingerprint of version 2), never the old one
+  expect((await calls(page)).filter((c) => c.startsWith("release:"))).toEqual(["release:9:99:fp-2-0:key"]);
+});
+
+test("reopening an already-released plan shows the existing Job, offers no second release and never says a Job was created", async ({ page }) => {
+  await mount(page, { permissions: ALL, released: "visible" });
+  await expect(page.getByTestId("existing-release")).toContainText("Already released — existing Job");
+  await expect(page.getByTestId("existing-release")).toContainText("a second one cannot be created");
+  await expect(page.getByTestId("job-code")).toHaveText("JOB-00007");
+  await expect(page.getByText("one Job was created")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Release to a Job" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Record these conditions" })).toHaveCount(0);
+  expect((await calls(page)).filter((c) => c.startsWith("preview:") || c.startsWith("release:") || c.startsWith("basis:"))).toEqual([]);
+  await expectPhoneSafe(page);
+  await expectNoA11yViolations(page);
+  await page.getByRole("link", { name: "Open the Job" }).click();
+  await expect(page.locator("#job-page")).toHaveText("Job page /jobs/88");
+});
+
+test("a released service whose Job this person may not see, or that cannot be read now, says so without a number or a link", async ({ page }) => {
+  await mount(page, { permissions: ALL, released: "denied" });
+  await expect(page.getByTestId("existing-release")).toContainText("Already released");
+  await expect(page.getByTestId("job-not-permitted")).toContainText("don’t have permission to see Jobs");
+  await expect(page.getByTestId("job-code")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open the Job" })).toHaveCount(0);
+  await expectNoA11yViolations(page);
+  await mount(page, { permissions: ALL, released: "unavailable" });
+  await expect(page.getByTestId("job-unavailable")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open the Job" })).toHaveCount(0);
+});
+
+test("when someone else releases it before this person confirms, the existing release is shown and no request is sent", async ({ page }) => {
+  await mount(page, { permissions: ALL, releasedBeforeConfirm: true });
+  await page.getByRole("button", { name: "Release to a Job" }).click();
+  await page.getByRole("button", { name: "Release", exact: true }).click();
+  await expect(page.getByTestId("existing-release")).toContainText("Already released — existing Job");
+  await expect(page.getByText("one Job was created")).toHaveCount(0);
+  expect((await calls(page)).filter((c) => c.startsWith("release:"))).toEqual([]);
+});
+
+test("an unavailable or inaccessible handover is explained, with retry only for a failure", async ({ page }) => {
+  await mount(page, { permissions: ALL, planFailure: 404 });
+  await expect(page.getByRole("heading", { name: "Handover unavailable" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toHaveCount(0);
+  await mount(page, { permissions: ALL, planFailure: 500 });
+  await expect(page.getByRole("heading", { name: "Could not load this handover" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+});
+
+test("keyboard: the release is reachable and confirmable without a pointer, and Escape cancels it", async ({ page }) => {
+  await mount(page, { permissions: ALL });
+  const release = page.getByRole("button", { name: "Release to a Job" });
+  await expect(release).toBeEnabled();
+  await release.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(release).toBeFocused();
+  expect((await calls(page)).filter((c) => c.startsWith("release:"))).toEqual([]);
+});
+
+test("320px: no overflow, readable states and no accessibility violations in light and dark", async ({ page }) => {
+  for (const fixture of [{ permissions: ALL }, { permissions: ALL, released: "visible" as const }, { permissions: ALL, noBasis: true }]) {
+    for (const dark of [false, true]) {
+      await mount(page, fixture, dark, 320);
+      await expect(page.getByRole("heading", { name: "Prepared handover" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /Release|Record completion conditions/ }).first()).toBeVisible();
+      await expectPhoneSafe(page);
+      await expectNoA11yViolations(page);
+    }
   }
 });

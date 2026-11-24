@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router";
 import { AccessDenied } from "../../routes/permission-route";
@@ -41,14 +41,23 @@ import {
   needsFreshReview,
   refusalMessage,
   type AcceptanceFacts,
+  type Conditions,
+  type HandoverNavigationGateway,
   type HandoverPlan,
   type HandoverReleaseGateway,
   type ReleaseOutcome,
   type ReleasePreview,
+  type ReleaseStatus,
 } from "./handover-release-contract";
-import { liveHandoverReleaseGateway } from "./handover-release-gateway";
+import {
+  liveHandoverNavigationGateway,
+  liveHandoverReleaseGateway,
+} from "./handover-release-gateway";
 
 type Access = ReturnType<typeof handoverReleaseAccess>;
+
+/** The release evidence already existed when a release was about to be requested. */
+class AlreadyReleasedElsewhere extends Error {}
 
 /* ---------------------------------------------------------------- prepared handover (read only) */
 
@@ -66,7 +75,9 @@ export function PreparedHandoverSection({ plan }: { plan: HandoverPlan }) {
       <DetailField label="Delivered">
         {LOCATION_LABELS[o.location_kind] ?? "Not recorded"}
       </DetailField>
-      <DetailField label="Prepared">{formatDateTime(plan.recorded_at)}</DetailField>
+      <DetailField label="Prepared">
+        {formatDateTime(plan.recorded_at)}
+      </DetailField>
       <DetailField label="Contact">
         {o.contact
           ? [o.contact.name, o.contact.email, o.contact.phone]
@@ -95,10 +106,20 @@ export function PreparedHandoverSection({ plan }: { plan: HandoverPlan }) {
 export function CompletionConditionsSection({
   facts,
   preview,
+  conditions,
+  conditionsError,
+  mayReadConditions,
+  onRetryConditions,
 }: {
   facts: AcceptanceFacts;
   preview: ReleasePreview | undefined;
+  /** The current agreed conditions (head version); undefined while loading or when this person may not read them. */
+  conditions: Conditions | undefined;
+  conditionsError?: unknown;
+  mayReadConditions: boolean;
+  onRetryConditions?: () => void;
 }) {
+  const current = conditions?.current ?? null;
   return (
     <DetailSection
       title="Customer-agreed completion conditions"
@@ -108,35 +129,95 @@ export function CompletionConditionsSection({
       <DetailField label="Issued service description" fullWidth>
         <span data-testid="issued-description">{facts.issuedDescription}</span>
       </DetailField>
-      {preview === undefined ? null : preview.basis_id === null ? (
-        <p className="col-span-full text-sm" role="status" data-testid="no-basis">
+      {!mayReadConditions ? (
+        <p
+          className="col-span-full text-sm"
+          role="note"
+          data-testid="conditions-hidden"
+        >
+          The recorded conditions are shown to people who may record or release
+          them.
+        </p>
+      ) : conditionsError ? (
+        <div role="alert" className="col-span-full space-y-2 text-sm">
+          <p>{describeLoadError(conditionsError)}</p>
+          {onRetryConditions && (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={onRetryConditions}
+            >
+              Try again
+            </Button>
+          )}
+        </div>
+      ) : conditions === undefined ? (
+        <div role="status" className="col-span-full">
+          <Skeleton className="h-12 w-full" />
+          <span className="sr-only">Loading the recorded conditions…</span>
+        </div>
+      ) : current === null ? (
+        <p
+          className="col-span-full text-sm"
+          role="status"
+          data-testid="no-basis"
+        >
           No completion conditions are recorded yet. A service cannot be
           released until they are.
         </p>
       ) : (
         <>
           <DetailField label="Recorded conditions">
-            <StatusBadge tone="success">{`Version ${preview.basis_version}`}</StatusBadge>
+            <StatusBadge tone="success">{`Version ${current.version}`}</StatusBadge>
+            <span className="ml-2 text-xs text-muted-foreground">
+              {current.terms_source === "ISSUED_LINE"
+                ? "the issued description, as accepted"
+                : "from a later written customer message"}
+            </span>
+          </DetailField>
+          <DetailField label="Recorded">
+            {formatDateTime(current.recorded_at)}
+          </DetailField>
+          <DetailField label="Agreed text" fullWidth>
+            <pre
+              className="whitespace-pre-wrap break-words font-sans text-sm"
+              data-testid="agreed-text"
+            >
+              {current.agreed_text}
+            </pre>
           </DetailField>
           <DetailField label="Materials">
-            {SCOPE_LABELS[preview.applicability.materials] ?? "Not stated"}
+            {SCOPE_LABELS[current.materials_scope] ?? "Not stated"}
           </DetailField>
           <DetailField label="Subcontractors">
-            {SCOPE_LABELS[preview.applicability.subcontract] ?? "Not stated"}
+            {SCOPE_LABELS[current.subcontract_scope] ?? "Not stated"}
           </DetailField>
-          <DetailField label="Source check">
-            <StatusBadge
-              tone={
-                preview.applicability.status === "NOT_APPLICABLE"
-                  ? "success"
-                  : "pending"
-              }
+          {!current.evidence_current && (
+            <p
+              className="col-span-full rounded-md border border-border bg-muted/40 p-3 text-sm"
+              role="alert"
+              data-testid="evidence-corrected"
             >
-              {APPLICABILITY_LABELS[preview.applicability.status] ??
-                "Not proven"}
-            </StatusBadge>
-          </DetailField>
+              The customer message behind these conditions was later corrected.
+              They no longer support a release. Record the conditions again from
+              the current message.
+            </p>
+          )}
         </>
+      )}
+      {preview !== undefined && preview.basis_id !== null && (
+        <DetailField label="Source check">
+          <StatusBadge
+            tone={
+              preview.applicability.status === "NOT_APPLICABLE"
+                ? "success"
+                : "pending"
+            }
+          >
+            {APPLICABILITY_LABELS[preview.applicability.status] ?? "Not proven"}
+          </StatusBadge>
+        </DetailField>
       )}
       <p className="col-span-full text-sm text-muted-foreground" role="note">
         Whether materials or subcontractors are included can only come from the
@@ -200,7 +281,9 @@ export function RecordBasisSection({
       fullWidth
     >
       <fieldset className="col-span-full space-y-3">
-        <legend className="text-sm font-medium">Where do the conditions come from?</legend>
+        <legend className="text-sm font-medium">
+          Where do the conditions come from?
+        </legend>
         <label className="flex min-h-11 items-start gap-2 text-sm">
           <input
             type="radio"
@@ -210,10 +293,12 @@ export function RecordBasisSection({
             onChange={() => setMode("issued")}
           />
           <span>
-            <span className="font-medium">The issued service description, as accepted.</span>
+            <span className="font-medium">
+              The issued service description, as accepted.
+            </span>
             <span className="block text-muted-foreground">
-              Uses the customer’s own acceptance message. It states no
-              materials or subcontractor scope, so those stay unproven.
+              Uses the customer’s own acceptance message. It states no materials
+              or subcontractor scope, so those stay unproven.
             </span>
           </span>
         </label>
@@ -226,7 +311,9 @@ export function RecordBasisSection({
             onChange={() => setMode("message")}
           />
           <span>
-            <span className="font-medium">A later written customer message.</span>
+            <span className="font-medium">
+              A later written customer message.
+            </span>
             <span className="block text-muted-foreground">
               For new or extra conditions, or when the customer stated what
               materials and subcontractors are included or excluded.
@@ -238,7 +325,12 @@ export function RecordBasisSection({
         (evidence.isError ? (
           <div role="alert" className="col-span-full space-y-2 text-sm">
             <p>{describeLoadError(evidence.error)}</p>
-            <Button type="button" variant="outline" className="min-h-11" onClick={() => void evidence.refetch()}>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => void evidence.refetch()}
+            >
               Try again
             </Button>
           </div>
@@ -248,14 +340,20 @@ export function RecordBasisSection({
             <span className="sr-only">Loading customer messages…</span>
           </div>
         ) : messages.length === 0 ? (
-          <p className="col-span-full text-sm" role="status" data-testid="no-messages">
+          <p
+            className="col-span-full text-sm"
+            role="status"
+            data-testid="no-messages"
+          >
             This customer has no other written message on this case. Ask the
             customer to confirm the conditions in writing, then record that
             message as customer evidence first.
           </p>
         ) : (
           <fieldset className="col-span-full space-y-2">
-            <legend className="text-sm font-medium">Choose the customer message</legend>
+            <legend className="text-sm font-medium">
+              Choose the customer message
+            </legend>
             {messages.map((o) => {
               const problem = evidenceProblem(o);
               return (
@@ -282,7 +380,9 @@ export function RecordBasisSection({
                       {o.factual_description}
                     </span>
                     {problem && (
-                      <span className="block text-muted-foreground">{problem}</span>
+                      <span className="block text-muted-foreground">
+                        {problem}
+                      </span>
                     )}
                   </span>
                 </label>
@@ -291,18 +391,26 @@ export function RecordBasisSection({
             <p className="text-sm text-muted-foreground" role="note">
               The message text is recorded exactly as written. The system
               rejects it if it was recorded before the acceptance, does not
-              verify the sender’s authority, or states a scope in any form
-              other than the exact four-line declaration.
+              verify the sender’s authority, or states a scope in any form other
+              than the exact four-line declaration.
             </p>
           </fieldset>
         ))}
       {record.isError && (
-        <p role="alert" className="col-span-full text-sm" data-testid="basis-error">
+        <p
+          role="alert"
+          className="col-span-full text-sm"
+          data-testid="basis-error"
+        >
           {refusalMessage(record.error)}
         </p>
       )}
       {record.isSuccess && (
-        <p role="status" className="col-span-full text-sm" data-testid="basis-recorded">
+        <p
+          role="status"
+          className="col-span-full text-sm"
+          data-testid="basis-recorded"
+        >
           {record.data.replayed
             ? `These conditions were already recorded (version ${record.data.version}); nothing was recorded twice.`
             : `Conditions recorded as version ${record.data.version}. Review the release again below.`}
@@ -322,74 +430,151 @@ export function RecordBasisSection({
   );
 }
 
+/* ---------------------------------------------------------------- an existing release */
+
+/** What the server's release evidence says about a stage that was already released. Never offers to release again. */
+export function ExistingReleaseSection({
+  release,
+}: {
+  release: ReleaseStatus;
+}) {
+  return (
+    <DetailSection title="Release" fullWidth>
+      <div
+        className="col-span-full space-y-2 text-sm"
+        role="status"
+        data-testid="existing-release"
+      >
+        <p>
+          <StatusBadge tone="success">
+            Already released — existing Job
+          </StatusBadge>
+        </p>
+        <p>
+          This service was released on {formatDateTime(release.released_at)}. It
+          has exactly one Job, and a second one cannot be created.
+        </p>
+        {release.job_access === "VISIBLE" && release.job ? (
+          <>
+            <p>
+              Job number:{" "}
+              <strong data-testid="job-code">{release.job.code}</strong>
+            </p>
+            <Link
+              className="ui-link-action inline-flex min-h-11 items-center"
+              to={`/jobs/${release.job.id}`}
+            >
+              Open the Job
+            </Link>
+          </>
+        ) : release.job_access === "NOT_PERMITTED" ? (
+          <p data-testid="job-not-permitted">
+            You don’t have permission to see Jobs, so its number is not shown
+            here. Ask someone who can see Jobs.
+          </p>
+        ) : (
+          <p data-testid="job-unavailable">
+            The Job reference is not available right now. Try again shortly.
+          </p>
+        )}
+      </div>
+    </DetailSection>
+  );
+}
+
+/** The result of a release made in this visit (the server's own answer for it). A later visit shows the existing release instead. */
+export function ReleaseResultSection({ result }: { result: ReleaseOutcome }) {
+  return (
+    <DetailSection title="Release" fullWidth>
+      <div
+        className="col-span-full space-y-2 text-sm"
+        role="status"
+        data-testid="release-result"
+      >
+        <p>
+          <StatusBadge tone="success">Released</StatusBadge>
+        </p>
+        <p>
+          {result.replayed
+            ? "This release had already been recorded; nothing was created twice."
+            : "The service was released and one Job was created."}
+        </p>
+        <p>
+          Job number: <strong data-testid="job-code">{result.job_code}</strong>
+        </p>
+        <Link
+          className="ui-link-action inline-flex min-h-11 items-center"
+          to={`/jobs/${result.job_id}`}
+        >
+          Open the Job
+        </Link>
+        <p className="text-muted-foreground">
+          A released service has exactly one Job. It cannot be released again.
+        </p>
+      </div>
+    </DetailSection>
+  );
+}
+
 /* ---------------------------------------------------------------- release readiness and release */
 
 export function ReleaseSection({
   gateway,
+  planId,
   stageId,
   access,
   preview,
   previewError,
   isFetching,
+  basisInSync,
   onRetry,
   onReleased,
 }: {
   gateway: HandoverReleaseGateway;
+  planId: number;
   stageId: number;
   access: Access;
   preview: ReleasePreview | undefined;
   previewError: unknown;
   isFetching: boolean;
+  /** False while the recorded conditions have moved on from the reviewed ones: the review is refreshed first. */
+  basisInSync: boolean;
   onRetry: () => void;
-  onReleased: () => void;
+  onReleased: (outcome?: ReleaseOutcome) => void;
 }) {
   const [confirming, setConfirming] = useState(false);
-  const [result, setResult] = useState<ReleaseOutcome | null>(null);
   const keys = useRef(new IntentKey());
   const release = useMutation({
-    mutationFn: (p: ReleasePreview) => {
-      const input = { stageId, basisId: p.basis_id!, fingerprint: p.fingerprint };
+    mutationFn: async (p: ReleasePreview) => {
+      // The server's release evidence is the authority, not this screen's memory: if the stage was released since the page loaded
+      // (by anyone), say so instead of asking again; a second request would only resolve to the same Job.
+      const current = await gateway.plan(planId);
+      if (current.release_performed) throw new AlreadyReleasedElsewhere();
+      const input = {
+        stageId,
+        basisId: p.basis_id!,
+        fingerprint: p.fingerprint,
+      };
       return gateway.release({ ...input, requestKey: keys.current.for(input) });
     },
     onSuccess: (outcome) => {
       keys.current.settle();
       setConfirming(false);
-      setResult(outcome);
-      onReleased();
+      onReleased(outcome);
     },
     onError: (error) => {
       keys.current.settle(error);
       setConfirming(false);
       if (needsFreshReview(error)) onRetry();
+      if (error instanceof AlreadyReleasedElsewhere || alreadyReleased(error))
+        onReleased();
     },
   });
 
-  if (result)
-    return (
-      <DetailSection title="Release" fullWidth>
-        <div className="col-span-full space-y-2 text-sm" role="status" data-testid="release-result">
-          <p>
-            <StatusBadge tone="success">Released</StatusBadge>
-          </p>
-          <p>
-            {result.replayed
-              ? "This release had already been recorded; nothing was created twice."
-              : "The service was released and one Job was created."}
-          </p>
-          <p>
-            Job number: <strong data-testid="job-code">{result.job_code}</strong>
-          </p>
-          <Link className="ui-link-action inline-flex min-h-11 items-center" to={`/jobs/${result.job_id}`}>
-            Open the Job
-          </Link>
-          <p className="text-muted-foreground">
-            A released service has exactly one Job. It cannot be released again.
-          </p>
-        </div>
-      </DetailSection>
-    );
-
-  const closed = release.isError && alreadyReleased(release.error);
+  const closed =
+    release.isError &&
+    (alreadyReleased(release.error) ||
+      release.error instanceof AlreadyReleasedElsewhere);
   return (
     <DetailSection
       title="Release to a Job"
@@ -398,13 +583,18 @@ export function ReleaseSection({
     >
       {!access.review ? (
         <p className="col-span-full text-sm" role="note">
-          Reviewing a release needs a separate permission, which your access does
-          not include. Ask an administrator.
+          Reviewing a release needs a separate permission, which your access
+          does not include. Ask an administrator.
         </p>
       ) : previewError ? (
         <div role="alert" className="col-span-full space-y-2 text-sm">
           <p>{describeLoadError(previewError)}</p>
-          <Button type="button" variant="outline" className="min-h-11" onClick={onRetry}>
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            onClick={onRetry}
+          >
             Try again
           </Button>
         </div>
@@ -420,7 +610,9 @@ export function ReleaseSection({
               {preview.ready ? "Ready to release" : "Not ready"}
             </StatusBadge>
             {isFetching && (
-              <span className="ml-2 text-xs text-muted-foreground">Updating…</span>
+              <span className="ml-2 text-xs text-muted-foreground">
+                Updating…
+              </span>
             )}
           </DetailField>
           {preview.cost.required && (
@@ -451,8 +643,14 @@ export function ReleaseSection({
             </div>
           )}
           {release.isError && (
-            <p role="alert" className="col-span-full text-sm" data-testid="release-error">
-              {refusalMessage(release.error)}
+            <p
+              role="alert"
+              className="col-span-full text-sm"
+              data-testid="release-error"
+            >
+              {release.error instanceof AlreadyReleasedElsewhere
+                ? "This service was already released — it has an existing Job. Nothing new was created."
+                : refusalMessage(release.error)}
             </p>
           )}
           {closed ? null : !access.release ? (
@@ -465,7 +663,7 @@ export function ReleaseSection({
               <Button
                 type="button"
                 className="min-h-11"
-                disabled={!preview.ready || release.isPending}
+                disabled={!preview.ready || !basisInSync || release.isPending}
                 onClick={() => setConfirming(true)}
               >
                 Release to a Job
@@ -473,6 +671,15 @@ export function ReleaseSection({
               {!preview.ready && (
                 <p className="mt-2 text-sm text-muted-foreground">
                   The button unlocks when the system says the service is ready.
+                </p>
+              )}
+              {preview.ready && !basisInSync && (
+                <p
+                  className="mt-2 text-sm text-muted-foreground"
+                  role="status"
+                  data-testid="review-refreshing"
+                >
+                  The recorded conditions changed. Refreshing the review…
                 </p>
               )}
             </div>
@@ -488,10 +695,20 @@ export function ReleaseSection({
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
-                <Button type="button" variant="outline" className="min-h-11" onClick={() => setConfirming(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="min-h-11"
+                  onClick={() => setConfirming(false)}
+                >
                   Cancel
                 </Button>
-                <Button type="button" className="min-h-11" disabled={release.isPending} onClick={() => release.mutate(preview)}>
+                <Button
+                  type="button"
+                  className="min-h-11"
+                  disabled={release.isPending}
+                  onClick={() => release.mutate(preview)}
+                >
                   {release.isPending ? "Releasing…" : "Release"}
                 </Button>
               </DialogFooter>
@@ -508,7 +725,10 @@ export function ReleaseSection({
 function Failure({ error, retry }: { error: unknown; retry: () => void }) {
   const missing = isApiError(error) && error.status === 404;
   return (
-    <div role="alert" className="m-4 space-y-3 rounded-lg border border-border bg-card p-4 md:m-6">
+    <div
+      role="alert"
+      className="m-4 space-y-3 rounded-lg border border-border bg-card p-4 md:m-6"
+    >
       <h2 className="font-semibold">
         {missing ? "Handover unavailable" : "Could not load this handover"}
       </h2>
@@ -564,17 +784,43 @@ function GatedHandover({
     retry: shouldRetryQuery,
   });
   const stageId = plan.data?.stage_id;
+  const [justReleased, setJustReleased] = useState<ReleaseOutcome | null>(null);
+  const released =
+    plan.data?.release_performed === true || justReleased !== null;
+  const mayReadConditions = access.recordBasis || access.review;
+  const conditions = useQuery({
+    queryKey: ["handover-release-conditions", acceptanceId],
+    queryFn: () => gateway.conditions(acceptanceId!),
+    enabled: acceptanceId !== undefined && mayReadConditions,
+    retry: shouldRetryQuery,
+    staleTime: 0,
+  });
   const preview = useQuery({
     queryKey: ["handover-release-preview", stageId],
     queryFn: () => gateway.preview(stageId!),
-    enabled: stageId !== undefined && access.review,
+    enabled:
+      stageId !== undefined &&
+      access.review &&
+      plan.data !== undefined &&
+      !released,
     retry: shouldRetryQuery,
     // A review is a moment-in-time statement: never reuse a stale one silently.
     gcTime: 0,
     staleTime: 0,
-    refetchOnWindowFocus: false,
     placeholderData: (previous) => previous,
   });
+  // A correction or a new basis version elsewhere makes a reviewed release stale: compare the head conditions with what was reviewed.
+  const headBasis = conditions.data?.current?.basis_id ?? null;
+  const reviewedBasis = preview.data?.basis_id ?? null;
+  const basisInSync =
+    !mayReadConditions ||
+    conditions.data === undefined ||
+    preview.data === undefined ||
+    headBasis === reviewedBasis;
+  const refetchPreview = preview.refetch;
+  useEffect(() => {
+    if (!basisInSync) void refetchPreview();
+  }, [basisInSync, headBasis, reviewedBasis, refetchPreview]);
   if (plan.isError)
     return <Failure error={plan.error} retry={() => void plan.refetch()} />;
   if (facts.isError)
@@ -587,8 +833,19 @@ function GatedHandover({
       </div>
     );
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: ["handover-release-preview", stageId] });
+    void client.invalidateQueries({
+      queryKey: ["handover-release-preview", stageId],
+    });
+    void client.invalidateQueries({
+      queryKey: ["handover-release-conditions", acceptanceId],
+    });
     void preview.refetch();
+  };
+  const reload = () => {
+    void client.invalidateQueries({ queryKey: ["handover-plan", planId] });
+    void client.invalidateQueries({
+      queryKey: ["handover-release-preview", stageId],
+    });
   };
   return (
     <ScreenTemplate kind="detail" className="space-y-4 p-4 md:p-6">
@@ -599,8 +856,15 @@ function GatedHandover({
       />
       <DetailPageLayout>
         <PreparedHandoverSection plan={plan.data} />
-        <CompletionConditionsSection facts={facts.data} preview={preview.data} />
-        {access.recordBasis ? (
+        <CompletionConditionsSection
+          facts={facts.data}
+          preview={preview.data}
+          conditions={conditions.data}
+          conditionsError={conditions.isError ? conditions.error : null}
+          mayReadConditions={mayReadConditions}
+          onRetryConditions={() => void conditions.refetch()}
+        />
+        {released ? null : access.recordBasis ? (
           <RecordBasisSection
             gateway={gateway}
             acceptanceId={plan.data.acceptance_id}
@@ -615,17 +879,130 @@ function GatedHandover({
             </p>
           </DetailSection>
         )}
-        <ReleaseSection
-          gateway={gateway}
-          stageId={plan.data.stage_id}
-          access={access}
-          preview={preview.data}
-          previewError={preview.isError ? preview.error : null}
-          isFetching={preview.isFetching}
-          onRetry={refresh}
-          onReleased={() => void client.invalidateQueries({ queryKey: ["handover-release-preview", stageId] })}
-        />
+        {justReleased ? (
+          <ReleaseResultSection result={justReleased} />
+        ) : released && plan.data.release ? (
+          <ExistingReleaseSection release={plan.data.release} />
+        ) : released ? null : (
+          <ReleaseSection
+            gateway={gateway}
+            planId={planId}
+            stageId={plan.data.stage_id}
+            access={access}
+            preview={preview.data}
+            previewError={preview.isError ? preview.error : null}
+            isFetching={preview.isFetching}
+            basisInSync={basisInSync}
+            onRetry={refresh}
+            onReleased={(outcome) => {
+              if (outcome) setJustReleased(outcome);
+              reload();
+            }}
+          />
+        )}
       </DetailPageLayout>
     </ScreenTemplate>
+  );
+}
+
+/* ---------------------------------------------------------------- navigation from the acceptance */
+
+/**
+ * The link from a customer acceptance to its prepared handover (Customer Acceptance -> Prepared Handover -> Release Review). It asks the server about THIS
+ * acceptance only, under the same reading rules as the handover itself, and offers nothing it cannot open. Absent entirely for people without the reading
+ * duties and in production builds, where no request is made.
+ */
+export function AcceptanceHandoverPanel({
+  acceptanceId,
+  gateway = liveHandoverNavigationGateway,
+}: {
+  acceptanceId: number;
+  gateway?: HandoverNavigationGateway;
+}) {
+  const user = useAuthStore((s) => s.user);
+  const permissions = new Set(
+    (user?.permissions ?? []).filter((p): p is string => typeof p === "string"),
+  );
+  if (!handoverReleaseAccess(permissions).read) return null;
+  return (
+    <GatedAcceptanceHandover acceptanceId={acceptanceId} gateway={gateway} />
+  );
+}
+
+function GatedAcceptanceHandover({
+  acceptanceId,
+  gateway,
+}: {
+  acceptanceId: number;
+  gateway: HandoverNavigationGateway;
+}) {
+  const status = useQuery({
+    queryKey: ["acceptance-handover", acceptanceId],
+    queryFn: () => gateway.status(acceptanceId),
+    retry: shouldRetryQuery,
+    staleTime: 0,
+  });
+  const data = status.data;
+  return (
+    <DetailSection
+      title="Handover"
+      description="Where this accepted service stands on its way to a Job."
+      fullWidth
+    >
+      {status.isError ? (
+        <div
+          role="alert"
+          className="col-span-full space-y-2 text-sm"
+          data-testid="handover-link-error"
+        >
+          <p>
+            {isApiError(status.error) && status.error.status === 404
+              ? "The handover for this acceptance is not available."
+              : describeLoadError(status.error)}
+          </p>
+          {!(isApiError(status.error) && status.error.status === 404) && (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() => void status.refetch()}
+            >
+              Try again
+            </Button>
+          )}
+        </div>
+      ) : !data ? (
+        <div role="status" className="col-span-full">
+          <Skeleton className="h-12 w-full" />
+          <span className="sr-only">Checking for a prepared handover…</span>
+        </div>
+      ) : !data.prepared || data.plan_id === null ? (
+        <p
+          className="col-span-full text-sm"
+          role="status"
+          data-testid="handover-not-prepared"
+        >
+          No handover has been prepared for this service yet. Release review
+          opens once one is prepared.
+        </p>
+      ) : (
+        <div className="col-span-full space-y-2 text-sm">
+          <p role="status" data-testid="handover-prepared">
+            <StatusBadge tone={data.release_performed ? "success" : "pending"}>
+              {data.release_performed ? "Released" : "Prepared, not released"}
+            </StatusBadge>
+          </p>
+          <Link
+            className="ui-link-action inline-flex min-h-11 items-center"
+            to={`/handover-plans/${data.plan_id}`}
+            data-testid="handover-link"
+          >
+            {data.release_performed
+              ? "Open the released handover"
+              : "Open the prepared handover and release review"}
+          </Link>
+        </div>
+      )}
+    </DetailSection>
   );
 }

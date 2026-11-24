@@ -486,6 +486,14 @@ test("the acceptance shows its alternatives, evidence link and a readiness that 
   ).toBeVisible();
 });
 
+test("the acceptance links to its prepared handover for people who may read it", async ({ page }) => {
+  await mount(page, { screen: "acceptance", permissions: READ });
+  await expect(page.getByRole("heading", { name: "Handover", exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Open the prepared handover and release review" }).click();
+  await expect(page.locator("#handover-target")).toBeVisible();
+  expect((await page.evaluate(() => window.__caCalls)).filter((c) => c.startsWith("handover-status:"))).toEqual(["handover-status:55"]);
+});
+
 test("a person without the reads sees no acceptance at all", async ({ page }) => {
   await mount(page, {
     screen: "acceptance",

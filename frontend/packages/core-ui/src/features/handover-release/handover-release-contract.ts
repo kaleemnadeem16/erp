@@ -10,6 +10,13 @@ import type { Observation } from "../customer-decisions/customer-decision-contra
  */
 const id = z.number().int().positive();
 
+/** The existing release of a stage (derived by the server from the immutable release evidence), with the Job reference only if this person may see Jobs. */
+export const releaseStatusSchema = z.object({
+  release_event_id: id,
+  released_at: z.string(),
+  job_access: z.enum(["VISIBLE", "NOT_PERMITTED", "UNAVAILABLE"]),
+  job: z.object({ id, code: z.string().min(1) }).nullable(),
+});
 export const planSchema = z.object({
   id,
   acceptance_id: id,
@@ -17,6 +24,7 @@ export const planSchema = z.object({
   recorded_at: z.string(),
   state: z.string(),
   release_performed: z.boolean(),
+  release: releaseStatusSchema.nullable(),
   operational: z.object({
     deliverable_identity: z.string(),
     description: z.string(),
@@ -68,12 +76,42 @@ export const releaseOutcomeSchema = z.object({
   job_code: z.string().min(1),
   replayed: z.boolean(),
 });
+/** The current (head) agreed completion conditions of one accepted service; `current` is null until some are recorded. */
+export const conditionsSchema = z.object({
+  acceptance_id: id,
+  current: z
+    .object({
+      basis_id: id,
+      version: id,
+      terms_source: z.string(),
+      agreed_text: z.string(),
+      materials_scope: z.string(),
+      subcontract_scope: z.string(),
+      evidence_current: z.boolean(),
+      recorded_at: z.string(),
+    })
+    .nullable(),
+});
+/** Whether a handover was prepared for one accepted service, and the ids to open it. */
+export const handoverStatusSchema = z.object({
+  acceptance_id: id,
+  prepared: z.boolean(),
+  plan_id: id.nullable(),
+  stage_id: id.nullable(),
+  release_performed: z.boolean(),
+});
 export type HandoverPlan = z.infer<typeof planSchema>;
+export type ReleaseStatus = z.infer<typeof releaseStatusSchema>;
+export type Conditions = z.infer<typeof conditionsSchema>;
+export type HandoverStatus = z.infer<typeof handoverStatusSchema>;
 export type ReleasePreview = z.infer<typeof releasePreviewSchema>;
 export type BasisOutcome = z.infer<typeof basisOutcomeSchema>;
 export type ReleaseOutcome = z.infer<typeof releaseOutcomeSchema>;
 
 export const readPlan = (value: unknown) => planSchema.parse(value);
+export const readConditions = (value: unknown) => conditionsSchema.parse(value);
+export const readHandoverStatus = (value: unknown) =>
+  handoverStatusSchema.parse(value);
 export const readReleasePreview = (value: unknown) =>
   releasePreviewSchema.parse(value);
 export const readBasisOutcome = (value: unknown) =>
@@ -113,9 +151,16 @@ export interface HandoverReleaseGateway {
   plan: (planId: number) => Promise<HandoverPlan>;
   acceptance: (acceptanceId: number) => Promise<AcceptanceFacts>;
   evidence: (caseId: number) => Promise<Observation[]>;
+  /** The current agreed conditions; only for people who may record or release. */
+  conditions: (acceptanceId: number) => Promise<Conditions>;
   preview: (stageId: number) => Promise<ReleasePreview>;
   recordBasis: (input: BasisRecordInput) => Promise<BasisOutcome>;
   release: (input: ReleaseInput) => Promise<ReleaseOutcome>;
+}
+
+/** Acceptance -> prepared handover (the navigation read on the acceptance screen). */
+export interface HandoverNavigationGateway {
+  status: (acceptanceId: number) => Promise<HandoverStatus>;
 }
 
 /** Blocker codes the server reports for a release, in words. Unknown codes fall back to the server's own next-action text. */
@@ -127,6 +172,8 @@ export const BLOCKER_TEXT: Record<string, string> = {
   SERVICE_LOCATION_REQUIRED: "Where the service is delivered is not recorded.",
   SERVICE_CONTACT_REQUIRED: "A delivery contact is not recorded.",
   SERVICE_SITE_REQUIRED: "A delivery site is not recorded.",
+  COMPLETION_EVIDENCE_SUPERSEDED:
+    "The customer message behind the agreed conditions was later corrected. Record the conditions again from the current message.",
   SERVICE_COST_EVIDENCE_REQUIRED:
     "A mandatory commercial control needs cost evidence that is not available.",
   SOURCE_OBLIGATION_UNSUPPORTED:

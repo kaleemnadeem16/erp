@@ -1,5 +1,7 @@
 import {
   customerAcceptancesCompletionBasesStore,
+  customerAcceptancesCompletionBasis,
+  customerAcceptancesHandover,
   customerAcceptancesShow,
   customerDecisionCasesShow,
   handoverPlansShow,
@@ -10,9 +12,12 @@ import { readAcceptance } from "../customer-acceptances/customer-acceptance-cont
 import { readCaseDetail } from "../customer-decisions/customer-decision-contract";
 import {
   readBasisOutcome,
+  readConditions,
+  readHandoverStatus,
   readPlan,
   readReleaseOutcome,
   readReleasePreview,
+  type HandoverNavigationGateway,
   type HandoverReleaseGateway,
 } from "./handover-release-contract";
 
@@ -32,6 +37,10 @@ export const liveHandoverReleaseGateway: HandoverReleaseGateway = {
   },
   evidence: async (caseId) =>
     readCaseDetail(body(await customerDecisionCasesShow(caseId))).observations,
+  conditions: async (acceptanceId) =>
+    readConditions(
+      body(await customerAcceptancesCompletionBasis(acceptanceId)),
+    ),
   preview: async (stageId) =>
     readReleasePreview(body(await handoverStagesReleasePreview(stageId))),
   recordBasis: async ({ acceptanceId, agreedText, evidenceId, requestKey }) =>
@@ -54,4 +63,9 @@ export const liveHandoverReleaseGateway: HandoverReleaseGateway = {
         ),
       ),
     ),
+};
+
+export const liveHandoverNavigationGateway: HandoverNavigationGateway = {
+  status: async (acceptanceId) =>
+    readHandoverStatus(body(await customerAcceptancesHandover(acceptanceId))),
 };

@@ -37,6 +37,8 @@ import {
   type CustomerAcceptanceGateway,
   type ReadinessPath,
 } from "./customer-acceptance-contract";
+import { AcceptanceHandoverPanel } from "../handover-release/handover-release-screen";
+import type { HandoverNavigationGateway } from "../handover-release/handover-release-contract";
 import { liveCustomerAcceptanceGateway } from "./customer-acceptance-gateway";
 import { AcceptanceTermsList } from "./customer-acceptance-review";
 
@@ -275,9 +277,11 @@ function Failure({ error, retry }: { error: unknown; retry: () => void }) {
 export function CustomerAcceptanceScreen({
   acceptanceId,
   gateway = liveCustomerAcceptanceGateway,
+  handoverGateway,
 }: {
   acceptanceId: number;
   gateway?: CustomerAcceptanceGateway;
+  handoverGateway?: HandoverNavigationGateway;
 }) {
   const user = useAuthStore((s) => s.user);
   const permissions = new Set(
@@ -288,6 +292,7 @@ export function CustomerAcceptanceScreen({
     <GatedAcceptance
       acceptanceId={acceptanceId}
       gateway={gateway}
+      handoverGateway={handoverGateway}
       mayOpenMessage={customerDecisionAccess(permissions).view}
     />
   );
@@ -296,10 +301,12 @@ export function CustomerAcceptanceScreen({
 function GatedAcceptance({
   acceptanceId,
   gateway,
+  handoverGateway,
   mayOpenMessage,
 }: {
   acceptanceId: number;
   gateway: CustomerAcceptanceGateway;
+  handoverGateway?: HandoverNavigationGateway;
   mayOpenMessage: boolean;
 }) {
   const state = useLocation().state as {
@@ -345,14 +352,20 @@ function GatedAcceptance({
             : null
       }
       readiness={
-        <AcceptanceReadinessPanel
-          readiness={readiness.data}
-          path={path}
-          onPath={setPath}
-          isFetching={readiness.isFetching}
-          error={readiness.isError ? readiness.error : null}
-          onRetry={() => void readiness.refetch()}
-        />
+        <>
+          <AcceptanceReadinessPanel
+            readiness={readiness.data}
+            path={path}
+            onPath={setPath}
+            isFetching={readiness.isFetching}
+            error={readiness.isError ? readiness.error : null}
+            onRetry={() => void readiness.refetch()}
+          />
+          <AcceptanceHandoverPanel
+            acceptanceId={acceptanceId}
+            gateway={handoverGateway}
+          />
+        </>
       }
     />
   );

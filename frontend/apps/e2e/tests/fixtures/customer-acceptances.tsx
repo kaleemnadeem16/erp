@@ -369,7 +369,17 @@ const element = createElement(
           element: createElement(CustomerAcceptanceScreen, {
             acceptanceId: 55,
             gateway,
+            handoverGateway: {
+              status: async (acceptanceId) => {
+                window.__caCalls.push(`handover-status:${acceptanceId}`);
+                return { acceptance_id: acceptanceId, prepared: true, plan_id: 12, stage_id: 9, release_performed: false };
+              },
+            },
           }),
+        }),
+        createElement(Route, {
+          path: "/handover-plans/:plan",
+          element: createElement("p", { id: "handover-target" }, "Handover opened"),
         }),
       ),
     ),

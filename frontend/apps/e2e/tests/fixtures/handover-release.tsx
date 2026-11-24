@@ -5,8 +5,10 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HandoverReleaseScreen } from "../../../../packages/core-ui/src/features/handover-release/handover-release-screen";
 import type {
+  Conditions,
   HandoverReleaseGateway,
   ReleasePreview,
+  ReleaseStatus,
 } from "../../../../packages/core-ui/src/features/handover-release/handover-release-contract";
 import type { Observation } from "../../../../packages/core-ui/src/features/customer-decisions/customer-decision-contract";
 import { configureQuotationDevMode } from "../../../../packages/core-ui/src/lib/quotation-dev-mode";
@@ -29,6 +31,18 @@ export interface HrFixture {
   releaseRefusal?: { status: number; reason?: string };
   /** The release reports an exact replay. */
   replay?: boolean;
+  /** The stage was already released when the page loaded; the Job reference is visible, withheld for this person, or unavailable. */
+  released?: "visible" | "denied" | "unavailable";
+  /** Someone else releases the stage after the page loaded and before this person confirms. */
+  releasedBeforeConfirm?: boolean;
+  /** The customer message behind the recorded conditions was corrected. */
+  evidenceCorrected?: boolean;
+  /** The recorded conditions cannot be read (a failed request). */
+  conditionsFail?: boolean;
+  /** After the first conditions read, someone records a new version elsewhere (a stale review). */
+  basisMovesOn?: boolean;
+  /** The plan read fails with this status. */
+  planFailure?: number;
 }
 declare global {
   interface Window {
@@ -89,6 +103,9 @@ const MESSAGES: Observation[] = fixture.noMessages
       }),
     ];
 
+let releasedNow: HrFixture["released"] | undefined = fixture.released;
+let conditionsCalls = 0;
+let headMoved = false;
 let basisVersion = fixture.noBasis ? null : 1;
 let basisId = fixture.noBasis ? null : 70;
 let previewCalls = 0;
@@ -110,22 +127,36 @@ const previewNow = (): ReleasePreview => {
       materials: fixture.unproven || basisId === null ? "UNSTATED" : "EXCLUDED",
       subcontract: fixture.unproven || basisId === null ? "UNSTATED" : "EXCLUDED",
     },
-    basis_id: basisId,
-    basis_version: basisVersion,
-    fingerprint: `fp-${basisVersion ?? 0}-${blockers.length}`,
+    basis_id: headMoved ? 99 : basisId,
+    basis_version: headMoved ? 2 : basisVersion,
+    fingerprint: `fp-${headMoved ? 2 : (basisVersion ?? 0)}-${blockers.length}`,
   };
 };
 
 const gateway: HandoverReleaseGateway = {
   plan: async (planId) => {
     window.__hrCalls.push(`plan:${planId}`);
+    if (fixture.planFailure)
+      throw Object.assign(new Error("failed"), { status: fixture.planFailure, body: {} });
+    if (fixture.releasedBeforeConfirm && window.__hrCalls.some((c) => c.startsWith("preview:")) && window.__hrCalls.filter((c) => c.startsWith("plan:")).length > 1)
+      releasedNow = "visible";
+    const release: ReleaseStatus | null =
+      releasedNow === undefined
+        ? null
+        : {
+            release_event_id: 31,
+            released_at: "2026-11-20T10:00:00+05:00",
+            job_access: releasedNow === "visible" ? "VISIBLE" : releasedNow === "denied" ? "NOT_PERMITTED" : "UNAVAILABLE",
+            job: releasedNow === "visible" ? { id: 88, code: "JOB-00007" } : null,
+          };
     return {
       id: planId,
       acceptance_id: 55,
       stage_id: 9,
       recorded_at: "2026-11-11T09:00:00+05:00",
       state: "PREPARED",
-      release_performed: false,
+      release_performed: release !== null,
+      release,
       operational: {
         deliverable_identity: "issued-scope:101",
         description: ISSUED,
@@ -143,6 +174,31 @@ const gateway: HandoverReleaseGateway = {
   evidence: async (caseId) => {
     window.__hrCalls.push(`evidence:${caseId}`);
     return MESSAGES;
+  },
+  conditions: async (acceptanceId) => {
+    conditionsCalls += 1;
+    window.__hrCalls.push(`conditions:${acceptanceId}`);
+    if (fixture.conditionsFail)
+      throw Object.assign(new Error("failed"), { status: 500, body: {} });
+    const moved = fixture.basisMovesOn && conditionsCalls > 1;
+    if (moved) headMoved = true;
+    const result: Conditions = {
+      acceptance_id: acceptanceId,
+      current:
+        basisId === null
+          ? null
+          : {
+              basis_id: moved ? 99 : basisId,
+              version: moved ? 2 : (basisVersion ?? 1),
+              terms_source: fixture.unproven ? "ISSUED_LINE" : "EVIDENCE_TEXT",
+              agreed_text: fixture.unproven ? ISSUED : "MATERIALS: EXCLUDED\nSUBCONTRACTORS: EXCLUDED\nLINE: 101\nDELIVERABLE_SHA256: " + "a".repeat(64),
+              materials_scope: fixture.unproven ? "UNSTATED" : "EXCLUDED",
+              subcontract_scope: fixture.unproven ? "UNSTATED" : "EXCLUDED",
+              evidence_current: !fixture.evidenceCorrected,
+              recorded_at: "2026-11-12T09:00:00+05:00",
+            },
+    };
+    return result;
   },
   preview: async (stageId) => {
     previewCalls += 1;
