@@ -16,6 +16,8 @@ export interface AhlFixture {
   permissions: string[];
   /** What the server says about this acceptance's handover. */
   status?: Partial<HandoverStatus>;
+  /** The accepted line is a service item (preparation is offered for these only). */
+  serviceItem?: boolean;
   /** The status read fails with this HTTP status on the first call. */
   failure?: number;
 }
@@ -76,9 +78,10 @@ createRoot(document.getElementById("root")!).render(
               "div",
               null,
               createElement("h1", null, "Customer acceptance 55"),
-              createElement(AcceptanceHandoverPanel, { acceptanceId: 55, gateway }),
+              createElement(AcceptanceHandoverPanel, { acceptanceId: 55, gateway, serviceItem: fixture.serviceItem ?? false }),
             ),
           }),
+          createElement(Route, { path: "/customer-acceptances/:id/prepare-handover", element: createElement(Target) }),
           createElement(Route, { path: "/handover-plans/:plan", element: createElement(Target) }),
         ),
       ),

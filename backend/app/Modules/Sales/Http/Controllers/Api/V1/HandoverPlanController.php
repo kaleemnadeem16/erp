@@ -14,6 +14,7 @@ use App\Modules\Sales\Actions\ReadHandoverStatus;
 use App\Modules\Sales\Http\Requests\CustomerDecision\HandoverFields;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PrepareHandoverPlanRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PreviewHandoverRequest;
+use App\Modules\Sales\Http\Requests\CustomerDecision\ShowHandoverOptionsRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\ShowHandoverPlanRequest;
 use App\Modules\Sales\Http\Resources\HandoverOptionsResource;
 use App\Modules\Sales\Http\Resources\HandoverPlanOutcomeResource;
@@ -35,7 +36,7 @@ final class HandoverPlanController extends Controller
         return new HandoverPreviewResource($this->refusing(fn (): array => $preview($request->user(), $acceptance, HandoverFields::from($request))));
     }
 
-    public function options(PreviewHandoverRequest $request, int $acceptance, ReadHandoverOptions $read): HandoverOptionsResource
+    public function options(ShowHandoverOptionsRequest $request, int $acceptance, ReadHandoverOptions $read): HandoverOptionsResource
     {
         return new HandoverOptionsResource($this->refusing(fn (): array => $read($request->user(), $acceptance)));
     }

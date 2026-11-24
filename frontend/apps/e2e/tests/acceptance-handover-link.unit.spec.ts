@@ -85,3 +85,34 @@ test("320px and desktop, light and dark: no overflow and no accessibility violat
     await clean(page);
   }
 });
+
+const PREPARE = [...READ, "sales.handover.prepare"];
+
+test("an accepted service with no handover offers Prepare handover, by keyboard, only to those who may prepare", async ({ page }) => {
+  await mount(page, { permissions: PREPARE, serviceItem: true, status: { prepared: false, plan_id: null, stage_id: null } });
+  await expect(page.getByTestId("handover-not-prepared")).toBeVisible();
+  const link = page.getByTestId("prepare-handover-link");
+  await expect(link).toHaveText("Prepare handover");
+  await link.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("#target")).toHaveText("Opened /customer-acceptances/55/prepare-handover");
+});
+
+test("no Prepare handover link without the preparation duty, for goods, or once a handover exists", async ({ page }) => {
+  const unprepared = { prepared: false, plan_id: null, stage_id: null };
+  await mount(page, { permissions: READ, serviceItem: true, status: unprepared });
+  await expect(page.getByTestId("handover-not-prepared")).toBeVisible();
+  await expect(page.getByTestId("prepare-handover-link")).toHaveCount(0);
+  await mount(page, { permissions: PREPARE, serviceItem: false, status: unprepared });
+  await expect(page.getByTestId("handover-not-prepared")).toBeVisible();
+  await expect(page.getByTestId("prepare-handover-link")).toHaveCount(0);
+  await mount(page, { permissions: PREPARE, serviceItem: true });
+  await expect(page.getByTestId("handover-prepared")).toBeVisible();
+  await expect(page.getByTestId("prepare-handover-link")).toHaveCount(0);
+});
+
+test("the prepare link is clean at 320px", async ({ page }) => {
+  await mount(page, { permissions: PREPARE, serviceItem: true, status: { prepared: false, plan_id: null, stage_id: null } }, false, 320);
+  await expect(page.getByTestId("prepare-handover-link")).toBeVisible();
+  await clean(page);
+});

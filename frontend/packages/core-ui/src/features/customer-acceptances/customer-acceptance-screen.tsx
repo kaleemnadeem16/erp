@@ -364,6 +364,7 @@ function GatedAcceptance({
           <AcceptanceHandoverPanel
             acceptanceId={acceptanceId}
             gateway={handoverGateway}
+            serviceItem={acceptance.data?.scope.source_kind === "SERVICE_ITEM"}
           />
         </>
       }

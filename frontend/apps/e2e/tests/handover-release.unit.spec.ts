@@ -179,7 +179,8 @@ test("a ready service is released after one confirmation: Job number, link to th
   await expect(page.getByRole("dialog")).toContainText("cannot be undone");
   await page.getByRole("button", { name: "Release", exact: true }).click();
   await expect(page.getByTestId("job-code")).toHaveText("JOB-00007");
-  await expect(page.getByText("The service was released and one Job was created.")).toBeVisible();
+  await expect(page.getByTestId("release-result")).toContainText("The service is released and has one Job.");
+  await expect(page.getByTestId("release-result")).not.toContainText(/new Job was created|one Job was created/);
   expect((await calls(page)).filter((c) => c.startsWith("release:"))).toEqual(["release:9:70:fp-1-0:key"]);
   await expect(page.getByRole("button", { name: "Release to a Job" })).toHaveCount(0);
   await page.getByRole("link", { name: "Open the Job" }).click();

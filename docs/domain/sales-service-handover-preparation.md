@@ -86,6 +86,7 @@ All paths are under `/api/v1`, `auth:sanctum`, Form Request plus Action guards, 
 
 | Route | Contract |
 |---|---|
+| `GET /customer-acceptances/{acceptance}/handover-options` | No input. `handover.prepare` + customer-decision view + quotation view, under the source locks. Returns ONLY the accepted customer's own current contacts (with an email or telephone) and active sites, max 100 each: `id`/`name` plus the contact channel or the site's address line, city and country already shown by the preview. No other customer, archived row or directory. |
 | `GET /customer-acceptances/{acceptance}/handover-preview` | Optional `path` (SERVICE_JOB), `location_kind` (UNKNOWN/REMOTE/ON_SITE), nullable `contact_id`/`site_id`, optional `instructions` (max 2000). Returns normalized inputs, permitted operational fields, readiness/owners, withheld field categories, token and expiry. No writes or capacity hold. |
 | `POST /customer-acceptances/{acceptance}/handover-plans` | Same operational inputs, preview_token and Idempotency-Key. Returns plan_id/case_id/replayed; new request 201, receipt replay 200 plus Idempotency-Replayed. No caller-selected terms, readiness assertion, actor, target or allocation. |
 | `GET /handover-plans/{plan}` | Immutable plan, allocation/stage/baseline/source identities, permitted operational snapshot, historical readiness and withheld categories; release_performed=false. |
@@ -119,3 +120,8 @@ Release duty/approvals, source completion/cost/applicability adapters and Jobs o
 - [Prepare journey](../journeys/prepare-service-handover.md)
 - [Brief/defaults](../phases/phase-4-customer-acceptance-and-handover-design-brief.md)
 - [0184](../decisions/0184-prepare-pending-service-handovers-without-release.md)
+
+
+## Preparation screen (Phase 5 follow-up)
+
+`/customer-acceptances/{acceptance}/prepare-handover`, linked as *Prepare handover* from the acceptance's Handover panel only when (a) no handover exists for it, (b) the accepted line is a service item (goods-order preparation is not offered) and (c) the person holds `sales.handover.prepare` plus the two reads. The screen asks for remote or on-site, the customer's contact, the site (on-site only; never sent for remote) and instructions, then **Review** calls `handover-preview`: readiness, missing facts and next actions are the server's words, never recomputed. A review belongs to exactly the inputs it was made for: any edit drops it. **Prepare** opens an explicit confirmation (permanent; not a release; creates no Job; grants no release right), then POSTs with the reviewed `preview_token`. One Idempotency-Key per exact intent (inputs + token): an uncertain failure (network, 408, 429, 5xx) retries under the same key and replays; a definitive refusal never reuses it. `PREVIEW_TOKEN_STALE` drops the review and asks for a new one; `SCOPE_ALREADY_CLAIMED` (someone prepared it meanwhile) re-reads the status and shows the existing handover instead of a form. Success navigates to `/handover-plans/{plan}`. The journey is Customer acceptance -> Prepare handover -> Review customer conditions -> Release -> Existing Job.

@@ -30,6 +30,7 @@ import { useAuthStore } from "../../stores/auth-store";
 import { SOURCE_LABELS } from "../customer-decisions/customer-decision-contract";
 import type { Observation } from "../customer-decisions/customer-decision-contract";
 import { IntentKey } from "../quotations/request-key";
+import { handoverPrepareAccess } from "../handover-preparation/handover-preparation-access";
 import { handoverReleaseAccess } from "./handover-release-access";
 import {
   APPLICABILITY_LABELS,
@@ -497,7 +498,7 @@ export function ReleaseResultSection({ result }: { result: ReleaseOutcome }) {
         <p>
           {result.replayed
             ? "This release had already been recorded; nothing was created twice."
-            : "The service was released and one Job was created."}
+            : "The service is released and has one Job. Whether this request or an earlier one made it cannot be told apart, so none is claimed."}
         </p>
         <p>
           Job number: <strong data-testid="job-code">{result.job_code}</strong>
@@ -915,9 +916,12 @@ function GatedHandover({
 export function AcceptanceHandoverPanel({
   acceptanceId,
   gateway = liveHandoverNavigationGateway,
+  serviceItem = false,
 }: {
   acceptanceId: number;
   gateway?: HandoverNavigationGateway;
+  /** Preparation is offered for accepted service items only; goods orders are not supported here. */
+  serviceItem?: boolean;
 }) {
   const user = useAuthStore((s) => s.user);
   const permissions = new Set(
@@ -925,16 +929,22 @@ export function AcceptanceHandoverPanel({
   );
   if (!handoverReleaseAccess(permissions).read) return null;
   return (
-    <GatedAcceptanceHandover acceptanceId={acceptanceId} gateway={gateway} />
+    <GatedAcceptanceHandover
+      acceptanceId={acceptanceId}
+      gateway={gateway}
+      mayPrepare={serviceItem && handoverPrepareAccess(permissions)}
+    />
   );
 }
 
 function GatedAcceptanceHandover({
   acceptanceId,
   gateway,
+  mayPrepare,
 }: {
   acceptanceId: number;
   gateway: HandoverNavigationGateway;
+  mayPrepare: boolean;
 }) {
   const status = useQuery({
     queryKey: ["acceptance-handover", acceptanceId],
@@ -977,14 +987,21 @@ function GatedAcceptanceHandover({
           <span className="sr-only">Checking for a prepared handover…</span>
         </div>
       ) : !data.prepared || data.plan_id === null ? (
-        <p
-          className="col-span-full text-sm"
-          role="status"
-          data-testid="handover-not-prepared"
-        >
-          No handover has been prepared for this service yet. Release review
-          opens once one is prepared.
-        </p>
+        <div className="col-span-full space-y-2 text-sm">
+          <p role="status" data-testid="handover-not-prepared">
+            No handover has been prepared for this service yet. Release review
+            opens once one is prepared.
+          </p>
+          {mayPrepare && (
+            <Link
+              className="ui-link-action inline-flex min-h-11 items-center"
+              to={`/customer-acceptances/${acceptanceId}/prepare-handover`}
+              data-testid="prepare-handover-link"
+            >
+              Prepare handover
+            </Link>
+          )}
+        </div>
       ) : (
         <div className="col-span-full space-y-2 text-sm">
           <p role="status" data-testid="handover-prepared">
