@@ -29,6 +29,7 @@ use App\Modules\Purchasing\Support\PurchaseOrderApprovalState;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -214,7 +215,12 @@ class PurchaseOrderController extends Controller
     public function shortClose(Request $request, PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
     {
         abort_unless($request->user()?->can('purchasing.purchase-order.short-close'), 403);
-        PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrderLine->purchaseOrder, 'purchasing.purchase-order.short-close');
+        try {
+            PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrderLine->purchaseOrder, 'purchasing.purchase-order.short-close');
+        } catch (ModelNotFoundException) {
+            // The line is what was asked for, so the line is what is "not found": exactly the answer for an id that does not exist.
+            throw (new ModelNotFoundException)->setModel(PurchaseOrderLine::class, [$purchaseOrderLine->id]);
+        }
         $line = $shortClose($purchaseOrderLine, $request->user());
 
         return new PurchaseOrderLineResource(PurchaseOrderLine::query()->withReceiptProgress()->findOrFail($line->id));

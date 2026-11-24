@@ -70,13 +70,9 @@ final class PurchaseOrderScopeAdapter implements ResourceScopeAdapter
         });
     }
 
-    /** Does the scope reach a warehouse a person may name on an order? A limited person may not file an order into a warehouse they cannot see. */
-    public function reachesWarehouse(ResolvedScope $scope, ?int $warehouseId): bool
+    /** Would this order, as it now stands, still be reachable? Used before saving a create or an edit, so nobody files or moves an order out of their own sight. */
+    public function reaches(ResolvedScope $scope, int $actorId, ?int $createdBy, ?int $shipToWarehouseId): bool
     {
-        if ($scope->isAll() || $scope->ownsRecords()) {
-            return true;
-        }
-
-        return $warehouseId !== null && in_array($warehouseId, app(RecordScope::class)->resourceIds($scope, 'warehouse') ?? [], true);
+        return PurchaseOrderReach::of($scope, $actorId)->includes($createdBy, $shipToWarehouseId);
     }
 }

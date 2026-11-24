@@ -37,7 +37,7 @@ final class ApprovalEvidenceAccess
             return $subject->mayReadRequestEvidence($user, $request);
         }
         if (app(ApprovalReviewRegistry::class)->has($request->subject_type)) {
-            return $user->status === MemberStatus::Active && ! $user->must_change_password && (($this->subjects->has($request->subject_type) && $this->subjects->get($request->subject_type)->canViewEvidence($user))
+            return $user->status === MemberStatus::Active && ! $user->must_change_password && ($this->mayViewByCapability($user, $request)
                 || app(ApprovalReviewAccess::class)->profile($user, $request) === ReviewProfile::Commercial);
         }
         if ($actionable !== null) {
@@ -48,6 +48,17 @@ final class ApprovalEvidenceAccess
             return true;
         }
 
-        return $this->subjects->has($request->subject_type) && $this->subjects->get($request->subject_type)->canViewEvidence($user);
+        return $this->mayViewByCapability($user, $request);
+    }
+
+    /** The document module's own capability, narrowed to this document when the subject judges its figures per record. */
+    private function mayViewByCapability(User $user, ApprovalRequest $request): bool
+    {
+        if (! $this->subjects->has($request->subject_type)) {
+            return false;
+        }
+        $subject = $this->subjects->get($request->subject_type);
+
+        return $subject->canViewEvidence($user) && (! $subject instanceof RecordScopedEvidenceSubject || $subject->evidenceInReach($user, $request));
     }
 }

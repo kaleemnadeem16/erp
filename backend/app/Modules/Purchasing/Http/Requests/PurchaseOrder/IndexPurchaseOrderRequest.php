@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Http\Requests\PurchaseOrder;
 
 use App\Http\Requests\Concerns\ValidatesListQuery;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
+use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use App\Modules\Purchasing\Support\PurchasingReadAccess;
@@ -23,7 +24,9 @@ class IndexPurchaseOrderRequest extends FormRequest
             || $this->filled('filter.total_max');
 
         return PurchasingReadAccess::purchaseOrders($this->user())
-            && (! $requiresCommercial || PurchasingCommercialAccess::canView($this->user()));
+            && (! $requiresCommercial || (PurchasingCommercialAccess::canView($this->user())
+                // A total filter or sort reveals values across the whole list: it needs commercial reach over everything the person can list.
+                && PurchaseOrderAccess::make()->commercialCoversRead($this->user(), $this)));
     }
 
     /** @return array<string, mixed> */

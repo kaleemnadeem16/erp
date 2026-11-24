@@ -10,6 +10,7 @@ use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalInbox;
 use App\Modules\Approvals\Support\ApprovalRequestAccess;
 use App\Modules\Approvals\Support\ApprovalSubjectRegistry;
+use App\Modules\Approvals\Support\RecordScopedEvidenceSubject;
 use App\Support\CompanyContext;
 
 final class ApprovalReviewAccess
@@ -22,8 +23,11 @@ final class ApprovalReviewAccess
             || $request->company_id !== app(CompanyContext::class)->id() || ! $this->reviews->available($request) || ! app(ApprovalRequestAccess::class)->canView($actor, $request)) {
             return null;
         }
-        if ($this->subjects->has($request->subject_type) && $this->subjects->get($request->subject_type)->canViewEvidence($actor)) {
-            return ReviewProfile::Commercial;
+        if ($this->subjects->has($request->subject_type)) {
+            $subject = $this->subjects->get($request->subject_type);
+            if ($subject->canViewEvidence($actor) && (! $subject instanceof RecordScopedEvidenceSubject || $subject->evidenceInReach($actor, $request))) {
+                return ReviewProfile::Commercial;
+            }
         }
         $profiles = [];
         if ($request->isOpen()) {

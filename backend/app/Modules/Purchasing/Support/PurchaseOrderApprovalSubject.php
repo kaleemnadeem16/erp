@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Purchasing\Support;
 
 use App\Models\User;
+use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalFactType;
 use App\Modules\Approvals\Support\ApprovalRouting;
-use App\Modules\Approvals\Support\ApprovalSubject;
+use App\Modules\Approvals\Support\RecordScopedEvidenceSubject;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use Brick\Math\BigDecimal;
 use Brick\Math\RoundingMode;
@@ -17,7 +18,7 @@ use Brick\Math\RoundingMode;
  * company base currency, converted at the order's own pinned rate — the same rate that priced its lines — so an
  * approval never moves when a rate does, and the original amount, currency, rate, date and source travel with it.
  */
-final class PurchaseOrderApprovalSubject implements ApprovalSubject
+final class PurchaseOrderApprovalSubject implements RecordScopedEvidenceSubject
 {
     public const CODE = 'PURCHASE_ORDER';
 
@@ -49,6 +50,14 @@ final class PurchaseOrderApprovalSubject implements ApprovalSubject
     public function canViewEvidence(User $user): bool
     {
         return PurchasingCommercialAccess::canView($user);
+    }
+
+    /** The capability must also reach this order: a limited commercial grant never shows the money of an order it does not reach. */
+    public function evidenceInReach(User $user, ApprovalRequest $request): bool
+    {
+        $order = PurchaseOrder::query()->find($request->subject_id);
+
+        return $order !== null && PurchasingCommercialAccess::forOrder($user, $order);
     }
 
     public function routing(int $subjectId): ApprovalRouting

@@ -34,6 +34,16 @@ two identities scope needs (`created_by`, `ship_to_warehouse_id`); ADR 0089 supp
 7. **History.** Orders from before ADR 0191 have no creator and no ship-to. They match neither limited path, so a limited person never reaches them and nobody is invented as their creator; unrestricted persons keep them.
    No back-fill is performed (a back-fill would manufacture identities).
 8. **Assigned buyer (`buyer_user_id`) is NOT a scope path in this decision.** See *Decision needed*.
+9. **Reach is judged under the row lock.** Every write locks the order with the reach predicate in the same locking `SELECT`, after the company access barrier. If a concurrent draft edit moved the ship-to while the
+   writer waited, PostgreSQL re-evaluates the predicate on the committed row, the row no longer qualifies and the order reads as absent. `IssuePurchaseOrder` no longer decides reach before it locks.
+   Proved by a real two-session PostgreSQL test (`PurchaseOrderScopeConcurrencyTest`), which fails if the check is moved back before the lock.
+10. **The open-PO cutover exception is narrow.** A person without the issue duty's reach may issue an order only when they hold `purchasing.cutover.commit` as an **unrestricted** grant (the real cutover workflow authority) **and** the
+    order is a cutover order. A limited cutover grant, a non-cutover order, or direct Action invocation by anyone else is refused.
+11. **Money is judged per order.** `commercial-cost.view` and `purchase-order.create` are each limitable, and a person sees an order's commercial fields (FX, payment terms, totals, line prices and amounts, and approval evidence) only on
+    orders inside the **commercial** reach, whatever their operational reach. A total filter or sort (which infers money across the whole list) is refused (403) unless the commercial reach covers everything the person may list. Goods-receipt
+    money and receipt cost entry, which are not tied to one reachable order, need an **unrestricted** commercial grant. Supplier offers are item-supplier data, not purchase-order records, and are unchanged.
+12. **An edit must leave the order reachable.** Creating or editing an order checks that the saved order is still reachable through a path that really applies to it (created by the actor, or shipping to one of the actor's units). Having an
+    own-created path as an alternative never lets someone move another person's order out of their units.
 
 ## Intentionally unscoped internal workflows (separate, documented)
 

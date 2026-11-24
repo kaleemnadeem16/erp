@@ -2,12 +2,15 @@
 
 namespace Tests\Feature\Modules\Purchasing;
 
+use App\Exceptions\DomainInvariantException;
+use App\Models\Company;
 use App\Models\Role;
 use App\Models\Uom;
 use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Models\OrganisationUnit;
 use App\Modules\Administration\Models\OrganisationUnitResource;
+use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Warehouse;
@@ -18,9 +21,16 @@ use App\Modules\Purchasing\Actions\SubmitPurchaseOrder;
 use App\Modules\Purchasing\Actions\UpdatePurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Support\PurchaseOrderAccess;
+use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderScopeAdapter;
+use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
+use App\Support\CompanyContext;
+use App\Support\Scope\RecordScope;
+use Closure;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Testing\TestResponse;
+use ReflectionMethod;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\PurchasingActor;
@@ -308,6 +318,248 @@ class PurchaseOrderRecordScopeTest extends PurchaseOrderFoundationTest
             $this->assertFalse($adapter->supports($duty, 'OWN'), $duty.' must not be limitable here');
         }
         $this->assertTrue(PurchaseOrderAccess::make()->isUnrestricted(PurchasingActor::make([self::VIEW]), self::VIEW));
+    }
+
+    /** The body of a 404 with the requested id blanked out, so only what could tell a hidden order from an absent one is left to compare. */
+    private function notFound(TestResponse $response, int $id): array
+    {
+        $response->assertNotFound();
+
+        return ['status' => $response->getStatusCode(), 'body' => str_replace((string) $id, '{id}', (string) $response->getContent()), 'type' => $response->headers->get('Content-Type')];
+    }
+
+    public function test_a_hidden_order_and_an_absent_one_give_identical_404_responses_on_every_entry(): void
+    {
+        $this->orders();
+        config(['app.debug' => false]); // compare the bodies a user would really get, without debug traces
+        $caps = ['purchasing.purchase-order.view', 'purchasing.purchase-order.create', 'purchasing.purchase-order.submit', 'purchasing.purchase-order.issue', 'purchasing.purchase-order.cancel', 'purchasing.purchase-order.short-close'];
+        $alice = PurchasingActor::grant($this->alice, $caps);
+        foreach ($caps as $duty) {
+            AccessScopeLimit::create(['user_id' => $alice->id, 'permission' => $duty, 'scope' => 'OWN']);
+        }
+        $hidden = $this->po['bobB']->id;
+        $absent = 987654;
+        $order = $this->po['bobB'];
+        $line = $order->lines()->create($this->lineAttributes($order, ...array_slice($this->makeItemAndUom(), 0, 2)));
+        $as = $this->actingAsUnprivileged($alice);
+        $absentLine = 987655;
+
+        foreach ([
+            ['getJson', '/api/v1/purchase-orders/%d', []],
+            ['patchJson', '/api/v1/purchase-orders/%d', ['notes' => 'x']],
+            ['postJson', '/api/v1/purchase-orders/%d/submit', []],
+            ['postJson', '/api/v1/purchase-orders/%d/issue', []],
+            ['postJson', '/api/v1/purchase-orders/%d/cancel', ['reason' => 'no']],
+        ] as [$verb, $uri, $body]) {
+            $this->assertSame(
+                $this->notFound($as->{$verb}(sprintf($uri, $absent), $body), $absent),
+                $this->notFound($as->{$verb}(sprintf($uri, $hidden), $body), $hidden),
+                "{$verb} {$uri}: a hidden order must answer exactly like an absent one",
+            );
+        }
+        $this->assertSame(
+            $this->notFound($as->postJson("/api/v1/purchase-order-lines/{$absentLine}/short-close"), $absentLine),
+            $this->notFound($as->postJson("/api/v1/purchase-order-lines/{$line->id}/short-close"), $line->id),
+        );
+    }
+
+    public function test_another_companys_user_reaches_none_of_these_orders(): void
+    {
+        $this->orders();
+        $other = Company::create(['name' => 'Other Co']);
+        $this->actingAsCompany($other->id);
+        $strangerUser = User::factory()->create();
+        $stranger = PurchasingActor::grant($strangerUser, [self::VIEW, 'purchasing.purchase-order.create', 'purchasing.commercial-cost.view'], $other->id);
+
+        // In their own company they see an empty list and cannot find this company's order by id.
+        $this->assertSame([], collect($this->actingAsUnprivileged($stranger)->getJson('/api/v1/purchase-orders?per_page=100')->assertOk()->json('data'))->pluck('id')->all());
+        $this->actingAsUnprivileged($stranger)->getJson("/api/v1/purchase-orders/{$this->po['aliceA']->id}")->assertNotFound();
+        $this->actingAsUnprivileged($stranger)->postJson("/api/v1/purchase-orders/{$this->po['aliceA']->id}/cancel", ['reason' => 'x'])->assertNotFound();
+        // Where this company is the active one, the resolver refuses a user who belongs to another.
+        $this->actingAsCompany(1);
+        $this->assertTrue(app(RecordScope::class)->resolveForResource($stranger, self::VIEW, 'purchase_order')->isNone());
+        $this->assertSame(0, PurchaseOrderAccess::make()->scopeForRead(PurchaseOrder::query(), $stranger)->count());
+    }
+
+    private function actingAsCompany(int $companyId): void
+    {
+        $this->app->instance(CompanyContext::class, new class($companyId) extends CompanyContext
+        {
+            public function __construct(private readonly int $companyId) {}
+
+            public function id(): int
+            {
+                return $this->companyId;
+            }
+        });
+    }
+
+    /** A company-wide operational reader whose commercial grant is limited to their own orders. */
+    private function operationalReaderWithOwnCommercial(): User
+    {
+        $reader = PurchasingActor::make([self::VIEW, 'purchasing.commercial-cost.view']);
+        AccessScopeLimit::create(['user_id' => $reader->id, 'permission' => 'purchasing.commercial-cost.view', 'scope' => 'OWN']);
+        foreach (['aliceA', 'bobB'] as $key) {
+            $this->priced($this->po[$key], '50.0000');
+        }
+
+        return $reader;
+    }
+
+    private function priced(PurchaseOrder $order, string $amount): void
+    {
+        $order->lines()->create(['line_amount' => $amount, 'base_line_amount' => $amount, 'unit_price' => $amount, 'base_unit_price' => $amount, 'ordered_qty' => '1.0000', 'ordered_stock_qty' => '1.0000'] + $this->lineAttributes($order, ...array_slice($this->makeItemAndUom(), 0, 2)));
+    }
+
+    public function test_a_limited_commercial_grant_shows_money_only_on_the_orders_it_reaches(): void
+    {
+        $this->orders();
+        $reader = $this->operationalReaderWithOwnCommercial();
+
+        // The reader created nothing: every order is visible operationally and none commercially.
+        $detail = $this->actingAsUnprivileged($reader)->getJson("/api/v1/purchase-orders/{$this->po['aliceA']->id}?include=lines")->assertOk()->json('data');
+        foreach (['fx_rate', 'payment_terms_state', 'total_amount', 'base_total_amount'] as $field) {
+            $this->assertArrayNotHasKey($field, $detail);
+        }
+        $this->assertArrayNotHasKey('unit_price', $detail['lines'][0]);
+        $this->assertArrayNotHasKey('line_amount', $detail['lines'][0]);
+        $list = $this->actingAsUnprivileged($reader)->getJson('/api/v1/purchase-orders?include=lines&per_page=100')->assertOk()->json('data');
+        $this->assertNotEmpty($list);
+        foreach ($list as $row) {
+            $this->assertArrayNotHasKey('fx_rate', $row);
+            foreach ($row['lines'] ?? [] as $line) {
+                $this->assertArrayNotHasKey('unit_price', $line);
+            }
+        }
+
+        // The same grant shows money once the order is the reader's own.
+        $mine = $this->newOrder('readers', $reader, $this->whA);
+        $this->priced($mine, '70.0000');
+        $own = $this->actingAsUnprivileged($reader)->getJson("/api/v1/purchase-orders/{$mine->id}?include=lines")->assertOk()->json('data');
+        $this->assertSame('70.0000', $own['total_amount']);
+        $this->assertSame('70.0000', $own['lines'][0]['line_amount']);
+    }
+
+    public function test_money_filters_and_sorts_are_refused_when_commercial_reach_is_narrower_than_the_list(): void
+    {
+        $this->orders();
+        $as = $this->actingAsUnprivileged($this->operationalReaderWithOwnCommercial());
+
+        $as->getJson('/api/v1/purchase-orders?filter[total_min]=1')->assertForbidden();
+        $as->getJson('/api/v1/purchase-orders?filter[total_max]=1000')->assertForbidden();
+        $as->getJson('/api/v1/purchase-orders?sort=-total_amount')->assertForbidden();
+        $as->getJson('/api/v1/purchase-orders?sort=-order_date')->assertOk();
+
+        // Reach that covers the list may infer money; an unrestricted commercial grant always did.
+        $own = PurchasingActor::make([self::VIEW, 'purchasing.commercial-cost.view']);
+        AccessScopeLimit::create(['user_id' => $own->id, 'permission' => self::VIEW, 'scope' => 'OWN']);
+        AccessScopeLimit::create(['user_id' => $own->id, 'permission' => 'purchasing.commercial-cost.view', 'scope' => 'OWN']);
+        $this->actingAsUnprivileged($own)->getJson('/api/v1/purchase-orders?sort=-total_amount')->assertOk();
+        $boss = PurchasingActor::make([self::VIEW, 'purchasing.commercial-cost.view']);
+        $this->actingAsUnprivileged($boss)->getJson('/api/v1/purchase-orders?filter[total_min]=1&sort=total_amount')->assertOk();
+    }
+
+    public function test_approval_evidence_follows_the_order_not_just_the_capability(): void
+    {
+        $this->orders();
+        $reader = $this->operationalReaderWithOwnCommercial();
+        $mine = $this->newOrder('readers', $reader, $this->whA);
+        $subject = new PurchaseOrderApprovalSubject;
+        $request = fn (PurchaseOrder $o) => new ApprovalRequest(['subject_type' => 'PURCHASE_ORDER', 'subject_id' => $o->id]);
+
+        $this->assertTrue($subject->canViewEvidence($reader), 'the capability exists');
+        $this->assertFalse($subject->evidenceInReach($reader, $request($this->po['aliceA'])), "someone else's order is outside a limited commercial grant");
+        $this->assertTrue($subject->evidenceInReach($reader, $request($mine)));
+        $boss = PurchasingActor::make(['purchasing.commercial-cost.view']);
+        $this->assertTrue($subject->evidenceInReach($boss, $request($this->po['aliceA'])));
+    }
+
+    public function test_receipt_money_needs_an_unrestricted_commercial_grant(): void
+    {
+        $this->orders();
+        $reader = $this->operationalReaderWithOwnCommercial();
+
+        $this->assertFalse(PurchasingCommercialAccess::companyWide($reader));
+        $this->assertTrue(PurchasingCommercialAccess::companyWide(PurchasingActor::make(['purchasing.commercial-cost.view'])));
+    }
+
+    public function test_an_edit_cannot_move_somebody_elses_order_out_of_the_editors_units_even_with_an_own_path(): void
+    {
+        $this->orders();
+        $editor = PurchasingActor::make(['purchasing.purchase-order.view', 'purchasing.purchase-order.create']);
+        AccessScopeLimit::create(['user_id' => $editor->id, 'permission' => 'purchasing.purchase-order.view', 'scope' => 'MY_UNITS']);
+        // create is limited twice — to own orders (through a role) and to units (directly): two alternatives for the same duty.
+        $editor->revokePermissionTo('purchasing.purchase-order.create');
+        $role = Role::create(['team_id' => 1, 'name' => 'own drafter']);
+        $role->givePermissionTo(Permission::findOrCreate('purchasing.purchase-order.create'));
+        $editor->assignRole($role);
+        $editor->givePermissionTo('purchasing.purchase-order.create');
+        AccessScopeLimit::create(['user_id' => $editor->id, 'role_id' => $role->id, 'scope' => 'OWN']);
+        AccessScopeLimit::create(['user_id' => $editor->id, 'permission' => 'purchasing.purchase-order.create', 'scope' => 'MY_UNITS']);
+        $this->member($editor, $this->unitA);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $as = $this->actingAsUnprivileged($editor);
+        $others = $this->po['aliceA']; // created by Alice, ships to A (the editor's unit)
+
+        $as->patchJson("/api/v1/purchase-orders/{$others->id}", ['ship_to_warehouse_id' => $this->whB->id])->assertStatus(422);
+        $this->assertSame($this->whA->id, $others->fresh()->ship_to_warehouse_id);
+        $as->patchJson("/api/v1/purchase-orders/{$others->id}", ['ship_to_warehouse_id' => null])->assertStatus(422);
+        $as->patchJson("/api/v1/purchase-orders/{$others->id}", ['notes' => 'still reachable'])->assertOk();
+
+        // An order the editor created may go anywhere: it stays theirs.
+        $mine = $this->newOrder('editors', $editor, $this->whA);
+        $as->patchJson("/api/v1/purchase-orders/{$mine->id}", ['ship_to_warehouse_id' => $this->whC->id])->assertOk();
+    }
+
+    public function test_cutover_authority_is_only_the_unrestricted_workflow_and_only_for_a_cutover_order(): void
+    {
+        $this->orders();
+        $issue = 'purchasing.purchase-order.issue';
+        DB::statement('SET session_replication_role = replica');
+        DB::table('purchase_orders')->where('id', $this->po['bobB']->id)->update(['inventory_cutover_id' => 999001, 'import_batch_id' => 999002, 'source_system' => 'legacy', 'source_record_id' => 'PO-1']);
+        DB::statement('SET session_replication_role = DEFAULT');
+        $cutoverOrder = $this->po['bobB'];
+        $plainOrder = $this->po['bobC'];
+        $lock = function (User $actor, PurchaseOrder $order): PurchaseOrder {
+            $method = new ReflectionMethod(IssuePurchaseOrder::class, 'lockForIssue');
+
+            return DB::transaction(fn () => $method->invoke(app(IssuePurchaseOrder::class), $actor, $order->id));
+        };
+
+        $workflowOnly = PurchasingActor::make(['purchasing.cutover.commit']);
+        $this->assertSame($cutoverOrder->id, $lock($workflowOnly, $cutoverOrder)->id, 'the real cutover workflow may issue a cutover order');
+        $this->expectRefusal(fn () => $lock($workflowOnly, $plainOrder), 'but not an ordinary order');
+
+        $limitedWorkflow = PurchasingActor::make(['purchasing.cutover.commit']);
+        AccessScopeLimit::create(['user_id' => $limitedWorkflow->id, 'permission' => 'purchasing.cutover.commit', 'scope' => 'MY_UNITS']);
+        $this->expectRefusal(fn () => $lock($limitedWorkflow, $cutoverOrder), 'a limited cutover grant is not the workflow authority');
+
+        $limitedIssuer = PurchasingActor::make([$issue]);
+        AccessScopeLimit::create(['user_id' => $limitedIssuer->id, 'permission' => $issue, 'scope' => 'OWN']);
+        $this->expectNotFound(fn () => $lock($limitedIssuer, $cutoverOrder), 'an issuer limited to their own orders cannot reach it by duty');
+        PurchasingActor::grant($limitedIssuer, ['purchasing.cutover.commit']);
+        $this->assertSame($cutoverOrder->id, $lock($limitedIssuer, $cutoverOrder)->id, 'with the unrestricted workflow authority as well, a cutover order is reachable');
+        $this->expectNotFound(fn () => $lock($limitedIssuer, $plainOrder), 'but the exception never covers an ordinary order');
+    }
+
+    private function expectRefusal(Closure $call, string $why): void
+    {
+        try {
+            $call();
+            $this->fail($why);
+        } catch (DomainInvariantException) {
+            $this->assertTrue(true, $why);
+        }
+    }
+
+    private function expectNotFound(Closure $call, string $why): void
+    {
+        try {
+            $call();
+            $this->fail($why);
+        } catch (ModelNotFoundException) {
+            $this->assertTrue(true, $why);
+        }
     }
 
     /** @return array{0: Item, 1: Uom} */

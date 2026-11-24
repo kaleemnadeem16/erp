@@ -26,7 +26,7 @@ final class CreateGoodsReceipt
         if (! $actor->can('purchasing.goods-receipt.create')) {
             throw new DomainInvariantException('The actor is not permitted to create a goods receipt.');
         }
-        if (! PurchasingCommercialAccess::canView($actor)) {
+        if (! PurchasingCommercialAccess::companyWide($actor)) {
             foreach ($attributes['lines'] ?? [] as $line) {
                 foreach (self::COMMERCIAL_FIELDS as $field) {
                     if (array_key_exists($field, $line)) {

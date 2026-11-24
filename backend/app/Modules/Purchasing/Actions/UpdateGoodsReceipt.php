@@ -37,7 +37,7 @@ final class UpdateGoodsReceipt
             }
             $lines = $attributes['lines'];
             foreach ($lines as &$line) {
-                if (! PurchasingCommercialAccess::canView($actor)) {
+                if (! PurchasingCommercialAccess::companyWide($actor)) {
                     foreach (['provisional_unit_cost', 'currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_rate_source'] as $field) {
                         if (array_key_exists($field, $line)) {
                             throw new DomainInvariantException('The actor is not permitted to override receipt commercial values.', $field);

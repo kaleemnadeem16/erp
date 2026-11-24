@@ -30,7 +30,10 @@ class PurchaseOrderLineResource extends JsonResource
         }
         $outstanding = $outstanding->toScale(4);
 
-        $commercial = PurchasingCommercialAccess::canView($request->user());
+        // Judged with the order's own verdict when it came inside an order. A bare line is judged by its order; a line previewed from the actor's own input has none.
+        $order = $this->resource->exists ? $this->resource->purchaseOrder : null;
+        $commercial = $this->resource->getAttribute('commercial_visible')
+            ?? ($order !== null ? PurchasingCommercialAccess::forOrder($request->user(), $order, $request) : PurchasingCommercialAccess::canView($request->user()));
 
         return [
             'id' => $this->id, 'line_number' => $this->line_number,

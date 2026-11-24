@@ -13,6 +13,7 @@ use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\Scope\DecisionActor;
 use Brick\Math\BigDecimal;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 final class ShortClosePurchaseOrderLine
@@ -26,7 +27,11 @@ final class ShortClosePurchaseOrderLine
         return DB::transaction(function () use ($line, $actor): PurchaseOrderLine {
             // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
             $actor = DecisionActor::require($actor, 'purchasing.purchase-order.short-close', 'short-close a purchase-order line', 'status');
-            $order = PurchaseOrderAccess::make()->lockForDuty($actor, $line->purchase_order_id, 'purchasing.purchase-order.short-close');
+            try {
+                $order = PurchaseOrderAccess::make()->lockForDuty($actor, $line->purchase_order_id, 'purchasing.purchase-order.short-close');
+            } catch (ModelNotFoundException) {
+                throw (new ModelNotFoundException)->setModel(PurchaseOrderLine::class, [$line->id]);
+            }
             $line = PurchaseOrderLine::query()->lockForUpdate()->findOrFail($line->id);
             if ($order->status !== PurchaseOrderStatus::Issued) {
                 throw new DomainInvariantException('Only an issued purchase-order line can be short-closed.', 'status');

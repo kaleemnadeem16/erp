@@ -80,4 +80,18 @@ class PurchaseOrderRecordScopeCoverageTest extends TestCase
         $declared = array_merge(PurchaseOrderAccess::READ_DUTIES, PurchaseOrderAccess::ADJACENT_READ_DUTIES);
         $this->assertSame([], array_values(array_diff($found[1], $declared)), 'A duty that reads purchase orders is missing from PurchaseOrderAccess: it would read them unscoped.');
     }
+
+    public function test_money_on_a_purchase_order_is_never_judged_by_capability_alone(): void
+    {
+        // `canView` answers "does this person hold a commercial duty at all?". Anything that shows the money of an order must ask `forOrder` (or `companyWide`).
+        $allowed = ['PurchasingCommercialAccess.php', 'SupplierOfferResource.php', 'MaintainSupplierOffer.php', 'PurchaseOrderApprovalSubject.php', 'IndexPurchaseOrderRequest.php', 'PurchaseOrderLineResource.php'];
+        $offenders = [];
+        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path('Modules/Purchasing'))) as $file) {
+            if ($file->isFile() && str_ends_with($file->getFilename(), '.php')
+                && str_contains((string) file_get_contents($file->getPathname()), 'PurchasingCommercialAccess::canView(') && ! in_array($file->getFilename(), $allowed, true)) {
+                $offenders[] = $file->getFilename();
+            }
+        }
+        $this->assertSame([], $offenders, 'Judge a purchase order\'s money with PurchasingCommercialAccess::forOrder() (or companyWide() for figures not tied to one order).');
+    }
 }

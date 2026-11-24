@@ -45,20 +45,7 @@ final class IssuePurchaseOrder
         return DB::transaction(function () use ($order, $actor): PurchaseOrder {
             // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
             $actor = DecisionActor::fresh($actor, 'issue a purchase order', 'issued_by');
-            // An open-PO cutover order may also be issued by the unrestricted cutover workflow; every other path needs the issue duty's reach.
-            $viaCutover = $actor->can('purchasing.cutover.commit') && app(RecordScope::class)->resolve($actor, 'purchasing.cutover.commit')->isAll();
-            $reachedByDuty = $actor->can('purchasing.purchase-order.issue')
-                && PurchaseOrderAccess::make()->scopeForDuty(PurchaseOrder::query(), $actor, 'purchasing.purchase-order.issue')->whereKey($order->id)->exists();
-            $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
-            if (! $reachedByDuty && ! ($viaCutover && $order->inventory_cutover_id !== null)) {
-                // Unreachable reads as absent; a reachable order the person lacks the duty for is a plain refusal below.
-                if ($actor->can('purchasing.purchase-order.issue')) {
-                    throw (new ModelNotFoundException)->setModel(PurchaseOrder::class, [$order->id]);
-                }
-            }
-            if (! $actor->can('purchasing.purchase-order.issue') && ! ($order->inventory_cutover_id !== null && $actor->can('purchasing.cutover.commit'))) {
-                throw new DomainInvariantException('The actor is not permitted to issue a purchase order.', 'issued_by');
-            }
+            $order = $this->lockForIssue($actor, $order->id);
             if ($order->status !== PurchaseOrderStatus::Draft || ! $order->lines()->exists()) {
                 throw new DomainInvariantException('Only a non-empty draft purchase order can be issued.', 'status');
             }
@@ -104,6 +91,35 @@ final class IssuePurchaseOrder
     }
 
     /** The delivery point named on the draft must still be a place the company can receive into when the order becomes official. */
+    /**
+     * Locks the order for issue, judging reach from the row as it is NOW (the scope is part of the locking SELECT, so a draft edit that moved the
+     * ship-to while this waited makes the row vanish and the order read as absent). The open-PO cutover exception is only for the real, unrestricted
+     * cutover workflow authority, and only for a cutover order.
+     */
+    private function lockForIssue(User $actor, int $orderId): PurchaseOrder
+    {
+        $cutoverAuthority = $actor->can('purchasing.cutover.commit') && app(RecordScope::class)->resolve($actor, 'purchasing.cutover.commit')->isAll();
+        $refusal = new DomainInvariantException('The actor is not permitted to issue a purchase order.', 'issued_by');
+        if ($actor->can('purchasing.purchase-order.issue')) {
+            try {
+                return PurchaseOrderAccess::make()->lockForDuty($actor, $orderId, 'purchasing.purchase-order.issue');
+            } catch (ModelNotFoundException $absent) {
+                if (! $cutoverAuthority) {
+                    throw $absent;
+                }
+                $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($orderId);
+
+                return $order->inventory_cutover_id !== null ? $order : throw $absent;
+            }
+        }
+        if (! $cutoverAuthority) {
+            throw $refusal;
+        }
+        $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($orderId);
+
+        return $order->inventory_cutover_id !== null ? $order : throw $refusal;
+    }
+
     private function requireShipToStillUsable(PurchaseOrder $order): void
     {
         if ($order->ship_to_warehouse_id !== null && ! Warehouse::query()->whereKey($order->ship_to_warehouse_id)->where('active', true)->exists()) {

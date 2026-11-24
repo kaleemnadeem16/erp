@@ -11,6 +11,7 @@ use App\Support\Scope\RecordScope;
 use App\Support\Scope\ResolvedScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Request;
 
 /**
  * Which purchase orders a person may reach (Q26, ADR 0192). Applied explicitly where orders leave or enter the system, never as a global scope:
@@ -57,9 +58,51 @@ final class PurchaseOrderAccess
         if ($held === []) {
             return $this->records->resolve($user, self::ADJACENT_READ_DUTIES);
         }
+
+        return $this->union($user, $held);
+    }
+
+    /**
+     * Duties that expose a purchase order's money. Each is limitable on its own, so a company-wide operational reader with a limited
+     * commercial grant sees money only on the orders that grant reaches.
+     */
+    public const COMMERCIAL_DUTIES = ['purchasing.commercial-cost.view', 'purchasing.purchase-order.create'];
+
+    /** Which orders' money the person may see. Memoised on the request, so a page of orders costs one resolution. */
+    public function commercialReach(User $user, ?Request $request = null): PurchaseOrderReach
+    {
+        $key = 'purchase_order.commercial_reach.'.$user->id;
+        $cached = $request?->attributes->get($key);
+        if ($cached instanceof PurchaseOrderReach) {
+            return $cached;
+        }
+        $held = array_intersect(self::COMMERCIAL_DUTIES, $user->getAllPermissions()->pluck('name')->all());
+        $reach = PurchaseOrderReach::of($held === [] ? ResolvedScope::none() : $this->union($user, $held), $user->id);
+        $request?->attributes->set($key, $reach);
+
+        return $reach;
+    }
+
+    /** May this person see this order's commercial fields? Needs the capability AND the order inside that capability's reach. */
+    public function mayViewCommercial(?User $user, PurchaseOrder $order, ?Request $request = null): bool
+    {
+        return $user !== null && $this->commercialReach($user, $request)->includes($order->created_by, $order->ship_to_warehouse_id);
+    }
+
+    /** A monetary filter or sort infers values across the whole list, so it needs commercial reach over everything the person can list. */
+    public function commercialCoversRead(User $user, ?Request $request = null): bool
+    {
+        return $this->commercialReach($user, $request)->covers(PurchaseOrderReach::of($this->readScope($user), $user->id));
+    }
+
+    /**
+     * @param  list<string>  $duties  each judged by its own limit; the widest wins
+     */
+    private function union(User $user, array $duties): ResolvedScope
+    {
         $own = false;
         $units = [];
-        foreach ($held as $duty) {
+        foreach ($duties as $duty) {
             $scope = $this->records->resolveForResource($user, $duty, PurchaseOrderScopeAdapter::RESOURCE);
             if ($scope->isAll()) {
                 return $scope;
@@ -127,11 +170,14 @@ final class PurchaseOrderAccess
         return $query->findOrFail($orderId);
     }
 
-    /** A limited person may not file or move an order into a warehouse outside their reach: they would lose sight of it. */
-    public function requireShipToReachable(User $actor, string $duty, ?int $warehouseId): void
+    /**
+     * Before an order is saved (created, or edited): would it still be reachable under this exact duty, through a path that really applies to it?
+     * Being able to reach one's OWN orders is no licence to move somebody else's order out of one's units, and vice versa.
+     */
+    public function requireReachable(User $actor, string $duty, ?int $createdBy, ?int $shipToWarehouseId): void
     {
-        if (! $this->adapter->reachesWarehouse($this->writeScope($actor, $duty), $warehouseId)) {
-            throw new DomainInvariantException('This warehouse is outside the purchase orders you may handle.', 'ship_to_warehouse_id');
+        if (! $this->adapter->reaches($this->writeScope($actor, $duty), $actor->id, $createdBy, $shipToWarehouseId)) {
+            throw new DomainInvariantException('This purchase order would fall outside the orders you may handle.', 'ship_to_warehouse_id');
         }
     }
 

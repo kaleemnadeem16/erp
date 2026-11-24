@@ -16,7 +16,7 @@ class PurchaseOrderResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
-        $commercial = PurchasingCommercialAccess::canView($request->user());
+        $commercial = PurchasingCommercialAccess::forOrder($request->user(), $this->resource, $request);
         // The list needs only the identities; a screen that acts on one order also gets the names and the terms that follow the supplier.
         $detail = ! $request->routeIs('purchase-orders.index');
         if ($detail) {
@@ -59,7 +59,12 @@ class PurchaseOrderResource extends JsonResource
             'source_system' => $this->source_system, 'source_record_id' => $this->source_record_id,
             'total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('line_amount')),
             'base_total_amount' => $this->when($commercial && $this->relationLoaded('lines'), fn () => $this->sumLines('base_line_amount')),
-            'lines' => PurchaseOrderLineResource::collection($this->whenLoaded('lines')),
+            'lines' => $this->whenLoaded('lines', function () use ($commercial) {
+                // The lines are judged with their order's verdict, not asked again per line.
+                $this->lines->each(fn ($line) => $line->setRelation('purchaseOrder', $this->resource)->setAttribute('commercial_visible', $commercial));
+
+                return PurchaseOrderLineResource::collection($this->lines);
+            }),
             // Where the order stands with the approval engine; only on the screens that act on one order.
             // The list's Approval column: the same status as `approval`, for a whole page at once (null while approvals are off).
             'approval_status' => $this->when($request->routeIs('purchase-orders.index'), fn () => $this->approval_status),

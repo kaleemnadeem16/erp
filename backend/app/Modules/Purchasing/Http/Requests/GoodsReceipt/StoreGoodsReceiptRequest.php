@@ -18,7 +18,7 @@ class StoreGoodsReceiptRequest extends FormRequest
     /** @return array<string, mixed> */
     public function rules(): array
     {
-        $commercialField = PurchasingCommercialAccess::canView($this->user()) ? 'sometimes' : 'prohibited';
+        $commercialField = PurchasingCommercialAccess::companyWide($this->user(), $this) ? 'sometimes' : 'prohibited';
 
         return [
             'supplier_account_id' => ['required', 'integer', CompanyScoped::exists('supplier_accounts')],

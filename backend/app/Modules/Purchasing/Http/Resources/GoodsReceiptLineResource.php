@@ -17,7 +17,7 @@ class GoodsReceiptLineResource extends JsonResource
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
     {
-        $commercial = PurchasingCommercialAccess::canView($request->user());
+        $commercial = PurchasingCommercialAccess::companyWide($request->user(), $request);
 
         return [
             'id' => $this->id, 'purchase_order_line_id' => $this->purchase_order_line_id,
