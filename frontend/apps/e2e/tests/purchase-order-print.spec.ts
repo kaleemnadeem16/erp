@@ -133,13 +133,46 @@ test("PO print uses real company data, amount columns and one authoritative tota
   expect(width.scroll).toBeLessThanOrEqual(width.client);
 });
 
-test("PO print omits commercial fields for a quantity-only reader", async ({
+test("PO print omits commercial fields when the server withholds this order's money", async ({
   page,
 }) => {
-  await page.route("**/api/v1/user", async (route) => {
+  // The screen follows the server's verdict for THIS order (`commercial_visible`, ADR 0192), never the general permission: the signed-in person keeps every permission here,
+  // and the response is what the server sends a reader whose commercial reach does not include this order (the money fields are absent).
+  await page.route(`**/api/v1/purchase-orders/${orderId}?*`, async (route) => {
     const response = await route.fetch();
     const body = await response.json();
-    body.data.permissions = ["purchasing.purchase-order.view"];
+    body.data.commercial_visible = false;
+    for (const field of [
+      "fx_policy",
+      "fx_rate",
+      "fx_rate_date",
+      "fx_rate_type",
+      "fx_rate_source",
+      "payment_terms_days",
+      "payment_terms_source",
+      "payment_terms_effective_days",
+      "payment_terms_state",
+      "total_amount",
+      "base_total_amount",
+    ])
+      delete body.data[field];
+    for (const line of body.data.lines ?? [])
+      for (const field of [
+        "price_uom_id",
+        "price_unit_label",
+        "price_quantity",
+        "price_stock_factor",
+        "priced_qty",
+        "unit_price",
+        "discount_amount",
+        "tax_amount",
+        "line_amount",
+        "base_unit_price",
+        "base_discount_amount",
+        "base_tax_amount",
+        "base_line_amount",
+      ])
+        delete line[field];
     await route.fulfill({ response, json: body });
   });
   await page.goto(`/purchase-orders/${orderId}`);
