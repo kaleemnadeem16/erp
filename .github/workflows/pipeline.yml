@@ -343,6 +343,11 @@ jobs:
       TEST_DB_HOST: 127.0.0.1
       TEST_DB_PORT: 5432
       TEST_DB_DATABASE: erp_testing_ci_e2e
+      # `.env.example` points cache, session and queue at a Redis host this job does not run. Nothing here needs one (the harness server forces in-memory drivers itself), so the
+      # artisan commands that run before it (migrate, the world builder) use in-memory drivers too.
+      CACHE_STORE: array
+      SESSION_DRIVER: array
+      QUEUE_CONNECTION: sync
       ERP_E2E_BACKEND: '1'
       ERP_E2E_WORLD_FILE: ${{ github.workspace }}/backend/storage/e2e-world.json
       PHP_CLI_SERVER_WORKERS: 6
