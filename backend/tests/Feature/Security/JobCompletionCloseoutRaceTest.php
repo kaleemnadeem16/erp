@@ -73,7 +73,7 @@ class JobCompletionCloseoutRaceTest extends TestCase
         $this->app->instance(QuotationTaxProvider::class, new FakeQuotationTaxProvider);
         $this->app->instance(QuotationControlsProvider::class, new FakeQuotationControlsProvider);
         $this->registerSourceFamilies();
-        $data = $this->raceCommitted(function () use ($actor, $worker, $complete, $assess): array {
+        $data = $this->raceCommitted(function () use ($actor, $complete, $assess): array {
             $user = User::findOrFail($actor);
             $party = (int) DB::table('parties')->where('company_id', (int) DB::table('users')->where('id', $actor)->value('company_id'))->value('id');
             $data = $this->serviceAcceptance($user, $party);
