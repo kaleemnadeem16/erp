@@ -26,6 +26,9 @@ import { useDebouncedSearch } from "../../lib/use-debounced-search";
 import { useColumnVisibilityPreference } from "../../lib/use-column-visibility-preference";
 import { useListViewPreference } from "../../lib/use-view-preference";
 import { PermissionRoute } from "../../routes/permission-route";
+import { useAuthStore } from "../../stores/auth-store";
+import { jobCommandDuties } from "./job-operation-contract";
+import { JobOperationActions } from "./job-operation-actions";
 import { jobColumns, jobStates } from "./job-columns";
 
 const tableColumns = toTanStackColumns(jobColumns);
@@ -39,6 +42,9 @@ export function JobsListScreen() {
   );
 }
 function JobsListContent() {
+  const mayOperate = useAuthStore((s) =>
+    jobCommandDuties.some((duty) => s.user?.permissions?.includes(duty)),
+  );
   const [advanced, setAdvanced] = useState(false);
   const navigate = useNavigate();
   const { search } = useLocation();
@@ -143,6 +149,18 @@ function JobsListContent() {
       <ActiveFilterChips chips={chips} onClearAll={q.clearFilters} />
       <DataTable
         columns={tableColumns}
+        rowActions={
+          mayOperate
+            ? (row) => (
+                <JobOperationActions
+                  compact
+                  jobId={row.id}
+                  state={row.state}
+                  held={row.has_open_hold}
+                />
+              )
+            : undefined
+        }
         data={data?.data ?? emptyRows}
         rowCount={data?.meta.total ?? 0}
         recordNoun="Jobs"

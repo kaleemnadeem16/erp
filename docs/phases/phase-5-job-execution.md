@@ -8,6 +8,15 @@ completion/closeout and public workflow remain undelivered. No new feature code 
 authorised by the [revised implementation plan](phase-5-revised-implementation-plan.md) (#108/#69).
 Earlier dated assessments below describe their historical baselines, not current delivery.
 
+## Jobs interactive execution — 24 November 2026
+
+The owner authorised a separate UI workstream after approving #128 at integrated eae61f33.
+[Coverage and disclosure contract](../domain/job-execution-ui.md); [operator journey](../journeys/execute-a-job.md).
+Independent assign/start/hold/resolve/assess/close flows and the eligible-assignee lookup are
+implemented for review. Completion confirmation remains gated on owner review of the minimal
+authorised agreed-work context; it must not attest unseen conditions. All 23 duties stay SPECIFIED,
+with zero ACTIVE duties, no grants or production activation.
+
 ## Authorised Jobs HTTP slice — 23 November 2026
 
 Owner-authorised #128 adds the [Jobs command API](../domain/job-write-api.md) after independent

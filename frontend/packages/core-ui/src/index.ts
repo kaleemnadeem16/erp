@@ -312,3 +312,5 @@ export { QuotationEditScreen } from "./features/quotations/quotation-edit-screen
 
 export { JobsListScreen } from './features/jobs/jobs-list-screen';
 export { JobDetailScreen } from './features/jobs/job-detail-screen';
+
+export { JobOperationScreen } from "./features/jobs/job-operation-screen";

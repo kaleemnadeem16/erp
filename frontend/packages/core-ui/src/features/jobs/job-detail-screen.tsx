@@ -14,6 +14,7 @@ import { Button } from "../../components/ui/button";
 import { ListError } from "../../components/data-table/list-error";
 import { formatDateTime } from "../../lib/format-date";
 import { isApiError } from "../../lib/api-errors";
+import { JobOperationActions } from "./job-operation-actions";
 import { JobStatus, responsibleLabel } from "./job-columns";
 
 export function JobDetailScreen({
@@ -43,6 +44,15 @@ function JobDetailContent({ presentation }: { presentation: Presentation }) {
       title={job?.number ?? "Job details"}
       listPath="/jobs"
       listLabel="Jobs"
+      actions={
+        job ? (
+          <JobOperationActions
+            jobId={jobId}
+            state={job.state}
+            held={job.has_open_hold}
+          />
+        ) : undefined
+      }
     >
       {detail.isLoading ? (
         <Skeleton className="h-40 w-full" />

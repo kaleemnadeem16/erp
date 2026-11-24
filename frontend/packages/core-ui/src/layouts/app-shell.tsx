@@ -131,6 +131,7 @@ const navGroups: NavGroup[] = [
     label: "Jobs",
     items: [
       { to: "/jobs", label: "Jobs", icon: ClipboardCheck, permission: "job.view" },
+      { to: "/job-operations", label: "Job operations", icon: ClipboardCheck },
     ],
   },
   {

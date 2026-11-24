@@ -170,8 +170,9 @@ class JobCommandApiCommitTest extends TestCase
      * A real source wait cannot coexist with a normally committed security revocation: security writers need the company barrier already held by the reader.
      * Prove that ordering separately; for the post-source-wait recheck change authority in the waiting reader after its actual lock acquisition.
      */
-    private function blockedContext(string $change): void
+    private function blockedContext(string $change, bool $lookup = false): void
     {
+        $requestPath = '/api/v1/jobs/'.$this->jobId.($lookup ? '/eligible-assignees?search=Sam' : '/operation-context?operation=HOLD');
         $path = sys_get_temp_dir().'/job_context_wait_'.getmypid();
         @unlink($path);
         @unlink($path.'.pid');
@@ -193,16 +194,16 @@ class JobCommandApiCommitTest extends TestCase
                 file_put_contents($path.'.pid', (string) DB::selectOne('select pg_backend_pid() as pid')->pid);
                 $queries = [];
                 $changed = false;
-                DB::listen(function ($query) use (&$queries, &$changed, $change): void {
+                DB::listen(function ($query) use (&$queries, &$changed, $change, $lookup): void {
                     $queries[] = $query->sql;
                     if ($change === 'post-wait' && ! $changed && str_contains($query->sql, 'customer_acceptances') && str_contains($query->sql, 'for update')) {
                         $changed = true;
-                        $this->operator->revokePermissionTo('job.hold');
+                        $this->operator->revokePermissionTo($lookup ? 'job.assign' : 'job.hold');
                         app(PermissionRegistrar::class)->forgetCachedPermissions();
                     }
                 });
                 try {
-                    $response = $this->getJson('/api/v1/jobs/'.$this->jobId.'/operation-context?operation=HOLD');
+                    $response = $this->getJson($requestPath);
                     file_put_contents($path, json_encode(['status' => $response->getStatusCode(), 'body' => $response->json(), 'queries' => $queries, 'changed' => $changed]));
                 } catch (\Throwable $e) {
                     file_put_contents($path, json_encode(['error' => $e->getMessage()]));
@@ -235,13 +236,14 @@ class JobCommandApiCommitTest extends TestCase
             $result = json_decode(file_get_contents($path), true);
             $this->assertSame($change === 'source' ? 404 : 403, $result['status'] ?? null, json_encode($result));
             $this->assertArrayNotHasKey('data', $result['body']);
+            $this->assertSame([], array_values(array_filter($result['queries'], fn ($sql) => str_contains($sql, 'ilike'))), 'no employee search before proof');
             $this->assertSame([], array_values(array_filter($result['queries'], fn ($sql) => str_contains($sql, 'jsonb_agg'))), 'no profile materialised');
             $this->assertSame([], array_values(array_filter($result['queries'], fn ($sql) => str_contains($sql, 'service_jobs') && str_contains($sql, 'for update'))));
             if ($change === 'post-wait') {
                 $this->assertTrue($result['changed']);
             }
             // The controlled post-wait revocation shares the refused read transaction and rolls back with it. The company/source writers above commit independently.
-            $this->getJson('/api/v1/jobs/'.$this->jobId.'/operation-context?operation=HOLD')->assertStatus(match ($change) {
+            $this->getJson($requestPath)->assertStatus(match ($change) {
                 'source' => 404,'company' => 403,default => 200
             });
         } finally {
@@ -270,5 +272,15 @@ class JobCommandApiCommitTest extends TestCase
     public function test_authority_is_rechecked_after_an_actual_source_wait_before_any_profile_is_materialised(): void
     {
         $this->blockedContext('post-wait');
+    }
+
+    public function test_lookup_discloses_no_employees_after_source_revocation_during_a_real_wait(): void
+    {
+        $this->blockedContext('source', true);
+    }
+
+    public function test_lookup_rechecks_assignment_authority_after_a_real_source_wait(): void
+    {
+        $this->blockedContext('post-wait', true);
     }
 }

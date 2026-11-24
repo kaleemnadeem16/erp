@@ -105,3 +105,4 @@ export * from "./generated/handover-plan/handover-plan";
 export * from "./generated/job-read/job-read";
 export * from "./generated/job-command/job-command";
 export * from "./generated/handover-release/handover-release";
+export * from "./generated/job-assignment-lookup/job-assignment-lookup";

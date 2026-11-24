@@ -31,6 +31,15 @@ Request and fenced query. Missing/foreign Jobs return identical 404s. No duty or
 and source-eligible minimal operation-context GET. Existing Actions retain lifecycle, source,
 transaction, lock and retry ownership. No general Job view duty is required for a command.
 
+## Interactive execution UI (disabled; independent workstream)
+
+[Interaction and lookup contract](../../../../docs/domain/job-execution-ui.md) and
+[operator journey](../../../../docs/journeys/execute-a-job.md). Exact-duty commands reuse the
+approved API; command-only employees enter a known Job without general Job/Sales/member reads.
+The assignment selector proves current same-Job source eligibility before returning bounded
+active-employee ID/name choices. Whole-deliverable completion confirmation remains deferred
+pending owner approval of its minimal attestation-text disclosure contract.
+
 ## Owns
 
 - Tables (`2026_10_22_090000_create_jobs_foundation`): `service_jobs` (code, state RELEASED/ACTIVE/COMPLETED/CLOSED, generation ≥ 1; the Laravel queue's `jobs` table is

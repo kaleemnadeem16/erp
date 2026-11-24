@@ -35,6 +35,12 @@ eligibility before operation-context disclosure or command replay. Company/sourc
 Job lock. Command-only operators need no broad Job/Sales read duty; responses omit commercial facts,
 private evidence and hashes. No permission, grant or activation is included.
 
+[Jobs interactive execution](../domain/job-execution-ui.md) uses effective exact duties independently
+of job.view. Its eligible-assignee selector requires job.assign/ALL/current membership and current
+same-Job source eligibility before any employee search/count, exposing bounded ID/name only. The
+UserResource filters all Jobs duties through JobAccess, including SPECIFIED/STAGED/limited grants.
+Whole-deliverable completion disclosure is proposed for owner review and not silently broadened.
+
 ## Evidence and confidence
 
 The first pass inspected API route files, controllers, Form Requests, selected Actions and

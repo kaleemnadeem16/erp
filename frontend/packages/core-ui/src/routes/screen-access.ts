@@ -1,3 +1,4 @@
+import { jobCommandDuties } from "../features/jobs/job-operation-contract";
 import {
   quotationAccess,
   quotationCreationAccess,
@@ -86,6 +87,7 @@ const recalculation = [
 
 const rules: readonly Rule[] = [
   { path: "/jobs", allOf: ["job.view"] },
+  { path: "/job-operations", anyOf: jobCommandDuties },
   { path: "/", allOf: legacySetup },
   { path: "/purchase-orders", anyOf: purchaseOrder },
   { path: "/goods-receipts", anyOf: goodsReceipt },

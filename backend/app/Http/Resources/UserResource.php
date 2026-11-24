@@ -30,7 +30,7 @@ class UserResource extends JsonResource
             'permissions' => $this->when(
                 $request->user()?->is($user) === true,
                 fn () => $user->getAllPermissions()->pluck('name')
-                    ->filter(fn (string $permission): bool => $permission !== 'job.view' || JobAccess::may($user, 'job.view'))
+                    ->filter(fn (string $permission): bool => ! str_starts_with($permission, 'job.') || JobAccess::may($user, $permission))
                     ->sort()->values()->all(),
             ),
         ];

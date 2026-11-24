@@ -187,7 +187,7 @@ class JobReadQueriesTest extends TestCase
         $this->app->instance(JobDutyManifest::class, JobDutyManifest::shipped());
         $this->denyAll($this->user);
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
     }
 
     public function test_revocation_between_early_check_and_fenced_decision_refuses_before_job_lookup(): void
