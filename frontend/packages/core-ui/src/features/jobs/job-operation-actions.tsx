@@ -30,8 +30,8 @@ export function JobOperationActions({
   if (!options.length) return null;
   function unavailable(op: JobOperation): string | undefined {
     if (state === "CLOSED") return "This Job is closed.";
-    if (op === "COMPLETE")
-      return "The exact agreed work and completion conditions must be available for review.";
+    if (op === "COMPLETE" && (state !== "ACTIVE" || held))
+      return "Completion requires active work with every hold resolved.";
     if (op === "ASSESS_CLOSEOUT") return undefined;
     if (op === "CLOSE")
       return state !== "COMPLETED"

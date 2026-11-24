@@ -35,6 +35,8 @@ import type {
   JobsClose404,
   JobsComplete200,
   JobsComplete404,
+  JobsCompletionAttestationContext200,
+  JobsCompletionAttestationContext404,
   JobsHold200,
   JobsHold404,
   JobsOperationContext200,
@@ -1267,6 +1269,243 @@ export function useJobsOperationContext<
   const queryOptions = getJobsOperationContextQueryOptions(
     job,
     params,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
+export type jobsCompletionAttestationContextResponse200 = {
+  data: JobsCompletionAttestationContext200;
+  status: 200;
+};
+
+export type jobsCompletionAttestationContextResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type jobsCompletionAttestationContextResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type jobsCompletionAttestationContextResponse404 = {
+  data: JobsCompletionAttestationContext404;
+  status: 404;
+};
+
+export type jobsCompletionAttestationContextResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type jobsCompletionAttestationContextResponseSuccess =
+  jobsCompletionAttestationContextResponse200 & {
+    headers: Headers;
+  };
+export type jobsCompletionAttestationContextResponseError = (
+  | jobsCompletionAttestationContextResponse401
+  | jobsCompletionAttestationContextResponse403
+  | jobsCompletionAttestationContextResponse404
+  | jobsCompletionAttestationContextResponse422
+) & {
+  headers: Headers;
+};
+
+export type jobsCompletionAttestationContextResponse =
+  | jobsCompletionAttestationContextResponseSuccess
+  | jobsCompletionAttestationContextResponseError;
+
+export const getJobsCompletionAttestationContextUrl = (job: number) => {
+  return `/v1/jobs/${job}/completion-attestation-context`;
+};
+
+export const jobsCompletionAttestationContext = async (
+  job: number,
+  options?: RequestInit,
+): Promise<jobsCompletionAttestationContextResponse> => {
+  return fetchClient<jobsCompletionAttestationContextResponse>(
+    getJobsCompletionAttestationContextUrl(job),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getJobsCompletionAttestationContextQueryKey = (job?: number) => {
+  return [`/v1/jobs/${job}/completion-attestation-context`] as const;
+};
+
+export const getJobsCompletionAttestationContextQueryOptions = <
+  TData = Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | JobsCompletionAttestationContext404
+    | ValidationExceptionResponse,
+>(
+  job: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getJobsCompletionAttestationContextQueryKey(job);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof jobsCompletionAttestationContext>>
+  > = () => jobsCompletionAttestationContext(job, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!job,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type JobsCompletionAttestationContextQueryResult = NonNullable<
+  Awaited<ReturnType<typeof jobsCompletionAttestationContext>>
+>;
+export type JobsCompletionAttestationContextQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | JobsCompletionAttestationContext404
+  | ValidationExceptionResponse;
+
+export function useJobsCompletionAttestationContext<
+  TData = Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | JobsCompletionAttestationContext404
+    | ValidationExceptionResponse,
+>(
+  job: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+          TError,
+          Awaited<ReturnType<typeof jobsCompletionAttestationContext>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useJobsCompletionAttestationContext<
+  TData = Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | JobsCompletionAttestationContext404
+    | ValidationExceptionResponse,
+>(
+  job: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+          TError,
+          Awaited<ReturnType<typeof jobsCompletionAttestationContext>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useJobsCompletionAttestationContext<
+  TData = Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | JobsCompletionAttestationContext404
+    | ValidationExceptionResponse,
+>(
+  job: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useJobsCompletionAttestationContext<
+  TData = Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | JobsCompletionAttestationContext404
+    | ValidationExceptionResponse,
+>(
+  job: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof jobsCompletionAttestationContext>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getJobsCompletionAttestationContextQueryOptions(
+    job,
     options,
   );
 

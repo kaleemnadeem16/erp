@@ -530,7 +530,7 @@ class JobLifecycleActionsTest extends TestCase
     public function test_nothing_is_routed_registered_granted_or_migrated(): void
     {
         $uris = collect(Route::getRoutes()->getRoutes())->map(fn ($r) => $r->uri());
-        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees', 'api/v1/jobs/{job}/completion-attestation-context'], $uris->filter(fn ($u) => preg_match('#^api/v1/(service-)?jobs#', $u) === 1)->values()->all());
         // This class's fixtures may activate duties on the container's manifest; what ships registers nothing (and strictly excludes nothing).
         $shipped = new PermissionRegistry(app(PermissionRegistrar::class));
         JobDutyManifest::shipped()->registerWith($shipped);

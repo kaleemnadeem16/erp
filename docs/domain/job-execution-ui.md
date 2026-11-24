@@ -28,7 +28,7 @@ context remain mounted behind the existing detail sheet.
 | Start | Exact-duty confirmation | job.start; RELEASED, responsibility exists, no holds | Success refresh; held/unassigned/stale refusal never changes state optimistically |
 | Hold | Reason and confirmation | job.hold; RELEASED/ACTIVE | Independent new hold; retry preserves command identity |
 | Resolve hold | Choose one open hold, reason and confirmation | job.hold.resolve; named same-Job open hold | Resolving one leaves every other hold open |
-| Complete | Whole-deliverable attestation | job.complete; ACTIVE; no holds; attestation context requires separate approved disclosure contract | Pending owner review of exact safe text fields; never attest unseen conditions |
+| Complete | Whole-deliverable attestation | job.complete; ACTIVE; no holds; frozen attestation context | Review the deliverable and conditions, enter a statement and explicitly confirm |
 | Assess closeout | Explicit assessment confirmation and READY/BLOCKED result | job.close; eligible source, including unready Jobs | Stable blocker words and next steps; no source pins/evidence |
 | Close | READY assessment of current generation, optional statement, final confirmation | job.close; COMPLETED, no holds; Action rechecks readiness | Operational closure is irreversible; changed assessment/source refuses |
 | Generation/key/UUID | Bound command intent, not editable fields | Every command; assessment has actor/key identity only | Same-intent uncertain retries keep all identities and generation |
@@ -70,15 +70,14 @@ chosen employee and remains the sole authority for final assignment eligibility.
 
 ## Completion attestation review boundary
 
-The existing command profile intentionally contains no baseline text. The exact proposed separate
-contract is on #132 for owner review: `GET /jobs/{job}/completion-attestation-context`, with only
+The existing command profile intentionally contains no baseline text. The approved separate
+contract is `GET /jobs/{job}/completion-attestation-context`, with only
 job_id, number, state, generation, baseline_version, deliverable and agreed_conditions. It requires
 exact ACTIVE job.complete / current membership / ALL scope plus owning-source eligibility under
-the existing company/source fences. The newly disclosed text would be only the frozen Jobs
+the existing company/source fences. The text comes only from the frozen Jobs
 baseline component's deliverable_text and agreed_conditions. Customer identity, commercial values,
 source references, hashes, pins, private consent evidence and broad history remain excluded.
-These free-text conditions can contain operational detail, so this disclosure is **not implemented
-without explicit owner approval**. Completion confirmation stays deferred until that decision.
+The command uses the disclosed snapshot generation and the existing completion Action. Start actor and replay rules remain under review in #132.
 
 ## Related
 

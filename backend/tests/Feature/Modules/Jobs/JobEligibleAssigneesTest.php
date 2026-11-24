@@ -34,6 +34,29 @@ class JobEligibleAssigneesTest extends TestCase
         $this->actingAs($this->operator);
     }
 
+    public function test_completion_attestation_discloses_only_the_frozen_snapshot_to_the_exact_duty(): void
+    {
+        $url = '/api/v1/jobs/'.$this->jobId.'/completion-attestation-context';
+        $this->getJson($url)->assertForbidden();
+        $actor = User::factory()->create();
+        $this->grantJobDuties($actor, 'job.complete');
+        $this->actingAs($actor);
+        $job = DB::table('service_jobs')->find($this->jobId);
+        $component = DB::table('job_baseline_components')->where('job_id', $this->jobId)->first();
+        $this->getJson($url)->assertOk()->assertExactJson(['data' => [
+            'job_id' => $this->jobId,
+            'number' => $job->code,
+            'state' => $job->state,
+            'generation' => $job->generation,
+            'baseline_version' => 1,
+            'deliverable' => $component->deliverable_text,
+            'agreed_conditions' => $component->agreed_conditions,
+        ]]);
+        $this->getJson('/api/v1/jobs/99999999/completion-attestation-context')->assertNotFound();
+        AccessScopeLimit::create(['user_id' => $actor->id, 'permission' => 'job.complete', 'scope' => 'OWN']);
+        $this->getJson($url)->assertForbidden();
+    }
+
     private function url(string $query = 'search=Sam'): string
     {
         return '/api/v1/jobs/'.$this->jobId.'/eligible-assignees?'.$query;

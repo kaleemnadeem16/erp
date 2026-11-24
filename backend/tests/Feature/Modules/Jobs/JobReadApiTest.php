@@ -205,10 +205,10 @@ class JobReadApiTest extends TestCase
     {
         $routes = collect(Route::getRoutes()->getRoutes())
             ->filter(fn ($route) => str_starts_with($route->uri(), 'api/v1/jobs'));
-        $this->assertCount(12, $routes);
-        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees'], $routes->map(fn ($route) => $route->uri())->values()->all());
+        $this->assertCount(13, $routes);
+        $this->assertEqualsCanonicalizing(['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/assign', 'api/v1/jobs/{job}/start', 'api/v1/jobs/{job}/holds', 'api/v1/jobs/{job}/resolve-hold', 'api/v1/jobs/{job}/complete', 'api/v1/jobs/{job}/closeout-assessments', 'api/v1/jobs/{job}/close', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees', 'api/v1/jobs/{job}/completion-attestation-context'], $routes->map(fn ($route) => $route->uri())->values()->all());
         foreach ($routes as $route) {
-            $this->assertSame(in_array($route->uri(), ['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees'], true) ? ['GET', 'HEAD'] : ['POST'], $route->methods());
+            $this->assertSame(in_array($route->uri(), ['api/v1/jobs', 'api/v1/jobs/{job}', 'api/v1/jobs/{job}/history', 'api/v1/jobs/{job}/operation-context', 'api/v1/jobs/{job}/eligible-assignees', 'api/v1/jobs/{job}/completion-attestation-context'], true) ? ['GET', 'HEAD'] : ['POST'], $route->methods());
             $this->assertContains('auth:sanctum', $route->gatherMiddleware());
         }
     }

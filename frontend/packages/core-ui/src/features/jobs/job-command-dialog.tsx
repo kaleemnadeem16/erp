@@ -123,7 +123,19 @@ export function JobCommandDialog(props: JobCommandDialogProps) {
                 {problem}
               </p>
             )}
-            {operation !== "COMPLETE" && (
+            {operation === "COMPLETE" &&
+              profile.baseline_version !== undefined && (
+                <dl className="space-y-2 break-words">
+                  <dt className="font-medium">Agreed deliverable</dt>
+                  <dd className="whitespace-pre-wrap">{profile.deliverable}</dd>
+                  <dt className="font-medium">Agreed completion conditions</dt>
+                  <dd className="whitespace-pre-wrap">
+                    {profile.agreed_conditions}
+                  </dd>
+                </dl>
+              )}
+            {(operation !== "COMPLETE" ||
+              profile.baseline_version !== undefined) && (
               <JobCommandFields
                 operation={operation}
                 context={profile}
@@ -230,8 +242,9 @@ export function JobCommandDialog(props: JobCommandDialogProps) {
                     onChange={(e) => setConfirmed(e.target.checked)}
                   />
                   <Label htmlFor="job-command-confirm">
-                    I confirm this operation for {profile.number} after
-                    reviewing the current context.
+                    {operation === "COMPLETE"
+                      ? "I confirm that I reviewed the agreed deliverable and conditions above and completed them in full."
+                      : `I confirm this operation for ${profile.number} after reviewing the current context.`}
                   </Label>
                 </div>
               )

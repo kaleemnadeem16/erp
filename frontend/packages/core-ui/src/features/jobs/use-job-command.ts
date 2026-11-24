@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { jobsOperationContext, user as readCurrentUser } from "@erp/core-api";
+import {
+  jobsCompletionAttestationContext,
+  jobsOperationContext,
+  user as readCurrentUser,
+} from "@erp/core-api";
 import {
   getApiErrorMessage,
   isApiError,
@@ -16,6 +20,7 @@ import {
 import { sendJobCommand } from "./job-command-gateway";
 import {
   jobOperations,
+  type JobContext,
   operationProblem,
   retainJobAttempt,
   jobRefusalAdvice,
@@ -71,14 +76,24 @@ export function useJobCommand({
   const context = useQuery({
     queryKey: ["jobs-operation", actorId, jobId, operation],
     enabled: allowed && !terminal,
-    queryFn: () => jobsOperationContext(jobId, { operation }),
+    queryFn: async () => {
+      if (operation !== "COMPLETE")
+        return jobsOperationContext(jobId, { operation });
+      const result = await jobsCompletionAttestationContext(jobId);
+      if (result.status !== 200)
+        throw new Error("Completion context unavailable.");
+      return {
+        status: 200 as const,
+        data: { data: { ...result.data.data, operation: "COMPLETE" as const } },
+      };
+    },
     retry: shouldRetryQuery,
     staleTime: 0,
     gcTime: 0,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
-  const profile =
+  const profile: JobContext | undefined =
     !terminal && context.data?.status === 200
       ? context.data.data.data
       : undefined;
@@ -233,7 +248,8 @@ export function useJobCommand({
     Boolean(problem) ||
     context.isFetching ||
     !profile ||
-    (operation === "CLOSE" && !ready);
+    (operation === "CLOSE" && !ready) ||
+    (operation === "COMPLETE" && !draft.statement.trim());
   return {
     dirty,
     actorId,

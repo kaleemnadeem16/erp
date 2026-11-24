@@ -17,6 +17,7 @@ use App\Modules\Jobs\Http\Requests\AssessJobCloseoutRequest;
 use App\Modules\Jobs\Http\Requests\AssignJobRequest;
 use App\Modules\Jobs\Http\Requests\CloseJobRequest;
 use App\Modules\Jobs\Http\Requests\CompleteJobRequest;
+use App\Modules\Jobs\Http\Requests\CompletionAttestationContextRequest;
 use App\Modules\Jobs\Http\Requests\JobOperationContextRequest;
 use App\Modules\Jobs\Http\Requests\PlaceJobHoldRequest;
 use App\Modules\Jobs\Http\Requests\ResolveJobHoldRequest;
@@ -27,6 +28,7 @@ use App\Modules\Jobs\Http\Resources\JobOperationContextResource;
 use App\Modules\Jobs\Queries\ReadJobOperationContext;
 use Closure;
 use Dedoc\Scramble\Attributes\Response;
+use Illuminate\Http\JsonResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class JobCommandController extends Controller
@@ -113,6 +115,14 @@ final class JobCommandController extends Controller
     public function jobsOperationContext(JobOperationContextRequest $request, int $job, ReadJobOperationContext $query): JobOperationContextResource
     {
         return new JobOperationContextResource($this->found(fn () => $query->read($request->user(), $job, $request->operation())));
+    }
+
+    #[Response(404, 'The Job was not found.', type: 'array{message:string}')]
+    #[Response(200, 'Frozen completion attestation context.', type: 'array{data:array{job_id:int,number:string,state:string,generation:int,baseline_version:int,deliverable:string,agreed_conditions:string}}')]
+    public function jobsCompletionAttestationContext(CompletionAttestationContextRequest $request, int $job, ReadJobOperationContext $query): JsonResponse
+    {
+        return response()->json(['data' => $this->found(fn () => $query->readCompletionAttestation($request->user(), $job))])
+            ->header('Cache-Control', 'private, no-store');
     }
 
     /**

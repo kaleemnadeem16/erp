@@ -99,6 +99,26 @@ async function mount(
         body,
         search: url.searchParams,
       });
+      if (url.pathname.endsWith("/completion-attestation-context")) {
+        if (opts.sourceDenied)
+          return route.fulfill({
+            status: 404,
+            json: { message: "The Job was not found." },
+          });
+        return route.fulfill({
+          json: {
+            data: {
+              job_id: 7,
+              number: "JOB-007",
+              state,
+              generation,
+              baseline_version: 1,
+              deliverable: "Inspect the installed equipment",
+              agreed_conditions: "Verify all three safety checks",
+            },
+          },
+        });
+      }
       if (url.pathname.endsWith("/operation-context")) {
         if (opts.contextRevoked) {
           duties = [];
@@ -633,7 +653,7 @@ test("dirty confirmation preserves input on Escape and requires explicit discard
   await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
-test("completion cannot attest unseen agreed conditions while its disclosure contract is pending", async ({
+test("completion displays frozen work before requiring a statement and confirmation", async ({
   page,
 }) => {
   const { requests } = await mount(page, {
@@ -642,15 +662,21 @@ test("completion cannot attest unseen agreed conditions while its disclosure con
     state: "ACTIVE",
   });
   await review(page);
-  await expect(
-    page.getByRole("button", { name: "Complete deliverable", exact: true }),
-  ).toBeDisabled();
-  await expect(
-    page.getByText(
-      "The exact agreed work and completion conditions must be available for review before completing this Job. Contact the responsible reviewer.",
-    ),
-  ).toBeVisible();
-  expect(requests.some((r) => r.method === "POST")).toBe(false);
+  await expect(page.getByText("Inspect the installed equipment")).toBeVisible();
+  await expect(page.getByText("Verify all three safety checks")).toBeVisible();
+  const submit = page.getByRole("button", {
+    name: "Complete deliverable",
+    exact: true,
+  });
+  await expect(submit).toBeDisabled();
+  await page
+    .getByLabel("Whole-deliverable completion statement")
+    .fill("All three checks verified.");
+  await page.locator("#job-command-confirm").check();
+  await submit.click();
+  await expect
+    .poll(() => requests.filter((request) => request.method === "POST").length)
+    .toBe(1);
 });
 
 test("assignment optional fields retain explicit occurrence and intended timestamps in UTC", async ({

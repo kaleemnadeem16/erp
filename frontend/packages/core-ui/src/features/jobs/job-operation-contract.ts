@@ -49,7 +49,11 @@ export const jobOperations = {
   },
 } as const;
 export type JobOperation = keyof typeof jobOperations;
-export type JobContext = JobOperationContextResource;
+export type JobContext = JobOperationContextResource & {
+  baseline_version?: number;
+  deliverable?: string;
+  agreed_conditions?: string;
+};
 export type JobAssessment = JobCloseoutAssessmentResource;
 export const jobCommandDuties = [
   ...new Set(Object.values(jobOperations).map((o) => o.duty)),
@@ -69,7 +73,11 @@ export function operationProblem(
       ? "Only a completed Job can be closed."
       : null;
   if (operation === "COMPLETE")
-    return "The exact agreed work and completion conditions must be available for review before completing this Job. Contact the responsible reviewer.";
+    return context.state !== "ACTIVE"
+      ? "Only active Jobs can be completed."
+      : context.baseline_version === undefined
+        ? "The agreed work is unavailable."
+        : null;
   if (!["RELEASED", "ACTIVE"].includes(context.state))
     return "This operation needs a released or active Job.";
   if (operation === "START") {

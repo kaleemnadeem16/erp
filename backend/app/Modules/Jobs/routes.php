@@ -19,5 +19,6 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('jobs/{job}/closeout-assessments', [JobCommandController::class, 'jobsAssessCloseout'])->whereNumber('job')->name('jobsAssessCloseout');
     Route::post('jobs/{job}/close', [JobCommandController::class, 'jobsClose'])->whereNumber('job')->name('jobsClose');
     Route::get('jobs/{job}/operation-context', [JobCommandController::class, 'jobsOperationContext'])->whereNumber('job')->name('jobsOperationContext');
+    Route::get('jobs/{job}/completion-attestation-context', [JobCommandController::class, 'jobsCompletionAttestationContext'])->whereNumber('job')->name('jobsCompletionAttestationContext');
     Route::get('jobs/{job}/eligible-assignees', [JobAssignmentLookupController::class, 'jobsEligibleAssignees'])->whereNumber('job')->name('jobsEligibleAssignees');
 });

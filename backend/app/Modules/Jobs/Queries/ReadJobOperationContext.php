@@ -88,6 +88,36 @@ final class ReadJobOperationContext
         });
     }
 
+    /** @return array{job_id:int,number:string,state:string,generation:int,baseline_version:int,deliverable:string,agreed_conditions:string} */
+    public function readCompletionAttestation(?User $actor, int $jobId): array
+    {
+        return DB::transaction(function () use ($actor, $jobId): array {
+            // The outer transaction retains the existing COMPLETE company and source fences.
+            $this->read($actor, $jobId, 'COMPLETE');
+            $row = DB::table('service_jobs as j')
+                ->join('job_sales_origins as o', fn ($join) => $join->on('o.company_id', 'j.company_id')->on('o.job_id', 'j.id'))
+                ->join('job_baselines as b', fn ($join) => $join->on('b.company_id', 'j.company_id')->on('b.job_id', 'j.id'))
+                ->leftJoin('job_baseline_components as c', fn ($join) => $join->on('c.company_id', 'b.company_id')->on('c.job_id', 'b.job_id')->on('c.baseline_id', 'b.id'))
+                ->where('j.company_id', app(CompanyContext::class)->id())->where('j.id', $jobId)
+                ->orderByDesc('b.version')
+                ->first(['j.id', 'j.code', 'j.state', 'j.generation', 'b.version', 'c.deliverable_text', 'c.agreed_conditions', 'o.release_event_id as origin_release_id', 'c.release_event_id as component_release_id']);
+            $this->requireAuthority($actor, JobLifecycleOperation::DUTIES['COMPLETE']);
+            if ($row === null || $row->deliverable_text === null || $row->agreed_conditions === null || $row->origin_release_id !== $row->component_release_id) {
+                $this->notFound();
+            }
+
+            return [
+                'job_id' => (int) $row->id,
+                'number' => $row->code,
+                'state' => $row->state,
+                'generation' => (int) $row->generation,
+                'baseline_version' => (int) $row->version,
+                'deliverable' => $row->deliverable_text,
+                'agreed_conditions' => $row->agreed_conditions,
+            ];
+        });
+    }
+
     /** @param list<string> $duties */
     private function requireAuthority(?User $actor, array $duties): void
     {

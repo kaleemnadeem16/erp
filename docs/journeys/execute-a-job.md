@@ -32,7 +32,7 @@ form requires explicit discard; browser reload warns while work is unsaved or un
 | Start work | Confirm recorded responsibility and no open holds | RELEASED → ACTIVE; an unassigned/held/stale Job refuses |
 | Place on hold | Give a reason for one new hold | Independent hold; further holds stay distinct |
 | Resolve a hold | Choose one named open hold and give the resolution reason | Only that hold resolves. Other holds stay open; work does not start automatically |
-| Complete deliverable | Review the exact frozen deliverable and agreed completion conditions before attesting the whole work | **Deferred:** the minimal authorised attestation-context disclosure contract needs owner review; the UI cannot attest unseen conditions |
+| Complete deliverable | Review the exact frozen deliverable and agreed completion conditions before attesting the whole work | The authorised attestation context displays the frozen text before the statement and confirmation |
 | Assess closeout readiness | Confirm recording an assessment | READY or BLOCKED immutable assessment; safe blocker advice identifies the next responsible step |
 | Close Job | Obtain a READY assessment for the current generation; optionally state the closeout reason; confirm permanent operational closure | COMPLETED → CLOSED; changed conditions/source/fulfilment or stale assessment refuse. No invoice/balance is settled |
 
