@@ -42,6 +42,8 @@ export interface PurchaseOrderResource {
   supplier_site?: PurchaseOrderResourceSupplierSite;
   status: string;
   currency_id: number;
+  /** The server's verdict for THIS order: whether its money is shown to this person (the capability and the order's own reach). Screens follow it, never the general permission. */
+  commercial_visible: boolean;
   fx_policy?: string;
   fx_rate?: string;
   fx_rate_date?: string;

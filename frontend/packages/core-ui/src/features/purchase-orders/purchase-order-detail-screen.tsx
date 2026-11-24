@@ -1,4 +1,5 @@
 import { paymentTermsLabel } from "./purchase-order-terms";
+import { mayViewOrderCommercial } from "./purchase-order-commercial";
 import { ScreenTemplate } from "../../components/page/screen-template";
 import { PurchaseOrderQuickPrint } from "./purchase-order-print";
 import { useEffect, useState, type ReactNode } from "react";
@@ -50,7 +51,6 @@ import {
   PurchaseOrderApprovalSection,
   type PurchaseOrderApproval,
 } from "./purchase-order-approval-section";
-import { usePurchasingCommercialCost } from "../../hooks/use-purchasing-commercial-cost";
 import { PurchaseOrderStatusBadge } from "./purchase-order-columns";
 
 const SITE_ROLE_LABEL: Record<string, string> = {
@@ -91,7 +91,6 @@ export function PurchaseOrderDetailScreen({
 }: {
   presentation?: Presentation;
 }) {
-  const mayViewCommercialCost = usePurchasingCommercialCost();
   const mayEdit = usePermission("purchasing.purchase-order.create");
   const mayIssue = usePermission("purchasing.purchase-order.issue");
   const mayCancel = usePermission("purchasing.purchase-order.cancel");
@@ -106,6 +105,8 @@ export function PurchaseOrderDetailScreen({
   });
   const order =
     orderQuery.data?.status === 200 ? orderQuery.data.data.data : undefined;
+  // The server decides, order by order, whether this order's money is shown (the capability AND the order inside that capability's reach): headings, controls and the print follow that, never the general permission.
+  const mayViewCommercialCost = mayViewOrderCommercial(order);
   const supplierQuery = useSupplierAccountsShow(
     order?.supplier_account_id ?? 0,
     { include: "party" },

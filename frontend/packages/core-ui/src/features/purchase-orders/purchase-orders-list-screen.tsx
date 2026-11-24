@@ -149,7 +149,10 @@ export function PurchaseOrdersListScreen() {
   const mayCancel = usePermission("purchasing.purchase-order.cancel");
   const maySubmit = usePermission("purchasing.purchase-order.submit");
   const submitForApproval = usePurchaseOrdersSubmit();
-  const mayViewCommercialCost = usePurchasingCommercialCost();
+  const hasCommercialCost = usePurchasingCommercialCost();
+  // Total filters and sorts are only answered when the person's commercial reach covers the whole list; the server says so with each page (`commercial_query`).
+  const [commercialQueryAllowed, setCommercialQueryAllowed] = useState(true);
+  const mayViewCommercialCost = hasCommercialCost && commercialQueryAllowed;
   const isDesktop = useMediaQuery(MD_BREAKPOINT_QUERY);
   const [showActiveFilters, setShowActiveFilters] = useState(true);
   const navigate = useNavigate();
@@ -281,6 +284,11 @@ export function PurchaseOrdersListScreen() {
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.data : [];
   const meta =
     ordersQuery.data?.status === 200 ? ordersQuery.data.data.meta : undefined;
+  const commercialQueryHint =
+    ordersQuery.data?.status === 200 ? ordersQuery.data.data.commercial_query : undefined;
+  useEffect(() => {
+    if (commercialQueryHint !== undefined) setCommercialQueryAllowed(commercialQueryHint);
+  }, [commercialQueryHint]);
   // Approvals are "in use" once any order carries an approval status (the API sends null while the company has them
   // switched off). It stays on once seen, so the column and filter do not blink away when a filter empties the page.
   const [approvalsSeen, setApprovalsSeen] = useState(false);

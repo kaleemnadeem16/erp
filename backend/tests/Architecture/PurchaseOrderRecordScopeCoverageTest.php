@@ -84,7 +84,7 @@ class PurchaseOrderRecordScopeCoverageTest extends TestCase
     public function test_money_on_a_purchase_order_is_never_judged_by_capability_alone(): void
     {
         // `canView` answers "does this person hold a commercial duty at all?". Anything that shows the money of an order must ask `forOrder` (or `companyWide`).
-        $allowed = ['PurchasingCommercialAccess.php', 'SupplierOfferResource.php', 'MaintainSupplierOffer.php', 'PurchaseOrderApprovalSubject.php', 'IndexPurchaseOrderRequest.php', 'PurchaseOrderLineResource.php'];
+        $allowed = ['PurchasingCommercialAccess.php', 'SupplierOfferResource.php', 'MaintainSupplierOffer.php', 'PurchaseOrderApprovalSubject.php', 'IndexPurchaseOrderRequest.php', 'PurchaseOrderLineResource.php', 'PurchaseOrderController.php'];
         $offenders = [];
         foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(app_path('Modules/Purchasing'))) as $file) {
             if ($file->isFile() && str_ends_with($file->getFilename(), '.php')

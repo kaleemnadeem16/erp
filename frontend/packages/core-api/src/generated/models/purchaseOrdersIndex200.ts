@@ -12,4 +12,5 @@ export type PurchaseOrdersIndex200 = {
   data: PurchaseOrdersIndex200DataItem[];
   links: PurchaseOrdersIndex200Links;
   meta: PurchaseOrdersIndex200Meta;
+  commercial_query: boolean;
 };

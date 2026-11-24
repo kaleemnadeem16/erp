@@ -27,6 +27,7 @@ use App\Modules\Purchasing\Models\PurchaseOrderLine;
 use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalState;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
+use App\Modules\Purchasing\Support\PurchasingCommercialAccess;
 use App\Support\Concerns\AppliesApiQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -158,7 +159,13 @@ class PurchaseOrderController extends Controller
         $statuses = app(PurchaseOrderApprovalState::class)->statusesFor($page->getCollection());
         $page->getCollection()->each(fn (PurchaseOrder $order) => $order->setAttribute('approval_status', $statuses[$order->id] ?? null));
 
-        return PurchaseOrderResource::collection($page);
+        // Whether this person's commercial reach covers the whole list, i.e. whether a total filter or sort would be answered rather than refused.
+        return PurchaseOrderResource::collection($page)->additional(['commercial_query' => $this->commercialQueryAllowed($request) ? true : false]);
+    }
+
+    private function commercialQueryAllowed(Request $request): bool
+    {
+        return PurchasingCommercialAccess::canView($request->user()) && PurchaseOrderAccess::make()->commercialCoversRead($request->user(), $request);
     }
 
     public function store(StorePurchaseOrderRequest $request, CreatePurchaseOrder $create): JsonResponse

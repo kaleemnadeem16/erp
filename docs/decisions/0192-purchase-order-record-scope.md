@@ -41,7 +41,7 @@ two identities scope needs (`created_by`, `ship_to_warehouse_id`); ADR 0089 supp
     order is a cutover order. A limited cutover grant, a non-cutover order, or direct Action invocation by anyone else is refused.
 11. **Money is judged per order.** `commercial-cost.view` and `purchase-order.create` are each limitable, and a person sees an order's commercial fields (FX, payment terms, totals, line prices and amounts, and approval evidence) only on
     orders inside the **commercial** reach, whatever their operational reach. A total filter or sort (which infers money across the whole list) is refused (403) unless the commercial reach covers everything the person may list. Goods-receipt
-    money and receipt cost entry, which are not tied to one reachable order, need an **unrestricted** commercial grant. Supplier offers are item-supplier data, not purchase-order records, and are unchanged.
+    money and receipt cost entry, which are not tied to one reachable order, need an **unrestricted** commercial grant. Supplier offers are item-supplier data, not purchase-order records, and are unchanged. The API tells the screen, order by order, whether its money is shown (`commercial_visible`) and, for the list, whether a total filter or sort will be answered (`commercial_query`); the detail screen, its headings and controls, and the print follow those, never the general permission hook.
 12. **An edit must leave the order reachable.** Creating or editing an order checks that the saved order is still reachable through a path that really applies to it (created by the actor, or shipping to one of the actor's units). Having an
     own-created path as an alternative never lets someone move another person's order out of their units.
 

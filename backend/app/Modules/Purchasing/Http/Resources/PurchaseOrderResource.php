@@ -29,6 +29,8 @@ class PurchaseOrderResource extends JsonResource
             'supplier_account_id' => $this->supplier_account_id, 'supplier_site_id' => $this->supplier_site_id,
             'supplier_site' => $this->whenLoaded('supplierSite', fn () => $this->supplierSite === null ? null : new SupplierSiteResource($this->supplierSite)),
             'status' => $this->status->value, 'currency_id' => $this->currency_id,
+            // The server's verdict for THIS order: whether its money is shown to this person (the capability and the order's own reach). Screens follow it, never the general permission.
+            'commercial_visible' => $commercial,
             'fx_policy' => $this->when($commercial, fn () => $this->fx_policy->value),
             'fx_rate' => $this->when($commercial, fn () => $this->fx_rate),
             'fx_rate_date' => $this->when($commercial, fn () => $this->fx_rate_date->format('Y-m-d')),

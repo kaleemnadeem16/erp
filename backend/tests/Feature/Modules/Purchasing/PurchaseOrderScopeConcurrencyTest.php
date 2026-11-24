@@ -32,14 +32,16 @@ class PurchaseOrderScopeConcurrencyTest extends TestCase
         $this->assertSame('DRAFT', $outcome['status_after'], 'and it was not issued');
     }
 
-    public function test_the_control_run_an_edit_that_does_not_move_the_order_still_reaches_issue(): void
+    public function test_the_control_run_an_edit_that_does_not_move_the_order_lets_it_issue(): void
     {
         $outcome = $this->issueWhileOtherSessionEdits("notes = 'edited, not moved'");
 
-        $this->assertNotSame(ModelNotFoundException::class, $outcome['class'], 'an order still in reach is not read as absent: '.json_encode($outcome));
+        $this->assertNull($outcome['class'], 'an order still in reach is issued, not read as absent or refused: '.json_encode($outcome));
+        $this->assertSame('ISSUED', $outcome['status_after']);
+        $this->assertNotNull($outcome['number_after'], 'and it was numbered');
     }
 
-    /** @return array{class: ?string, message: ?string, status_after: string} */
+    /** @return array{class: ?string, message: ?string, status_after: string, number_after: ?string} */
     private function issueWhileOtherSessionEdits(string $sessionBAssignment): array
     {
         $config = config('database.connections.testing');
@@ -98,7 +100,9 @@ class PurchaseOrderScopeConcurrencyTest extends TestCase
             pcntl_waitpid($childPid, $status);
             $outcome = json_decode((string) file_get_contents($resultPath), true);
             $this->assertIsArray($outcome, 'the forked issuing session did not report an outcome');
-            $outcome['status_after'] = (string) $pdo->query("select status from purchase_orders where id = {$orderId}")->fetchColumn();
+            $after = $pdo->query("select status, number from purchase_orders where id = {$orderId}")->fetch(PDO::FETCH_ASSOC);
+            $outcome['status_after'] = (string) $after['status'];
+            $outcome['number_after'] = $after['number'];
 
             return $outcome;
         } finally {

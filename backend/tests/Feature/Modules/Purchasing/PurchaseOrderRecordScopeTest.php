@@ -10,7 +10,11 @@ use App\Models\User;
 use App\Modules\Administration\Models\AccessScopeLimit;
 use App\Modules\Administration\Models\OrganisationUnit;
 use App\Modules\Administration\Models\OrganisationUnitResource;
+use App\Modules\Approvals\Models\ApprovalPolicy;
 use App\Modules\Approvals\Models\ApprovalRequest;
+use App\Modules\Approvals\Models\ApprovalSubjectSetting;
+use App\Modules\Approvals\Support\ApprovalMode;
+use App\Modules\Approvals\Support\ApprovalPolicyStatus;
 use App\Modules\Inventory\Actions\CreateWarehouse;
 use App\Modules\Inventory\Models\Item;
 use App\Modules\Inventory\Models\Warehouse;
@@ -472,6 +476,90 @@ class PurchaseOrderRecordScopeTest extends PurchaseOrderFoundationTest
         $this->assertTrue($subject->evidenceInReach($reader, $request($mine)));
         $boss = PurchasingActor::make(['purchasing.commercial-cost.view']);
         $this->assertTrue($subject->evidenceInReach($boss, $request($this->po['aliceA'])));
+    }
+
+    public function test_approval_responses_follow_commercial_reach_and_keep_decision_rights(): void
+    {
+        $this->orders();
+        ApprovalSubjectSetting::query()->updateOrCreate(['subject_type' => 'PURCHASE_ORDER'], ['mode' => ApprovalMode::Required]);
+        $policy = ApprovalPolicy::query()->create(['subject_type' => 'PURCHASE_ORDER', 'code' => 'all', 'version_no' => 1, 'name' => 'all', 'priority' => 0, 'status' => ApprovalPolicyStatus::Active, 'reason' => 't', 'changed_by' => $this->alice->id]);
+        $policy->steps()->create(['stage' => 1, 'name' => 'Step 1', 'required_approvals' => 1, 'permission' => 'purchasing.purchase-order.approve']);
+        $order = $this->po['aliceA'];
+        $this->priced($order, '123.0000');
+        $submitter = PurchasingActor::make([self::VIEW, 'purchasing.purchase-order.submit']);
+        $requestId = $this->actingAsUnprivileged($submitter)->postJson("/api/v1/purchase-orders/{$order->id}/submit")->assertOk()->json('data.approval.request_id');
+        $show = fn (User $by) => $this->actingAsUnprivileged($by)->getJson("/api/v1/approval-requests/{$requestId}")->assertOk();
+        $money = ['123.0000', '123'];
+
+        // Alice may see approval history and holds a COMMERCIAL grant limited to her own orders; this order is hers, so she sees its money.
+        $alice = PurchasingActor::grant($this->alice, [self::VIEW, 'purchasing.commercial-cost.view', 'approvals.history.view']);
+        AccessScopeLimit::create(['user_id' => $alice->id, 'permission' => 'purchasing.commercial-cost.view', 'scope' => 'OWN']);
+        $mine = $show($alice);
+        $this->assertTrue($mine->json('data.evidence_visible'));
+        $this->assertSame('123.0000', $mine->json('data.amount_base'));
+
+        // A reader whose commercial grant is limited to HIS OWN orders sees the request exists, but none of this order's money anywhere in the response.
+        $reader = PurchasingActor::make([self::VIEW, 'purchasing.commercial-cost.view', 'approvals.history.view']);
+        AccessScopeLimit::create(['user_id' => $reader->id, 'permission' => 'purchasing.commercial-cost.view', 'scope' => 'OWN']);
+        $hidden = $show($reader);
+        $this->assertFalse($hidden->json('data.evidence_visible'));
+        $this->assertNull($hidden->json('data.amount_base'));
+        $this->assertSame([], $hidden->json('data.evidence'));
+        $this->assertStringNotContainsString('123.0000', (string) $hidden->getContent());
+        $this->assertSame('PENDING', $hidden->json('data.status'), 'the approval itself stays readable');
+
+        // An unrestricted commercial reader sees it.
+        $boss = PurchasingActor::make(['purchasing.commercial-cost.view', 'approvals.history.view']);
+        $this->assertSame('123.0000', $show($boss)->json('data.amount_base'));
+
+        // The person asked to decide keeps the evidence they decide on, with no commercial grant at all — and keeps it after deciding.
+        $approver = PurchasingActor::make(['purchasing.purchase-order.approve']);
+        $deciding = $show($approver);
+        $this->assertTrue($deciding->json('data.can_decide'));
+        $this->assertTrue($deciding->json('data.evidence_visible'));
+        $this->assertSame('123.0000', $deciding->json('data.amount_base'));
+        $this->actingAsUnprivileged($approver)->postJson("/api/v1/approval-requests/{$requestId}/decide", ['decision' => 'APPROVED'])->assertOk();
+        $this->assertTrue($show($approver)->json('data.evidence_visible'), 'a person who decided keeps the basis of their own decision');
+        $this->assertFalse($show($reader)->json('data.evidence_visible'), 'while the limited reader still does not');
+    }
+
+    public function test_every_write_across_companies_is_refused_for_an_actor_who_holds_the_duties_there(): void
+    {
+        $this->orders();
+        $other = Company::create(['name' => 'Other Co']);
+        $caps = ['purchasing.purchase-order.view', 'purchasing.purchase-order.create', 'purchasing.purchase-order.submit', 'purchasing.purchase-order.issue', 'purchasing.purchase-order.cancel', 'purchasing.purchase-order.short-close'];
+        $order = $this->po['aliceA'];
+        $line = $order->lines()->create($this->lineAttributes($order, ...array_slice($this->makeItemAndUom(), 0, 2)));
+        $before = $order->fresh()->only(['status', 'notes', 'ship_to_warehouse_id']);
+        $this->actingAsCompany($other->id);
+        $actor = PurchasingActor::grant(User::factory()->create(), $caps, $other->id);
+        $as = $this->actingAsUnprivileged($actor);
+
+        // Over HTTP, in their own company, with every duty: this company's order and line are simply not there.
+        $as->patchJson("/api/v1/purchase-orders/{$order->id}", ['notes' => 'x'])->assertNotFound();
+        $as->postJson("/api/v1/purchase-orders/{$order->id}/submit")->assertNotFound();
+        $as->postJson("/api/v1/purchase-orders/{$order->id}/issue")->assertNotFound();
+        $as->postJson("/api/v1/purchase-orders/{$order->id}/cancel", ['reason' => 'x'])->assertNotFound();
+        $as->postJson("/api/v1/purchase-order-lines/{$line->id}/short-close")->assertNotFound();
+        $as->getJson("/api/v1/purchase-orders/{$order->id}")->assertNotFound();
+
+        // And in the Actions, which are the boundary that matters when HTTP is bypassed.
+        foreach ([
+            fn () => app(UpdatePurchaseOrder::class)($order, ['notes' => 'x'], $actor),
+            fn () => app(SubmitPurchaseOrder::class)($order, $actor),
+            fn () => app(IssuePurchaseOrder::class)($order, $actor),
+            fn () => app(CancelPurchaseOrder::class)($order, 'x', $actor),
+            fn () => app(ShortClosePurchaseOrderLine::class)($line, $actor),
+        ] as $call) {
+            try {
+                $call();
+                $this->fail('A write across companies must not succeed.');
+            } catch (ModelNotFoundException|DomainInvariantException) {
+                $this->assertTrue(true);
+            }
+        }
+        $this->actingAsCompany(1);
+        $this->assertSame($before, $order->fresh()->only(['status', 'notes', 'ship_to_warehouse_id']), 'nothing about the order changed');
     }
 
     public function test_receipt_money_needs_an_unrestricted_commercial_grant(): void
