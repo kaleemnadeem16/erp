@@ -24,6 +24,7 @@ use App\Modules\Purchasing\Http\Resources\PurchaseOrderLineResource;
 use App\Modules\Purchasing\Http\Resources\PurchaseOrderResource;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Models\PurchaseOrderLine;
+use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalState;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Support\Concerns\AppliesApiQuery;
@@ -54,7 +55,7 @@ class PurchaseOrderController extends Controller
 
     public function index(IndexPurchaseOrderRequest $request): AnonymousResourceCollection
     {
-        $query = PurchaseOrder::query();
+        $query = PurchaseOrderAccess::make()->scopeForRead(PurchaseOrder::query(), $request->user());
         $this->applyIncludes($query, $request, self::INCLUDABLE);
         if (in_array('lines', $this->requestedIncludes($request, self::INCLUDABLE), true)) {
             $query->with(['lines' => fn ($lines) => $lines->withReceiptProgress()]);
@@ -164,6 +165,7 @@ class PurchaseOrderController extends Controller
 
     public function show(ShowPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder): PurchaseOrderResource
     {
+        PurchaseOrderAccess::make()->requireRead($request->user(), $purchaseOrder);
         $includes = $this->requestedIncludes($request, self::INCLUDABLE);
         if (in_array('lines', $includes, true)) {
             $purchaseOrder->load(['lines' => fn ($query) => $query->withReceiptProgress()]);
@@ -177,12 +179,15 @@ class PurchaseOrderController extends Controller
 
     public function update(UpdatePurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, UpdatePurchaseOrder $update): PurchaseOrderResource
     {
+        PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrder, 'purchasing.purchase-order.create');
+
         return new PurchaseOrderResource($update($purchaseOrder, $request->validated(), $request->user()));
     }
 
     public function issue(Request $request, PurchaseOrder $purchaseOrder, IssuePurchaseOrder $issue): PurchaseOrderResource
     {
         abort_unless($request->user()?->can('purchasing.purchase-order.issue'), 403);
+        PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrder, 'purchasing.purchase-order.issue');
 
         return new PurchaseOrderResource($issue($purchaseOrder, $request->user()));
     }
@@ -191,6 +196,7 @@ class PurchaseOrderController extends Controller
     public function submit(Request $request, PurchaseOrder $purchaseOrder, SubmitPurchaseOrder $submit): PurchaseOrderResource
     {
         abort_unless($request->user()?->can('purchasing.purchase-order.submit'), 403);
+        PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrder, 'purchasing.purchase-order.submit');
         $submit($purchaseOrder, $request->user());
 
         return new PurchaseOrderResource($purchaseOrder->refresh()->load('lines'));
@@ -198,12 +204,15 @@ class PurchaseOrderController extends Controller
 
     public function cancel(CancelPurchaseOrderRequest $request, PurchaseOrder $purchaseOrder, CancelPurchaseOrder $cancel): PurchaseOrderResource
     {
+        PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrder, 'purchasing.purchase-order.cancel');
+
         return new PurchaseOrderResource($cancel($purchaseOrder, $request->string('reason')->toString(), $request->user()));
     }
 
     public function shortClose(Request $request, PurchaseOrderLine $purchaseOrderLine, ShortClosePurchaseOrderLine $shortClose): PurchaseOrderLineResource
     {
         abort_unless($request->user()?->can('purchasing.purchase-order.short-close'), 403);
+        PurchaseOrderAccess::make()->requireDuty($request->user(), $purchaseOrderLine->purchaseOrder, 'purchasing.purchase-order.short-close');
         $line = $shortClose($purchaseOrderLine, $request->user());
 
         return new PurchaseOrderLineResource(PurchaseOrderLine::query()->withReceiptProgress()->findOrFail($line->id));

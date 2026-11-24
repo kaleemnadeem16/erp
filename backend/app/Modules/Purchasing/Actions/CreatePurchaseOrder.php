@@ -6,6 +6,7 @@ namespace App\Modules\Purchasing\Actions;
 
 use App\Models\User;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Support\ActionAuthorization;
 use App\Support\Scope\DecisionActor;
 use Illuminate\Support\Arr;
@@ -24,6 +25,13 @@ final class CreatePurchaseOrder
         return DB::transaction(function () use ($attributes, $actor): PurchaseOrder {
             // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
             $actor = DecisionActor::require($actor, 'purchasing.purchase-order.create', 'create a purchase order');
+
+            $access = PurchaseOrderAccess::make();
+            $access->requireShipToReachable($actor, 'purchasing.purchase-order.create', isset($attributes['ship_to_warehouse_id']) ? (int) $attributes['ship_to_warehouse_id'] : null);
+            if (isset($attributes['replaces_purchase_order_id'])) {
+                // Naming a replaced order reveals it: only one this person may reach can be named, and anything else reads as absent.
+                $access->lockForDuty($actor, (int) $attributes['replaces_purchase_order_id'], 'purchasing.purchase-order.create');
+            }
 
             // The drafter is recorded by the server, never taken from the request; it is the identity record scope will later follow.
             return $this->forWorkflow(array_merge($attributes, ($this->reconcileFx)($attributes, $actor), ['created_by' => $actor->id]));

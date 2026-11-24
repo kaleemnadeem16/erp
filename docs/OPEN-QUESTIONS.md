@@ -178,7 +178,7 @@ model. See [authorization.md](architecture/authorization.md#teams-and-organisati
 **Decided in part (2026-10-06, [ADR 0089](decisions/0089-organisation-units-and-record-scope.md)):** the owner chose organisation units as a
 company-defined tree, inventory by warehouse as the first slice, and delegated administration later. Built: units, memberships, warehouse
 ownership, the "only my units" limit on an assignment, one resolver, enforcement on stock layers, the ledger and physical counts, and (second slice, 2026-10-07) negative-stock requests, recalculation and cutover — every inventory surface now has a declared scope status. **Still open
-(each its own slice):** purchasing documents (the creator and ship-to are now recorded on new orders — [ADR 0191](decisions/0191-record-ship-to-buyer-payment-terms-and-shipping-method-on-purchase-orders.md) — a backfill of older orders and the scope itself are still to do), Estimating availability, approvals; a warehouse-limited inventory overview and AVCO pool view;
+(each its own slice):** purchasing documents (the creator and ship-to are now recorded on new orders — [ADR 0191](decisions/0191-record-ship-to-buyer-payment-terms-and-shipping-method-on-purchase-orders.md) — the scope itself is built, inactive, by [ADR 0192](decisions/0192-purchase-order-record-scope.md); the assigned-buyer path and a back-fill of older orders remain owner decisions), Estimating availability, approvals; a warehouse-limited inventory overview and AVCO pool view;
 own-record and assigned-record scopes; time-bounded task access; delegated administration (a unit head assigning access to their people). The
 original brief and research follow.
 

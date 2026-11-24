@@ -10,6 +10,7 @@ use App\Modules\Approvals\Actions\InvalidateApprovals;
 use App\Modules\Approvals\Models\ApprovalRequest;
 use App\Modules\Approvals\Support\ApprovalRequestStatus;
 use App\Modules\Purchasing\Models\PurchaseOrder;
+use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\ActionAuthorization;
@@ -35,7 +36,8 @@ final class UpdatePurchaseOrder
         return DB::transaction(function () use ($order, $attributes, $actor): PurchaseOrder {
             // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
             $actor = DecisionActor::require($actor, 'purchasing.purchase-order.create', 'edit a purchase order');
-            $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
+            $access = PurchaseOrderAccess::make();
+            $order = $access->lockForDuty($actor, $order->id, 'purchasing.purchase-order.create');
             if ($order->status !== PurchaseOrderStatus::Draft) {
                 throw new DomainInvariantException('Only a draft purchase order can be edited.', 'status');
             }
@@ -55,6 +57,9 @@ final class UpdatePurchaseOrder
                 $attributes['ship_to_location_id'] = null;
             }
             $order->fill($attributes);
+            if ($order->isDirty('ship_to_warehouse_id')) {
+                $access->requireShipToReachable($actor, 'purchasing.purchase-order.create', $order->ship_to_warehouse_id);
+            }
             if ($order->isDirty(['currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_policy', 'fx_override_reason'])) {
                 // A changed rate is checked against the governed rate exactly as a new order's is (issue #90); an unrelated edit is not re-litigated.
                 $order->fill(($this->reconcileFx)($order->only(['currency_id', 'fx_rate', 'fx_rate_date', 'fx_rate_type', 'fx_policy', 'fx_override_reason']), $actor));

@@ -223,7 +223,7 @@ receipt (including QA disposition) and item-supplier list/detail reads now requi
 respective `*.view` capability or an action capability whose workflow needs the read. Receiving
 and QA actions can read POs; PO creation can read item-supplier sourcing terms. Finance and other
 read-only users need explicit view grants rather than write power. These remain company-wide reads
-pending Q26 record scope. Commercial amounts (PO prices, discount/tax/line and header totals, FX evidence; receipt provisional/base unit
+unless an administrator limits a PO duty to own-created or my-units orders ([ADR 0192](../decisions/0192-purchase-order-record-scope.md); inactive until set). Commercial amounts (PO prices, discount/tax/line and header totals, FX evidence; receipt provisional/base unit
 cost and FX evidence) are omitted from every projection, print view and monetary sort unless the caller holds
 `purchasing.commercial-cost.view` (or `purchasing.purchase-order.create`, which needs them to draft a priced PO)
 — [ADR 0069](../decisions/0069-separate-purchasing-commercial-visibility-from-receiving.md). A receipt creator
@@ -485,7 +485,7 @@ records who drafted it. On a draft each can be set, changed or cleared (clearing
 from, and from then on all of it is immutable — in the model and in the database guard. Deliver-to must still be an active warehouse/location when the order is issued. The approval
 fingerprint covers each fact the order states, so editing one voids an approval; an order that states none keeps the fingerprint it had. Existing orders carry none of it and are
 unchanged (an old issued order's terms read the supplier's current default). Terms follow `purchasing.commercial-cost.view`; ship-to, buyer and method are operational. The print shows the
-order's own terms, ship-to, method and buyer. Not built: Purchasing record scope (Q26), a buyer lookup beyond the signed-in person, a shipping-method list.
+order's own terms, ship-to, method and buyer. Record scope: ADR 0192 (own-created / ship-to unit, 404 outside reach, nothing active). Not built: the assigned-buyer scope path, a buyer lookup beyond the signed-in person, a shipping-method list.
 
 ## Receipts of items with grouped package tracking
 

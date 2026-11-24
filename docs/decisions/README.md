@@ -202,8 +202,9 @@ in the same commit.
 | [0189](0189-prove-assembly-quotation-lines-cost-blind-and-freeze-the-sold-version.md) | Prove Assembly quotation lines cost-blind and freeze the sold version | accepted (implementation; owner decision 2026-11-13) | 2026-11-13 |
 | [0190](0190-adopt-material-plans-on-quotation-assembly-lines.md) | Adopt Material Plans on quotation Assembly lines | accepted (implementation; owner decision 2026-11-13) | 2026-11-13 |
 | [0191](0191-record-ship-to-buyer-payment-terms-and-shipping-method-on-purchase-orders.md) | Record ship-to, buyer, payment terms and shipping method on purchase orders | accepted (implementation; owner assignment 2026-11-16) | 2026-11-16 |
+| [0192](0192-purchase-order-record-scope.md) | Purchase-order record scope (Q26): own-created and warehouse/unit limits, inactive until granted | accepted (implementation; owner assignment 2026-11-24) | 2026-11-24 |
 
-**Next number: 0192** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
+**Next number: 0193** (0166-0169 and 0171-0174, 0176-0179 were never used or are held by other work in flight; always `ls docs/decisions` after fetching before taking a number)
 
 Note: the R7 handover ADR was first drafted as a second 0130 and renumbered to 0136 on 2026-10-15; 0130 is the backup decision. Number is chosen after fetching, so drafts do not collide.
 

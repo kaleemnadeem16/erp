@@ -1478,3 +1478,17 @@ payment-terms override (supplier default as the fallback, frozen with its origin
 Requests, API, form, detail, summary, print, approval fingerprint, demo and tests were extended together. Existing orders are untouched and stay readable. Not built: Q26 record scope,
 a buyer lookup beyond the signed-in person, a shipping-method list, any Phase 6 payables or Job costing, permission activation.
 
+Q26 Purchasing record scope delivered on `develop` (2026-11-24, [ADR 0192](decisions/0192-purchase-order-record-scope.md)): a purchase-order resource adapter on the existing RecordScope — own-created (immutable `created_by`) and ship-to warehouse/unit limits — applied to lists, counts, filters, search, sort, details and every write (update, submit, issue, cancel, short-close) at HTTP entry and inside the Action, with a non-disclosing 404 outside reach; orders with no creator or ship-to fail closed for a limited person and are never given an identity; an unrelated receiving duty cannot widen a limited grant. Nothing is active: no limit was set and no grant changed. The assigned-buyer path awaits an owner decision (ADR 0192, *Decision needed*).
+
+## 2026-11-24 — Jobs interactive execution, independent actions (#132)
+
+The owner independently approved #128 at integrated head eae61f33; that API issue is closed.
+The separate interactive UI workstream adds exact-duty list/detail actions and a minimal known-Job
+entry, with a source-guarded active-assignee selector, explicit confirmations, retained retry
+identities and generation, stale/access recovery, independent hold resolution and safe closeout
+assessment outcomes. All shipped Jobs duties remain SPECIFIED / zero ACTIVE; no real grants,
+production activation or public Job creation. Whole-deliverable completion confirmation is not
+delivered while the exact minimal attestation-context disclosure proposal awaits owner review;
+other operations continue independently. Contracts and coverage are in
+[Jobs interactive execution](domain/job-execution-ui.md); exact implementation/check evidence
+belongs to #132.

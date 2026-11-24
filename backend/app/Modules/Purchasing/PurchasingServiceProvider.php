@@ -16,10 +16,12 @@ use App\Modules\Purchasing\Numbering\SupplierReturnNumbering;
 use App\Modules\Purchasing\Support\JobSource\PurchasingJobSourceApplicability;
 use App\Modules\Purchasing\Support\PermissionVocabulary;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
+use App\Modules\Purchasing\Support\PurchaseOrderScopeAdapter;
 use App\Support\CompanyLocks\ExistsProbe;
 use App\Support\CompanyLocks\FinancialActivity;
 use App\Support\JobSource\JobSourceFamilies;
 use App\Support\PermissionRegistry;
+use App\Support\Scope\ResourceScopeAdapters;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +29,10 @@ class PurchasingServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->afterResolving(ResourceScopeAdapters::class, static function (ResourceScopeAdapters $adapters): void {
+            $adapters->register(PurchaseOrderScopeAdapter::RESOURCE, new PurchaseOrderScopeAdapter);
+        });
+
         $this->app->afterResolving(JobSourceFamilies::class, static function (JobSourceFamilies $families): void {
             $families->register(new PurchasingJobSourceApplicability);
         });

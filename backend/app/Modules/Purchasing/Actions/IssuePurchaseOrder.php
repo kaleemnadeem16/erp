@@ -15,11 +15,14 @@ use App\Modules\Parties\Models\SupplierAccount;
 use App\Modules\Purchasing\Models\ItemSupplier;
 use App\Modules\Purchasing\Models\PurchaseOrder;
 use App\Modules\Purchasing\Numbering\PurchaseOrderNumbering;
+use App\Modules\Purchasing\Support\PurchaseOrderAccess;
 use App\Modules\Purchasing\Support\PurchaseOrderApprovalSubject;
 use App\Modules\Purchasing\Support\PurchaseOrderStatus;
 use App\Support\Quantity\QuantitySign;
 use App\Support\Scope\DecisionActor;
+use App\Support\Scope\RecordScope;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Facades\DB;
 
 final class IssuePurchaseOrder
@@ -42,7 +45,17 @@ final class IssuePurchaseOrder
         return DB::transaction(function () use ($order, $actor): PurchaseOrder {
             // The early check only fails fast. The decision is taken from the stored actor, under the company access barrier, before any row lock.
             $actor = DecisionActor::fresh($actor, 'issue a purchase order', 'issued_by');
+            // An open-PO cutover order may also be issued by the unrestricted cutover workflow; every other path needs the issue duty's reach.
+            $viaCutover = $actor->can('purchasing.cutover.commit') && app(RecordScope::class)->resolve($actor, 'purchasing.cutover.commit')->isAll();
+            $reachedByDuty = $actor->can('purchasing.purchase-order.issue')
+                && PurchaseOrderAccess::make()->scopeForDuty(PurchaseOrder::query(), $actor, 'purchasing.purchase-order.issue')->whereKey($order->id)->exists();
             $order = PurchaseOrder::query()->lockForUpdate()->findOrFail($order->id);
+            if (! $reachedByDuty && ! ($viaCutover && $order->inventory_cutover_id !== null)) {
+                // Unreachable reads as absent; a reachable order the person lacks the duty for is a plain refusal below.
+                if ($actor->can('purchasing.purchase-order.issue')) {
+                    throw (new ModelNotFoundException)->setModel(PurchaseOrder::class, [$order->id]);
+                }
+            }
             if (! $actor->can('purchasing.purchase-order.issue') && ! ($order->inventory_cutover_id !== null && $actor->can('purchasing.cutover.commit'))) {
                 throw new DomainInvariantException('The actor is not permitted to issue a purchase order.', 'issued_by');
             }
