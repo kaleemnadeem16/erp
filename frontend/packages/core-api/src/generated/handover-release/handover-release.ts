@@ -27,6 +27,7 @@ import type {
   CustomerAcceptancesCompletionBasesStore201,
   CustomerAcceptancesCompletionBasesStore409,
   CustomerAcceptancesCompletionBasesStoreHeaders,
+  CustomerAcceptancesCompletionBasis200,
   HandoverStagesRelease200,
   HandoverStagesRelease201,
   HandoverStagesRelease409,
@@ -621,3 +622,232 @@ export const useHandoverStagesRelease = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export type customerAcceptancesCompletionBasisResponse200 = {
+  data: CustomerAcceptancesCompletionBasis200;
+  status: 200;
+};
+
+export type customerAcceptancesCompletionBasisResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type customerAcceptancesCompletionBasisResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type customerAcceptancesCompletionBasisResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type customerAcceptancesCompletionBasisResponseSuccess =
+  customerAcceptancesCompletionBasisResponse200 & {
+    headers: Headers;
+  };
+export type customerAcceptancesCompletionBasisResponseError = (
+  | customerAcceptancesCompletionBasisResponse401
+  | customerAcceptancesCompletionBasisResponse403
+  | customerAcceptancesCompletionBasisResponse422
+) & {
+  headers: Headers;
+};
+
+export type customerAcceptancesCompletionBasisResponse =
+  | customerAcceptancesCompletionBasisResponseSuccess
+  | customerAcceptancesCompletionBasisResponseError;
+
+export const getCustomerAcceptancesCompletionBasisUrl = (
+  acceptance: number,
+) => {
+  return `/v1/customer-acceptances/${acceptance}/completion-basis`;
+};
+
+export const customerAcceptancesCompletionBasis = async (
+  acceptance: number,
+  options?: RequestInit,
+): Promise<customerAcceptancesCompletionBasisResponse> => {
+  return fetchClient<customerAcceptancesCompletionBasisResponse>(
+    getCustomerAcceptancesCompletionBasisUrl(acceptance),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getCustomerAcceptancesCompletionBasisQueryKey = (
+  acceptance?: number,
+) => {
+  return [`/v1/customer-acceptances/${acceptance}/completion-basis`] as const;
+};
+
+export const getCustomerAcceptancesCompletionBasisQueryOptions = <
+  TData = Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getCustomerAcceptancesCompletionBasisQueryKey(acceptance);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>
+  > = () => customerAcceptancesCompletionBasis(acceptance, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!acceptance,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CustomerAcceptancesCompletionBasisQueryResult = NonNullable<
+  Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>
+>;
+export type CustomerAcceptancesCompletionBasisQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useCustomerAcceptancesCompletionBasis<
+  TData = Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+          TError,
+          Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCustomerAcceptancesCompletionBasis<
+  TData = Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+          TError,
+          Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCustomerAcceptancesCompletionBasis<
+  TData = Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCustomerAcceptancesCompletionBasis<
+  TData = Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesCompletionBasis>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCustomerAcceptancesCompletionBasisQueryOptions(
+    acceptance,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}

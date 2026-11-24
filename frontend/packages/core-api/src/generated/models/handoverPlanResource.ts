@@ -6,6 +6,7 @@
  */
 import type { HandoverPlanResourceOperational } from "./handoverPlanResourceOperational";
 import type { HandoverPlanResourceReadinessAtPreparation } from "./handoverPlanResourceReadinessAtPreparation";
+import type { HandoverPlanResourceRelease } from "./handoverPlanResourceRelease";
 
 export interface HandoverPlanResource {
   id: number;
@@ -22,4 +23,5 @@ export interface HandoverPlanResource {
   readiness_at_preparation: HandoverPlanResourceReadinessAtPreparation;
   withheld: string[];
   release_performed: boolean;
+  release: HandoverPlanResourceRelease;
 }

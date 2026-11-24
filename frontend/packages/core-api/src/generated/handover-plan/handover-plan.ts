@@ -23,6 +23,7 @@ import type {
 import type {
   AuthenticationExceptionResponse,
   AuthorizationExceptionResponse,
+  CustomerAcceptancesHandover200,
   CustomerAcceptancesHandoverPlansStore200,
   CustomerAcceptancesHandoverPlansStore201,
   CustomerAcceptancesHandoverPlansStore409,
@@ -476,6 +477,232 @@ export const useCustomerAcceptancesHandoverPlansStore = <
 
   return useMutation(mutationOptions, queryClient);
 };
+export type customerAcceptancesHandoverResponse200 = {
+  data: CustomerAcceptancesHandover200;
+  status: 200;
+};
+
+export type customerAcceptancesHandoverResponse401 = {
+  data: AuthenticationExceptionResponse;
+  status: 401;
+};
+
+export type customerAcceptancesHandoverResponse403 = {
+  data: AuthorizationExceptionResponse;
+  status: 403;
+};
+
+export type customerAcceptancesHandoverResponse422 = {
+  data: ValidationExceptionResponse;
+  status: 422;
+};
+
+export type customerAcceptancesHandoverResponseSuccess =
+  customerAcceptancesHandoverResponse200 & {
+    headers: Headers;
+  };
+export type customerAcceptancesHandoverResponseError = (
+  | customerAcceptancesHandoverResponse401
+  | customerAcceptancesHandoverResponse403
+  | customerAcceptancesHandoverResponse422
+) & {
+  headers: Headers;
+};
+
+export type customerAcceptancesHandoverResponse =
+  | customerAcceptancesHandoverResponseSuccess
+  | customerAcceptancesHandoverResponseError;
+
+export const getCustomerAcceptancesHandoverUrl = (acceptance: number) => {
+  return `/v1/customer-acceptances/${acceptance}/handover`;
+};
+
+export const customerAcceptancesHandover = async (
+  acceptance: number,
+  options?: RequestInit,
+): Promise<customerAcceptancesHandoverResponse> => {
+  return fetchClient<customerAcceptancesHandoverResponse>(
+    getCustomerAcceptancesHandoverUrl(acceptance),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getCustomerAcceptancesHandoverQueryKey = (acceptance?: number) => {
+  return [`/v1/customer-acceptances/${acceptance}/handover`] as const;
+};
+
+export const getCustomerAcceptancesHandoverQueryOptions = <
+  TData = Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getCustomerAcceptancesHandoverQueryKey(acceptance);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof customerAcceptancesHandover>>
+  > = () => customerAcceptancesHandover(acceptance, requestOptions);
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!acceptance,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+    TError,
+    TData
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+};
+
+export type CustomerAcceptancesHandoverQueryResult = NonNullable<
+  Awaited<ReturnType<typeof customerAcceptancesHandover>>
+>;
+export type CustomerAcceptancesHandoverQueryError =
+  | AuthenticationExceptionResponse
+  | AuthorizationExceptionResponse
+  | ValidationExceptionResponse;
+
+export function useCustomerAcceptancesHandover<
+  TData = Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options: {
+    query: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        DefinedInitialDataOptions<
+          Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+          TError,
+          Awaited<ReturnType<typeof customerAcceptancesHandover>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): DefinedUseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCustomerAcceptancesHandover<
+  TData = Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+        TError,
+        TData
+      >
+    > &
+      Pick<
+        UndefinedInitialDataOptions<
+          Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+          TError,
+          Awaited<ReturnType<typeof customerAcceptancesHandover>>
+        >,
+        "initialData"
+      >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+export function useCustomerAcceptancesHandover<
+  TData = Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+};
+
+export function useCustomerAcceptancesHandover<
+  TData = Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+  TError =
+    | AuthenticationExceptionResponse
+    | AuthorizationExceptionResponse
+    | ValidationExceptionResponse,
+>(
+  acceptance: number,
+  options?: {
+    query?: Partial<
+      UseQueryOptions<
+        Awaited<ReturnType<typeof customerAcceptancesHandover>>,
+        TError,
+        TData
+      >
+    >;
+    request?: SecondParameter<typeof fetchClient>;
+  },
+  queryClient?: QueryClient,
+): UseQueryResult<TData, TError> & {
+  queryKey: DataTag<QueryKey, TData, TError>;
+} {
+  const queryOptions = getCustomerAcceptancesHandoverQueryOptions(
+    acceptance,
+    options,
+  );
+
+  const query = useQuery(queryOptions, queryClient) as UseQueryResult<
+    TData,
+    TError
+  > & { queryKey: DataTag<QueryKey, TData, TError> };
+
+  query.queryKey = queryOptions.queryKey;
+
+  return query;
+}
+
 export type handoverPlansShowResponse200 = {
   data: HandoverPlansShow200;
   status: 200;
