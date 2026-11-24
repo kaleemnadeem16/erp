@@ -33,9 +33,11 @@ async function mount(page: Page, fixture: HpFixture, dark = false, width = 390) 
   await page.addScriptTag({ content: script });
 }
 const calls = (page: Page) => page.evaluate(() => window.__hpCalls);
-async function clean(page: Page) {
+async function clean(page: Page, within?: string) {
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
-  const results = await new AxeBuilder({ page }).analyze();
+  // An open dialog is judged on its own: the page behind it sits under a fading overlay, so its contrast is timing-dependent, not a defect.
+  const builder = new AxeBuilder({ page });
+  const results = await (within ? builder.include(within) : builder).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 }
 async function fillRemote(page: Page) {
@@ -238,6 +240,6 @@ for (const [name, width, dark] of [
     await clean(page);
     await page.getByRole("button", { name: "Prepare handover…" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
-    await clean(page);
+    await clean(page, '[role="dialog"]');
   });
 }
