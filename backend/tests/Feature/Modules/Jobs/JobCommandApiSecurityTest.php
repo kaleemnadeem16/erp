@@ -171,14 +171,14 @@ class JobCommandApiSecurityTest extends TestCase
         $company = DB::table('companies')->insertGetId(['name' => 'Elsewhere', 'created_at' => now(), 'updated_at' => now()]);
         $foreign = DB::table('users')->insertGetId(['company_id' => $company, 'name' => 'Foreign', 'email' => 'foreign@invalid.test', 'password' => 'x', 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
         $this->postCommand('assign', $this->payload(['assignee_id' => $foreign]))->assertUnprocessable();
-        $assignment = $this->payload(['assignee_id' => $this->worker->id]);
+        $assignment = $this->payload(['assignee_id' => $this->operator->id]);
         $this->postCommand('assign', $assignment)->assertOk();
         $this->postCommand('start', $this->payload())->assertOk();
         $this->postCommand('complete', $this->payload(['statement' => 'Done']))->assertOk();
         $original = $this->jobId;
         $this->jobId = $this->secondRealJob();
         $this->postCommand('assign', $assignment)->assertUnprocessable()->assertJsonPath('reason_code', 'REQUEST_KEY_REUSED');
-        $this->postCommand('assign', $this->payload(['assignee_id' => $this->worker->id]))->assertOk();
+        $this->postCommand('assign', $this->payload(['assignee_id' => $this->operator->id]))->assertOk();
         $this->postCommand('start', $this->payload())->assertOk();
         $this->postCommand('complete', $this->payload(['statement' => 'Done']))->assertOk();
         $data = $this->payload();

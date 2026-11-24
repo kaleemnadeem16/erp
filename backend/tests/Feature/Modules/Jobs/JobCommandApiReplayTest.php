@@ -78,7 +78,7 @@ class JobCommandApiReplayTest extends TestCase
 
     public function test_completion_assessment_and_close_replays_never_duplicate_immutable_evidence(): void
     {
-        $this->postCommand('assign', $this->payload(['assignee_id' => $this->worker->id]))->assertOk();
+        $this->postCommand('assign', $this->payload(['assignee_id' => $this->operator->id]))->assertOk();
         $this->postCommand('start', $this->payload())->assertOk();
         $complete = $this->payload(['statement' => 'Delivered']);
         $this->postCommand('complete', $complete)->assertOk();
