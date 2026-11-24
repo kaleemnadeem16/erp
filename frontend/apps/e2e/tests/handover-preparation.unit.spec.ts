@@ -33,11 +33,20 @@ async function mount(page: Page, fixture: HpFixture, dark = false, width = 390) 
   await page.addScriptTag({ content: script });
 }
 const calls = (page: Page) => page.evaluate(() => window.__hpCalls);
-async function clean(page: Page, within?: string) {
+/** Colour is only judged on a settled page: a dialog overlay that is still fading in makes the page behind it look half-covered (the CI failure this fixes). The whole page is still scanned. */
+async function settled(page: Page) {
+  // Only FINITE animations (an overlay or dialog entering) are waited for; an endless one (a spinner) never settles by design. Polled, because one can start just after the last look.
+  await expect
+    .poll(
+      () => page.evaluate(() => document.getAnimations().filter((a) => a.playState !== "finished" && a.effect?.getComputedTiming().iterations !== Infinity).length),
+      { intervals: [50, 100, 200], timeout: 5000 },
+    )
+    .toBe(0);
+}
+async function clean(page: Page) {
+  await settled(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
-  // An open dialog is judged on its own: the page behind it sits under a fading overlay, so its contrast is timing-dependent, not a defect.
-  const builder = new AxeBuilder({ page });
-  const results = await (within ? builder.include(within) : builder).analyze();
+  const results = await new AxeBuilder({ page }).analyze();
   expect(results.violations.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
 }
 async function fillRemote(page: Page) {
@@ -240,6 +249,6 @@ for (const [name, width, dark] of [
     await clean(page);
     await page.getByRole("button", { name: "Prepare handover…" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
-    await clean(page, '[role="dialog"]');
+    await clean(page);
   });
 }
