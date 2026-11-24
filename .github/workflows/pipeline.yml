@@ -316,16 +316,101 @@ jobs:
           path: frontend/apps/e2e/playwright-report/
           retention-days: 14
 
+  # Real-backend browser journeys (docs/architecture/real-backend-browser-tests.md): the production React screens in Chromium against the ACTUAL Laravel application and a private
+  # throwaway database, with no intercepted request. The test world is built through the real Actions (tests/E2E/RealBackend/BuildWorldTest.php) and served by the TEST-ONLY router
+  # tests/E2E/RealBackend/serve.php, which refuses to start outside this harness. It is separate from the shared-stack browser shards above (own database, own port, nothing seeded).
+  e2e-real-backend:
+    name: e2e-real-backend
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: erp
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: erp
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U erp"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: erp
+      DB_PASSWORD: secret
+      TEST_DB_HOST: 127.0.0.1
+      TEST_DB_PORT: 5432
+      TEST_DB_DATABASE: erp_testing_ci_e2e
+      ERP_E2E_BACKEND: '1'
+      ERP_E2E_WORLD_FILE: ${{ github.workspace }}/backend/storage/e2e-world.json
+      PHP_CLI_SERVER_WORKERS: 6
+    steps:
+      - uses: actions/checkout@v5
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: pdo_pgsql, redis, bcmath, intl
+          coverage: none
+      - uses: ramsey/composer-install@v3
+        with:
+          working-directory: backend
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: frontend/apps/e2e
+        run: npx playwright install --with-deps chromium
+      - name: Copy .env
+        working-directory: backend
+        run: cp .env.example .env && php artisan key:generate
+      - name: Create the private database, migrate it and build the test world
+        working-directory: backend
+        run: |
+          PGPASSWORD=secret psql -h 127.0.0.1 -U erp -d erp -c 'create database erp_testing_ci_e2e'
+          php artisan migrate:fresh --database=testing --force --no-interaction
+          php artisan test tests/E2E/RealBackend/BuildWorldTest.php
+          test -s storage/e2e-world.json
+      - name: Build frontend (production CSS for the fixtures)
+        working-directory: frontend
+        run: npm run build --workspace apps/main
+      - name: Start the real application (test-only router)
+        working-directory: backend
+        run: |
+          php -S 127.0.0.1:8099 -t public tests/E2E/RealBackend/serve.php > ../real-backend-server.log 2>&1 &
+          npx --yes wait-on@7 http://127.0.0.1:8099/up --timeout 30000
+      - name: Real-backend journeys
+        working-directory: frontend/apps/e2e
+        env:
+          E2E_REAL_BACKEND_URL: http://127.0.0.1:8099
+          E2E_REAL_BACKEND_WORLD: ${{ github.workspace }}/backend/storage/e2e-world.json
+        run: npx playwright test --project=real-backend
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: playwright-report-real-backend
+          path: frontend/apps/e2e/playwright-report/
+          retention-days: 14
+      - name: Server log on failure
+        if: ${{ failure() }}
+        run: tail -n 100 real-backend-server.log || true
+
   e2e:
     name: e2e
-    needs: e2e-shard
+    needs: [e2e-shard, e2e-real-backend]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     steps:
-      - name: Every e2e shard must pass
+      - name: Every e2e shard and the real-backend journeys must pass
         run: |
-          echo "e2e shards: ${{ needs.e2e-shard.result }}"
-          [ "${{ needs.e2e-shard.result }}" = "success" ]
+          echo "e2e shards: ${{ needs.e2e-shard.result }}; real-backend journeys: ${{ needs.e2e-real-backend.result }}"
+          [ "${{ needs.e2e-shard.result }}" = "success" ] && [ "${{ needs.e2e-real-backend.result }}" = "success" ]
 
   build:
     name: build (${{ matrix.arch }})

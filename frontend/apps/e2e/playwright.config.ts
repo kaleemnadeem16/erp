@@ -14,6 +14,21 @@ const baseURL = process.env.E2E_BASE_URL ?? 'http://127.0.0.1:5176';
 // Remembered for the teardown, which archives only what this run created.
 process.env.E2E_RUN_STARTED ??= String(Date.now());
 
+// The real-backend project exists only inside docker/frontend/run-real-backend-e2e.sh (or its CI job), which start the application it needs. Anywhere else (the shared dev stack runs, the
+// sharded browser job) it is not defined at all, so `playwright test` can never run those specs against the wrong or a missing backend.
+const realBackendProjects = process.env.E2E_REAL_BACKEND_URL
+  ? [
+    {
+      // Real-backend journeys (`*.real.spec.ts`): the production React screens against THIS checkout's actual Laravel application and a private throwaway database, started
+      // by docker/frontend/run-real-backend-e2e.sh (or the CI job of the same name). No interception, no shared dev stack, no saved login. See
+      // docs/architecture/real-backend-browser-tests.md.
+      name: 'real-backend',
+      testMatch: /.*\.real\.spec\.ts/,
+      timeout: 90_000,
+    },
+    ]
+  : [];
+
 export default defineConfig({
   globalTeardown: './tests/global-teardown.ts',
   testDir: './tests',
@@ -33,6 +48,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [
+    ...realBackendProjects,
     {
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
@@ -48,7 +64,7 @@ export default defineConfig({
     },
     {
       name: 'chromium',
-      testIgnore: /.*\.unit\.spec\.ts/,
+      testIgnore: /.*\.(unit|real)\.spec\.ts/,
       use: { ...devices['Desktop Chrome'], storageState: '.auth/user.json' },
       dependencies: ['setup'],
     },
