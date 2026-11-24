@@ -88,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('quotations/{revision}/acceptance-preview', [CustomerAcceptanceController::class, 'preview'])->whereNumber('revision')->name('quotations.acceptance-preview');
     Route::post('quotations/{revision}/acceptances', [CustomerAcceptanceController::class, 'store'])->whereNumber('revision')->name('quotations.acceptances.store');
     Route::get('customer-acceptances/{acceptance}/handover-preview', [HandoverPlanController::class, 'preview'])->whereNumber('acceptance')->name('customer-acceptances.handover-preview');
+    Route::get('customer-acceptances/{acceptance}/handover-options', [HandoverPlanController::class, 'options'])->whereNumber('acceptance')->name('customer-acceptances.handover-options');
     Route::post('customer-acceptances/{acceptance}/handover-plans', [HandoverPlanController::class, 'store'])->whereNumber('acceptance')->name('customer-acceptances.handover-plans.store');
     Route::post('customer-acceptances/{acceptance}/completion-bases', [HandoverReleaseController::class, 'recordBasis'])->whereNumber('acceptance')->name('customer-acceptances.completion-bases.store');
     Route::get('handover-stages/{stage}/release-preview', [HandoverReleaseController::class, 'preview'])->whereNumber('stage')->name('handover-stages.release-preview');

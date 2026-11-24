@@ -17,6 +17,7 @@ class QuotationAccessSurfaceCoverageTest extends TestCase
         'GET api/v1/quotations/{revision}/acceptance-preview' => ['PreviewCustomerAcceptance', 'lock', 'accept + decision.view + quotation.view', 'exact issued terms, opaque review', 'CustomerAcceptanceApiTest'],
         'POST api/v1/quotations/{revision}/acceptances' => ['RecordCustomerAcceptance', 'lock', 'accept + decision.view + quotation.view', 'acceptance identity receipt', 'CustomerAcceptanceApiTest'],
         'GET api/v1/customer-acceptances/{acceptance}/handover-preview' => ['PreviewHandover', 'lock', 'handover.prepare + acceptance view + quotation view', 'permitted operational preview, pending readiness', 'HandoverApiTest'],
+        'GET api/v1/customer-acceptances/{acceptance}/handover-options' => ['ReadHandoverOptions', 'lock', 'handover.prepare + acceptance view + quotation view', 'the accepted customer own current contacts and active sites only', 'HandoverApiTest'],
         'POST api/v1/customer-acceptances/{acceptance}/handover-plans' => ['PrepareHandoverPlan', 'lock', 'handover.prepare + acceptance view + quotation view', 'plan receipt identity', 'HandoverApiTest'],
         'GET api/v1/handover-plans/{plan}' => ['ReadHandoverPlan', 'lock', 'acceptance view + quotation view', 'immutable operational plan without token or commercial terms', 'HandoverApiTest'],
         'GET api/v1/quotations' => ['ListQuotations', 'queryFor', 'view', 'safe identities', 'QuotationListApiTest'],

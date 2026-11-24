@@ -7,6 +7,7 @@ namespace App\Modules\Sales\Http\Controllers\Api\V1;
 use App\Exceptions\DomainInvariantException;
 use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\PrepareHandoverPlan;
+use App\Modules\Sales\Actions\ReadHandoverOptions;
 use App\Modules\Sales\Actions\PreviewHandover;
 use App\Modules\Sales\Actions\ReadHandoverPlan;
 use App\Modules\Sales\Actions\ReadHandoverStatus;
@@ -14,6 +15,7 @@ use App\Modules\Sales\Http\Requests\CustomerDecision\HandoverFields;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PrepareHandoverPlanRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PreviewHandoverRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\ShowHandoverPlanRequest;
+use App\Modules\Sales\Http\Resources\HandoverOptionsResource;
 use App\Modules\Sales\Http\Resources\HandoverPlanOutcomeResource;
 use App\Modules\Sales\Http\Resources\HandoverPlanResource;
 use App\Modules\Sales\Http\Resources\HandoverPreviewResource;
@@ -31,6 +33,11 @@ final class HandoverPlanController extends Controller
     public function preview(PreviewHandoverRequest $request, int $acceptance, PreviewHandover $preview): HandoverPreviewResource
     {
         return new HandoverPreviewResource($this->refusing(fn (): array => $preview($request->user(), $acceptance, HandoverFields::from($request))));
+    }
+
+    public function options(PreviewHandoverRequest $request, int $acceptance, ReadHandoverOptions $read): HandoverOptionsResource
+    {
+        return new HandoverOptionsResource($this->refusing(fn (): array => $read($request->user(), $acceptance)));
     }
 
     #[HeaderParameter('Idempotency-Key', 'Per-person request key. Current authority is rechecked before exact retry.', required: true, type: 'string')]

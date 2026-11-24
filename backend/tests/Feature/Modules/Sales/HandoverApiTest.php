@@ -150,4 +150,55 @@ class HandoverApiTest extends TestCase
         $this->postJson($this->base().'/handover-plans', ['preview_token' => 'fake'], ['Idempotency-Key' => 'foreign'])->assertNotFound();
         $this->getJson('/api/v1/handover-plans/'.$id)->assertNotFound();
     }
+
+    public function test_the_options_are_the_accepted_customers_own_current_contacts_and_active_sites_and_nothing_else(): void
+    {
+        $other = DB::table('parties')->insertGetId(['company_id' => 1, 'code' => 'OTHER-CUST', 'name' => 'Another customer', 'status' => 'ACTIVE', 'created_at' => now(), 'updated_at' => now()]);
+        $mk = fn (int $party, array $over) => DB::table('party_contacts')->insertGetId($over + ['party_id' => $party, 'name' => 'x', 'created_at' => now(), 'updated_at' => now()]);
+        $mk($other, ['name' => 'Foreign contact', 'email' => 'foreign@example.test']);
+        $mk($this->customer->id, ['name' => 'No channel contact']);
+        $mk($this->customer->id, ['name' => 'Archived contact', 'email' => 'old@example.test', 'deleted_at' => now()]);
+        $site = fn (int $party, string $code, string $status) => DB::table('party_sites')->insertGetId(['party_id' => $party, 'code' => $code, 'name' => 'Site '.$code, 'status' => $status, 'created_at' => now(), 'updated_at' => now()]);
+        $site($other, 'FOR', 'ACTIVE');
+        $site($this->customer->id, 'OLD', 'INACTIVE');
+        $active = $site($this->customer->id, 'NEW', 'ACTIVE');
+
+        Sanctum::actingAs($this->checker);
+        $r = $this->getJson($this->base().'/handover-options')->assertOk()->assertJsonPath('data.acceptance_id', $this->f['acceptance']);
+        $names = array_column($r->json('data.contacts'), 'name');
+        $this->assertContains('Synthetic delivery contact', $names);
+        $this->assertNotContains('Foreign contact', $names);
+        $this->assertNotContains('No channel contact', $names);
+        $this->assertNotContains('Archived contact', $names);
+        $this->assertSame([$active], array_values(array_filter(array_column($r->json('data.sites'), 'id'), fn ($id) => $id === $active)));
+        $this->assertNotContains('Site FOR', array_column($r->json('data.sites'), 'name'));
+        $this->assertNotContains('Site OLD', array_column($r->json('data.sites'), 'name'));
+        $this->assertSame(['id', 'name', 'email', 'phone'], array_keys($r->json('data.contacts.0')));
+        $this->assertDatabaseCount('handover_plans', 0);
+    }
+
+    public function test_the_options_need_the_prepare_and_view_duties_and_do_not_cross_companies(): void
+    {
+        $viewer = User::factory()->create();
+        $viewer->givePermissionTo([P::CUSTOMER_DECISION_VIEW, P::QUOTATION_VIEW]);
+        Sanctum::actingAs($viewer);
+        $this->getJson($this->base().'/handover-options')->assertForbidden();
+        $this->getJson($this->base().'/handover-options?x=1')->assertForbidden();
+
+        $company = DB::table('companies')->insertGetId(['name' => 'Synthetic foreign company', 'created_at' => now(), 'updated_at' => now()]);
+        $this->app->instance(CompanyContext::class, new class($company) extends CompanyContext
+        {
+            public function __construct(private readonly int $company) {}
+
+            public function id(): int
+            {
+                return $this->company;
+            }
+        });
+        app(PermissionRegistrar::class)->setPermissionsTeamId($company);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo([P::HANDOVER_PREPARE, P::CUSTOMER_DECISION_VIEW, P::QUOTATION_VIEW]);
+        Sanctum::actingAs($actor);
+        $this->getJson($this->base().'/handover-options')->assertNotFound();
+    }
 }
