@@ -3,6 +3,7 @@
 namespace Tests\Feature\Modules\Jobs;
 
 use App\Models\User;
+use App\Modules\Jobs\Models\JobOperationReceipt;
 use App\Modules\Jobs\Support\Lifecycle\JobLifecycleIntent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -41,11 +42,49 @@ class JobCommandApiTest extends TestCase
         return $this->postJson('/api/v1/jobs/'.$this->jobId.'/'.$path, $payload);
     }
 
+    public function test_only_the_assigned_employee_starts_and_only_the_original_actor_replays(): void
+    {
+        $employee = $this->worker;
+        $manager = $this->operator;
+        $this->grantJobDuties($employee, 'job.start');
+        $this->postCommand('assign', $this->payload(['assignee_id' => $employee->id]))->assertOk();
+        $start = $this->payload();
+        $this->postCommand('start', $start)->assertUnprocessable()->assertJsonPath('reason_code', 'START_ASSIGNEE_REQUIRED');
+        $this->actingAs($employee);
+        $this->getJson('/api/v1/jobs/'.$this->jobId)->assertForbidden();
+        $first = $this->postCommand('start', $start)->assertOk()->json('data.event_id');
+        $this->actingAs($manager);
+        $this->postCommand('assign', $this->payload(['assignee_id' => $manager->id]))->assertOk();
+        $before = DB::table('job_events')->count();
+        $this->postCommand('start', $start)->assertForbidden();
+        $otherKey = array_replace($start, ['request_key' => 'new-start-key']);
+        $this->postCommand('start', $otherKey)->assertForbidden();
+        // Simulate a cross-actor receipt issued by the previous replay policy.
+        $intent = new JobLifecycleIntent('START', $this->jobId, $start['command_identity'], null, [], ['generation' => $start['expected_generation']]);
+        JobOperationReceipt::query()->create([
+            'job_id' => $this->jobId, 'actor_id' => $manager->id, 'request_key' => $start['request_key'],
+            'operation' => 'START', 'intent_hash' => $intent->requestHash($manager->id, $start['request_key']),
+            'result_event_id' => $first, 'contract_version' => JobLifecycleIntent::CONTRACT_VERSION,
+        ]);
+        $this->postCommand('start', $start)->assertForbidden();
+
+        $this->actingAs($employee);
+        foreach ([$start, $otherKey] as $retry) {
+            $this->postCommand('start', $retry)->assertOk()->assertJsonPath('data.event_id', $first)->assertJsonPath('data.replayed', true);
+        }
+        $this->postCommand('start', $start + ['reason' => 'Different'])->assertUnprocessable();
+        $employee->revokePermissionTo('job.start');
+        $this->postCommand('start', $start)->assertForbidden();
+        $this->assertSame($before, DB::table('job_events')->count());
+        $this->assertSame(4, (int) DB::table('service_jobs')->where('id', $this->jobId)->value('generation'));
+        $this->assertSame($manager->id, (int) DB::table('job_assignment_events')->where('job_id', $this->jobId)->orderByDesc('sequence')->value('responsible_user_id'));
+    }
+
     public function test_real_release_to_close_via_http_records_exactly_one_of_each_evidence(): void
     {
         $this->assertFalse($this->operator->can('job.view'));
         $this->getJson('/api/v1/jobs/'.$this->jobId)->assertForbidden();
-        $this->postCommand('assign', $this->payload(['assignee_id' => $this->worker->id, 'instructions' => 'Attend site',
+        $this->postCommand('assign', $this->payload(['assignee_id' => $this->operator->id, 'instructions' => 'Attend site',
             'intended_from' => '2026-11-23T09:00:00+05:00', 'intended_until' => '2026-11-23T10:00:00+05:00']))->assertOk()->assertJsonPath('data.operation', 'ASSIGN');
         $start = $this->payload(['reason' => 'Begin']);
         $this->postCommand('start', $start)->assertOk()->assertJsonPath('data.state', 'ACTIVE');
@@ -103,7 +142,7 @@ class JobCommandApiTest extends TestCase
 
     public function test_ready_assessment_cannot_close_after_fulfilment_or_source_changes(): void
     {
-        $this->postCommand('assign', $this->payload(['assignee_id' => $this->worker->id]))->assertOk();
+        $this->postCommand('assign', $this->payload(['assignee_id' => $this->operator->id]))->assertOk();
         $this->postCommand('start', $this->payload())->assertOk();
         $this->postCommand('complete', $this->payload(['statement' => 'Whole delivery']))->assertOk();
         $assessmentInput = $this->payload();

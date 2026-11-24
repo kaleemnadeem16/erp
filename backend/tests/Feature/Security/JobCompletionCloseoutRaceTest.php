@@ -85,7 +85,7 @@ class JobCompletionCloseoutRaceTest extends TestCase
             $preview = app(PreviewServiceRelease::class)($user, $stage);
             $released = app(ReleaseHandoverComponent::class)($user, 'release', $stage, $basis['basis_id'], $preview['fingerprint']);
             $job = (int) $released['job_id'];
-            $assigned = app(AssignJobResponsibility::class)->execute($user, $job, $worker, 1, 'assign', JobLifecycleIntent::newCommandIdentity());
+            $assigned = app(AssignJobResponsibility::class)->execute($user, $job, $user->id, 1, 'assign', JobLifecycleIntent::newCommandIdentity());
             $started = app(StartJob::class)->execute($user, $job, $assigned->generation, 'start', JobLifecycleIntent::newCommandIdentity(), 'Go');
             $out = ['job' => $job, 'generation' => $started->generation];
             if ($complete) {

@@ -176,19 +176,30 @@ final class JobLifecycleOperation
                 throw JobLifecycleRefusal::make(JobLifecycleRefusal::REQUEST_KEY_REUSED, 'That request key was already used for a different request.', 'request_key');
             }
 
-            return $this->outcome(JobEvent::query()->findOrFail($receipt->result_event_id), true);
+            $event = JobEvent::query()->findOrFail($receipt->result_event_id);
+            $this->requireOriginalStartActor($actor, $event);
+
+            return $this->outcome($event, true);
         }
         $applied = JobEvent::query()->where(['job_id' => $job->id, 'command_identity' => $intent->commandIdentity])->first();
         if ($applied !== null) {
             if ($applied->semantic_intent_hash !== $semanticHash) {
                 throw JobLifecycleRefusal::make(JobLifecycleRefusal::COMMAND_CONFLICT, 'That command was already applied with a different intent.', 'command_identity');
             }
+            $this->requireOriginalStartActor($actor, $applied);
             $this->receipt($actor, $requestKey, $intent, $requestHash, $applied);
 
             return $this->outcome($applied, true);
         }
 
         return null;
+    }
+
+    private function requireOriginalStartActor(User $actor, JobEvent $event): void
+    {
+        if ($event->operation === self::START && $event->actor_id !== $actor->id) {
+            throw new AuthorizationException('Only the employee who started this Job can recover the START result.');
+        }
     }
 
     private function assertExpected(JobLifecycleIntent $intent, JobSnapshot $snapshot, JobExecutionContext $context): void

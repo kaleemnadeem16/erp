@@ -131,7 +131,7 @@ class JobCommandApiCommitTest extends TestCase
 
     public function test_real_completion_and_close_failures_rollback_all_evidence_before_http_response(): void
     {
-        $this->postCommand('assign', $this->payload(['assignee_id' => $this->worker->id]))->assertOk();
+        $this->postCommand('assign', $this->payload(['assignee_id' => $this->operator->id]))->assertOk();
         $this->postCommand('start', $this->payload())->assertOk();
         DB::unprepared("CREATE FUNCTION zz_http_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'HTTP atomic failure' USING ERRCODE='P0001'; END $$");
         try {

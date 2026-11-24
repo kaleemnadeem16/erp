@@ -25,7 +25,7 @@ context remain mounted behind the existing detail sheet.
 | Contract element | UI destination | Availability | Acceptance |
 |---|---|---|---|
 | Assign | Exact-duty action dialog; searchable assignee | job.assign; RELEASED/ACTIVE; no open hold, finally checked by Action | Confirm new responsibility; target remains active/current company |
-| Start | Exact-duty confirmation | job.start; RELEASED, responsibility exists, no holds | Success refresh; held/unassigned/stale refusal never changes state optimistically |
+| Start | Exact-duty confirmation | job.start; RELEASED, current employee is assigned, no holds | Success refresh; held/unassigned/stale refusal never changes state optimistically |
 | Hold | Reason and confirmation | job.hold; RELEASED/ACTIVE | Independent new hold; retry preserves command identity |
 | Resolve hold | Choose one open hold, reason and confirmation | job.hold.resolve; named same-Job open hold | Resolving one leaves every other hold open |
 | Complete | Whole-deliverable attestation | job.complete; ACTIVE; no holds; frozen attestation context | Review the deliverable and conditions, enter a statement and explicitly confirm |
@@ -77,7 +77,7 @@ exact ACTIVE job.complete / current membership / ALL scope plus owning-source el
 the existing company/source fences. The text comes only from the frozen Jobs
 baseline component's deliverable_text and agreed_conditions. Customer identity, commercial values,
 source references, hashes, pins, private consent evidence and broad history remain excluded.
-The command uses the disclosed snapshot generation and the existing completion Action. Start actor and replay rules remain under review in #132.
+The command uses the disclosed snapshot generation and the existing completion Action. A fresh start requires the current assignee. An otherwise authorised original starter can recover their recorded result after reassignment. Confirmation applies to the reviewed profile and must be renewed when its generation or attestation text changes.
 
 ## Related
 

@@ -315,7 +315,7 @@ class JobLifecycleActionsTest extends TestCase
         $this->settle();
         $this->assertSame('RESPONSIBILITY_REQUIRED', $this->refusal(fn () => $this->start($job)));
 
-        $this->assign($job);
+        $this->assign($job, $this->user->id);
         $this->hold($job);
         $this->assertSame('JOB_HELD', $this->refusal(fn () => $this->start($job)));
         $this->resolve($job, $this->openHold($job));
@@ -343,7 +343,7 @@ class JobLifecycleActionsTest extends TestCase
     public function test_holds_are_independent_and_each_resolution_names_one_and_starts_nothing(): void
     {
         $job = $this->newJob();
-        $this->assign($job);
+        $this->assign($job, $this->user->id);
         $one = $this->hold($job, reason: 'Permit pending');
         $firstHold = $this->openHold($job);
         $this->hold($job, reason: 'Access not agreed');

@@ -467,7 +467,7 @@ class ReleasedServiceReceiverTest extends TestCase
         $job = ServiceJob::query()->findOrFail($out['job_id']);
         $this->assertSame($out['release_event_id'], app(JobSalesOrigin::class)->releaseEventIdFor($job));
 
-        $assigned = app(AssignJobResponsibility::class)->execute($this->checker, $job->id, $this->worker->id, 1, 'assign-1', JobLifecycleIntent::newCommandIdentity());
+        $assigned = app(AssignJobResponsibility::class)->execute($this->checker, $job->id, $this->checker->id, 1, 'assign-1', JobLifecycleIntent::newCommandIdentity());
         $this->settle();
         $started = app(StartJob::class)->execute($this->checker, $job->id, $assigned->generation, 'start-1', JobLifecycleIntent::newCommandIdentity(), 'Go');
         $this->settle();

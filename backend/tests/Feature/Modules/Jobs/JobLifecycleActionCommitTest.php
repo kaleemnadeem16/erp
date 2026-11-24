@@ -108,7 +108,7 @@ class JobLifecycleActionCommitTest extends TestCase
     public function test_every_action_commits_for_real_and_the_chain_is_coherent(): void
     {
         $job = $this->released();
-        $assign = app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, $this->key(), $this->cmd(), 'Dispatch');
+        $assign = app(AssignJobResponsibility::class)->execute($this->user, $job, $this->user->id, 1, $this->key(), $this->cmd(), 'Dispatch');
         $hold = app(PlaceJobHold::class)->execute($this->user, $job, 'Waiting', 2, $this->key(), $this->cmd());
         $holdId = (int) DB::table('job_holds')->value('id');
         app(ResolveJobHold::class)->execute($this->user, $job, $holdId, 'Done', 3, $this->key(), $this->cmd());
@@ -297,10 +297,24 @@ class JobLifecycleActionCommitTest extends TestCase
         $this->assertCoherent($job);
     }
 
+    public function test_start_and_reassignment_race_at_the_same_generation(): void
+    {
+        $job = $this->released();
+        app(AssignJobResponsibility::class)->execute($this->user, $job, $this->user->id, 1, $this->key(), $this->cmd());
+        $start = fn () => app(StartJob::class)->execute($this->user, $job, 2, 'start-race', $this->cmd());
+        $assign = fn () => app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 2, 'assign-race', $this->cmd());
+        $result = $this->race($start, $assign);
+        $attempts = [$result['child'], $result['parent']];
+        $this->assertCount(1, array_filter($attempts, fn ($attempt) => $attempt['ok']));
+        $this->assertSame('STALE_GENERATION', array_values(array_filter($attempts, fn ($attempt) => ! $attempt['ok']))[0]['reason']);
+        $this->assertSame(3, $this->gen($job));
+        $this->assertCoherent($job);
+    }
+
     public function test_a_start_racing_a_hold_never_leaves_an_active_job_with_a_hold_that_was_placed_before_it(): void
     {
         $job = $this->released();
-        app(AssignJobResponsibility::class)->execute($this->user, $job, $this->worker->id, 1, $this->key(), $this->cmd());
+        app(AssignJobResponsibility::class)->execute($this->user, $job, $this->user->id, 1, $this->key(), $this->cmd());
         $start = fn () => app(StartJob::class)->execute($this->user, $job, 2, 'start-key', $this->cmd());
         $hold = fn () => app(PlaceJobHold::class)->execute($this->user, $job, 'Waiting', 2, 'hold-key', $this->cmd());
         $result = $this->race($start, $hold);

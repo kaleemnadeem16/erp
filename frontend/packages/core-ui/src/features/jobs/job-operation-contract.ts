@@ -15,7 +15,7 @@ export const jobOperations = {
     duty: "job.start",
     label: "Start work",
     consequence:
-      "Record that work has started. This advances the Job to Active.",
+      "Only the currently assigned employee can start work. Starting moves the Job to Active.",
   },
   HOLD: {
     duty: "job.hold",
@@ -116,6 +116,8 @@ export const jobRefusalAdvice: Record<string, string> = {
     "That hold has already been resolved. Choose a current open hold.",
   NOT_READY_TO_START:
     "Ask the handover owner to review the source prerequisites.",
+  START_ASSIGNEE_REQUIRED:
+    "Only the currently assigned employee can start this Job. Ask the responsible dispatcher to review the assignment.",
   NOT_READY_TO_COMPLETE:
     "Ask the handover owner to review the source prerequisites.",
   STALE_GENERATION:

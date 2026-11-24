@@ -228,9 +228,9 @@ class SourceActorEligibilityTest extends TestCase
         $dispatcher = $this->jobsOnly('job.assign', 'job.start');
         $finisher = $this->jobsOnly('job.complete');
         $identity = JobLifecycleIntent::newCommandIdentity();
-        $assigned = app(AssignJobResponsibility::class)->execute($dispatcher, $this->job->id, $this->worker->id, 1, 'a1', $identity);
+        $assigned = app(AssignJobResponsibility::class)->execute($dispatcher, $this->job->id, $dispatcher->id, 1, 'a1', $identity);
         $this->settleConstraints();
-        $again = app(AssignJobResponsibility::class)->execute($dispatcher, $this->job->id, $this->worker->id, 1, 'a1', $identity);
+        $again = app(AssignJobResponsibility::class)->execute($dispatcher, $this->job->id, $dispatcher->id, 1, 'a1', $identity);
         $this->assertTrue($again->replayed);
         $this->assertSame($assigned->eventId, $again->eventId);
         $started = app(StartJob::class)->execute($dispatcher, $this->job->id, $assigned->generation, 's1', JobLifecycleIntent::newCommandIdentity(), 'Go');

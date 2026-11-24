@@ -79,7 +79,7 @@ class SourceEvidenceCorrectionAfterReleaseTest extends TestCase
 
     private function assign(ServiceJob $job): int
     {
-        $out = app(AssignJobResponsibility::class)->execute($this->checker, $job->id, $this->worker->id, (int) $job->fresh()->generation, 'assign-1', JobLifecycleIntent::newCommandIdentity());
+        $out = app(AssignJobResponsibility::class)->execute($this->checker, $job->id, $this->checker->id, (int) $job->fresh()->generation, 'assign-1', JobLifecycleIntent::newCommandIdentity());
         $this->settleConstraints();
 
         return $out->generation;

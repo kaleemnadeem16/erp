@@ -108,7 +108,7 @@ trait BuildsStartedSalesJob
     {
         $out = $this->releaseTheService();
         $job = ServiceJob::query()->findOrFail($out['job_id']);
-        $assigned = app(AssignJobResponsibility::class)->execute($this->checker, $job->id, $this->worker->id, 1, 'assign-1', JobLifecycleIntent::newCommandIdentity());
+        $assigned = app(AssignJobResponsibility::class)->execute($this->checker, $job->id, $this->checker->id, 1, 'assign-1', JobLifecycleIntent::newCommandIdentity());
         $this->settleConstraints();
         app(StartJob::class)->execute($this->checker, $job->id, $assigned->generation, 'start-1', JobLifecycleIntent::newCommandIdentity(), 'Go');
         $this->settleConstraints();

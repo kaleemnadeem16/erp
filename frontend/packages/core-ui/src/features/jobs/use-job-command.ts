@@ -64,7 +64,7 @@ export function useJobCommand({
   const [draft, setDraft] = useState<JobDraft>(
     () => unresolved.get(sessionKey)?.draft ?? { ...emptyJobDraft },
   );
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmedReview, setConfirmedReview] = useState<string | null>(null);
   const [assessmentConfirmed, setAssessmentConfirmed] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +97,11 @@ export function useJobCommand({
     !terminal && context.data?.status === 200
       ? context.data.data.data
       : undefined;
+  const review = profile ? JSON.stringify(profile) : null;
+  const confirmed = review !== null && confirmedReview === review;
+  function setConfirmed(value: boolean) {
+    setConfirmedReview(value ? review : null);
+  }
   const dirty = JSON.stringify(draft) !== JSON.stringify(emptyJobDraft);
   useEffect(() => {
     if (!dirty && !uncertain && !pending) return;
@@ -152,6 +157,7 @@ export function useJobCommand({
   }
   async function submit(mode: JobOperation = operation) {
     if (submitting.current || !profile || !allowed) return;
+    if (!uncertain && mode === operation && (!confirmed || blocked)) return;
     submitting.current = true;
     setPending(true);
     setError(null);

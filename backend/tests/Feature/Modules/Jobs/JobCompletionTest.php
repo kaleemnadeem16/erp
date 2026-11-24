@@ -128,7 +128,7 @@ class JobCompletionTest extends TestCase
     /** Takes an already released Job to ACTIVE. */
     private function startedJob2(ServiceJob $released): ServiceJob
     {
-        $assigned = app(AssignJobResponsibility::class)->execute($this->checker, $released->id, $this->worker->id, 1, 'assign-x', JobLifecycleIntent::newCommandIdentity());
+        $assigned = app(AssignJobResponsibility::class)->execute($this->checker, $released->id, $this->checker->id, 1, 'assign-x', JobLifecycleIntent::newCommandIdentity());
         $this->settleConstraints();
         app(StartJob::class)->execute($this->checker, $released->id, $assigned->generation, 'start-x', JobLifecycleIntent::newCommandIdentity(), 'Go');
         $this->settleConstraints();
