@@ -55,7 +55,9 @@ class PurchaseOrderController extends Controller
 
     public function index(IndexPurchaseOrderRequest $request): AnonymousResourceCollection
     {
-        $query = PurchaseOrderAccess::make()->scopeForRead(PurchaseOrder::query(), $request->user());
+        $query = PurchaseOrder::query();
+        // Applied in place (the builder is the same object): the explicit query type above keeps the generated OpenAPI contract unchanged.
+        PurchaseOrderAccess::make()->scopeForRead($query, $request->user());
         $this->applyIncludes($query, $request, self::INCLUDABLE);
         if (in_array('lines', $this->requestedIncludes($request, self::INCLUDABLE), true)) {
             $query->with(['lines' => fn ($lines) => $lines->withReceiptProgress()]);
