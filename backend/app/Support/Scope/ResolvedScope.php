@@ -21,7 +21,7 @@ final readonly class ResolvedScope
     private const RECORDS = 'RECORDS';
 
     /** @param  list<int>  $unitIds */
-    private function __construct(private string $kind, private array $unitIds = [], private bool $ownPath = false, private bool $namedPath = false) {}
+    private function __construct(private string $kind, private array $unitIds = [], private bool $ownPath = false, private bool $namedPath = false, private bool $assignedPath = false) {}
 
     public static function all(): self
     {
@@ -47,13 +47,19 @@ final readonly class ResolvedScope
     /** Same-duty alternatives for a resource-aware adapter; legacy resolution never returns this union.
      * @param  list<int>  $unitIds
      */
-    public static function records(bool $ownsRecords, array $unitIds, bool $namedDelegation = false): self
+    public static function records(bool $ownsRecords, array $unitIds, bool $namedDelegation = false, bool $assigned = false): self
     {
-        if (! $ownsRecords && $unitIds === [] && ! $namedDelegation) {
+        if (! $ownsRecords && $unitIds === [] && ! $namedDelegation && ! $assigned) {
             return self::none();
         }
 
-        return new self(self::RECORDS, array_values(array_unique($unitIds)), $ownsRecords, $namedDelegation);
+        return new self(self::RECORDS, array_values(array_unique($unitIds)), $ownsRecords, $namedDelegation, $assigned);
+    }
+
+    /** Records the person is named on (for a purchase order, its buyer). An alternative path of the same duty, never a capability. */
+    public function allowsAssigned(): bool
+    {
+        return $this->assignedPath;
     }
 
     public function ownsRecords(): bool

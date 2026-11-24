@@ -13,4 +13,5 @@ export const UpdateMemberAccessRequestScopeLimitsItemScope = {
   MY_UNITS: "MY_UNITS",
   OWN: "OWN",
   OWN_OR_DELEGATED: "OWN_OR_DELEGATED",
+  ASSIGNED: "ASSIGNED",
 } as const;

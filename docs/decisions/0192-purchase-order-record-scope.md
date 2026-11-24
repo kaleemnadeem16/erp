@@ -33,7 +33,19 @@ two identities scope needs (`created_by`, `ship_to_warehouse_id`); ADR 0089 supp
    holds when an edit moves the ship-to. Naming a replaced order (`replaces_purchase_order_id`) requires reaching it; otherwise it reads as absent (404).
 7. **History.** Orders from before ADR 0191 have no creator and no ship-to. They match neither limited path, so a limited person never reaches them and nobody is invented as their creator; unrestricted persons keep them.
    No back-fill is performed (a back-fill would manufacture identities).
-8. **Assigned buyer (`buyer_user_id`) is NOT a scope path in this decision.** See *Decision needed*.
+8. **`ASSIGNED` is the assigned-buyer scope (owner-approved 2026-11-24).** An order is reached when its `buyer_user_id` is the actor. It is a scope of its own: it is not `OWN` (an order the actor merely drafted is not reached by it) and not
+   `OWN_OR_DELEGATED`. It is an *alternative path of the same duty*, additive with `OWN` and `MY_UNITS`: a person limited twice on one duty reaches the union. **Being named buyer confers no capability** (the duty must still be held), and
+   **a missing buyer confers no reach** (nobody is inferred). Where it is supported:
+   - the migration widens the `access_scope_limits` check (`ASSIGNED`); its rollback is **refused** while any assignment still carries it, so a restriction is never silently dropped or widened;
+   - `ResolvedScope` carries an assigned path and `RecordScope::resolveForResource` honours it only where the resource adapter declares it; the legacy resolver (Inventory's warehouse scope) knows only units and **fails closed** on it, and the
+     Sales quotation adapter does not declare it, so Sales and Inventory semantics are unchanged;
+   - the Purchase Order adapter declares it for the limitable duties; reads, writes, commercial reach, money filters/sorts, approval evidence and print all use the same reach test (`PurchaseOrderReach`);
+   - **create and draft edit** must leave the order reachable through a path that really applies: an `ASSIGNED`-only creator has to name themselves buyer (422 on `buyer_user_id` otherwise) and cannot hand a draft to somebody else; another authorised
+     path for the same duty (for example `OWN`) frees the choice. The buyer of an issued order stays immutable (ADR 0191); there is no reassignment after issue and no historical back-fill;
+   - Administration validates it like the other record-limited scopes (every duty of the role must support it, otherwise 422), roles report their supported `limit_modes`, and the members screen offers "Company-wide / Only my units / Only records I
+     created / Only records assigned to me" per given role, only where the server says the role supports it.
+   - **Buyer lookup:** `GET /api/v1/purchase-order-buyers?search=` returns `{id, name}` of ACTIVE members of this company only, to a person who holds `purchasing.purchase-order.create`; no email, status, roles, permissions, units or limits. The purchase-order
+     form's buyer picker uses it.
 9. **Reach is judged under the row lock.** Every write locks the order with the reach predicate in the same locking `SELECT`, after the company access barrier. If a concurrent draft edit moved the ship-to while the
    writer waited, PostgreSQL re-evaluates the predicate on the committed row, the row no longer qualifies and the order reads as absent. `IssuePurchaseOrder` no longer decides reach before it locks.
    Proved by a real two-session PostgreSQL test (`PurchaseOrderScopeConcurrencyTest`), which fails if the check is moved back before the lock.
@@ -56,12 +68,11 @@ a separate duty and is not limitable here); the inventory overview's inbound fig
 
 Commercial-field protection (payment terms, totals, prices) is applied after reach exactly as before. No role grant, demo grant or production assignment changed; no administration screen, delegated administration, Phase 6, Job or reassignment-after-issue work.
 
-## Decision needed (owner) before rollout
+## Decisions that remain with the owner before any rollout
 
-- **Should the assigned buyer reach the order?** Today `OWN` is creator-only. Options: (a) add a new scope kind `ASSIGNED` (needs a check-constraint migration on `access_scope_limits`, a `ResolvedScope` path and administration wording), recommended because it lets a company
-  choose "mine" = created, assigned or both; (b) redefine `OWN` as creator-or-buyer (no schema, but silently changes the meaning other modules' `OWN` suggests). Until decided a buyer named on someone else's order sees nothing extra.
-- Whether an administration screen should offer `OWN` (the screen offers only "only my units" today; `OWN` is assignable through the access API).
-- A safe active-member buyer lookup is not delivered: no endpoint exposes company members to a purchaser without a members-administration duty.
+- Which people or roles are actually limited, and to which scope (nothing is set).
+- Whether limited roles are built for Purchasing (a limited role must contain only limitable duties; mixed roles reach nothing).
+- A back-fill of creator, buyer or ship-to for old orders (recommended: none, it would invent identities).
 
 ## Activation (not done)
 

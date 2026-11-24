@@ -31,7 +31,7 @@ class PurchaseOrderRecordScopeCoverageTest extends TestCase
 
     private const UNSCOPED_WORKFLOW = ['POST api/v1/inventory-cutovers/{}/commit-open-purchase-orders'];
 
-    private const NO_RECORD = ['POST api/v1/purchase-order-lines/preview'];
+    private const NO_RECORD = ['POST api/v1/purchase-order-lines/preview', 'GET api/v1/purchase-order-buyers'];
 
     /** @return list<string> */
     private function routes(): array

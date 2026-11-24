@@ -1,3 +1,4 @@
+import { RoleLimitChoices } from "./role-limit-choices";
 import { useEffect, useMemo, useState } from "react";
 import { Pencil, Plus } from "lucide-react";
 import type { PaginationState, SortingState } from "@tanstack/react-table";
@@ -58,6 +59,8 @@ interface Role {
   name: string;
   description?: string | null;
   permissions: string[];
+  /** The limits this role can carry when given to someone: "MY_UNITS" always, "OWN" / "ASSIGNED" only where every duty of the role supports them (decided by the server). */
+  limit_modes?: string[];
 }
 interface Member {
   id: number;
@@ -135,6 +138,16 @@ function RoleChoices({
       No roles yet. Create one in Roles & Permissions first.
     </p>
   );
+}
+
+type LimitScope = "MY_UNITS" | "OWN" | "OWN_OR_DELEGATED" | "ASSIGNED";
+/** A comparable form of "which given role is limited to what", ignoring limits of roles that are no longer given. */
+function limitSignature(limits: Record<number, string>, roleIds: number[]): string {
+  return roleIds
+    .filter((id) => limits[id] !== undefined)
+    .sort((a, b) => a - b)
+    .map((id) => `${id}:${limits[id]}`)
+    .join(",");
 }
 
 export function MembersSettingsScreen() {
@@ -222,7 +235,8 @@ export function MembersSettingsScreen() {
   const [email, setEmail] = useState("");
   const [roleIds, setRoleIds] = useState<number[]>([]);
   const [directPermissions, setDirectPermissions] = useState<string[]>([]);
-  const [limitedRoleIds, setLimitedRoleIds] = useState<number[]>([]);
+  // Where each given role applies: absent = company-wide, otherwise the scope it is limited to (MY_UNITS, OWN, ASSIGNED, or one set elsewhere that is kept as it is).
+  const [roleLimits, setRoleLimits] = useState<Record<number, string>>({});
   const [showCustom, setShowCustom] = useState(false);
   const [accessReason, setAccessReason] = useState("");
   const [createName, setCreateName] = useState("");
@@ -248,10 +262,12 @@ export function MembersSettingsScreen() {
     setEmail(selected.email);
     setRoleIds(selected.roles.map((role) => role.id));
     setDirectPermissions(selected.direct_permissions);
-    setLimitedRoleIds(
-      (selected.scope_limits ?? [])
-        .map((limit) => limit.role_id)
-        .filter((id): id is number => id !== null),
+    setRoleLimits(
+      Object.fromEntries(
+        (selected.scope_limits ?? [])
+          .filter((limit) => limit.role_id !== null)
+          .map((limit) => [limit.role_id as number, limit.scope]),
+      ),
     );
     setShowCustom(false);
     setAccessReason("");
@@ -310,6 +326,11 @@ export function MembersSettingsScreen() {
   const sorting: SortingState = [];
   const canEditAccess =
     mayAssign && selected?.id !== currentUser?.id && mayViewRoles;
+  // The limits section appears for a company with units, and wherever a given role can be limited to its own or assigned records (which needs no units at all).
+  const showLimits =
+    companyHasUnits ||
+    Object.keys(roleLimits).length > 0 ||
+    roles.some((role) => roleIds.includes(role.id) && (role.limit_modes ?? []).some((mode) => mode !== "MY_UNITS"));
   const accessChanged = selected
     ? [...roleIds].sort((a, b) => a - b).join(",") !==
         selected.roles
@@ -318,17 +339,16 @@ export function MembersSettingsScreen() {
           .join(",") ||
       [...directPermissions].sort().join(",") !==
         [...selected.direct_permissions].sort().join(",") ||
-      (companyHasUnits &&
-        [...limitedRoleIds.filter((id) => roleIds.includes(id))]
-          .sort((a, b) => a - b)
-          .join(",") !==
-          [
-            ...(selected.scope_limits ?? [])
-              .map((limit) => limit.role_id)
-              .filter((id): id is number => id !== null),
-          ]
-            .sort((a, b) => a - b)
-            .join(","))
+      (showLimits &&
+        limitSignature(roleLimits, roleIds) !==
+          limitSignature(
+            Object.fromEntries(
+              (selected.scope_limits ?? [])
+                .filter((limit) => limit.role_id !== null)
+                .map((limit) => [limit.role_id as number, limit.scope]),
+            ),
+            roleIds,
+          ))
     : false;
   const rolePermissionCount = new Set(
     roles
@@ -425,12 +445,12 @@ export function MembersSettingsScreen() {
           role_ids: roleIds,
           direct_permissions: directPermissions,
           // Sent only where the limits are shown; omitting them keeps what is stored. Limits on direct permissions are carried over.
-          ...(companyHasUnits
+          ...(showLimits
             ? {
                 scope_limits: [
-                  ...limitedRoleIds
-                    .filter((id) => roleIds.includes(id))
-                    .map((id) => ({ role_id: id, scope: "MY_UNITS" as const })),
+                  ...roleIds
+                    .filter((id) => roleLimits[id] !== undefined)
+                    .map((id) => ({ role_id: id, scope: roleLimits[id] as LimitScope })),
                   ...(selected.scope_limits ?? [])
                     .filter(
                       (limit) =>
@@ -439,7 +459,7 @@ export function MembersSettingsScreen() {
                     )
                     .map((limit) => ({
                       permission: limit.permission as string,
-                      scope: "MY_UNITS" as const,
+                      scope: limit.scope as LimitScope,
                     })),
                 ],
               }
@@ -721,7 +741,7 @@ export function MembersSettingsScreen() {
                         onChange={setRoleIds}
                         disabled={!canEditAccess}
                       />
-                      {companyHasUnits && roleIds.length > 0 && (
+                      {showLimits && roleIds.length > 0 && (
                         <div
                           className="space-y-2 rounded-md border p-3"
                           aria-label="Where each role applies"
@@ -730,36 +750,25 @@ export function MembersSettingsScreen() {
                             Where each role applies
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            A role applies company-wide unless limited to “only
-                            my units”: then it reaches only what the units they
-                            belong to own.{" "}
+                            A role applies company-wide unless limited. “Only my
+                            units” reaches what the units they belong to own;
+                            “Only records I created” and “Only records assigned
+                            to me” (for roles built from supported duties) reach
+                            just those records. A limit narrows what the role
+                            already allows — it never grants anything.{" "}
                             {(selected.organisation_units ?? []).length > 0
                               ? `Belongs to: ${(selected.organisation_units ?? []).map((u) => u.name).join(", ")}.`
-                              : "Belongs to no unit yet (add them on the Organisation screen)."}
+                              : companyHasUnits
+                                ? "Belongs to no unit yet (add them on the Organisation screen)."
+                                : ""}
                           </p>
-                          {roles
-                            .filter((role) => roleIds.includes(role.id))
-                            .map((role) => (
-                              <label
-                                key={role.id}
-                                className="flex items-center gap-2 text-sm"
-                              >
-                                <Checkbox
-                                  checked={limitedRoleIds.includes(role.id)}
-                                  disabled={!canEditAccess}
-                                  onCheckedChange={(on) =>
-                                    setLimitedRoleIds(
-                                      on === true
-                                        ? [...limitedRoleIds, role.id]
-                                        : limitedRoleIds.filter(
-                                            (id) => id !== role.id,
-                                          ),
-                                    )
-                                  }
-                                />
-                                {role.name}: only my units
-                              </label>
-                            ))}
+                          <RoleLimitChoices
+                            roles={roles.filter((role) => roleIds.includes(role.id))}
+                            limits={roleLimits}
+                            onChange={setRoleLimits}
+                            companyHasUnits={companyHasUnits}
+                            disabled={!canEditAccess}
+                          />
                         </div>
                       )}
                       {directPermissions.length > 0 && !showCustom && (

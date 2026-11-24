@@ -40,6 +40,7 @@ export * from "./generated/supplier-account/supplier-account";
 export * from "./generated/supplier-site/supplier-site";
 export * from "./generated/item-supplier/item-supplier";
 export * from "./generated/purchase-order/purchase-order";
+export * from "./generated/purchase-order-buyer/purchase-order-buyer";
 export * from "./generated/goods-receipt/goods-receipt";
 export * from "./generated/quality-disposition/quality-disposition";
 export * from "./generated/purchasing-settings/purchasing-settings";

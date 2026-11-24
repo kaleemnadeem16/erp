@@ -485,7 +485,7 @@ records who drafted it. On a draft each can be set, changed or cleared (clearing
 from, and from then on all of it is immutable — in the model and in the database guard. Deliver-to must still be an active warehouse/location when the order is issued. The approval
 fingerprint covers each fact the order states, so editing one voids an approval; an order that states none keeps the fingerprint it had. Existing orders carry none of it and are
 unchanged (an old issued order's terms read the supplier's current default). Terms follow `purchasing.commercial-cost.view`; ship-to, buyer and method are operational. The print shows the
-order's own terms, ship-to, method and buyer. Record scope: ADR 0192 (own-created / ship-to unit, 404 outside reach, nothing active). Not built: the assigned-buyer scope path, a buyer lookup beyond the signed-in person, a shipping-method list.
+order's own terms, ship-to, method and buyer. Record scope: ADR 0192 (own-created / ship-to unit, 404 outside reach, nothing active). Assigned-buyer scope (`ASSIGNED`) and a safe buyer lookup are built, inactive. Not built: post-issue reassignment beyond the signed-in person, a shipping-method list.
 
 ## Receipts of items with grouped package tracking
 

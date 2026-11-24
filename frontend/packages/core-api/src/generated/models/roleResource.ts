@@ -12,4 +12,10 @@ export interface RoleResource {
   description: RoleResourceDescription;
   permissions: unknown[];
   members_count?: number;
+  /**
+   * The ways this role can be limited when given to someone: "only my units" always, and "own" / "assigned" only where EVERY duty of the role supports them (a mixed role fails closed).
+   * @minItems 1
+   * @maxItems 1
+   */
+  limit_modes: [string];
 }

@@ -1492,3 +1492,5 @@ delivered while the exact minimal attestation-context disclosure proposal awaits
 other operations continue independently. Contracts and coverage are in
 [Jobs interactive execution](domain/job-execution-ui.md); exact implementation/check evidence
 belongs to #132.
+
+Q26 assigned-buyer scope delivered on `develop` (2026-11-24, [ADR 0192](decisions/0192-purchase-order-record-scope.md)): `ASSIGNED` — the order's named buyer — as a scope of its own, additive with own-created and ship-to unit limits on the same duty and never a capability; create and draft edit must leave the order reachable; the migration's rollback is refused while any limit carries it; Administration validates it and the members screen offers it per role where the server says the role supports it; a safe lookup (id and name of active members, to a drafter) feeds the buyer picker. Sales and Inventory scope semantics unchanged; nothing is active.

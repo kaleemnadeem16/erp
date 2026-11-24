@@ -26,5 +26,8 @@ class AccessScopeLimit extends Model
 
     public const OWN_OR_DELEGATED = 'OWN_OR_DELEGATED';
 
+    /** Records the person is named on (a purchase order's buyer). Its own scope: it is not OWN, and it never confers a capability. */
+    public const ASSIGNED = 'ASSIGNED';
+
     protected $guarded = ['id'];
 }

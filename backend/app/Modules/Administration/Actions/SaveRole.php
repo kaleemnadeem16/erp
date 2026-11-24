@@ -46,15 +46,15 @@ final class SaveRole
             $this->guard->validate($actor, [], $attributes['permissions']);
             if ($role !== null) {
                 $role = Role::query()->whereKey($role->id)->lockForUpdate()->firstOrFail();
-                $limitedScopes = AccessScopeLimit::query()->where('role_id', $role->id)->whereIn('scope', [AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED])->distinct()->pluck('scope');
+                $limitedScopes = AccessScopeLimit::query()->where('role_id', $role->id)->whereIn('scope', [AccessScopeLimit::OWN, AccessScopeLimit::OWN_OR_DELEGATED, AccessScopeLimit::ASSIGNED])->distinct()->pluck('scope');
                 foreach ($limitedScopes as $scope) {
                     $duties = $attributes['permissions'];
                     if ($duties === []) {
-                        throw new DomainInvariantException('An OWN role needs supported duties.', 'permissions');
+                        throw new DomainInvariantException('A role limited to its own or assigned records needs supported duties.', 'permissions');
                     }
                     foreach ($duties as $duty) {
                         if (! is_string($duty) || ! app(ResourceScopeAdapters::class)->supportsAssignment($duty, $scope)) {
-                            throw new DomainInvariantException('A role limited to OWN cannot acquire unsupported duties.', 'permissions');
+                            throw new DomainInvariantException('A role limited to its own or assigned records cannot acquire unsupported duties.', 'permissions');
                         }
                     }
                 }

@@ -86,7 +86,7 @@ final class PurchaseOrderAccess
     /** May this person see this order's commercial fields? Needs the capability AND the order inside that capability's reach. */
     public function mayViewCommercial(?User $user, PurchaseOrder $order, ?Request $request = null): bool
     {
-        return $user !== null && $this->commercialReach($user, $request)->includes($order->created_by, $order->ship_to_warehouse_id);
+        return $user !== null && $this->commercialReach($user, $request)->includes($order->created_by, $order->ship_to_warehouse_id, $order->buyer_user_id);
     }
 
     /** A monetary filter or sort infers values across the whole list, so it needs commercial reach over everything the person can list. */
@@ -101,6 +101,7 @@ final class PurchaseOrderAccess
     private function union(User $user, array $duties): ResolvedScope
     {
         $own = false;
+        $assigned = false;
         $units = [];
         foreach ($duties as $duty) {
             $scope = $this->records->resolveForResource($user, $duty, PurchaseOrderScopeAdapter::RESOURCE);
@@ -108,10 +109,11 @@ final class PurchaseOrderAccess
                 return $scope;
             }
             $own = $own || $scope->ownsRecords();
+            $assigned = $assigned || $scope->allowsAssigned();
             $units = array_merge($units, $scope->unitIds());
         }
 
-        return ResolvedScope::records($own, $units);
+        return ResolvedScope::records($own, $units, false, $assigned);
     }
 
     /** @phpstan-impure */
@@ -174,10 +176,15 @@ final class PurchaseOrderAccess
      * Before an order is saved (created, or edited): would it still be reachable under this exact duty, through a path that really applies to it?
      * Being able to reach one's OWN orders is no licence to move somebody else's order out of one's units, and vice versa.
      */
-    public function requireReachable(User $actor, string $duty, ?int $createdBy, ?int $shipToWarehouseId): void
+    public function requireReachable(User $actor, string $duty, ?int $createdBy, ?int $shipToWarehouseId, ?int $buyerUserId): void
     {
-        if (! $this->adapter->reaches($this->writeScope($actor, $duty), $actor->id, $createdBy, $shipToWarehouseId)) {
-            throw new DomainInvariantException('This purchase order would fall outside the orders you may handle.', 'ship_to_warehouse_id');
+        $scope = $this->writeScope($actor, $duty);
+        if (! $this->adapter->reaches($scope, $actor->id, $createdBy, $shipToWarehouseId, $buyerUserId)) {
+            // Name the field the person can change: an ASSIGNED-only person must name themselves buyer; otherwise the warehouse decides.
+            $field = $scope->allowsAssigned() && ! $scope->ownsRecords() && $scope->unitIds() === [] ? 'buyer_user_id' : 'ship_to_warehouse_id';
+            throw new DomainInvariantException($field === 'buyer_user_id'
+                ? 'You may only handle purchase orders you are named buyer on: name yourself as the buyer.'
+                : 'This purchase order would fall outside the orders you may handle.', $field);
         }
     }
 

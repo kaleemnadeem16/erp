@@ -27,7 +27,7 @@ final class CreatePurchaseOrder
             $actor = DecisionActor::require($actor, 'purchasing.purchase-order.create', 'create a purchase order');
 
             $access = PurchaseOrderAccess::make();
-            $access->requireReachable($actor, 'purchasing.purchase-order.create', $actor->id, isset($attributes['ship_to_warehouse_id']) ? (int) $attributes['ship_to_warehouse_id'] : null);
+            $access->requireReachable($actor, 'purchasing.purchase-order.create', $actor->id, isset($attributes['ship_to_warehouse_id']) ? (int) $attributes['ship_to_warehouse_id'] : null, isset($attributes['buyer_user_id']) ? (int) $attributes['buyer_user_id'] : null);
             if (isset($attributes['replaces_purchase_order_id'])) {
                 // Naming a replaced order reveals it: only one this person may reach can be named, and anything else reads as absent.
                 $access->lockForDuty($actor, (int) $attributes['replaces_purchase_order_id'], 'purchasing.purchase-order.create');

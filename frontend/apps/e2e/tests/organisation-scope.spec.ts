@@ -103,8 +103,8 @@ test("a member whose role is limited shows where it applies", async ({
   await expect(where).toBeVisible();
   await expect(where.getByText(/Belongs to: Karachi site/)).toBeVisible();
   await expect(
-    where.getByRole("checkbox", { name: /Warehouse clerk: only my units/ }),
-  ).toBeChecked();
+    where.getByRole("combobox", { name: /Where Warehouse clerk applies/ }),
+  ).toHaveValue("MY_UNITS");
 });
 
 test.describe("a Karachi warehouse clerk (role limited to only my units)", () => {

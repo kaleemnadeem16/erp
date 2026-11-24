@@ -3,6 +3,7 @@
 use App\Modules\Purchasing\Http\Controllers\Api\V1\GoodsReceiptController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\GoodsReceiptLineCompositionController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\ItemSupplierController;
+use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchaseOrderBuyerController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchaseOrderController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingPolicyChangeController;
 use App\Modules\Purchasing\Http\Controllers\Api\V1\PurchasingSettingsController;
@@ -18,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('item-suppliers', ItemSupplierController::class)->except('update');
     Route::patch('item-suppliers/{item_supplier}', [ItemSupplierController::class, 'update'])->name('item-suppliers.update');
     Route::post('purchase-order-lines/preview', [PurchaseOrderController::class, 'previewLine'])->name('purchase-order-lines.preview');
+    Route::get('purchase-order-buyers', [PurchaseOrderBuyerController::class, 'index'])->name('purchase-order-buyers.index');
     Route::apiResource('purchase-orders', PurchaseOrderController::class)->only(['index', 'store', 'show']);
     Route::patch('purchase-orders/{purchaseOrder}', [PurchaseOrderController::class, 'update'])->name('purchase-orders.update');
     Route::post('purchase-orders/{purchaseOrder}/submit', [PurchaseOrderController::class, 'submit'])->name('purchase-orders.submit');

@@ -131,6 +131,7 @@ final class ApplyQuotationDemoPreset
                 $scope->ownsRecords() ? 'OWN' : null,
                 $scope->unitIds() !== [] ? 'UNITS('.implode(',', $scope->unitIds()).')' : null,
                 $scope->allowsNamedDelegation() ? 'named shares' : null,
+                $scope->allowsAssigned() ? 'ASSIGNED' : null,
             ])),
         };
     }

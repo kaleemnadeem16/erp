@@ -17,6 +17,7 @@ import {
   useSupplierAccountsSitesIndex,
   useUomsIndex,
   useWarehousesIndex,
+  usePurchaseOrderBuyersIndex,
   type SupplierSiteResource,
 } from "@erp/core-api";
 
@@ -587,16 +588,32 @@ export function PurchaseOrderForm({
         })),
     [warehousesQuery.data],
   );
-  // The buyer picker offers the signed-in person (plus whoever the order already names): a full people lookup is not part of purchasing's access.
+  // The buyer picker searches the company's active members by name (a safe lookup that returns only id and name). The signed-in person and whoever the order already
+  // names stay selectable even when the search does not list them, so a saved choice never reads as "User #…".
   const me = useAuthStore((state) => state.user);
   const buyerId = form.watch("buyer_user_id");
+  const [buyerSearch, setBuyerSearch] = useState("");
+  const [buyerTerm, setBuyerTerm] = useState("");
+  useEffect(() => {
+    const handle = window.setTimeout(() => setBuyerTerm(buyerSearch.trim()), 300);
+    return () => window.clearTimeout(handle);
+  }, [buyerSearch]);
+  const buyersQuery = usePurchaseOrderBuyersIndex(
+    { search: buyerTerm || undefined, per_page: 20 },
+    { query: { staleTime: 30_000 } },
+  );
   const buyerOptions = useMemo(() => {
-    const options: { value: string; label: string }[] = [];
-    if (me) options.push({ value: String(me.id), label: `${me.name} (me)` });
-    if (buyerId && (!me || String(me.id) !== buyerId))
+    const found = buyersQuery.data?.status === 200 ? buyersQuery.data.data.data : [];
+    const options = found.map((buyer) => ({
+      value: String(buyer.id),
+      label: me && buyer.id === me.id ? `${buyer.name} (me)` : buyer.name,
+    }));
+    if (me && !options.some((option) => option.value === String(me.id)) && (buyerTerm === "" || me.name.toLowerCase().includes(buyerTerm.toLowerCase())))
+      options.unshift({ value: String(me.id), label: `${me.name} (me)` });
+    if (buyerId && !options.some((option) => option.value === buyerId))
       options.push({ value: buyerId, label: existingBuyerName ?? `User #${buyerId}` });
     return options;
-  }, [me, buyerId, existingBuyerName]);
+  }, [buyersQuery.data, me, buyerId, existingBuyerName, buyerTerm]);
   const supplierDefaultTerms =
     suppliers.find((candidate) => candidate.id === Number(supplierId))
       ?.payment_terms_days ?? null;
@@ -911,9 +928,13 @@ export function PurchaseOrderForm({
                     value={field.value}
                     onValueChange={field.onChange}
                     options={buyerOptions}
+                    search={buyerSearch}
+                    onSearchChange={setBuyerSearch}
+                    searching={buyersQuery.isFetching}
+                    loadError={buyersQuery.isError ? { error: buyersQuery.error, onRetry: () => void buyersQuery.refetch(), noun: "people" } : undefined}
                     placeholder="Not specified"
-                    searchPlaceholder="Search…"
-                    emptyText="No one to choose."
+                    searchPlaceholder="Search people…"
+                    emptyText="No one matches."
                   />
                 </FormControl>
                 {field.value && (

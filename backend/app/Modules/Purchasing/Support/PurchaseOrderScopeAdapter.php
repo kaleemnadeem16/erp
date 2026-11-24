@@ -16,11 +16,12 @@ use Illuminate\Database\Eloquent\Builder;
  * Exact-duty purchase-order scope (Q26, ADR 0192). Declares which duties an administrator may limit, and turns a resolved scope into a query predicate.
  *
  *  - OWN        = the order's immutable creator (`created_by`) is the actor. It is NOT "owner" in the Sales sense and does not include the assigned buyer.
+ *  - ASSIGNED   = the order's `buyer_user_id` is the actor. It is its own scope: it does not include orders the actor merely created, and naming someone buyer gives them no capability.
  *  - MY_UNITS   = the order's ship-to warehouse belongs to one of the actor's active organisation units (or their descendants).
  *  - ALL        = no limit; every existing grant stays this until an administrator sets a limit.
  *  - OWN_OR_DELEGATED is a Sales concept (named delegation) and is unsupported here: it fails closed.
  *
- * An order with no creator or no ship-to (history older than ADR 0191) matches neither limited path, so a limited person never reaches it
+ * An order with no creator, buyer or ship-to (history older than ADR 0191) matches no limited path, so a limited person never reaches it
  * and an unrestricted person always does. No identity is ever inferred for it.
  */
 final class PurchaseOrderScopeAdapter implements ResourceScopeAdapter
@@ -42,7 +43,7 @@ final class PurchaseOrderScopeAdapter implements ResourceScopeAdapter
     public function supports(string $duty, string $scope): bool
     {
         return in_array($duty, self::LIMITABLE, true)
-            && in_array($scope, ['ALL', AccessScopeLimit::OWN, AccessScopeLimit::MY_UNITS], true);
+            && in_array($scope, ['ALL', AccessScopeLimit::OWN, AccessScopeLimit::ASSIGNED, AccessScopeLimit::MY_UNITS], true);
     }
 
     /**
@@ -56,13 +57,16 @@ final class PurchaseOrderScopeAdapter implements ResourceScopeAdapter
             return $query;
         }
         $warehouses = app(RecordScope::class)->resourceIds($scope, 'warehouse') ?? [];
-        if (! $scope->ownsRecords() && $warehouses === []) {
+        if (! $scope->ownsRecords() && ! $scope->allowsAssigned() && $warehouses === []) {
             return $query->whereRaw('1 = 0');
         }
 
         return $query->where(function (Builder $paths) use ($scope, $actorId, $warehouses): void {
             if ($scope->ownsRecords()) {
                 $paths->where('purchase_orders.created_by', $actorId);
+            }
+            if ($scope->allowsAssigned()) {
+                $paths->orWhere('purchase_orders.buyer_user_id', $actorId);
             }
             if ($warehouses !== []) {
                 $paths->orWhereIn('purchase_orders.ship_to_warehouse_id', $warehouses);
@@ -71,8 +75,8 @@ final class PurchaseOrderScopeAdapter implements ResourceScopeAdapter
     }
 
     /** Would this order, as it now stands, still be reachable? Used before saving a create or an edit, so nobody files or moves an order out of their own sight. */
-    public function reaches(ResolvedScope $scope, int $actorId, ?int $createdBy, ?int $shipToWarehouseId): bool
+    public function reaches(ResolvedScope $scope, int $actorId, ?int $createdBy, ?int $shipToWarehouseId, ?int $buyerUserId): bool
     {
-        return PurchaseOrderReach::of($scope, $actorId)->includes($createdBy, $shipToWarehouseId);
+        return PurchaseOrderReach::of($scope, $actorId)->includes($createdBy, $shipToWarehouseId, $buyerUserId);
     }
 }
