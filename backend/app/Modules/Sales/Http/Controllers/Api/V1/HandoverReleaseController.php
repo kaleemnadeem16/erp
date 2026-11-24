@@ -7,12 +7,15 @@ namespace App\Modules\Sales\Http\Controllers\Api\V1;
 use App\Exceptions\DomainInvariantException;
 use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\PreviewServiceRelease;
+use App\Modules\Sales\Actions\ReadCompletionBasis;
 use App\Modules\Sales\Actions\RecordServiceCompletionBasis;
 use App\Modules\Sales\Actions\ReleaseHandoverComponent;
 use App\Modules\Sales\Http\Requests\Release\PreviewServiceReleaseRequest;
 use App\Modules\Sales\Http\Requests\Release\RecordCompletionBasisRequest;
 use App\Modules\Sales\Http\Requests\Release\ReleaseServiceRequest;
+use App\Modules\Sales\Http\Requests\Release\ShowCompletionBasisRequest;
 use App\Modules\Sales\Http\Resources\CompletionBasisOutcomeResource;
+use App\Modules\Sales\Http\Resources\CompletionBasisResource;
 use App\Modules\Sales\Http\Resources\ServiceReleaseOutcomeResource;
 use App\Modules\Sales\Http\Resources\ServiceReleasePreviewResource;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionRefusalStatus;
@@ -36,6 +39,11 @@ final class HandoverReleaseController extends Controller
         $out = $this->refusing(fn (): array => $record($request->user(), $request->header('Idempotency-Key'), $acceptance, $request->input('agreed_text'), $request->integer('evidence_id')));
 
         return $this->respond(new CompletionBasisOutcomeResource(['basis_id' => $out['basis_id'], 'version' => $out['version'], 'replayed' => $out['replayed']]), $out['replayed']);
+    }
+
+    public function currentBasis(ShowCompletionBasisRequest $request, int $acceptance, ReadCompletionBasis $read): CompletionBasisResource
+    {
+        return new CompletionBasisResource($this->refusing(fn (): array => $read($request->user(), $acceptance)));
     }
 
     public function preview(PreviewServiceReleaseRequest $request, int $stage, PreviewServiceRelease $preview): ServiceReleasePreviewResource

@@ -6,6 +6,7 @@ namespace App\Modules\Sales\Support\Handover\Release;
 
 use App\Exceptions\DomainInvariantException;
 use App\Modules\Sales\Models\CustomerAcceptanceLine;
+use App\Modules\Sales\Models\CustomerDecisionEvidence;
 use App\Modules\Sales\Models\QuotationIssuedLine;
 use App\Modules\Sales\Models\ServiceCompletionBasis;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionRefusal as R;
@@ -32,6 +33,12 @@ final class SalesCompletionBasis
 
         return new ResolvedCompletionBasis($basis->id, app(CompanyContext::class)->id(), $issued->id, $basis->version, (string) $issued->description, $basis->agreed_text, $basis->evidence_id, $basis->attestation_policy,
             (string) $basis->terms_source, $verified ? $declared['materials'] : 'UNSTATED', $verified ? $declared['subcontract'] : 'UNSTATED', $verified ? $declared['line'] : null, $verified ? $declared['digest'] : null);
+    }
+
+    /** True when the customer's agreement evidence behind this basis was later corrected (a successor observation exists). Only separate agreement evidence is judged; see the domain doc. */
+    public function evidenceSuperseded(ResolvedCompletionBasis $basis): bool
+    {
+        return $basis->termsSource === 'EVIDENCE_TEXT' && CustomerDecisionEvidence::query()->where('predecessor_id', $basis->evidenceId)->exists();
     }
 
     /** @throws DomainInvariantException COMPLETION_BASIS_MISSING when no agreed conditions were recorded */

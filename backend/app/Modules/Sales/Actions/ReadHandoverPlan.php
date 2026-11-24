@@ -12,6 +12,7 @@ use App\Modules\Sales\Models\HandoverReadinessEvidence;
 use App\Modules\Sales\Models\HandoverStage;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionAccess;
 use App\Modules\Sales\Support\Handover\HandoverAccess;
+use App\Modules\Sales\Support\Handover\Release\ReleaseStatus;
 use App\Modules\Sales\Support\PermissionVocabulary;
 use Illuminate\Support\Facades\DB;
 
@@ -34,11 +35,12 @@ final class ReadHandoverPlan
             $stage = HandoverStage::where('allocation_id', $a->id)->firstOrFail();
             $baseline = HandoverBaseline::where('stage_id', $stage->id)->firstOrFail();
             $evidence = HandoverReadinessEvidence::where('stage_id', $stage->id)->firstOrFail();
+            $release = ReleaseStatus::of($actor, $stage->id);
 
             return ['id' => $plan->id, 'acceptance_id' => $plan->acceptance_id, 'path' => $plan->path, 'prepared_by' => $plan->prepared_by, 'recorded_at' => $plan->recorded_at->toIso8601String(),
                 'allocation_id' => $a->id, 'stage_id' => $stage->id, 'baseline_id' => $baseline->id, 'issued_line_id' => $baseline->issued_line_id,
                 'state' => 'PREPARED', 'operational' => array_intersect_key($baseline->operational_snapshot, array_flip(['deliverable_identity', 'description', 'measure_id', 'quantity', 'completion_conditions', 'location_kind', 'instructions', 'contact', 'site'])), 'readiness_at_preparation' => $evidence->assessment,
-                'withheld' => ['commercial_prices', 'commercial_quantities', 'tax_fx_evidence', 'costs_and_margins'], 'release_performed' => false];
+                'withheld' => ['commercial_prices', 'commercial_quantities', 'tax_fx_evidence', 'costs_and_margins'], 'release_performed' => $release !== null, 'release' => $release];
         });
     }
 }

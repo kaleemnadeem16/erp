@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Sales\Actions\PrepareHandoverPlan;
 use App\Modules\Sales\Actions\PreviewHandover;
 use App\Modules\Sales\Actions\ReadHandoverPlan;
+use App\Modules\Sales\Actions\ReadHandoverStatus;
 use App\Modules\Sales\Http\Requests\CustomerDecision\HandoverFields;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PrepareHandoverPlanRequest;
 use App\Modules\Sales\Http\Requests\CustomerDecision\PreviewHandoverRequest;
@@ -16,6 +17,7 @@ use App\Modules\Sales\Http\Requests\CustomerDecision\ShowHandoverPlanRequest;
 use App\Modules\Sales\Http\Resources\HandoverPlanOutcomeResource;
 use App\Modules\Sales\Http\Resources\HandoverPlanResource;
 use App\Modules\Sales\Http\Resources\HandoverPreviewResource;
+use App\Modules\Sales\Http\Resources\HandoverStatusResource;
 use App\Modules\Sales\Support\CustomerDecision\CustomerDecisionRefusalStatus;
 use Closure;
 use Dedoc\Scramble\Attributes\HeaderParameter;
@@ -44,6 +46,11 @@ final class HandoverPlanController extends Controller
         }
 
         return $response;
+    }
+
+    public function status(ShowHandoverPlanRequest $request, int $acceptance, ReadHandoverStatus $read): HandoverStatusResource
+    {
+        return new HandoverStatusResource($this->refusing(fn (): array => $read($request->user(), $acceptance)));
     }
 
     public function show(ShowHandoverPlanRequest $request, int $plan, ReadHandoverPlan $read): HandoverPlanResource

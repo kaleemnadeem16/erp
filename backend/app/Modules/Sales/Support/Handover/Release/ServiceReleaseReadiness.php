@@ -27,6 +27,7 @@ final class ServiceReleaseReadiness
         private readonly ReleaseCostPolicy $cost,
         private readonly SourceApplicabilityProof $applicability,
         private readonly AuthorityFence $fence,
+        private readonly SalesCompletionBasis $bases,
     ) {}
 
     public function assess(HandoverSubject $subject, HandoverStage $stage, HandoverBaseline $baseline, ?ResolvedCompletionBasis $basis): ReleaseReadiness
@@ -44,6 +45,12 @@ final class ServiceReleaseReadiness
         if ($basis === null) {
             $blockers[] = 'COMPLETION_BASIS_MISSING';
             $next[] = ['fact' => 'COMPLETION_BASIS_MISSING', 'owner' => 'Sales', 'action' => 'Record the customer-agreed completion conditions, citing written consent evidence.'];
+        }
+        if ($basis !== null && $this->bases->evidenceSuperseded($basis)) {
+            // The customer's agreement evidence was later corrected: the recorded conditions no longer state what the customer currently says, so they cannot support a release
+            // until the current observation is cited in a new basis version. History stays; an existing release is answered before readiness is ever evaluated.
+            $blockers[] = 'COMPLETION_EVIDENCE_SUPERSEDED';
+            $next[] = ['fact' => 'COMPLETION_EVIDENCE_SUPERSEDED', 'owner' => 'Sales', 'action' => 'The customer evidence behind the agreed conditions was corrected; record the conditions again citing the current observation.'];
         }
         $cost = $this->cost->requirementFor($subject);
         if (! $cost->satisfied()) {

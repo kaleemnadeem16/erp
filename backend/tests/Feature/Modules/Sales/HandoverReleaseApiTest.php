@@ -8,6 +8,7 @@ use App\Modules\Jobs\Support\Authority\JobDutyManifest;
 use App\Modules\Jobs\Support\Authority\JobDutyStatus;
 use App\Modules\Sales\Actions\PrepareHandoverPlan;
 use App\Modules\Sales\Actions\PreviewHandover;
+use App\Modules\Sales\Models\CustomerDecisionEvidence;
 use App\Modules\Sales\Support\Authority\SalesDutyManifest;
 use App\Modules\Sales\Support\Handover\HandoverSubject;
 use App\Modules\Sales\Support\Handover\Release\CostRequirement;
@@ -395,6 +396,201 @@ class HandoverReleaseApiTest extends TestCase
     }
 
     /** @return list<string> */
+    /** A later observation that corrects an earlier one of the same case (the chain never forks). */
+    private function correct(int $predecessor, string $text): int
+    {
+        return (int) CustomerDecisionEvidence::create(['case_id' => $this->f['case'], 'predecessor_id' => $predecessor, 'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE',
+            'customer_representative_snapshot' => 'Synthetic buyer', 'occurrence_precision' => 'UNKNOWN', 'factual_description' => $text, 'observation_state' => 'OBSERVED', 'recorded_by' => $this->checker->id])->id;
+    }
+
+    public function test_a_corrected_observation_cannot_be_cited_as_new_agreement_evidence(): void
+    {
+        $excluded = $this->scopeDeclaration($this->f['acceptance']);
+        $original = $this->appendAgreementEvidence($this->f['case'], $this->checker->id, $excluded);
+        $corrected = $this->correct($original, $this->scopeDeclaration($this->f['acceptance'], 'REQUIRED', 'EXCLUDED'));
+
+        $before = $this->counts();
+        $this->postJson($this->basisUrl(), ['agreed_text' => $excluded, 'evidence_id' => $original], ['Idempotency-Key' => 'old'])
+            ->assertUnprocessable()->assertJsonPath('reason_code', 'INVALID_INPUT');
+        $this->assertSame($before, $this->counts());
+
+        // the current observation is accepted, and what it says (materials REQUIRED) is what applies
+        $this->postJson($this->basisUrl(), ['agreed_text' => $this->scopeDeclaration($this->f['acceptance'], 'REQUIRED', 'EXCLUDED'), 'evidence_id' => $corrected], ['Idempotency-Key' => 'new'])->assertCreated();
+        $p = $this->preview();
+        $this->assertFalse($p['ready']);
+        $this->assertContains('SOURCE_OBLIGATION_UNSUPPORTED', $p['blockers']);
+        $this->assertNotContains('COMPLETION_EVIDENCE_SUPERSEDED', $p['blockers']);
+    }
+
+    public function test_a_correction_after_recording_and_before_release_blocks_the_release_and_the_old_review_goes_stale(): void
+    {
+        $this->postBasis()->assertCreated();
+        $old = $this->preview();
+        $this->assertTrue($old['ready']);
+        $evidence = (int) DB::table('service_completion_bases')->value('evidence_id');
+        $corrected = $this->correct($evidence, $this->scopeDeclaration($this->f['acceptance']));
+
+        $p = $this->preview();
+        $this->assertFalse($p['ready']);
+        $this->assertContains('COMPLETION_EVIDENCE_SUPERSEDED', $p['blockers']);
+        $this->assertNotSame($old['fingerprint'], $p['fingerprint']);
+        $this->postRelease($old, 'r-old')->assertStatus(409)->assertJsonPath('reason_code', 'PREVIEW_TOKEN_STALE');
+        $this->postRelease($p, 'r-blocked')->assertUnprocessable()->assertJsonPath('reason_code', 'HANDOVER_NOT_READY');
+        $this->assertSame(0, DB::table('handover_release_events')->count());
+
+        // citing the current observation in a new basis version restores readiness; the superseded row stays as history
+        $this->postJson($this->basisUrl(), ['agreed_text' => $this->scopeDeclaration($this->f['acceptance']), 'evidence_id' => $corrected], ['Idempotency-Key' => 'v2'])->assertCreated()->assertJsonPath('data.version', 2);
+        $fresh = $this->preview();
+        $this->assertTrue($fresh['ready']);
+        $this->postRelease($fresh, 'r-ok')->assertCreated();
+        $this->assertSame(2, DB::table('service_completion_bases')->count());
+        $this->assertSame(1, DB::table('customer_decision_evidence')->where('id', $evidence)->count());
+    }
+
+    public function test_a_correction_after_a_release_changes_neither_the_release_nor_the_job(): void
+    {
+        $this->postBasis()->assertCreated();
+        $p = $this->preview();
+        $out = $this->postRelease($p)->assertCreated()->json('data');
+        $this->settle();
+        $this->correct((int) DB::table('service_completion_bases')->value('evidence_id'), $this->scopeDeclaration($this->f['acceptance'], 'REQUIRED', 'REQUIRED'));
+        $before = $this->counts();
+
+        $again = $this->postRelease($p, 'later-key')->assertCreated();
+        $this->assertSame([$out['job_id'], $out['job_code']], [$again->json('data.job_id'), $again->json('data.job_code')]);
+        $this->assertSame($before, $this->counts());
+    }
+
+    private function statusUrl(?int $acceptance = null): string
+    {
+        return '/api/v1/customer-acceptances/'.($acceptance ?? $this->f['acceptance']).'/handover';
+    }
+
+    private function conditionsUrl(?int $acceptance = null): string
+    {
+        return '/api/v1/customer-acceptances/'.($acceptance ?? $this->f['acceptance']).'/completion-basis';
+    }
+
+    public function test_an_acceptance_discovers_its_own_prepared_handover_and_nothing_else(): void
+    {
+        $this->getJson($this->statusUrl())->assertOk()->assertExactJson(['data' => ['acceptance_id' => $this->f['acceptance'], 'prepared' => true,
+            'plan_id' => (int) DB::table('handover_plans')->value('id'), 'stage_id' => $this->stageId, 'release_performed' => false]]);
+
+        // a second accepted service with no preparation says so, and does not create one
+        $other = $this->serviceAcceptance($this->checker, $this->customer->id, 'SERVICE_ITEM', '-b');
+        $this->settle();
+        $plans = DB::table('handover_plans')->count();
+        $this->getJson($this->statusUrl($other['acceptance']))->assertOk()->assertExactJson(['data' => ['acceptance_id' => $other['acceptance'], 'prepared' => false,
+            'plan_id' => null, 'stage_id' => null, 'release_performed' => false]]);
+        $this->assertSame($plans, DB::table('handover_plans')->count());
+
+        $this->getJson($this->statusUrl(999999))->assertNotFound();
+        $this->app['auth']->forgetGuards();
+        $this->getJson($this->statusUrl())->assertUnauthorized();
+        Sanctum::actingAs($this->checker);
+        $this->checker->revokePermissionTo(P::CUSTOMER_DECISION_VIEW);
+        $this->getJson($this->statusUrl())->assertForbidden();
+        $this->checker->givePermissionTo(P::CUSTOMER_DECISION_VIEW);
+        $this->checker->revokePermissionTo(P::QUOTATION_VIEW);
+        $this->getJson($this->statusUrl())->assertForbidden();
+        // the status needs neither the prepare nor the release duty (it reuses the acceptance and handover read rules, no broad directory, no new duty)
+        $this->checker->givePermissionTo(P::QUOTATION_VIEW);
+        $this->checker->revokePermissionTo([P::HANDOVER_PREPARE, P::HANDOVER_RELEASE, P::HANDOVER_COMPLETION_BASIS_RECORD]);
+        $this->getJson($this->statusUrl())->assertOk()->assertJsonPath('data.prepared', true);
+    }
+
+    public function test_the_status_and_plan_come_from_the_immutable_release_evidence_and_the_job_only_to_those_who_may_see_jobs(): void
+    {
+        $this->activateJobs([...self::JOB_DUTIES, 'job.view']);
+        Permission::findOrCreate('job.view', 'web');
+        $planId = (int) DB::table('handover_plans')->value('id');
+        $plan = fn (): array => $this->getJson('/api/v1/handover-plans/'.$planId)->assertOk()->json('data');
+
+        $before = $plan();
+        $this->assertFalse($before['release_performed']);
+        $this->assertNull($before['release']);
+        $this->postBasis()->assertCreated();
+        $out = $this->postRelease($this->preview())->assertCreated()->json('data');
+        $this->settle();
+        $preparation = DB::table('handover_stages')->first();
+
+        // without job.view: released, but no Job reference
+        $d = $plan();
+        $this->assertTrue($d['release_performed']);
+        $this->assertSame('PREPARED', $d['state'], 'the append-only preparation record is not rewritten');
+        $this->assertSame(['release_event_id' => $out['release_event_id'], 'released_at' => $d['release']['released_at'], 'job_access' => 'NOT_PERMITTED', 'job' => null], $d['release']);
+        $this->assertStringNotContainsString($out['job_code'], json_encode($d));
+
+        // with job.view: the existing Job's number and id
+        $this->checker->givePermissionTo('job.view');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $d = $plan();
+        $this->assertSame(['id' => $out['job_id'], 'code' => $out['job_code']], $d['release']['job']);
+        $this->assertSame('VISIBLE', $d['release']['job_access']);
+        $this->getJson($this->statusUrl())->assertOk()->assertJsonPath('data.release_performed', true);
+
+        // revoking it again withdraws the reference immediately
+        $this->checker->revokePermissionTo('job.view');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->assertNull($plan()['release']['job']);
+        $this->assertEquals($preparation, DB::table('handover_stages')->first());
+        $this->assertSame(1, DB::table('service_jobs')->count());
+    }
+
+    public function test_the_current_agreed_conditions_are_readable_by_recorders_and_releasers_only_and_follow_the_head(): void
+    {
+        $this->getJson($this->conditionsUrl())->assertOk()->assertExactJson(['data' => ['acceptance_id' => $this->f['acceptance'], 'current' => null]]);
+        $first = $this->postBasis()->assertCreated()->json('data');
+        $declaration = $this->scopeDeclaration($this->f['acceptance']);
+        $c = $this->getJson($this->conditionsUrl())->assertOk()->json('data.current');
+        $this->assertSame(['agreed_text', 'basis_id', 'evidence_current', 'materials_scope', 'recorded_at', 'subcontract_scope', 'terms_source', 'version'], $this->sorted($c));
+        $this->assertSame([$first['basis_id'], 1, 'EVIDENCE_TEXT', $declaration, 'EXCLUDED', 'EXCLUDED', true], [$c['basis_id'], $c['version'], $c['terms_source'], $c['agreed_text'], $c['materials_scope'], $c['subcontract_scope'], $c['evidence_current']]);
+
+        // a correction of the evidence is visible as such, and a new version becomes the head
+        $evidence = (int) DB::table('service_completion_bases')->value('evidence_id');
+        $corrected = $this->correct($evidence, $declaration);
+        $this->getJson($this->conditionsUrl())->assertOk()->assertJsonPath('data.current.evidence_current', false);
+        $this->postJson($this->basisUrl(), ['agreed_text' => $declaration, 'evidence_id' => $corrected], ['Idempotency-Key' => 'v2'])->assertCreated();
+        $this->getJson($this->conditionsUrl())->assertOk()->assertJsonPath('data.current.version', 2)->assertJsonPath('data.current.evidence_current', true);
+
+        // each reading duty alone suffices; with neither (or without the views) it is refused; foreign and unknown records are 404
+        $this->checker->revokePermissionTo(P::HANDOVER_RELEASE);
+        $this->getJson($this->conditionsUrl())->assertOk();
+        $this->checker->givePermissionTo(P::HANDOVER_RELEASE);
+        $this->checker->revokePermissionTo(P::HANDOVER_COMPLETION_BASIS_RECORD);
+        $this->getJson($this->conditionsUrl())->assertOk();
+        $this->checker->revokePermissionTo(P::HANDOVER_RELEASE);
+        $this->getJson($this->conditionsUrl())->assertForbidden();
+        $this->checker->givePermissionTo([P::HANDOVER_RELEASE, P::HANDOVER_COMPLETION_BASIS_RECORD]);
+        $this->checker->revokePermissionTo(P::CUSTOMER_DECISION_VIEW);
+        $this->getJson($this->conditionsUrl())->assertForbidden();
+        $this->checker->givePermissionTo(P::CUSTOMER_DECISION_VIEW);
+        $this->getJson($this->conditionsUrl(999999))->assertNotFound();
+        $this->assertStringNotContainsString('evidence_id', $this->getJson($this->conditionsUrl())->getContent());
+    }
+
+    public function test_status_and_conditions_do_not_cross_companies(): void
+    {
+        $this->postBasis()->assertCreated();
+        $company = DB::table('companies')->insertGetId(['name' => 'Synthetic foreign company', 'created_at' => now(), 'updated_at' => now()]);
+        $this->app->instance(CompanyContext::class, new class($company) extends CompanyContext
+        {
+            public function __construct(private readonly int $company) {}
+
+            public function id(): int
+            {
+                return $this->company;
+            }
+        });
+        app(PermissionRegistrar::class)->setPermissionsTeamId($company);
+        $actor = User::factory()->create();
+        $actor->givePermissionTo(array_merge($this->handoverDuties(), self::JOB_DUTIES));
+        Sanctum::actingAs($actor);
+        $this->getJson($this->statusUrl())->assertNotFound();
+        $this->getJson($this->conditionsUrl())->assertNotFound();
+        $this->getJson('/api/v1/handover-plans/'.(int) DB::table('handover_plans')->value('id'))->assertNotFound();
+    }
+
     private function sorted(array $a): array
     {
         $keys = array_keys($a);

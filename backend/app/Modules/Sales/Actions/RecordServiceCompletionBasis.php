@@ -56,6 +56,11 @@ final class RecordServiceCompletionBasis
                 if ($evidence === null || $evidence->source_kind === 'VERBAL' || ! in_array($evidence->authority_verification_basis, ['DOCUMENT_ON_FILE', 'CONFIRMED_BY_SELLER'], true)) {
                     throw R::make(R::INVALID_INPUT, 'Cite written, authority-verified consent evidence of the accepting case.', 'evidence_id');
                 }
+                // A corrected observation replaces what the customer said: only the CURRENT head of an observation chain can be NEW agreement evidence (the case is locked, so a
+                // correction cannot arrive between this check and the insert). The acceptance's own consent evidence is the acceptance's fact, not new agreement; see the domain doc.
+                if ($evidence->id !== (int) $s->acceptance->consent_evidence_id && CustomerDecisionEvidence::query()->where('predecessor_id', $evidence->id)->exists()) {
+                    throw R::make(R::INVALID_INPUT, 'This observation has been corrected by a later one; cite the current observation of the customer agreement.', 'evidence_id');
+                }
                 if (ServiceCompletionBasis::query()->where(['issued_line_id' => $s->line->id, 'evidence_id' => $evidence->id])->exists()) {
                     throw R::make(R::INVALID_INPUT, 'This evidence already supports a completion basis of this line; record new agreement evidence for a change.', 'evidence_id');
                 }
