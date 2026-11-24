@@ -152,4 +152,58 @@ class JobSourceActorEligibilityRaceTest extends TestCase
             }
         }
     }
+
+    /** The verifier answers as a failure the test can read from the forked child: the child's return value is discarded. */
+    private function enterReady(array $f): \Closure
+    {
+        return function () use ($f): void {
+            $ctx = DB::transaction(fn () => app(JobExecutionContextVerifier::class)->enter(User::findOrFail($f['operator']), ServiceJob::findOrFail($f['job']), 'START'));
+            if (! $ctx->recordEligible) {
+                throw new \RuntimeException('INELIGIBLE');
+            }
+            if (! $ctx->commandReady) {
+                throw new \RuntimeException('NOT_READY');
+            }
+        };
+    }
+
+    /** The decision case row the verifier locks (after the authority head and the acceptance) when it takes the Sales source fences. */
+    private function caseGate(array $f): array
+    {
+        $case = (int) $f['pdo']->query("select case_id from customer_acceptances where company_id={$f['r']['company']} order by id limit 1")->fetchColumn();
+
+        return ["select id from customer_decision_cases where id={$case} for update"];
+    }
+
+    /** A correction of the head agreement evidence, committed by the holder session while the verifier waits on the case lock. */
+    private function correctHeadEvidence(PDO $h, array $f): void
+    {
+        $head = $h->query("select evidence_id, (select case_id from customer_acceptances where company_id={$f['r']['company']} order by id limit 1) from service_completion_bases where company_id={$f['r']['company']} order by version desc limit 1")->fetch(PDO::FETCH_NUM);
+        $h->exec("insert into customer_decision_evidence (company_id, case_id, predecessor_id, source_kind, authority_verification_basis, customer_representative_snapshot, occurrence_precision, factual_description, observation_state, recorded_by, recorded_at) values ({$f['r']['company']}, {$head[1]}, {$head[0]}, 'EMAIL', 'DOCUMENT_ON_FILE', 'Synthetic buyer', 'UNKNOWN', 'Correction: materials now required.', 'OBSERVED', {$f['releaser']}, now())");
+    }
+
+    public function test_control_the_job_is_ready_for_fresh_work_when_no_correction_arrives(): void
+    {
+        $f = $this->fixture();
+        try {
+            $o = $this->raceAction($f['pdo'], $this->caseGate($f), $this->enterReady($f), fn () => null);
+            $this->assertTrue($o['success'], (string) $o['message']);
+        } finally {
+            $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    public function test_a_correction_committed_while_the_verifier_waits_on_the_source_locks_makes_fresh_work_not_ready_but_the_job_stays_eligible(): void
+    {
+        $f = $this->fixture();
+        try {
+            $events = $this->jobEvents($f);
+            $o = $this->raceAction($f['pdo'], $this->caseGate($f), $this->enterReady($f), fn (PDO $h) => $this->correctHeadEvidence($h, $f));
+            $this->assertFalse($o['success']);
+            $this->assertSame('NOT_READY', $o['message'], 'eligible (not INELIGIBLE) but not ready: the correction committed before the post-lock proof is seen');
+            $this->assertSame($events, $this->jobEvents($f), 'the verifier wrote nothing');
+        } finally {
+            $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
 }

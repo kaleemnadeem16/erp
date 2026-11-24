@@ -77,7 +77,11 @@ final class SalesJobExecutionContextVerifier implements JobExecutionContextVerif
         }
         // Re-prove against the CURRENT head of the line's completion basis and the CURRENT family authorities, and compare with what the release pinned: any change of basis,
         // scope or family contract version makes fresh work unready (the Job itself stays readable).
-        $proof = $this->applicability->evaluate($this->bases->find($subject->acceptanceLine));
+        $basis = $this->bases->find($subject->acceptanceLine);
+        $proof = $this->applicability->evaluate($basis);
+        // The agreement evidence the head relies on may have been CORRECTED after the release (the correction is append-only history; the release and Job stay as they are). Superseded
+        // evidence never supports FRESH work or settlement, but the Job stays readable and eligible for holds, safe reads and exact retries. Judged under the source locks taken above.
+        $evidenceCurrent = $basis === null || ! $this->bases->evidenceSuperseded($basis);
         $pinned = $event->relied_on['applicability']['pin'] ?? null;
         $vector = [
             'release_event' => (string) $event->id,
@@ -88,7 +92,7 @@ final class SalesJobExecutionContextVerifier implements JobExecutionContextVerif
         ];
 
         // Eligible: this actor holds the exact duty and the accepted source is the one this Job came from. Ready for fresh work only while the no-obligation proof still holds.
-        return new JobExecutionContext($vector, true, $proof['status'] === 'NOT_APPLICABLE' && is_string($pinned) && hash_equals($pinned, $proof['pin']));
+        return new JobExecutionContext($vector, true, $proof['status'] === 'NOT_APPLICABLE' && is_string($pinned) && hash_equals($pinned, $proof['pin']) && $evidenceCurrent);
     }
 
     /**
