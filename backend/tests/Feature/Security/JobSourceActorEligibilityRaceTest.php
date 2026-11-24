@@ -8,6 +8,7 @@ use App\Modules\Jobs\Support\Authority\JobDuty;
 use App\Modules\Jobs\Support\Authority\JobDutyManifest;
 use App\Modules\Jobs\Support\Authority\JobDutyStatus;
 use App\Modules\Jobs\Support\Execution\JobExecutionContextVerifier;
+use App\Modules\Sales\Actions\AppendCustomerDecisionEvidence;
 use App\Modules\Sales\Actions\PrepareHandoverPlan;
 use App\Modules\Sales\Actions\PreviewHandover;
 use App\Modules\Sales\Actions\PreviewServiceRelease;
@@ -42,7 +43,7 @@ class JobSourceActorEligibilityRaceTest extends TestCase
     protected function handoverDuties(): array
     {
         return [P::QUOTATION_PREPARE, P::QUOTATION_VIEW, P::QUOTATION_ISSUE, P::QUOTATION_WITHDRAW, P::CUSTOMER_DECISION_ACCEPT, P::CUSTOMER_DECISION_VIEW, P::HANDOVER_PREPARE,
-            P::HANDOVER_COMPLETION_BASIS_RECORD, P::HANDOVER_RELEASE];
+            P::HANDOVER_COMPLETION_BASIS_RECORD, P::HANDOVER_RELEASE, P::CUSTOMER_DECISION_EVIDENCE_RECORD];
     }
 
     /** A committed company with a released Job, a releaser with every duty, and a Jobs-only operator holding exactly job.start. */
@@ -204,6 +205,99 @@ class JobSourceActorEligibilityRaceTest extends TestCase
             $this->assertSame($events, $this->jobEvents($f), 'the verifier wrote nothing');
         } finally {
             $this->purgeRaceCompany($f['pdo'], $f['r']['company']);
+        }
+    }
+
+    /**
+     * The OPPOSITE order of the test above: a fresh authorised command obtains the Sales source locks FIRST (the real verifier, in an open transaction on its own connection), then the
+     * customer's correction is requested through the real Action and must WAIT on the case lock. Serialised correctly: the command decides on the evidence as it stood (ready), the
+     * correction applies only after the command commits, the historical observation is kept exactly as it was, and every LATER fresh command is refused (not ready) while the Job
+     * stays eligible. Nothing is cancelled, reopened or recovered.
+     */
+    public function test_a_fresh_command_holding_the_source_locks_first_makes_the_correction_wait_and_later_fresh_work_is_refused(): void
+    {
+        $f = $this->fixture();
+        $company = $f['r']['company'];
+        $q = fn (string $sql) => $f['pdo']->query($sql)->fetchColumn();
+        try {
+            $case = (int) $q("select case_id from customer_acceptances where company_id={$company} order by id limit 1");
+            $head = (int) $q("select evidence_id from service_completion_bases where company_id={$company} order by version desc limit 1");
+            $generation = (int) $q("select generation from customer_decision_cases where id={$case}");
+            $originalText = (string) $q("select factual_description from customer_decision_evidence where id={$head}");
+            $observations = (int) $q("select count(*) from customer_decision_evidence where case_id={$case}");
+            $events = $this->jobEvents($f);
+
+            // 1. The fresh command takes the source locks first, on its own connection and transaction, and judges the evidence as it stands: ready.
+            $original = config('database.default');
+            config(['database.connections.race_fresh' => config('database.connections.testing'), 'database.default' => 'race_fresh']);
+            DB::beginTransaction();
+            $context = app(JobExecutionContextVerifier::class)->enter(User::findOrFail($f['operator']), ServiceJob::findOrFail($f['job']), 'START');
+            $this->assertTrue($context->recordEligible);
+            $this->assertTrue($context->commandReady, 'ready on the evidence as it stood when the command took its locks');
+
+            // 2. The customer's correction, through the real Action, in a forked process that must queue behind those locks.
+            $result = sys_get_temp_dir().'/sec_race_corr_'.getmypid().'_'.bin2hex(random_bytes(3)).'.json';
+            @unlink($result);
+            $pid = pcntl_fork();
+            if ($pid === -1) {
+                DB::rollBack();
+                $this->fail('Unable to fork a process for the race test.');
+            }
+            if ($pid === 0) {
+                config(['database.connections.race_child' => config('database.connections.testing'), 'database.default' => 'race_child']);
+                try {
+                    app(AppendCustomerDecisionEvidence::class)(User::findOrFail($f['releaser']), 'correct-race', $case, $generation, [
+                        'source_kind' => 'EMAIL', 'authority_verification_basis' => 'DOCUMENT_ON_FILE', 'customer_representative_snapshot' => 'Synthetic buyer',
+                        'occurrence_precision' => 'UNKNOWN', 'factual_description' => 'Correction: the customer now wants materials supplied by us.',
+                    ], $head);
+                    file_put_contents($result, json_encode(['success' => true]));
+                } catch (\Throwable $e) {
+                    file_put_contents($result, json_encode(['success' => false, 'message' => $e->getMessage()]));
+                }
+                posix_kill(getmypid(), SIGKILL);
+            }
+            $monitor = $this->raceSession();
+            $blocked = false;
+            for ($i = 0; $i < 400 && ! $blocked; $i++) {
+                $blocked = (int) $monitor->query("select count(*) from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and pid <> pg_backend_pid()")->fetchColumn() > 0;
+                $blocked || usleep(25_000);
+            }
+            if (! $blocked) {
+                DB::rollBack();
+                config(['database.default' => $original]);
+                pcntl_waitpid($pid, $status);
+                $this->fail('the correction never reached a lock wait; the race could not be staged: '.(string) @file_get_contents($result));
+            }
+
+            // 3. While the command still holds its locks, the correction has not happened.
+            $this->assertFileDoesNotExist($result, 'the correction must still be waiting');
+            $this->assertSame($observations, (int) $monitor->query("select count(*) from customer_decision_evidence where case_id={$case}")->fetchColumn());
+
+            // 4. The command finishes and commits; only then does the correction proceed.
+            DB::commit();
+            config(['database.default' => $original]);
+            DB::purge('race_fresh');
+            pcntl_waitpid($pid, $status);
+            $outcome = json_decode((string) file_get_contents($result), true);
+            @unlink($result);
+            $this->assertTrue($outcome['success'] ?? false, 'the correction applies after the command: '.json_encode($outcome));
+
+            // 5. History is preserved exactly; the correction is appended, never an overwrite.
+            $this->assertSame($observations + 1, (int) $q("select count(*) from customer_decision_evidence where case_id={$case}"));
+            $this->assertSame($originalText, (string) $q("select factual_description from customer_decision_evidence where id={$head}"));
+            $this->assertNull($q("select predecessor_id from customer_decision_evidence where id={$head}") ?: null);
+            $this->assertSame($head, (int) $q("select predecessor_id from customer_decision_evidence where case_id={$case} order by id desc limit 1"));
+            $this->assertSame($events, $this->jobEvents($f), 'nothing was cancelled, reopened or written to the Job');
+
+            // 6. Every LATER fresh command is refused (not ready), while the Job stays eligible for safe operations.
+            $later = $this->raceCommitted(fn () => DB::transaction(fn () => app(JobExecutionContextVerifier::class)->enter(User::findOrFail($f['operator']), ServiceJob::findOrFail($f['job']), 'START')));
+            $this->assertTrue($later->recordEligible);
+            $this->assertFalse($later->commandReady, 'superseded agreement no longer supports fresh work');
+        } finally {
+            if (DB::transactionLevel() > 0 && config('database.default') === 'race_fresh') {
+                DB::rollBack();
+            }
+            $this->purgeRaceCompany($f['pdo'], $company);
         }
     }
 }
